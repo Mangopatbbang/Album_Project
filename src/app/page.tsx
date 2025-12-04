@@ -677,7 +677,7 @@ const currentRating =
       <section className="h-[20vh] min-h-[140px] flex items-center border-b border-slate-800/70 bg-black/40 backdrop-blur-md px-6">
         <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4">
           {/* 왼쪽: 현재 사용자 선택 */}
-          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-200">
+          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2 text-xs md:text-sm text-slate-200">
             <span className="text-[11px] md:text-xs text-slate-400 whitespace-nowrap">
               현재 사용자
             </span>
@@ -687,7 +687,7 @@ const currentRating =
                   key={u.id}
                   type="button"
                   onClick={() => setActiveUserId(u.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] md:text-xs transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 md:py-1.5 text-[11px] md:text-xs transition-colors ${
                     activeUserId === u.id
                       ? "border-sky-400 bg-sky-500/20 text-sky-100"
                       : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
@@ -837,7 +837,7 @@ const currentRating =
           조건에 맞는 앨범이 없습니다.
         </p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {visibleAlbums.map((a) => {
             const { ratings, avg } = getRatings(a);
             const glow = cardGlowClasses(avg ?? null);
