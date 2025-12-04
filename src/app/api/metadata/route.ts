@@ -96,30 +96,42 @@ async function fetchReleaseDetail(mbid: string) {
  * Cover Art Archive에서 앨범 커버 URL 가져오기
  */
 async function fetchCoverUrl(mbid: string): Promise<string | null> {
-  // JSON 메타 호출해서 front 이미지를 안전하게 찾는다
   const url = `${CAA_BASE}/${encodeURIComponent(mbid)}`;
 
-  const res = await fetch(url, {
-    headers: MB_HEADERS,
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch(url, {
+      headers: MB_HEADERS,
+      cache: "no-store",
+    });
 
-  if (!res.ok) {
-    // 커버 없으면 404일 수 있으니 조용히 null 반환
+    // 404 / 5xx / 기타 비정상 상태면 그냥 "커버 없음"으로 처리
+    if (!res.ok) {
+      console.warn("CoverArtArchive non-ok response:", res.status, url);
+      return null;
+    }
+
+    let data: any;
+    try {
+      data = await res.json();
+    } catch (e) {
+      console.warn("CoverArtArchive JSON parse failed:", e);
+      return null;
+    }
+
+    const images: any[] = data.images ?? [];
+    if (!images.length) return null;
+
+    const front = images.find((img) => img.front) ?? images[0];
+    const imageUrl: string | undefined = front.image;
+
+    return imageUrl ?? null;
+  } catch (err) {
+    // 여기로 오는 게 지금 네가 본 ECONNRESET 같은 케이스
+    console.error("fetchCoverUrl error:", err);
     return null;
   }
-
-  const data = await res.json();
-
-  const images: any[] = data.images ?? [];
-  if (!images.length) return null;
-
-  // front=true인 이미지 우선
-  const front = images.find((img) => img.front) ?? images[0];
-  const imageUrl: string | undefined = front.image;
-
-  return imageUrl ?? null;
 }
+
 
 /**
  * GET /api/metadata?title=...&artist=...
