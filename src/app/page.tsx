@@ -321,6 +321,7 @@ useEffect(() => {
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("latest");
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(true);
   
     const [onlyUnrated, setOnlyUnrated] = useState(false);
 
@@ -673,11 +674,11 @@ const currentRating =
 
   return (
     <main className="h-screen bg-gradient-to-b from-black via-slate-950 to-black text-slate-50 flex flex-col overflow-hidden">
-            {/* 헤더 */}
-      <section className="h-[20vh] min-h-[140px] flex items-center border-b border-slate-800/70 bg-black/40 backdrop-blur-md px-6">
-        <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4">
-          {/* 왼쪽: 현재 사용자 선택 */}
-          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2 text-xs md:text-sm text-slate-200">
+                  {/* 헤더 */}
+      <section className="border-b border-slate-800/70 bg-black/40 backdrop-blur-md px-4 md:px-6 py-3 md:py-4">
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* 현재 사용자 선택 */}
+          <div className="order-2 md:order-1 flex flex-col sm:flex-row sm:items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-slate-200">
             <span className="text-[11px] md:text-xs text-slate-400 whitespace-nowrap">
               현재 사용자
             </span>
@@ -700,24 +701,18 @@ const currentRating =
             </div>
           </div>
 
-          {/* 가운데: 타이틀 / 설명 */}
-          <div className="text-center flex-1">
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+          {/* 가운데: 타이틀 (모바일 상단) */}
+          <div className="order-1 md:order-2 text-center md:flex-1">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
               팔만음감경 <span className="text-indigo-400">🎧</span>
             </h1>
-            <p className="text-[13px] md:text-sm text-slate-300 leading-relaxed">
-              우리끼리 듣고, 우리끼리 평가하는 앨범 기록장.
-            </p>
-            <p className="text-[11px] md:text-xs text-slate-500">
-              외부 평점은 관심 없음.{" "}
-              <span className="text-slate-200 font-semibold">우리 점수만 중요함.</span>
-            </p>
           </div>
 
-          {/* 오른쪽: 균형 맞추기용 빈 영역 (추후 알림/설정 버튼 넣어도 됨) */}
-          <div className="w-[80px] md:w-[120px] hidden sm:block" />
+          {/* 오른쪽: 균형 맞추기용 빈 영역 (데스크탑 전용) */}
+          <div className="order-3 w-[80px] md:w-[120px] hidden md:block" />
         </div>
       </section>
+
 
 
       {/* 가운데 카드 영역 */}
@@ -734,80 +729,110 @@ const currentRating =
     <div className="w-full px-4 md:px-8 py-2 md:py-6 space-y-3">
 
       {/* 필터 바 (sticky) */}
+            {/* 필터 바 (sticky) */}
       <div className="sticky top-0 z-20">
-        <div className="rounded-2xl border border-slate-800 bg-black/50 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 shadow-[0_0_20px_rgba(15,23,42,0.8)]">
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-300">
+        <div className="rounded-2xl border border-slate-800 bg-black/80 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 shadow-[0_0_20px_rgba(15,23,42,0.8)]">
+          {/* 모바일: 필터 토글 버튼 */}
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            className="w-full flex items-center justify-between md:hidden text-[12px] text-slate-200"
+          >
+            <span>검색 / 필터</span>
+            <span className="text-[11px] text-slate-400">
+              {isFilterOpen ? "접기 ▲" : "열기 ▼"}
+            </span>
+          </button>
 
-            {/* 검색 */}
-            <div className="flex-1 min-w-[160px] max-w-xs md:max-w-sm">
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="제목 / 아티스트 검색"
-                className="w-full rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
-              />
+          {/* 실제 필터 내용 */}
+          <div
+            className={`mt-3 md:mt-0 space-y-3 ${
+              isFilterOpen ? "block" : "hidden md:block"
+            }`}
+          >
+            <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-300">
+              {/* 검색 */}
+              <div className="flex-1 min-w-[160px] max-w-xs md:max-w-sm">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="제목 / 아티스트 검색"
+                  className="w-full rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+                />
+              </div>
+
+              {/* 장르 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] md:text-xs text-slate-400">
+                  장르
+                </span>
+                <select
+                  value={genreFilter}
+                  onChange={(e) => setGenreFilter(e.target.value)}
+                  className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
+                >
+                  <option value="all">전체</option>
+                  {genres.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 연도 / 정렬 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] md:text-xs text-slate-400">
+                  연도
+                </span>
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
+                >
+                  <option value="all">전체</option>
+                  {Array.from(
+                    new Set(
+                      albums
+                        .map((a) => a.year)
+                        .filter((y): y is string => !!y)
+                    )
+                  )
+                    .sort((a, b) => Number(b) - Number(a))
+                    .map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] md:text-xs text-slate-400">
+                  정렬
+                </span>
+                <select
+                  value={sortKey}
+                  onChange={(e) =>
+                    setSortKey(e.target.value as SortKey)
+                  }
+                  className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
+                >
+                  <option value="latest">최신순</option>
+                  <option value="oldest">오래된순</option>
+                  <option value="titleAsc">제목 A→Z</option>
+                  <option value="titleDesc">제목 Z→A</option>
+                  <option value="userRatingDesc">내 점수 높은 순</option>
+                  <option value="userRatingAsc">내 점수 낮은 순</option>
+                  <option value="avgRatingDesc">평균 높은 순</option>
+                  <option value="avgRatingAsc">평균 낮은 순</option>
+                </select>
+              </div>
             </div>
 
-            {/* 장르 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] md:text-xs text-slate-400">
-                장르
-              </span>
-              <select
-                value={genreFilter}
-                onChange={(e) => setGenreFilter(e.target.value)}
-                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs">
-                <option value="all">전체</option>
-                {genres.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 연도 필터 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] md:text-xs text-slate-400">
-                연도
-              </span>
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
-              >
-                <option value="all">전체</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 정렬 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] md:text-xs text-slate-400">
-                정렬
-              </span>
-              <select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
-              >
-                <option value="latest">최신순</option>
-                <option value="oldest">오래된순</option>
-                <option value="ratingDesc">평균점수 높은순</option>
-                <option value="ratingAsc">평균점수 낮은순</option>
-                <option value="userRatingDesc">현재 사용자 점수 높은순</option>
-                <option value="userRatingAsc">현재 사용자 점수 낮은순</option>
-                <option value="titleAsc">제목 가나다순</option>
-              </select>
-            </div>
-
-            {/* 미평가 필터 */}
-            <div className="flex items-center gap-2">
-              <label className="inline-flex items-center gap-1 text-[11px] md:text-xs text-slate-400 cursor-pointer">
+            {/* 체크박스 + 초기화 */}
+            <div className="flex items-center gap-3 text-[11px] md:text-xs text-slate-300">
+              <label className="inline-flex items-center gap-1 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={onlyUnrated}
@@ -816,20 +841,19 @@ const currentRating =
                 />
                 <span>아직 점수 안 준 것만</span>
               </label>
+
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-[11px] md:text-xs text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
+              >
+                초기화
+              </button>
             </div>
-
-            {/* 초기화 버튼 */}
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="ml-auto inline-flex items-center gap-1 border border-slate-700 bg-slate-900 px-3 py-1.5 rounded-full text-[11px] md:text-xs hover:border-sky-400/70 hover:bg-sky-500/10"
-            >
-              초기화
-            </button>
-
           </div>
         </div>
       </div>
+
 
             {/* 앨범 리스트 grid */}
       {visibleAlbums.length === 0 ? (
