@@ -99,7 +99,15 @@ function parseDateFromYear(year?: string): number | null {
 
 
 
-type SortKey = "latest" | "oldest" | "ratingDesc" | "ratingAsc" | "titleAsc";
+type SortKey =
+  | "latest"
+  | "oldest"
+  | "ratingDesc"
+  | "ratingAsc"
+  | "titleAsc"
+  | "userRatingDesc"   // 현재 사용자 점수 높은순
+  | "userRatingAsc";   // 현재 사용자 점수 낮은순
+
 
 type RatingCategory =
   | "red"
@@ -274,6 +282,7 @@ export default function Home() {
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   const [ratingMap, setRatingMap] = useState<Record<string, number>>({});
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   // 🔹 선택된 앨범/유저가 바뀔 때 Supabase에서 해당 점수 GET
 useEffect(() => {
   if (!selectedAlbumId || !activeUserId) return;
@@ -312,18 +321,16 @@ useEffect(() => {
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("latest");
-  const [ratingFilterUser, setRatingFilterUser] = useState<UserId | "all">(
-    "all"
-  );
-  const [ratingFilterMin, setRatingFilterMin] = useState<number | null>(null);
+  
+    const [onlyUnrated, setOnlyUnrated] = useState(false);
+
 
   const resetFilters = () => {
     setSearchQuery("");
     setGenreFilter("all");
     setYearFilter("all");
     setSortKey("latest");
-    setRatingFilterUser("all");
-    setRatingFilterMin(null);
+    setOnlyUnrated(false);
   };
 
   // 1) 앨범 데이터 fetch
@@ -435,10 +442,10 @@ const saveNotes = (next: Record<string, string>) => {
 
 
   // 필터/정렬
-  const visibleAlbums = useMemo(() => {
+    const visibleAlbums = useMemo(() => {
     let list = [...albums];
 
-    // 검색
+    // 🔍 검색
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -448,12 +455,12 @@ const saveNotes = (next: Record<string, string>) => {
       );
     }
 
-    // 장르 필터
+    // 🎧 장르 필터
     if (genreFilter !== "all") {
       list = list.filter((a) => a.genre === genreFilter);
     }
 
-    // 연도 필터 (연도의 앞 4자리 기준)
+    // 📅 연도 필터 (연도의 앞 4자리 기준)
     if (yearFilter !== "all") {
       list = list.filter((a) => {
         if (!a.year) return false;
@@ -462,25 +469,42 @@ const saveNotes = (next: Record<string, string>) => {
       });
     }
 
-    // 점수 필터
-    if (ratingFilterUser !== "all" && ratingFilterMin != null) {
+    // ⭐ 특정 유저 + 최소 점수 필터
+        // ❗ 현재 선택된 사용자 기준으로, 아직 점수 안 준 앨범만 보기
+    if (onlyUnrated && activeUserId) {
       list = list.filter((a) => {
         const { ratings } = getRatings(a);
-        const r = ratings.find((x) => x.id === ratingFilterUser);
-        return r ? r.value >= ratingFilterMin : false;
+        const mine = ratings.find((r) => r.id === activeUserId);
+        // mine 이 없으면 → 이 유저 점수가 없는 앨범
+        return !mine;
       });
     }
 
-    // 정렬
+
+    // ❗ 현재 선택된 사용자 기준으로, 아직 점수 안 준 앨범만 보기
+    if (onlyUnrated && activeUserId) {
+      list = list.filter((a) => {
+        const v = getRatingValue(a, activeUserId);
+        // 숫자가 아니면 → 아직 점수 없음
+        return typeof v !== "number" || Number.isNaN(v);
+      });
+    }
+
+           // 정렬
     list.sort((a, b) => {
+      // 📅 발매일 기준
       if (sortKey === "latest" || sortKey === "oldest") {
         const da = parseDateFromYear(a.year) ?? -Infinity;
         const db = parseDateFromYear(b.year) ?? -Infinity;
         return sortKey === "latest" ? db - da : da - db;
       }
+
+      // ㄱㄴㄷ 제목순
       if (sortKey === "titleAsc") {
         return a.title.localeCompare(b.title, "ko");
       }
+
+      // ⭐ 평균 점수 기준
       if (sortKey === "ratingDesc" || sortKey === "ratingAsc") {
         const aa = getRatings(a).avg ?? -Infinity;
         const bb = getRatings(b).avg ?? -Infinity;
@@ -490,8 +514,34 @@ const saveNotes = (next: Record<string, string>) => {
           return aa - bb;
         }
       }
+
+      // 👤 현재 사용자 점수 기준 정렬
+      if (sortKey === "userRatingDesc" || sortKey === "userRatingAsc") {
+        if (!activeUserId) return 0;
+
+        const raAll = getRatings(a).ratings;
+        const rbAll = getRatings(b).ratings;
+
+        const mineA = raAll.find((r) => r.id === activeUserId)?.value;
+        const mineB = rbAll.find((r) => r.id === activeUserId)?.value;
+
+        if (sortKey === "userRatingDesc") {
+          // 높은 점수 우선, 점수 없는 앨범은 맨 아래
+          const va = typeof mineA === "number" ? mineA : -Infinity;
+          const vb = typeof mineB === "number" ? mineB : -Infinity;
+          return vb - va;
+        } else {
+          // 낮은 점수 우선, 점수 없는 앨범은 맨 아래
+          const va = typeof mineA === "number" ? mineA : Infinity;
+          const vb = typeof mineB === "number" ? mineB : Infinity;
+          return va - vb;
+        }
+      }
+
       return 0;
     });
+
+
 
     return list;
   }, [
@@ -500,9 +550,10 @@ const saveNotes = (next: Record<string, string>) => {
     genreFilter,
     yearFilter,
     sortKey,
-    ratingFilterUser,
-    ratingFilterMin,
+    onlyUnrated,   // ✅ 꼭 있어야 함
+    activeUserId,  // ✅ 이것도
   ]);
+
 
   const displayAlbums = visibleAlbums.length > 0 ? visibleAlbums : albums;
   async function saveRating(albumId: string, userId: string, score: number) {
@@ -511,7 +562,16 @@ const saveNotes = (next: Record<string, string>) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ albumId, profileKey: userId, score }),
   });
+  
 }
+async function deleteRating(albumId: string, userId: UserId) {
+  await fetch("/api/ratings", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ albumId, profileKey: userId }),
+  });
+}
+
 
 
 
@@ -612,39 +672,290 @@ const currentRating =
   const centerBorder = centerBorderClasses(highlightAvg ?? null);
 
   return (
-    <main className="h-screen bg-gradient-to-b from-black via-slate-950 to-black text-slate-50 flex flex-col">
-      {/* 헤더 */}
-      <section className="h-[20vh] min-h-[140px] flex items-center justify-center border-b border-slate-800/70 bg-black/40 backdrop-blur-md px-6">
-        <div className="max-w-3xl mx-auto text-center space-y-2">
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
-            팔만음감경 <span className="text-indigo-400">🎧</span>
-          </h1>
-          <p className="text-[13px] md:text-sm text-slate-300 leading-relaxed">
-            우리끼리 듣고, 우리끼리 평가하는 앨범 기록장.
-          </p>
-          <p className="text-[11px] md:text-xs text-slate-500">
-            외부 평점은 관심 없음.{" "}
-            <span className="text-slate-200 font-semibold">우리 점수만 중요함.</span>
-          </p>
+    <main className="h-screen bg-gradient-to-b from-black via-slate-950 to-black text-slate-50 flex flex-col overflow-hidden">
+            {/* 헤더 */}
+      <section className="h-[20vh] min-h-[140px] flex items-center border-b border-slate-800/70 bg-black/40 backdrop-blur-md px-6">
+        <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4">
+          {/* 왼쪽: 현재 사용자 선택 */}
+          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-200">
+            <span className="text-[11px] md:text-xs text-slate-400 whitespace-nowrap">
+              현재 사용자
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {USERS.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => setActiveUserId(u.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] md:text-xs transition-colors ${
+                    activeUserId === u.id
+                      ? "border-sky-400 bg-sky-500/20 text-sky-100"
+                      : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
+                  }`}
+                >
+                  <span>{u.emoji}</span>
+                  <span>{u.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 가운데: 타이틀 / 설명 */}
+          <div className="text-center flex-1">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+              팔만음감경 <span className="text-indigo-400">🎧</span>
+            </h1>
+            <p className="text-[13px] md:text-sm text-slate-300 leading-relaxed">
+              우리끼리 듣고, 우리끼리 평가하는 앨범 기록장.
+            </p>
+            <p className="text-[11px] md:text-xs text-slate-500">
+              외부 평점은 관심 없음.{" "}
+              <span className="text-slate-200 font-semibold">우리 점수만 중요함.</span>
+            </p>
+          </div>
+
+          {/* 오른쪽: 균형 맞추기용 빈 영역 (추후 알림/설정 버튼 넣어도 됨) */}
+          <div className="w-[80px] md:w-[120px] hidden sm:block" />
         </div>
       </section>
 
+
       {/* 가운데 카드 영역 */}
-      <section className="h-[40vh] min-h-[260px] border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-sm">
-        <div className="h-full flex items-center justify-center px-6">
-          <div
-            className={`w-full max-w-6xl mx-auto rounded-2xl border bg-slate-900/70 shadow-[0_0_40px_rgba(15,23,42,0.8)] px-6 py-5 md:px-8 md:py-6 flex flex-col md:flex-row gap-6 md:gap-8 ${centerBorder} ${centerGlow}`}
-          >
+      {/* 메인 레이아웃: 모바일=세로 / 데스크탑=좌우 */}
+<section className="flex-1 min-h-0 flex flex-col md:flex-row">
+  
+
+  {/* ========================= */}
+  {/*       왼쪽: 리스트        */}
+  {/* ========================= */}
+  <div className="flex-1 overflow-y-auto border-r border-slate-800/60 bg-black/30">
+
+    {/* 아래 리스트 섹션 내용 전체 */}
+    <div className="w-full px-4 md:px-8 py-2 md:py-6 space-y-3">
+
+      {/* 필터 바 (sticky) */}
+      <div className="sticky top-0 z-20">
+        <div className="rounded-2xl border border-slate-800 bg-black/50 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 shadow-[0_0_20px_rgba(15,23,42,0.8)]">
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-300">
+
+            {/* 검색 */}
+            <div className="flex-1 min-w-[160px] max-w-xs md:max-w-sm">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제목 / 아티스트 검색"
+                className="w-full rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+              />
+            </div>
+
+            {/* 장르 */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] md:text-xs text-slate-400">
+                장르
+              </span>
+              <select
+                value={genreFilter}
+                onChange={(e) => setGenreFilter(e.target.value)}
+                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs">
+                <option value="all">전체</option>
+                {genres.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 연도 필터 */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] md:text-xs text-slate-400">
+                연도
+              </span>
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
+              >
+                <option value="all">전체</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 정렬 */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] md:text-xs text-slate-400">
+                정렬
+              </span>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs"
+              >
+                <option value="latest">최신순</option>
+                <option value="oldest">오래된순</option>
+                <option value="ratingDesc">평균점수 높은순</option>
+                <option value="ratingAsc">평균점수 낮은순</option>
+                <option value="userRatingDesc">현재 사용자 점수 높은순</option>
+                <option value="userRatingAsc">현재 사용자 점수 낮은순</option>
+                <option value="titleAsc">제목 가나다순</option>
+              </select>
+            </div>
+
+            {/* 미평가 필터 */}
+            <div className="flex items-center gap-2">
+              <label className="inline-flex items-center gap-1 text-[11px] md:text-xs text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={onlyUnrated}
+                  onChange={(e) => setOnlyUnrated(e.target.checked)}
+                  className="h-3 w-3 md:h-3.5 md:w-3.5 rounded border-slate-600 bg-slate-900 text-sky-400"
+                />
+                <span>아직 점수 안 준 것만</span>
+              </label>
+            </div>
+
+            {/* 초기화 버튼 */}
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="ml-auto inline-flex items-center gap-1 border border-slate-700 bg-slate-900 px-3 py-1.5 rounded-full text-[11px] md:text-xs hover:border-sky-400/70 hover:bg-sky-500/10"
+            >
+              초기화
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+            {/* 앨범 리스트 grid */}
+      {visibleAlbums.length === 0 ? (
+        <p className="text-slate-400 text-sm py-10">
+          조건에 맞는 앨범이 없습니다.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+          {visibleAlbums.map((a) => {
+            const { ratings, avg } = getRatings(a);
+            const glow = cardGlowClasses(avg ?? null);
+            const isSelected = selectedAlbum?.id === a.id;
+
+            return (
+              <div
+                key={a.id}
+                onClick={() => setSelectedAlbumId(a.id)}
+                className={`group relative cursor-pointer rounded-2xl border bg-slate-950/70 px-3 py-3 md:px-4 md:py-3 flex flex-col gap-1.5 transition-colors transition-shadow ${glow} ${
+                  isSelected
+                    ? "border-sky-400/90"
+                    : "border-slate-800 hover:border-sky-500/70"
+                }`}
+              >
+                {/* 커버 + 평균 평점 배지 (우측 상단) */}
+                <div className="relative mb-2">
+                  {a.coverUrl ? (
+                    <img
+                      src={a.coverUrl}
+                      alt={a.title}
+                      className="aspect-square w-full rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="aspect-square w-full rounded-lg border border-slate-700 bg-slate-800/80 flex items-center justify-center text-[10px] md:text-xs text-slate-500">
+                      커버 없음
+                    </div>
+                  )}
+
+                  {avg != null && (
+                    <div
+                      className={`absolute top-2 right-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] md:text-[11px] font-semibold border ${ratingChipClasses(
+                        avg
+                      )}`}
+                    >
+                      {avg.toFixed(1)}
+                    </div>
+                  )}
+                </div>
+
+                {/* 제목 / 아티스트 */}
+                <p className="text-xs text-slate-300 truncate">{a.title}</p>
+                <p className="text-[11px] text-slate-500 truncate">
+                  {a.artist}
+                </p>
+
+                {/* 👤 모든 사용자 점수 (현재 사용자 포함) */}
+                {ratings.length > 0 && (
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 text-[10px] md:text-xs">
+                    {ratings.map((r) => {
+                      const isMe = r.id === activeUserId;
+                      return (
+                        <div
+                          key={r.id}
+                          className={`flex items-center justify-between px-2 py-1 rounded-lg border bg-slate-950/60 border-slate-800 ${
+                            isMe ? "border-sky-400 bg-sky-500/10" : ""
+                          }`}
+                        >
+                          <span className="flex items-center gap-1 text-slate-300">
+                            <span>{r.emoji}</span>
+                            <span>{r.label}</span>
+                          </span>
+                          <span
+                            className={`font-semibold ${ratingTextClasses(
+                              r.value
+                            )}`}
+                          >
+                            {r.value}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+
+    </div>
+  </div>
+
+  {/* ========================= */}
+  {/*       오른쪽: 상세       */}
+  {/* ========================= */}
+  <div className="hidden md:block md:w-[40%] lg:w-[36%] xl:w-[32%] h-full bg-black/40 backdrop-blur-md border-l border-slate-800/60 p-4 overflow-y-auto min-h-0">
+    <div
+      className={`w-full max-w-xl mx-auto rounded-2xl border bg-slate-900/70 px-4 py-4 md:px-6 md:py-5 flex flex-col gap-4 ${centerBorder} ${centerGlow}`}
+    >
+
+      {/* ========== 앨범 상세 시작 ========== */}
+                  {/* ========== 앨범 상세 시작 ========== */}
+      {selectedAlbum ? (
+        <>
+          {/* 상단 평균 평점 뱃지 (우측 상단 작은 칩) */}
+          {typeof highlightAvg === "number" && (
+            <div className="self-end mb-2 px-3 py-1 rounded-full bg-slate-950/90 border border-slate-700 text-[11px] md:text-xs text-slate-100">
+              평균{" "}
+              <span className="font-semibold">
+                {highlightAvg.toFixed(1)}
+              </span>
+            </div>
+          )}
+
+          {/* 🎧 Spotify 스타일 상단 영역 (커버 + 메타데이터) */}
+          <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
             {/* 앨범 커버 */}
-            <div className="w-full md:w-56 flex-shrink-0">
-              {selectedAlbum?.coverUrl ? (
+            <div className="w-full md:w-40 lg:w-44 flex-shrink-0">
+              {selectedAlbum.coverUrl ? (
                 <img
                   src={selectedAlbum.coverUrl}
                   alt={selectedAlbum.title}
-                  className="aspect-square w-full rounded-xl border border-slate-700 object-cover"
+                  className="w-full aspect-square rounded-xl border border-slate-700 object-cover shadow-[0_24px_60px_rgba(15,23,42,0.9)]"
                 />
               ) : (
-                <div className="aspect-square w-full rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-xs text-slate-500">
+                <div className="w-full aspect-square rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-[11px] md:text-xs text-slate-500 text-center px-4">
                   앨범 커버
                   <br />
                   (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
@@ -652,479 +963,428 @@ const currentRating =
               )}
             </div>
 
-            {/* 정보 + 트랙리스트 + 유저탭 + 평 */}
-            <div className="flex-1 flex flex-col gap-3">
-              {selectedAlbum ? (
-                <>
-                  {/* 앨범 기본 정보 + 트랙리스트 */}
-                  <div className="flex flex-col gap-2">
-                    {/* 기본 정보 + 우측 아티스트 사진 & 평점 강조 */}
-                    <div className="flex items-start justify-between gap-4">
-                      {/* 왼쪽: 텍스트 정보 */}
-                      <div className="space-y-1.5">
-                        <h2 className="text-xl md:text-2xl font-semibold leading-relaxed">
-                          {selectedAlbum.title}
-                        </h2>
-                        <p className="text-sm md:text-base text-slate-300">
-                          {selectedAlbum.artist}
-                        </p>
-                        <p className="text-xs md:text-sm text-slate-400 mt-1 flex items-center flex-wrap gap-2">
-                          {selectedAlbum.year && (
-                            <span>{selectedAlbum.year}</span>
-                          )}
-                          {selectedAlbum.genre && (
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] md:text-xs font-medium border ${genreChipClasses(
-                                selectedAlbum.genre
-                              )}`}
-                            >
-                              {selectedAlbum.genre}
-                            </span>
-                          )}
-                        </p>
-                      </div>
+            {/* 텍스트 메타 정보 */}
+            <div className="flex-1 space-y-3">
+              <div className="text-[10px] md:text-[11px] uppercase tracking-[0.18em] text-sky-400 font-semibold">
+                Album
+              </div>
 
-                      {/* 오른쪽: 아티스트 사진 + 큰 평균 평점 */}
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-3">
-                          {/* 아티스트 사진 네모칸 */}
-                          <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl border border-slate-700 bg-slate-950/80 overflow-hidden flex-shrink-0">
-                            {selectedAlbum.artistPhotoUrl ? (
-                              <img
-                                src={selectedAlbum.artistPhotoUrl}
-                                alt={selectedAlbum.artist}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500">
-                                아티스트
-                                <br />
-                                사진
-                              </div>
-                            )}
-                          </div>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">
+                {selectedAlbum.title}
+              </h2>
 
-                          {/* 큰 평균 평점 (점 글자 제거) */}
-                          {highlightAvg != null && (
-                            <div
-                              className={`rounded-full px-4 py-2 text-sm md:text-base font-semibold whitespace-nowrap border ${ratingChipClasses(
-                                highlightAvg
-                              )}`}
-                            >
-                              평균{" "}
-                              <span className="text-lg md:text-xl align-middle">
-                                {highlightAvg.toFixed(1)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tracklist 라벨 (박스 밖) */}
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] md:text-xs text-slate-400">
-                        Tracklist
-                      </span>
-                      {tracklistItems.length === 0 && (
-                        <span className="text-[10px] text-slate-500">
-                          (엑셀 tracklist 컬럼에 트랙을 세미콜론(;)으로 구분해 적으면 여기에 나옵니다)
-                        </span>
-                      )}
-                    </div>
-
-                    {/* 트랙리스트 박스 (고정 높이 + 스크롤) */}
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-xs md:text-sm text-slate-200 min-h-[64px] max-h-24 overflow-y-auto flex-none">
-                      {tracklistItems.length > 0 ? (
-                        <ol className="space-y-0.5 list-decimal list-inside text-[11px] md:text-xs">
-                          {tracklistItems.map((t, idx) => (
-                            <li key={idx}>{t}</li>
-                          ))}
-                        </ol>
-                      ) : (
-                        <p className="text-[11px] text-slate-500">
-                          아직 등록된 트랙리스트가 없습니다.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 유저 탭 */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
-                    {USERS.map((u) => {
-                      const rating = highlightRatings.find(
-                        (r) => r.id === u.id
-                      )?.value;
-                      const isActive = activeUserId === u.id;
-                      const noteKey = selectedAlbum
-                        ? `${selectedAlbum.id}:${u.id}`
-                        : null;
-                      const hasNote =
-                        noteKey &&
-                        notes[noteKey] &&
-                        notes[noteKey].trim().length > 0;
-                      const hasRating = rating !== undefined;
-                      const hasContent = hasNote || hasRating;
-                     
-
-
-                      return (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => setActiveUserId(u.id)}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 md:px-4 py-1.5 transition-colors ${
-                            isActive
-                              ? "border-sky-400 bg-sky-500/20 text-sky-100"
-                              : "border-slate-700 bg-slate-900/80 text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
-                          }`}
-                        >
-                          <span>{u.emoji}</span>
-                          <span>{u.label}</span>
-                          {rating !== undefined && (
-                            <span
-                              className={`font-semibold ${ratingTextClasses(
-                                rating
-                              )}`}
-                            >
-                              {rating}
-                            </span>
-                          )}
-                          {hasContent && (
-                            <span className="ml-0.5 inline-block w-2 h-2 rounded-[4px] bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  
-
-
-                  {/* 평점 입력 UI */}
-<div className="flex items-center gap-2 mt-1 mb-1">
-  <span className="text-xs text-slate-400">
-    점수:
-  </span>
-
-  <div className="flex items-center gap-1">
-    {[1,2,3,4,5,6,7,8].map((num) => {
-      const selected = currentRating === num;
-      return (
-        <button
-          key={num}
-          onClick={() => {
-            if (!selectedAlbum) return;
-            saveRating(selectedAlbum.id, activeUserId, num);
-
-            // local update
-            const key = `${selectedAlbum.id}:${activeUserId}`;
-            setRatingMap(prev => ({ ...prev, [key]: num }));
-          }}
-          className={`
-            w-7 h-7 rounded-full border text-xs flex items-center justify-center
-            transition
-            ${selected
-              ? "bg-sky-500 text-white border-sky-400"
-              : "bg-slate-800 border-slate-600 text-slate-300 hover:border-sky-400"}
-          `}
-        >
-          {num}
-        </button>
-      );
-    })}
-  </div>
-</div>
-
-                  {/* 평 작성 영역 */}
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>
-                        {USERS.find((u) => u.id === activeUserId)?.label}의 평
-                      </span>
-                      <span className="opacity-70">
-                        쓰는 즉시 저장 (localStorage)
-                      </span>
-                    </div>
-                    <textarea
-                      value={currentNote}
-                      onChange={handleNoteChange}
-                      placeholder="짧게 욕을 써도 되고, 진지한 평을 써도 되고."
-                      className="mt-1 min-h-[60px] flex-1 w-full resize-none rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm md:text-[15px] text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+              {/* 아티스트 / 연도 / 장르 + 아티스트 사진 (프로필처럼) */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  {selectedAlbum.artistPhotoUrl && (
+                    <img
+                      src={selectedAlbum.artistPhotoUrl}
+                      alt={`${selectedAlbum.artist} 사진`}
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-slate-700 object-cover"
                     />
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 text-sm md:text-base text-slate-200">
+                    <span className="font-medium">{selectedAlbum.artist}</span>
+                    {selectedAlbum.year && (
+                      <span className="text-xs md:text-sm text-slate-400">
+                        • {selectedAlbum.year}
+                      </span>
+                    )}
+                    {selectedAlbum.genre && (
+                      <span
+                        className={`text-[10px] md:text-[11px] inline-flex items-center px-2 py-0.5 rounded-full border ${genreChipClasses(
+                          selectedAlbum.genre
+                        )}`}
+                      >
+                        {selectedAlbum.genre}
+                      </span>
+                    )}
                   </div>
-                </>
-              ) : (
-                <div className="text-sm text-slate-400">
-                  아직 선택된 앨범이 없어요. 아래 리스트에서 하나를 선택해보세요.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 아래 리스트: 이 영역만 스크롤 */}
-      <section className="flex-1 overflow-y-auto">
-        <div className="w-full px-7 md:px-8 py-4 md:py-6 space-y-4">
-          {/* 필터 바 (sticky) */}
-          <div className="sticky top-0 z-20">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/90 backdrop-blur-md px-4 py-3 md:px-5 md:py-4 shadow-[0_0_20px_rgba(15,23,42,0.8)]">
-              <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-300">
-                {/* 검색 (너무 길지 않게 폭 제한) */}
-                <div className="flex-1 min-w-[160px] max-w-xs md:max-w-sm">
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="제목 / 아티스트 검색"
-                    className="w-full rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-2 text-xs md:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
-                  />
                 </div>
 
-                {/* 장르 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] md:text-xs text-slate-400">
-                    장르
-                  </span>
-                  <select
-                    value={genreFilter}
-                    onChange={(e) => setGenreFilter(e.target.value)}
-                    className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs focus:outline-none"
-                  >
-                    <option value="all">전체</option>
-                    {genres.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
+                {/* 남들 점수 요약 (유저별 칩) */}
+                {highlightRatings.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] md:text-xs text-slate-300">
+                    {highlightRatings.map((r) => (
+                      <span
+                        key={r.id}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${ratingChipClasses(
+                          r.value
+                        )}`}
+                      >
+                        <span>{r.emoji}</span>
+                        <span>{r.label}</span>
+                        <span className="font-semibold">{r.value}</span>
+                      </span>
                     ))}
-                  </select>
-                </div>
-
-                {/* 연도 필터 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] md:text-xs text-slate-400">
-                    연도
-                  </span>
-                  <select
-                    value={yearFilter}
-                    onChange={(e) => setYearFilter(e.target.value)}
-                    className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs focus:outline-none"
-                  >
-                    <option value="all">전체</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 정렬 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] md:text-xs text-slate-400">
-                    정렬
-                  </span>
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs focus:outline-none"
-                  >
-                    <option value="latest">최신순</option>
-                    <option value="oldest">오래된순</option>
-                    <option value="ratingDesc">평균점수 높은순</option>
-                    <option value="ratingAsc">평균점수 낮은순</option>
-                    <option value="titleAsc">제목 가나다순</option>
-                  </select>
-                </div>
-
-                {/* 점수 필터 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] md:text-xs text-slate-400">
-                    점수 필터
-                  </span>
-                  <select
-                    value={ratingFilterUser}
-                    onChange={(e) =>
-                      setRatingFilterUser(e.target.value as UserId | "all")
-                    }
-                    className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs focus:outline-none"
-                  >
-                    <option value="all">전체</option>
-                    {USERS.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={ratingFilterMin ?? ""}
-                    onChange={(e) =>
-                      setRatingFilterMin(
-                        e.target.value === "" ? null : Number(e.target.value)
-                      )
-                    }
-                    className="rounded-full border-2 border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] md:text-xs focus:outline-none"
-                  >
-                    <option value="">점수무관</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((v) => (
-                      <option key={v} value={v}>
-                        {v} 이상
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 초기화 버튼 */}
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="ml-auto inline-flex items-center gap-1 rounded-full border-2 border-slate-600 bg-slate-900 px-4 py-1.5 text-[11px] md:text-xs text-slate-200 hover:border-sky-400 hover:text-sky-200 hover:bg-sky-500/10"
-                >
-                  초기화
-                </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* 리스트 */}
-          {loading && albums.length === 0 && (
-            <p className="text-slate-400 text-sm mt-4">불러오는 중...</p>
+          {/* 구분선 */}
+          <div className="w-full h-px bg-slate-800/70 my-3 md:my-4" />
+
+          {/* 점수 / 버튼 영역 */}
+          <div className="space-y-2">
+                      
+
+          {/* 🎵 트랙리스트 */}
+          {tracklistItems.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <div className="text-[11px] md:text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">
+                Tracklist
+              </div>
+              <ol className="max-h-40 overflow-y-auto pr-2 text-xs md:text-sm text-slate-200/90 space-y-0.5">
+                {tracklistItems.map((track, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="w-4 text-right text-[11px] md:text-xs text-slate-500">
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1 truncate">{track}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
           )}
 
-          {!loading && displayAlbums.length === 0 && (
-            <p className="text-slate-400 text-sm mt-4">
-              조건에 맞는 앨범이 없어요. 검색어/필터를 조정해보세요.
-            </p>
-          )}
+         
 
-          {displayAlbums.length > 0 && (
-            <div className="mt-3 md:mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {displayAlbums.map((album) => {
-                const key = album.id || `${album.title}-${album.artist}`;
-                const { ratings, avg } = getRatings(album);
-                const isSelected = selectedAlbum?.id === album.id;
-                const glow = cardGlowClasses(avg ?? null);
-
+            {/* 점수 버튼 (1~8) */}
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-[11px] md:text-xs text-slate-400">
+                점수
+              </span>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => {
+                const selected =
+                  getRatingValue(selectedAlbum, activeUserId) === num;
                 return (
-                  <article
-                    key={key}
-                    onClick={() => setSelectedAlbumId(album.id)}
-                    className={`group relative overflow-hidden rounded-2xl border 
-                               cursor-pointer select-none
-                               bg-slate-900/70 backdrop-blur-sm
-                               transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:scale-[1.02]
-                               ${
-                                 isSelected
-                                   ? "border-sky-400"
-                                   : "border-slate-800"
-                               }
-                               ${
-                                 glow ||
-                                 "shadow-[0_0_18px_rgba(15,23,42,0.6)]"
-                               }`}
+                  <button
+                    key={num}
+                    onClick={async () => {
+                      if (!selectedAlbum) return;
+
+                      const key = ratingKey(selectedAlbum.id, activeUserId);
+                      const already = ratingMap[key];
+
+                      if (already === num) {
+                        // 같은 점수를 다시 누르면: 점수 삭제
+                        await deleteRating(selectedAlbum.id, activeUserId);
+                        setRatingMap((prev) => {
+                          const next = { ...prev };
+                          delete next[key];
+                          return next;
+                        });
+                      } else {
+                        // 새로운 점수 저장
+                        await saveRating(selectedAlbum.id, activeUserId, num);
+                        setRatingMap((prev) => ({
+                          ...prev,
+                          [key]: num,
+                        }));
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-full border text-[11px] md:text-xs transition-colors ${
+                      selected
+                        ? "border-sky-400 bg-sky-500/20 text-sky-100"
+                        : "border-slate-700 bg-slate-900/70 text-slate-200 hover:border-sky-400/70 hover:bg-sky-500/10"
+                    }`}
                   >
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-br from-indigo-500 via-sky-400 to-emerald-400 pointer-events-none transition-opacity" />
-
-                    <div className="relative p-4 md:p-5">
-                      <div className="flex gap-4">
-                        {/* 썸네일 */}
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl border border-slate-700 bg-slate-800/80 overflow-hidden flex-shrink-0">
-                          {album.coverUrl ? (
-                            <img
-                              src={album.coverUrl}
-                              alt={album.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] md:text-xs text-slate-500">
-                              커버 없음
-                            </div>
-                          )}
-                        </div>
-
-                        {/* 내용 */}
-                        <div className="flex-1 space-y-3">
-                          {/* 상단 라벨 */}
-                          <div className="flex items-center justify-between gap-3 text-[10px] md:text-xs">
-                            <div className="flex flex-wrap items-center gap-2">
-                              {album.year && (
-                                <span className="rounded-full border border-slate-700 bg-slate-950/80 px-2 py-0.5 text-[10px] tracking-wide text-slate-300">
-                                  {album.year}
-                                </span>
-                              )}
-                              {album.genre && (
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium border ${genreChipClasses(
-                                    album.genre
-                                  )}`}
-                                >
-                                  {album.genre}
-                                </span>
-                              )}
-                            </div>
-
-                            {avg != null && (
-                              <span
-                                className={`rounded-full px-2.5 py-0.5 text-[10px] md:text-[11px] font-semibold border ${ratingChipClasses(
-                                  avg
-                                )}`}
-                              >
-                                {avg.toFixed(1)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* 제목 / 아티스트 (여기만 잘림 허용) */}
-                          <div className="space-y-1">
-                            <h2 className="text-sm md:text-base font-semibold leading-snug line-clamp-2">
-                              {album.title || (
-                                <span className="text-slate-500">
-                                  제목 없음
-                                </span>
-                              )}
-                            </h2>
-                            <p className="text-xs md:text-sm text-slate-300 leading-relaxed line-clamp-1">
-                              {album.artist || (
-                                <span className="text-slate-500">
-                                  아티스트 정보 없음
-                                </span>
-                              )}
-                            </p>
-                          </div>
-
-                          {/* 점수 요약: 이름/숫자 잘리지 않게 */}
-                          {ratings.length > 0 && (
-                            <div className="mt-1 grid grid-cols-2 gap-1.5 text-[10px] md:text-xs">
-                              {ratings.map((r) => (
-                                <div
-                                  key={r.label}
-                                  className="flex items-center justify-between rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1"
-                                >
-                                  <span className="flex items-center gap-1 text-slate-300">
-                                    <span>{r.emoji}</span>
-                                    <span>{r.label}</span>
-                                  </span>
-                                  <span
-                                    className={`font-semibold ${ratingTextClasses(
-                                      r.value
-                                    )}`}
-                                  >
-                                    {r.value}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
+                    {num}
+                  </button>
                 );
               })}
             </div>
-          )}
+          </div>
+
+                    {/* 메모 요약 + 팝업 열기 버튼 */}
+          <div className="mt-3 border-t border-slate-800/60 pt-3 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>
+                {USERS.find((u) => u.id === activeUserId)?.label}의 평
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsNoteModalOpen(true)}
+                className="inline-flex items-center gap-1 rounded-full border border-sky-500/70 px-3 py-1 text-[11px] md:text-xs text-sky-200 bg-sky-500/10 hover:bg-sky-500/20"
+              >
+                ✍️ 평 쓰기 / 수정
+              </button>
+            </div>
+
+            {/* 현재 작성된 평 요약 (3~4줄 정도 프리뷰) */}
+            <div className="text-xs md:text-sm text-slate-300 whitespace-pre-line max-h-24 overflow-hidden">
+              {currentNote ? (
+                currentNote
+              ) : (
+                <span className="text-slate-500">
+                  아직 작성한 평이 없습니다. 버튼을 눌러 평을 남겨보세요.
+                </span>
+              )}
+            </div>
+          </div>
+
+        </>
+      ) : (
+        <div className="text-sm text-slate-400">
+          왼쪽 리스트에서 앨범을 선택하세요.
         </div>
-      </section>
+      )}
+      {/* ========== 앨범 상세 끝 ========== */}
+
+    </div>
+  </div>
+
+ {/* 모바일 전용 앨범 상세 오버레이 */}
+  {selectedAlbum && selectedAlbumId && (
+    <div className="fixed inset-0 z-30 bg-black/95 md:hidden">
+      <div className="h-full overflow-y-auto px-4 py-5">
+        {/* 상단 바: 제목 + 닫기 버튼 */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs text-slate-400">
+            {USERS.find((u) => u.id === activeUserId)?.label}의 앨범 상세
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedAlbumId(null)}
+            className="inline-flex h-8 px-3 items-center justify-center rounded-full border border-slate-600 text-xs text-slate-200 hover:bg-slate-800"
+          >
+            닫기
+          </button>
+        </div>
+
+        {/* 실제 상세 카드 */}
+        <div
+          className={`rounded-2xl border bg-slate-900/80 px-4 py-4 flex flex-col gap-4 ${centerBorder} ${centerGlow}`}
+        >
+          {/* 상단: 커버 + 타이틀/아티스트/장르 */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col items-start gap-3">
+              {selectedAlbum.coverUrl ? (
+                <img
+                  src={selectedAlbum.coverUrl}
+                  alt={selectedAlbum.title}
+                  className="w-full aspect-square rounded-xl border border-slate-700 object-cover"
+                />
+              ) : (
+                <div className="w-full aspect-square rounded-xl border border-slate-700 bg-slate-800/80 flex items-center justify-center text-xs text-slate-500 text-center px-4">
+                  앨범 커버
+                  <br />
+                  (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
+                </div>
+              )}
+
+              <div className="w-full space-y-1">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-sky-400">
+                  Album
+                </div>
+                <h2 className="text-2xl font-bold">{selectedAlbum.title}</h2>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
+                  <span className="font-medium">{selectedAlbum.artist}</span>
+                  {selectedAlbum.year && (
+                    <span className="text-xs text-slate-400">
+                      · {selectedAlbum.year}
+                    </span>
+                  )}
+                  {selectedAlbum.genre && (
+                    <span
+                      className={`text-[10px] inline-flex items-center px-2 py-0.5 rounded-full border ${genreChipClasses(
+                        selectedAlbum.genre
+                      )}`}
+                    >
+                      {selectedAlbum.genre}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 유저별 점수 칩 */}
+            {highlightRatings.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-300">
+                {highlightRatings.map((r) => (
+                  <span
+                    key={r.id}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${ratingChipClasses(
+                      r.value
+                    )}`}
+                  >
+                    <span>{r.emoji}</span>
+                    <span>{r.label}</span>
+                    <span className="font-semibold">{r.value}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 트랙리스트 */}
+          {tracklistItems.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em]">
+                Tracklist
+              </div>
+              <ol className="max-h-48 overflow-y-auto pr-1 text-xs text-slate-200 space-y-0.5">
+                {tracklistItems.map((track, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="w-4 text-right text-[11px] text-slate-500">
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1 truncate">{track}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* 점수 & 버튼 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span>
+                {USERS.find((u) => u.id === activeUserId)?.label}의 점수:{" "}
+                <span className="font-semibold text-sky-300">
+                  {typeof currentRating === "number" ? currentRating : "-"}
+                </span>
+              </span>
+              {selectedAlbum.link && (
+                <a
+                  href={selectedAlbum.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-sky-400 hover:text-sky-300 underline underline-offset-2"
+                >
+                  앨범 링크 열기
+                </a>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] text-slate-400">점수</span>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => {
+                const selected = currentRating === num;
+                return (
+                  <button
+                    key={num}
+                    onClick={async () => {
+                      if (!selectedAlbum) return;
+
+                      const key = ratingKey(selectedAlbum.id, activeUserId);
+                      const already = ratingMap[key];
+
+                      if (already === num) {
+                        // 같은 점수를 다시 누르면: 점수 삭제
+                        await deleteRating(selectedAlbum.id, activeUserId);
+                        setRatingMap((prev) => {
+                          const next = { ...prev };
+                          delete next[key];
+                          return next;
+                        });
+                      } else {
+                        // 새로운 점수 저장
+                        await saveRating(selectedAlbum.id, activeUserId, num);
+                        setRatingMap((prev) => ({
+                          ...prev,
+                          [key]: num,
+                        }));
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-full border text-[11px] transition-colors ${
+                      selected
+                        ? "border-sky-400 bg-sky-500/20 text-sky-100"
+                        : "border-slate-700 bg-slate-900/70 text-slate-200 hover:border-sky-400/70 hover:bg-sky-500/10"
+                    }`}
+                  >
+                    {num}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 평 프리뷰 + 팝업 열기 버튼 */}
+          <div className="mt-3 border-t border-slate-800/60 pt-3 space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <span>
+                {USERS.find((u) => u.id === activeUserId)?.label}의 평
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsNoteModalOpen(true)}
+                className="inline-flex items-center gap-1 rounded-full border border-sky-500/70 px-3 py-1 text-[11px] text-sky-200 bg-sky-500/10 hover:bg-sky-500/20"
+              >
+                ✍️ 평 쓰기 / 수정
+              </button>
+            </div>
+            <div className="text-xs text-slate-300 whitespace-pre-line max-h-24 overflow-hidden">
+              {currentNote ? (
+                currentNote
+              ) : (
+                <span className="text-slate-500">
+                  아직 작성한 평이 없습니다. 버튼을 눌러 평을 남겨보세요.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+</section>
+  {/* ========================= */}
+    {/*     평 작성 모달(팝업)    */}
+    {/* ========================= */}
+    {selectedAlbum && isNoteModalOpen && (
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70">
+        <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-950 border border-slate-700 shadow-[0_0_40px_rgba(15,23,42,0.9)] p-4 md:p-6">
+          {/* 헤더 */}
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-[11px] md:text-xs text-slate-400">
+                {USERS.find((u) => u.id === activeUserId)?.label}의 평
+              </p>
+              <h2 className="text-sm md:text-base font-semibold text-slate-100">
+                {selectedAlbum.title}
+              </h2>
+              <p className="text-[11px] md:text-xs text-slate-400">
+                {selectedAlbum.artist}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNoteModalOpen(false)}
+              className="ml-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* textarea: 기존 handleNoteChange 그대로 사용 */}
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={currentNote}
+              onChange={handleNoteChange}
+              placeholder="짧게 욕을 써도 되고, 진지한 평을 써도 되고."
+              className="w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 text-xs md:text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70"
+              rows={8}
+            />
+
+            <div className="flex items-center justify-between text-[11px] md:text-xs text-slate-400">
+              <span>쓰는 즉시 저장 (Supabase)</span>
+              <button
+                type="button"
+                onClick={() => setIsNoteModalOpen(false)}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-600 px-3 py-1 text-[11px] md:text-xs text-slate-200 hover:bg-slate-800"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </main>
   );
 }
