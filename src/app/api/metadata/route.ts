@@ -1,20 +1,14 @@
-// app/api/metadata/route.ts
 import { NextResponse as NR } from "next/server";
-import { supabaseServer as server } from "@/lib/supabaseServer"; // <- 기존 ratings route.ts랑 동일하게 맞춰줘
+import { supabaseServer as server } from "@/lib/supabaseServer";
 
 const DISCOGS_BASE = "https://api.discogs.com";
-
 const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
+
 const DISCOGS_HEADERS: HeadersInit = {
   "User-Agent": "PalmanAlbum/1.0 +https://palmanalbum",
   Accept: "application/json",
 };
 
-if (!DISCOGS_TOKEN) {
-  console.warn("[metadata] DISCOGS_TOKEN is not set in env");
-}
-
-// 문자열 정규화 (소문자 + 공백/특수문자 제거)
 function normalize(str: string): string {
   return str
     .toLowerCase()
@@ -51,7 +45,7 @@ async function discogsSearchOnce(params: DiscogsSearchParams) {
   return (data.results ?? []) as any[];
 }
 
-/** 결과들 중에서 우리 타이틀/아티스트에 가장 잘 맞는 후보 하나 고르기 (보수적) */
+/** 결과들 중에서 우리 타이틀/아티스트에 가장 잘 맞는 후보 하나 고르기 (보수적으로) */
 function pickBestDiscogsResultStrict(
   results: any[],
   title: string,
@@ -76,12 +70,15 @@ function pickBestDiscogsResultStrict(
 
     // 제목 일치도
     if (nTitle === normTitle) score += 60;
-    else if (nTitle.includes(normTitle) || normTitle.includes(nTitle)) score += 35;
+    else if (nTitle.includes(normTitle) || normTitle.includes(nTitle)) {
+      score += 35;
+    }
 
     // 아티스트 일치도
     if (nArtist === normArtist) score += 40;
-    else if (nArtist.includes(normArtist) || normArtist.includes(nArtist))
+    else if (nArtist.includes(normArtist) || normArtist.includes(nArtist)) {
       score += 20;
+    }
 
     if (score > bestScore) {
       bestScore = score;
@@ -123,8 +120,6 @@ async function searchDiscogsRelease(title: string, artist: string) {
   return null;
 }
 
-
-
 /** Discogs release 상세 (트랙리스트/이미지/연도) */
 async function fetchDiscogsReleaseDetail(releaseId: number) {
   if (!DISCOGS_TOKEN) {
@@ -149,7 +144,7 @@ async function fetchDiscogsReleaseDetail(releaseId: number) {
     (data.released && String(data.released).slice(0, 4)) ||
     null;
 
-  // 트랙리스트: "tracklist" 배열에서 title 추출
+  // 트랙리스트
   const tracks: string[] = Array.isArray(data.tracklist)
     ? data.tracklist
         .map((t: any) => (t?.title ?? "").toString().trim())
@@ -199,7 +194,6 @@ export async function GET(req: Request) {
   }
 
   try {
-    // 0) 환경변수 체크
     if (!DISCOGS_TOKEN) {
       return NR.json(
         {
@@ -210,7 +204,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // 1) Supabase 캐시 먼저 확인
+    // 1) Supabase 캐시 우선
     if (albumId) {
       const { data, error } = await server
         .from("album_metadata")
@@ -220,7 +214,7 @@ export async function GET(req: Request) {
       if (!error && data && data.length > 0) {
         const row = data[0] as {
           album_id: string;
-          mb_release_id: string | null; // 여기에는 discogs release id를 넣어둘거라 이름만 mb_인 상태
+          mb_release_id: string | null; // 여기에는 discogs release id를 넣어둠
           cover_url: string | null;
           year: string | null;
           tracks: string[] | null;
@@ -248,10 +242,11 @@ export async function GET(req: Request) {
       }
     }
 
-    // 2) 캐시 없으면 Discogs 검색
+    // 2) Discogs 검색 (보수적)
     const searchResult = await searchDiscogsRelease(title, artist);
 
     if (!searchResult) {
+      // Discogs에서 못 찾으면 그냥 NO_MATCH로
       return NR.json(
         {
           found: false,
@@ -269,7 +264,7 @@ export async function GET(req: Request) {
     const tracks = detail.tracks;
     const coverUrl = detail.coverUrl;
 
-    // 3) Supabase에 캐싱 (albumId 있을 때만)
+    // 3) Supabase에 캐시 (albumId 있을 때만)
     if (albumId) {
       const { error: upsertError } = await server
         .from("album_metadata")
@@ -310,7 +305,7 @@ export async function GET(req: Request) {
       { status: 200 }
     );
   } catch (err: any) {
-    console.error("GET /api/metadata (discogs) error:", err);
+    console.error("GET /api/metadata (discogs strict) error:", err);
     return NR.json(
       {
         error: "INTERNAL_ERROR",
@@ -322,6 +317,5 @@ export async function GET(req: Request) {
   }
 }
 
-// Next.js / Vercel에서 외부 fetch 잘 되도록
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
