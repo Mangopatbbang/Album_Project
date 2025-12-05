@@ -1,118 +1,110 @@
 // app/api/metadata/route.ts
 import { NextResponse as NR } from "next/server";
-import { supabaseServer as server } from "@/lib/supabaseServer";
+import { supabaseServer as server } from "@/lib/supabaseServer"; // <- 기존 ratings route.ts랑 동일하게 맞춰줘
 
-const MB_BASE = "https://musicbrainz.org/ws/2";
-const CAA_BASE = "https://coverartarchive.org/release";
+const DISCOGS_BASE = "https://api.discogs.com";
 
-const MB_HEADERS = {
-  "User-Agent":
-    "PalmanAlbum/1.0 (contact: your-email@example.com)", // 나중에 너 메일로 바꿔도 됨
+const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
+const DISCOGS_HEADERS: HeadersInit = {
+  "User-Agent": "PalmanAlbum/1.0 +https://palmanalbum",
+  Accept: "application/json",
 };
 
-/** title + artist로 MusicBrainz release 검색 */
-async function searchRelease(title: string, artist: string) {
-  const query = `release:"${title}" AND artist:"${artist}"`;
-  const url =
-    MB_BASE +
-    `/release/?query=${encodeURIComponent(query)}&fmt=json&limit=5`;
+if (!DISCOGS_TOKEN) {
+  console.warn("[metadata] DISCOGS_TOKEN is not set in env");
+}
+
+/** Discogs에서 release 검색 */
+async function searchDiscogsRelease(title: string, artist: string) {
+  if (!DISCOGS_TOKEN) {
+    throw new Error("DISCOGS_TOKEN is missing");
+  }
+
+  const params = new URLSearchParams({
+    release_title: title,
+    artist,
+    type: "release",
+    token: DISCOGS_TOKEN,
+    per_page: "5",
+  });
+
+  const url = `${DISCOGS_BASE}/database/search?${params.toString()}`;
 
   const res = await fetch(url, {
-    headers: MB_HEADERS,
+    headers: DISCOGS_HEADERS,
     cache: "no-store",
   });
 
   if (!res.ok) {
-    throw new Error(`MusicBrainz search failed: ${res.status}`);
+    throw new Error(`Discogs search failed: ${res.status}`);
   }
 
   const data = await res.json();
-  const releases: any[] = data.releases ?? [];
-  if (!releases.length) return null;
+  const results: any[] = data.results ?? [];
+  if (!results.length) return null;
 
-  // 앨범 타입 우선, 없으면 첫 번째 결과
-  const albumType = releases.find(
-    (r) => r["release-group"]?.["primary-type"] === "Album"
-  );
-  const best = albumType ?? releases[0];
-
+  // 우선순위: 가장 정확해 보이는 첫 결과 (필요하면 정교화 가능)
+  const best = results[0];
   return best;
 }
 
-/** 특정 release(mbid)에 대해 트랙리스트 가져오기 */
-async function fetchReleaseDetail(mbid: string) {
-  const url =
-    MB_BASE + `/release/${encodeURIComponent(mbid)}?inc=recordings&fmt=json`;
+/** Discogs release 상세 (트랙리스트/이미지/연도) */
+async function fetchDiscogsReleaseDetail(releaseId: number) {
+  if (!DISCOGS_TOKEN) {
+    throw new Error("DISCOGS_TOKEN is missing");
+  }
+
+  const url = `${DISCOGS_BASE}/releases/${releaseId}?token=${DISCOGS_TOKEN}`;
 
   const res = await fetch(url, {
-    headers: MB_HEADERS,
+    headers: DISCOGS_HEADERS,
     cache: "no-store",
   });
 
   if (!res.ok) {
-    throw new Error(`MusicBrainz release detail failed: ${res.status}`);
+    throw new Error(`Discogs release detail failed: ${res.status}`);
   }
 
   const data = await res.json();
 
-  const date: string | undefined = data.date ?? data["first-release-date"];
-  const year =
-    typeof date === "string" && date.length >= 4 ? date.slice(0, 4) : undefined;
+  const year: string | null =
+    (data.year && String(data.year)) ||
+    (data.released && String(data.released).slice(0, 4)) ||
+    null;
 
-  const tracks: string[] = [];
-  const media = (data.media ?? []) as any[];
+  // 트랙리스트: "tracklist" 배열에서 title 추출
+  const tracks: string[] = Array.isArray(data.tracklist)
+    ? data.tracklist
+        .map((t: any) => (t?.title ?? "").toString().trim())
+        .filter(Boolean)
+    : [];
 
-  for (const disc of media) {
-    const discTracks: any[] = disc.tracks ?? [];
-    for (const t of discTracks) {
-      const title = (t.title ?? "").toString().trim();
-      if (title) tracks.push(title);
-    }
+  // 이미지: primary > 첫 이미지 순
+  let coverUrl: string | null = null;
+  if (Array.isArray(data.images) && data.images.length > 0) {
+    const primary =
+      data.images.find((img: any) => img.type === "primary") || data.images[0];
+    coverUrl =
+      primary?.uri_https ||
+      primary?.uri ||
+      (typeof primary?.resource_url === "string"
+        ? primary.resource_url
+        : null);
   }
+
+  const resolvedTitle: string | null = data.title ?? null;
+  const resolvedArtist: string | null =
+    Array.isArray(data.artists) && data.artists.length > 0
+      ? data.artists[0]?.name ?? null
+      : null;
 
   return {
-    title: data.title as string | undefined,
-    date,
     year,
     tracks,
-    artistCredit: data["artist-credit"] ?? [],
+    coverUrl,
+    title: resolvedTitle,
+    artist: resolvedArtist,
   };
-}
-
-/** Cover Art Archive에서 커버 이미지 가져오기 (실패하면 null) */
-async function fetchCoverUrl(mbid: string): Promise<string | null> {
-  const url = `${CAA_BASE}/${encodeURIComponent(mbid)}`;
-
-  try {
-    const res = await fetch(url, {
-      headers: MB_HEADERS,
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      console.warn("CoverArtArchive non-ok:", res.status, url);
-      return null;
-    }
-
-    let data: any;
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.warn("CoverArtArchive JSON parse failed:", e);
-      return null;
-    }
-
-    const images: any[] = data.images ?? [];
-    if (!images.length) return null;
-
-    const front = images.find((img) => img.front) ?? images[0];
-    const imageUrl: string | undefined = front.image;
-
-    return imageUrl ?? null;
-  } catch (err) {
-    console.error("fetchCoverUrl error:", err);
-    return null;
-  }
 }
 
 export async function GET(req: Request) {
@@ -130,6 +122,17 @@ export async function GET(req: Request) {
   }
 
   try {
+    // 0) 환경변수 체크
+    if (!DISCOGS_TOKEN) {
+      return NR.json(
+        {
+          error: "CONFIG_ERROR",
+          message: "DISCOGS_TOKEN is not configured on the server",
+        },
+        { status: 500 }
+      );
+    }
+
     // 1) Supabase 캐시 먼저 확인
     if (albumId) {
       const { data, error } = await server
@@ -140,7 +143,7 @@ export async function GET(req: Request) {
       if (!error && data && data.length > 0) {
         const row = data[0] as {
           album_id: string;
-          mb_release_id: string | null;
+          mb_release_id: string | null; // 여기에는 discogs release id를 넣어둘거라 이름만 mb_인 상태
           cover_url: string | null;
           year: string | null;
           tracks: string[] | null;
@@ -151,8 +154,8 @@ export async function GET(req: Request) {
           {
             found: true,
             fromCache: true,
-            mbReleaseId: row.mb_release_id,
-            source: row.source ?? "musicbrainz",
+            discogsReleaseId: row.mb_release_id,
+            source: row.source ?? "discogs",
             input: { title, artist },
             resolved: {
               title,
@@ -168,58 +171,41 @@ export async function GET(req: Request) {
       }
     }
 
-    // 2) 캐시 없으면 MusicBrainz 검색
-    const release = await searchRelease(title, artist);
+    // 2) 캐시 없으면 Discogs 검색
+    const searchResult = await searchDiscogsRelease(title, artist);
 
-    if (!release) {
+    if (!searchResult) {
       return NR.json(
         {
           found: false,
           reason: "NO_MATCH",
-          message: "MusicBrainz에서 일치하는 앨범을 찾지 못했습니다.",
+          message: "Discogs에서 일치하는 앨범을 찾지 못했습니다.",
         },
         { status: 404 }
       );
     }
 
-    const mbReleaseId: string = release.id;
-    const mbTitle: string = release.title;
-    const releaseDate: string | undefined = release.date;
-    const rg = release["release-group"];
+    const discogsReleaseId: number = searchResult.id;
+    const detail = await fetchDiscogsReleaseDetail(discogsReleaseId);
 
-    const ac: any[] = release["artist-credit"] ?? [];
-    const firstArtistCredit = ac[0];
-    const mbArtistName: string =
-      (firstArtistCredit?.artist?.name as string | undefined) ??
-      (firstArtistCredit?.name as string | undefined) ??
-      artist;
+    const year = detail.year;
+    const tracks = detail.tracks;
+    const coverUrl = detail.coverUrl;
 
-    // 3) 트랙/연도 상세
-    const detail = await fetchReleaseDetail(mbReleaseId);
-
-    const year =
-      detail.year ??
-      (typeof releaseDate === "string" && releaseDate.length >= 4
-        ? releaseDate.slice(0, 4)
-        : undefined);
-
-    const coverUrl = await fetchCoverUrl(mbReleaseId);
-    const tracks = detail.tracks ?? [];
-
-    // 4) Supabase에 캐싱 (albumId 있을 때만)
+    // 3) Supabase에 캐싱 (albumId 있을 때만)
     if (albumId) {
       const { error: upsertError } = await server
         .from("album_metadata")
         .upsert(
           {
             album_id: albumId,
-            mb_release_id: mbReleaseId,
+            mb_release_id: String(discogsReleaseId), // 열 이름은 mb_release_id지만 실제로는 discogs id 저장
             cover_url: coverUrl,
-            year: year ?? null,
+            year: year,
             tracks,
-            source: "musicbrainz",
+            source: "discogs",
           },
-          { onConflict: "album_id" } // unique index 맞춰서
+          { onConflict: "album_id" }
         );
 
       if (upsertError) {
@@ -227,20 +213,19 @@ export async function GET(req: Request) {
       }
     }
 
-    // 5) 최종 응답
+    // 4) 최종 응답
     return NR.json(
       {
         found: true,
         fromCache: false,
-        mbReleaseId,
-        mbReleaseGroupId: rg?.id ?? null,
-        source: "musicbrainz",
+        discogsReleaseId,
+        source: "discogs",
         input: { title, artist },
         resolved: {
-          title: detail.title ?? mbTitle,
-          artist: mbArtistName,
-          year: year ?? null,
-          date: detail.date ?? releaseDate ?? null,
+          title: detail.title ?? title,
+          artist: detail.artist ?? artist,
+          year: year,
+          date: null,
         },
         tracks,
         coverUrl,
@@ -248,7 +233,7 @@ export async function GET(req: Request) {
       { status: 200 }
     );
   } catch (err: any) {
-    console.error("GET /api/metadata error:", err);
+    console.error("GET /api/metadata (discogs) error:", err);
     return NR.json(
       {
         error: "INTERNAL_ERROR",
@@ -259,3 +244,7 @@ export async function GET(req: Request) {
     );
   }
 }
+
+// Next.js / Vercel에서 외부 fetch 잘 되도록
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
