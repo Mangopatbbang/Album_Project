@@ -929,6 +929,9 @@ const currentRating =
             const glow = cardGlowClasses(avg ?? null);
             const isSelected = selectedAlbum?.id === a.id;
 
+            const meta = metadataMap[a.id];
+  const cardCoverUrl = meta?.coverUrl ?? a.coverUrl ?? null;
+
             return (
               <div
                 key={a.id}
@@ -940,18 +943,18 @@ const currentRating =
                 }`}
               >
                 {/* 커버 + 평균 평점 배지 (우측 상단) */}
-                <div className="relative mb-2">
-                  {a.coverUrl ? (
-                    <img
-                      src={a.coverUrl}
-                      alt={a.title}
-                      className="aspect-square w-full rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-square w-full rounded-lg border border-slate-700 bg-slate-800/80 flex items-center justify-center text-[10px] md:text-xs text-slate-500">
-                      커버 없음
-                    </div>
-                  )}
+<div className="relative mb-2">
+  {cardCoverUrl ? (
+    <img
+      src={cardCoverUrl}
+      alt={a.title}
+      className="aspect-square w-full rounded-lg object-cover"
+    />
+  ) : (
+    <div className="aspect-square w-full rounded-lg border border-slate-700 bg-slate-800/80 flex items-center justify-center text-[10px] md:text-xs text-slate-500">
+      커버 없음
+    </div>
+  )}
 
                   {avg != null && (
                     <div
@@ -1035,18 +1038,19 @@ const currentRating =
             {/* 앨범 커버 */}
 <div className="w-full md:w-40 lg:w-44 flex-shrink-0">
   {selectedCoverUrl ? (
-    <img
-      src={selectedCoverUrl}
-      alt={selectedAlbum.title}
-      className="aspect-square w-full rounded-xl border border-slate-700 object-cover"
-    />
-  ) : (
-    <div className="aspect-square w-full rounded-xl bg-slate-900/60 border border-slate-700 flex items-center justify-center text-xs text-slate-500">
-      앨범 커버
-      <br />
-      (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
-    </div>
-  )}
+  <img
+    src={selectedCoverUrl}
+    alt={selectedAlbum.title}
+    className="w-full aspect-square rounded-xl border border-slate-700 object-cover"
+  />
+) : (
+  <div className="w-full aspect-square rounded-xl border border-slate-700 bg-slate-800/80 flex items-center justify-center text-xs text-slate-500 text-center px-4">
+    앨범 커버
+    <br />
+    (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
+  </div>
+)}
+
 </div>
 
 
