@@ -14,16 +14,17 @@ if (!DISCOGS_TOKEN) {
   console.warn("[metadata] DISCOGS_TOKEN is not set in env");
 }
 
+// 문자열 정규화 (소문자 + 공백/특수문자 제거)
 function normalize(str: string): string {
   return str
     .toLowerCase()
     .replace(/\s+/g, "")
-    .replace(/[\[\]\(\)'".,!?·]/g, "");
+    .replace(/[\[\]\(\)'".,!?·\-_/]/g, "");
 }
 
 type DiscogsSearchParams = Record<string, string>;
 
-/** 실제로 Discogs search endpoint 한 번 호출해서 results 배열만 리턴 */
+/** Discogs search endpoint 한 번 호출해서 results 배열만 리턴 */
 async function discogsSearchOnce(params: DiscogsSearchParams) {
   if (!DISCOGS_TOKEN) {
     throw new Error("DISCOGS_TOKEN is missing");
@@ -50,8 +51,8 @@ async function discogsSearchOnce(params: DiscogsSearchParams) {
   return (data.results ?? []) as any[];
 }
 
-/** 결과들 중에서 우리 타이틀/아티스트에 가장 잘 맞는 후보 하나 고르기 */
-function pickBestDiscogsResult(
+/** 결과들 중에서 우리 타이틀/아티스트에 가장 잘 맞는 후보 하나 고르기 (보수적) */
+function pickBestDiscogsResultStrict(
   results: any[],
   title: string,
   artist: string
@@ -67,52 +68,20 @@ function pickBestDiscogsResult(
   for (const r of results) {
     const rTitle = typeof r.title === "string" ? r.title : "";
     const rArtist = typeof r.artist === "string" ? r.artist : "";
-    const rCountry = (r.country ?? "") as string;
-    const rGenreArr: string[] = Array.isArray(r.genre) ? r.genre : [];
-    const rStyleArr: string[] = Array.isArray(r.style) ? r.style : [];
 
     const nTitle = normalize(rTitle);
     const nArtist = normalize(rArtist);
 
     let score = 0;
 
-    // 제목/아티스트 정확도
-    if (nTitle === normTitle) score += 40;
-    else if (nTitle.includes(normTitle) || normTitle.includes(nTitle)) score += 25;
+    // 제목 일치도
+    if (nTitle === normTitle) score += 60;
+    else if (nTitle.includes(normTitle) || normTitle.includes(nTitle)) score += 35;
 
-    if (nArtist === normArtist) score += 30;
-    else if (nArtist.includes(normArtist) || normArtist.includes(nArtist)) score += 15;
-
-    // 한국 발매 우대
-    const nCountry = rCountry.toLowerCase();
-    if (
-      nCountry === "korea" ||
-      nCountry === "south korea" ||
-      nCountry === "republic of korea"
-    ) {
+    // 아티스트 일치도
+    if (nArtist === normArtist) score += 40;
+    else if (nArtist.includes(normArtist) || normArtist.includes(nArtist))
       score += 20;
-    }
-
-    // K-Pop / Hip Hop 같은 스타일 보너스
-    const lowerGenres = rGenreArr.map((g) => g.toLowerCase());
-    const lowerStyles = rStyleArr.map((s) => s.toLowerCase());
-
-    if (
-      lowerGenres.includes("k-pop") ||
-      lowerStyles.includes("k-pop") ||
-      lowerGenres.includes("hip hop") ||
-      lowerStyles.includes("hip hop")
-    ) {
-      score += 10;
-    }
-
-    // 타입/포맷이 앨범/EP 계열이면 조금 가산점
-    if (typeof r.format === "string") {
-      const f = r.format.toLowerCase();
-      if (f.includes("album") || f.includes("lp") || f.includes("ep")) {
-        score += 3;
-      }
-    }
 
     if (score > bestScore) {
       bestScore = score;
@@ -120,53 +89,40 @@ function pickBestDiscogsResult(
     }
   }
 
-  return best;
-}
-
-/** Discogs에서 release 검색 (여러 전략 단계별 시도) */
-async function searchDiscogsRelease(title: string, artist: string) {
-  // 1단계: title + artist (가장 엄격)
-  const strategies: DiscogsSearchParams[] = [
-    {
-      release_title: title,
-      artist,
-      type: "release",
-      per_page: "10",
-    },
-    // 2단계: artist만 + 한국 우선
-    {
-      artist,
-      type: "release",
-      country: "Korea",
-      per_page: "10",
-    },
-    // 3단계: title만
-    {
-      release_title: title,
-      type: "release",
-      per_page: "10",
-    },
-    // 4단계: q = "title artist" 느슨 검색
-    {
-      q: `${title} ${artist}`,
-      type: "release",
-      per_page: "10",
-    },
-  ];
-
-  for (const params of strategies) {
-    const results = await discogsSearchOnce(params);
-    if (!results.length) continue;
-
-    const best = pickBestDiscogsResult(results, title, artist);
-    if (best) {
-      return best;
-    }
+  // 둘 다 어느 정도 맞는 애만 채택 (threshold)
+  if (bestScore >= 70) {
+    return best;
   }
-
-  // 모든 전략 다 실패하면 null
   return null;
 }
+
+/** Discogs에서 release 검색 (보수적 2단계 전략) */
+async function searchDiscogsRelease(title: string, artist: string) {
+  // 1단계: release_title + artist (정석)
+  let results = await discogsSearchOnce({
+    release_title: title,
+    artist,
+    type: "release",
+    per_page: "10",
+  });
+
+  let best = pickBestDiscogsResultStrict(results, title, artist);
+  if (best) return best;
+
+  // 2단계: q = "title artist" 느슨 검색 한 번만
+  results = await discogsSearchOnce({
+    q: `${title} ${artist}`,
+    type: "release",
+    per_page: "10",
+  });
+
+  best = pickBestDiscogsResultStrict(results, title, artist);
+  if (best) return best;
+
+  // 그래도 없으면 그냥 못 찾은 걸로 처리
+  return null;
+}
+
 
 
 /** Discogs release 상세 (트랙리스트/이미지/연도) */
