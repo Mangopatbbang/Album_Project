@@ -1,19 +1,16 @@
 // app/api/metadata/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse as NR } from "next/server";
+import { supabaseServer as server } from "@/lib/supabaseServer";
 
 const MB_BASE = "https://musicbrainz.org/ws/2";
 const CAA_BASE = "https://coverartarchive.org/release";
 
-// MusicBrainz에서 요구하는 형태로 User-Agent를 꼭 넣어주는 게 좋다.
-// 실제 배포 시에는 너 이메일/도메인으로 바꿔줘.
 const MB_HEADERS = {
   "User-Agent":
-    "PalmanEumgamgyeong/1.0 (contact: your-email@example.com)",
+    "PalmanAlbum/1.0 (contact: your-email@example.com)", // 나중에 너 메일로 바꿔도 됨
 };
 
-/**
- * release 검색: title + artist로 MusicBrainz에서 release 후보 찾기
- */
+/** title + artist로 MusicBrainz release 검색 */
 async function searchRelease(title: string, artist: string) {
   const query = `release:"${title}" AND artist:"${artist}"`;
   const url =
@@ -22,7 +19,6 @@ async function searchRelease(title: string, artist: string) {
 
   const res = await fetch(url, {
     headers: MB_HEADERS,
-    // MusicBrainz QPS 부담 줄이려고 약간만 늘려둠
     cache: "no-store",
   });
 
@@ -31,13 +27,10 @@ async function searchRelease(title: string, artist: string) {
   }
 
   const data = await res.json();
-
   const releases: any[] = data.releases ?? [];
-  if (!releases.length) {
-    return null;
-  }
+  if (!releases.length) return null;
 
-  // 1순위: release-group primary-type이 "Album"인 것
+  // 앨범 타입 우선, 없으면 첫 번째 결과
   const albumType = releases.find(
     (r) => r["release-group"]?.["primary-type"] === "Album"
   );
@@ -46,9 +39,7 @@ async function searchRelease(title: string, artist: string) {
   return best;
 }
 
-/**
- * 특정 release(mbid)에 대해 트랙리스트 가져오기
- */
+/** 특정 release(mbid)에 대해 트랙리스트 가져오기 */
 async function fetchReleaseDetail(mbid: string) {
   const url =
     MB_BASE + `/release/${encodeURIComponent(mbid)}?inc=recordings&fmt=json`;
@@ -64,12 +55,10 @@ async function fetchReleaseDetail(mbid: string) {
 
   const data = await res.json();
 
-  // 발매일/연도
   const date: string | undefined = data.date ?? data["first-release-date"];
   const year =
     typeof date === "string" && date.length >= 4 ? date.slice(0, 4) : undefined;
 
-  // 트랙리스트(media[].tracks[].title)
   const tracks: string[] = [];
   const media = (data.media ?? []) as any[];
 
@@ -77,9 +66,7 @@ async function fetchReleaseDetail(mbid: string) {
     const discTracks: any[] = disc.tracks ?? [];
     for (const t of discTracks) {
       const title = (t.title ?? "").toString().trim();
-      if (title) {
-        tracks.push(title);
-      }
+      if (title) tracks.push(title);
     }
   }
 
@@ -92,9 +79,7 @@ async function fetchReleaseDetail(mbid: string) {
   };
 }
 
-/**
- * Cover Art Archive에서 앨범 커버 URL 가져오기
- */
+/** Cover Art Archive에서 커버 이미지 가져오기 (실패하면 null) */
 async function fetchCoverUrl(mbid: string): Promise<string | null> {
   const url = `${CAA_BASE}/${encodeURIComponent(mbid)}`;
 
@@ -104,9 +89,8 @@ async function fetchCoverUrl(mbid: string): Promise<string | null> {
       cache: "no-store",
     });
 
-    // 404 / 5xx / 기타 비정상 상태면 그냥 "커버 없음"으로 처리
     if (!res.ok) {
-      console.warn("CoverArtArchive non-ok response:", res.status, url);
+      console.warn("CoverArtArchive non-ok:", res.status, url);
       return null;
     }
 
@@ -126,35 +110,69 @@ async function fetchCoverUrl(mbid: string): Promise<string | null> {
 
     return imageUrl ?? null;
   } catch (err) {
-    // 여기로 오는 게 지금 네가 본 ECONNRESET 같은 케이스
     console.error("fetchCoverUrl error:", err);
     return null;
   }
 }
 
-
-/**
- * GET /api/metadata?title=...&artist=...
- */
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
+  const albumId = searchParams.get("albumId");
   const title = searchParams.get("title");
   const artist = searchParams.get("artist");
 
   if (!title || !artist) {
-    return NextResponse.json(
+    return NR.json(
       { error: "Missing required query params: title, artist" },
       { status: 400 }
     );
   }
 
   try {
-    // 1) release 검색
+    // 1) Supabase 캐시 먼저 확인
+    if (albumId) {
+      const { data, error } = await server
+        .from("album_metadata")
+        .select("*")
+        .eq("album_id", albumId);
+
+      if (!error && data && data.length > 0) {
+        const row = data[0] as {
+          album_id: string;
+          mb_release_id: string | null;
+          cover_url: string | null;
+          year: string | null;
+          tracks: string[] | null;
+          source: string | null;
+        };
+
+        return NR.json(
+          {
+            found: true,
+            fromCache: true,
+            mbReleaseId: row.mb_release_id,
+            source: row.source ?? "musicbrainz",
+            input: { title, artist },
+            resolved: {
+              title,
+              artist,
+              year: row.year ?? null,
+              date: null,
+            },
+            tracks: row.tracks ?? [],
+            coverUrl: row.cover_url ?? null,
+          },
+          { status: 200 }
+        );
+      }
+    }
+
+    // 2) 캐시 없으면 MusicBrainz 검색
     const release = await searchRelease(title, artist);
 
     if (!release) {
-      return NextResponse.json(
+      return NR.json(
         {
           found: false,
           reason: "NO_MATCH",
@@ -176,7 +194,7 @@ export async function GET(req: NextRequest) {
       (firstArtistCredit?.name as string | undefined) ??
       artist;
 
-    // 2) 트랙리스트/연도 상세
+    // 3) 트랙/연도 상세
     const detail = await fetchReleaseDetail(mbReleaseId);
 
     const year =
@@ -185,12 +203,35 @@ export async function GET(req: NextRequest) {
         ? releaseDate.slice(0, 4)
         : undefined);
 
-    // 3) 커버 이미지
     const coverUrl = await fetchCoverUrl(mbReleaseId);
+    const tracks = detail.tracks ?? [];
 
-    return NextResponse.json(
+    // 4) Supabase에 캐싱 (albumId 있을 때만)
+    if (albumId) {
+      const { error: upsertError } = await server
+        .from("album_metadata")
+        .upsert(
+          {
+            album_id: albumId,
+            mb_release_id: mbReleaseId,
+            cover_url: coverUrl,
+            year: year ?? null,
+            tracks,
+            source: "musicbrainz",
+          },
+          { onConflict: "album_id" } // unique index 맞춰서
+        );
+
+      if (upsertError) {
+        console.error("album_metadata upsert error:", upsertError);
+      }
+    }
+
+    // 5) 최종 응답
+    return NR.json(
       {
         found: true,
+        fromCache: false,
         mbReleaseId,
         mbReleaseGroupId: rg?.id ?? null,
         source: "musicbrainz",
@@ -201,26 +242,20 @@ export async function GET(req: NextRequest) {
           year: year ?? null,
           date: detail.date ?? releaseDate ?? null,
         },
-        tracks: detail.tracks,
+        tracks,
         coverUrl,
       },
       { status: 200 }
     );
   } catch (err: any) {
-    // 여기서 에러 상세를 콘솔에 최대한 뽑자
     console.error("GET /api/metadata error:", err);
-    return NextResponse.json(
+    return NR.json(
       {
         error: "INTERNAL_ERROR",
         message: err?.message ?? "Unknown error",
-        // cause나 stack이 있으면 같이 내려주자 (개발용)
         cause: err?.cause ?? null,
       },
       { status: 500 }
     );
   }
 }
-
-// 이 두 줄을 파일 맨 아래에 추가해주는 것도 좋아
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";

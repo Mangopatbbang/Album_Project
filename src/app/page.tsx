@@ -167,6 +167,7 @@ function ratingChipClasses(score: number): string {
   }
 }
 
+
 // 숫자 텍스트 색
 function ratingTextClasses(score: number): string {
   const k = ratingCategory(score);
@@ -273,6 +274,13 @@ function genreChipClasses(genre: string): string {
   return "bg-slate-950 border-slate-500/80 text-slate-200";
 }
 
+type AlbumMetadata = {
+  tracks: string[];
+  coverUrl: string | null;
+  year: string | null;
+  source?: string;
+};
+
 export default function Home() {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -282,6 +290,7 @@ export default function Home() {
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   const [ratingMap, setRatingMap] = useState<Record<string, number>>({});
+  const [metadataMap, setMetadataMap] = useState<Record<string, AlbumMetadata>>({});
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   // 🔹 선택된 앨범/유저가 바뀔 때 Supabase에서 해당 점수 GET
 useEffect(() => {
@@ -585,7 +594,48 @@ async function deleteRating(albumId: string, userId: UserId) {
     return displayAlbums[0];
   }, [displayAlbums, selectedAlbumId]);
 
+// 선택된 앨범이 바뀔 때 외부 메타데이터(MusicBrainz 등) 불러오기
+  useEffect(() => {
+    if (!selectedAlbum) return;
 
+    const already = metadataMap[selectedAlbum.id];
+    if (already) return; // 이 앨범은 이미 가져온 적 있으면 다시 호출 안 함
+
+    const params = new URLSearchParams({
+      albumId: selectedAlbum.id,
+      title: selectedAlbum.title,
+      artist: selectedAlbum.artist,
+    });
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/metadata?${params.toString()}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (!data || data.found === false) return;
+
+        const tracks: string[] = Array.isArray(data.tracks)
+          ? data.tracks
+              .filter((t: any) => typeof t === "string")
+              .map((t: string) => t.trim())
+              .filter(Boolean)
+          : [];
+
+        setMetadataMap((prev) => ({
+          ...prev,
+          [selectedAlbum.id]: {
+            tracks,
+            coverUrl: data.coverUrl ?? null,
+            year: data.resolved?.year ?? null,
+            source: data.source ?? "musicbrainz",
+          },
+        }));
+      } catch (e) {
+        console.error("metadata fetch error", e);
+      }
+    })();
+  }, [selectedAlbum?.id, selectedAlbum?.title, selectedAlbum?.artist]);
 // 선택된 앨범 + 활성 유저가 바뀔 때 서버에서 메모 불러오기
 useEffect(() => {
   if (!selectedAlbum || !activeUserId) return;
@@ -655,22 +705,34 @@ const currentRating =
     : undefined;
 
 
-  const highlightRatingsInfo = selectedAlbum
+   const highlightRatingsInfo = selectedAlbum
     ? getRatings(selectedAlbum)
     : { ratings: [], avg: null };
 
   const { ratings: highlightRatings, avg: highlightAvg } =
     highlightRatingsInfo;
 
-  // 가운데 카드용 트랙리스트 (세미콜론 기준 split)
+  // 선택된 앨범에 대한 외부 메타데이터 (있으면 우선 사용)
+  const metadataForSelected = selectedAlbum
+    ? metadataMap[selectedAlbum.id]
+    : undefined;
+
+  // 트랙리스트: 외부 → 시트 순으로 사용
   const tracklistItems =
-    selectedAlbum?.tracklist
-      ?.split(";")
-      .map((t) => t.trim())
-      .filter(Boolean) ?? [];
+    (metadataForSelected?.tracks && metadataForSelected.tracks.length > 0
+      ? metadataForSelected.tracks
+      : selectedAlbum?.tracklist
+          ?.split(";")
+          .map((t) => t.trim())
+          .filter(Boolean)) ?? [];
+
+  // 상세 패널에서 사용할 최종 커버 URL (외부 > 시트 값)
+  const selectedCoverUrl =
+    (metadataForSelected?.coverUrl ?? null) || selectedAlbum?.coverUrl || null;
 
   const centerGlow = cardGlowClasses(highlightAvg ?? null);
   const centerBorder = centerBorderClasses(highlightAvg ?? null);
+
 
   return (
     <main className="h-screen bg-gradient-to-b from-black via-slate-950 to-black text-slate-50 flex flex-col overflow-hidden">
@@ -971,21 +1033,22 @@ const currentRating =
           {/* 🎧 Spotify 스타일 상단 영역 (커버 + 메타데이터) */}
           <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
             {/* 앨범 커버 */}
-            <div className="w-full md:w-40 lg:w-44 flex-shrink-0">
-              {selectedAlbum.coverUrl ? (
-                <img
-                  src={selectedAlbum.coverUrl}
-                  alt={selectedAlbum.title}
-                  className="w-full aspect-square rounded-xl border border-slate-700 object-cover shadow-[0_24px_60px_rgba(15,23,42,0.9)]"
-                />
-              ) : (
-                <div className="w-full aspect-square rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-[11px] md:text-xs text-slate-500 text-center px-4">
-                  앨범 커버
-                  <br />
-                  (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
-                </div>
-              )}
-            </div>
+<div className="w-full md:w-40 lg:w-44 flex-shrink-0">
+  {selectedCoverUrl ? (
+    <img
+      src={selectedCoverUrl}
+      alt={selectedAlbum.title}
+      className="aspect-square w-full rounded-xl border border-slate-700 object-cover"
+    />
+  ) : (
+    <div className="aspect-square w-full rounded-xl bg-slate-900/60 border border-slate-700 flex items-center justify-center text-xs text-slate-500">
+      앨범 커버
+      <br />
+      (cover_url 컬럼에 이미지 링크를 넣으면 나와요)
+    </div>
+  )}
+</div>
+
 
             {/* 텍스트 메타 정보 */}
             <div className="flex-1 space-y-3">
