@@ -995,20 +995,23 @@ const currentRating =
                 <span>아직 점수 안 준 것만</span>
               </label>
 
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-[11px] md:text-xs text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
-              >
-                초기화
-              </button>
-              <button
-  type="button"
-  onClick={() => setIsAddModalOpen(true)}
-  className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 hover:border-sky-400/70 hover:bg-sky-500/10"
->
-  ＋ 앨범 추가
-</button>
+              <div className="ml-auto flex items-center gap-2">
+  <button
+    type="button"
+    onClick={() => setIsAddModalOpen(true)}
+    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 hover:border-sky-400/70 hover:bg-sky-500/10"
+  >
+    ＋ 앨범 추가
+  </button>
+
+  <button
+    type="button"
+    onClick={resetFilters}
+    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
+  >
+    초기화
+  </button>
+</div>
 
             </div>
           </div>
