@@ -107,6 +107,7 @@ type SortKey =
   | "titleAsc"
   | "userRatingDesc"   // 현재 사용자 점수 높은순
   | "userRatingAsc";   // 현재 사용자 점수 낮은순
+  
 
 
 type RatingCategory =
@@ -974,11 +975,10 @@ const currentRating =
                   <option value="latest">최신순</option>
                   <option value="oldest">오래된순</option>
                   <option value="titleAsc">제목 A→Z</option>
-                  <option value="titleDesc">제목 Z→A</option>
+                  
                   <option value="userRatingDesc">내 점수 높은 순</option>
                   <option value="userRatingAsc">내 점수 낮은 순</option>
-                  <option value="avgRatingDesc">평균 높은 순</option>
-                  <option value="avgRatingAsc">평균 낮은 순</option>
+                  
                 </select>
               </div>
             </div>
