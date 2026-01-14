@@ -107,6 +107,7 @@ type SortKey =
   | "titleAsc"
   | "userRatingDesc"   // 현재 사용자 점수 높은순
   | "userRatingAsc";   // 현재 사용자 점수 낮은순
+  
 
 
 type RatingCategory =
@@ -293,6 +294,16 @@ export default function Home() {
   const [metadataMap, setMetadataMap] = useState<Record<string, AlbumMetadata>>({});
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   // 🔹 선택된 앨범/유저가 바뀔 때 Supabase에서 해당 점수 GET
+  // ➕ Add Album
+const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+const [isAdding, setIsAdding] = useState(false);
+const [addForm, setAddForm] = useState({
+  title: "",
+  artist: "",
+  genre: "",
+  year: "",
+});
+
 useEffect(() => {
   if (!selectedAlbumId || !activeUserId) return;
 
@@ -344,30 +355,110 @@ useEffect(() => {
   };
 
   // 1) 앨범 데이터 fetch
-  useEffect(() => {
-    async function loadAlbums() {
-      try {
-        const res = await fetch(SHEET_CSV_URL);
-        const text = await res.text();
-        const rows = parseCsv(text);
-        const mapped = mapAlbums(rows);
-        setAlbums(mapped);
-        if (mapped.length > 0) {
-          setSelectedAlbumId(mapped[0].id);
-        }
-      } catch (e) {
-        console.error("Failed to load albums", e);
-      } finally {
-        setLoading(false);
+  // 1) 앨범 데이터 fetch (Supabase DB via /api/albums)
+useEffect(() => {
+  async function loadAlbums() {
+    try {
+      const res = await fetch("/api/albums");
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error("Failed to load albums", json?.error);
+        return;
       }
+
+      // 서버에서 id는 string으로 내려주게 해둔 상태
+      const mapped = (json.albums ?? []).map((a: any) => ({
+        id: String(a.id),
+        sheet_id: a.sheet_id ?? undefined,
+
+        title: a.title ?? "",
+        artist: a.artist ?? "",
+        genre: a.genre ?? undefined,
+        year: a.year ?? undefined,
+
+        coverUrl: a.cover_url ?? undefined,
+        tracklist: a.tracklist ?? undefined,
+      }));
+
+      setAlbums(mapped);
+      if (mapped.length > 0) setSelectedAlbumId(mapped[0].id);
+    } catch (e) {
+      console.error("Failed to load albums", e);
+    } finally {
+      setLoading(false);
     }
-    loadAlbums();
-  }, []);
+  }
+
+  loadAlbums();
+}, []);
+
 
 
 const saveNotes = (next: Record<string, string>) => {
   setNotes(next); // 이제 상태만 관리, 저장은 Supabase가 담당
 };
+async function submitAddAlbum() {
+  if (!addForm.title.trim() || !addForm.artist.trim()) return;
+
+  setIsAdding(true);
+  try {
+    const res = await fetch("/api/albums", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: addForm.title,
+        artist: addForm.artist,
+        genre: addForm.genre || null,
+        year: addForm.year || null,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error ?? "failed");
+
+    const a = json.album;
+
+    const newAlbum = {
+      id: String(a.id),
+      sheet_id: a.sheet_id ?? undefined,
+      title: a.title ?? "",
+      artist: a.artist ?? "",
+      genre: a.genre ?? undefined,
+      year: a.year ?? undefined,
+      coverUrl: a.cover_url ?? undefined,
+      tracklist: a.tracklist ?? undefined,
+    };
+
+    // 1) 목록에 즉시 추가 + 선택
+    setAlbums((prev) => [newAlbum, ...prev]);
+    setSelectedAlbumId(newAlbum.id);
+
+    // 2) 서버에서 자동으로 받아온 메타데이터가 있으면, 프론트 캐시에 즉시 반영
+    if (json.metadata) {
+      const tracks = Array.isArray(json.metadata.tracks) ? json.metadata.tracks : [];
+      setMetadataMap((prev) => ({
+        ...prev,
+        [newAlbum.id]: {
+          tracks,
+          coverUrl: json.metadata.cover_url ?? null,
+          year: json.metadata.year ?? null,
+          source: json.metadata.source ?? "musicbrainz",
+        },
+      }));
+    }
+
+    // 3) 모달 닫기 + 폼 초기화
+    setIsAddModalOpen(false);
+    setAddForm({ title: "", artist: "", genre: "", year: "" });
+  } catch (e) {
+    console.error(e);
+    alert((e as any)?.message ?? "앨범 추가 실패");
+  } finally {
+    setIsAdding(false);
+  }
+}
+
 
 
   // 장르 목록
@@ -759,6 +850,7 @@ const currentRating =
                   <span>{u.emoji}</span>
                   <span>{u.label}</span>
                 </button>
+                
               ))}
             </div>
           </div>
@@ -883,11 +975,10 @@ const currentRating =
                   <option value="latest">최신순</option>
                   <option value="oldest">오래된순</option>
                   <option value="titleAsc">제목 A→Z</option>
-                  <option value="titleDesc">제목 Z→A</option>
+                  
                   <option value="userRatingDesc">내 점수 높은 순</option>
                   <option value="userRatingAsc">내 점수 낮은 순</option>
-                  <option value="avgRatingDesc">평균 높은 순</option>
-                  <option value="avgRatingAsc">평균 낮은 순</option>
+                  
                 </select>
               </div>
             </div>
@@ -904,13 +995,24 @@ const currentRating =
                 <span>아직 점수 안 준 것만</span>
               </label>
 
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1 text-[11px] md:text-xs text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
-              >
-                초기화
-              </button>
+              <div className="ml-auto flex items-center gap-2">
+  <button
+    type="button"
+    onClick={() => setIsAddModalOpen(true)}
+    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 hover:border-sky-400/70 hover:bg-sky-500/10"
+  >
+    ＋ 앨범 추가
+  </button>
+
+  <button
+    type="button"
+    onClick={resetFilters}
+    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-300 hover:border-sky-400/70 hover:bg-sky-500/10"
+  >
+    초기화
+  </button>
+</div>
+
             </div>
           </div>
         </div>
@@ -1476,6 +1578,69 @@ const currentRating =
         </div>
       </div>
     )}
+    {isAddModalOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-100">앨범 추가</h3>
+        <button
+          onClick={() => setIsAddModalOpen(false)}
+          className="rounded-md px-2 py-1 text-slate-300 hover:bg-slate-800"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <input
+          value={addForm.title}
+          onChange={(e) => setAddForm((p) => ({ ...p, title: e.target.value }))}
+          placeholder="Album title *"
+          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+        />
+        <input
+          value={addForm.artist}
+          onChange={(e) => setAddForm((p) => ({ ...p, artist: e.target.value }))}
+          placeholder="Artist *"
+          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+        />
+        <input
+          value={addForm.genre}
+          onChange={(e) => setAddForm((p) => ({ ...p, genre: e.target.value }))}
+          placeholder="Genre (optional)"
+          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+        />
+        <input
+          value={addForm.year}
+          onChange={(e) => setAddForm((p) => ({ ...p, year: e.target.value }))}
+          placeholder="Year (optional, e.g. 2017)"
+          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500"
+        />
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          onClick={() => setIsAddModalOpen(false)}
+          className="rounded-lg border border-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
+        >
+          취소
+        </button>
+        <button
+          onClick={submitAddAlbum}
+          disabled={isAdding}
+          className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-60"
+        >
+          {isAdding ? "추가 중..." : "추가"}
+        </button>
+      </div>
+
+      <p className="mt-3 text-xs text-slate-400">
+        추가 후 자동으로 커버/트랙을 검색해 채웁니다. (성공하면 즉시 반영)
+      </p>
+    </div>
+  </div>
+)}
+
     </main>
   );
 }
