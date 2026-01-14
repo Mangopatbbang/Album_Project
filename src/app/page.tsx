@@ -305,36 +305,43 @@ const [addForm, setAddForm] = useState({
 });
 
 useEffect(() => {
-  if (!selectedAlbumId || !activeUserId) return;
+  if (!selectedAlbumId) return;
 
-  const key = ratingKey(selectedAlbumId, activeUserId);
+  // ✅ TS가 확실히 string으로 인식하도록 로컬 변수에 고정
+  const albumId = selectedAlbumId;
 
-  async function loadRating() {
+  async function loadAllRatingsForAlbum() {
     try {
       const res = await fetch(
-        `/api/ratings?albumId=${selectedAlbumId}&profileKey=${activeUserId}`
+        `/api/ratings?albumId=${encodeURIComponent(albumId)}&mode=allForAlbum`
       );
+
       if (!res.ok) {
-        console.warn("Failed to load rating");
+        console.warn("Failed to load all ratings for album");
         return;
       }
 
-      const data = await res.json(); // { score: number | null }
+      const data = await res.json(); 
+      // data: { ratings: [{ album_id, profile_key, score }, ...] }
 
-      if (data && typeof data.score === "number") {
-        setRatingMap((prev) => ({
-          ...prev,
-          [key]: data.score,
-        }));
+      const next: Record<string, number> = {};
+
+      for (const r of data.ratings ?? []) {
+        if (typeof r?.score === "number") {
+          // ✅ 핵심: ratingMap 키 포맷을 "albumId:userId"로 통일
+          // album_id는 number로 오니까 String()으로 통일
+          next[`${String(r.album_id)}:${r.profile_key}`] = r.score;
+        }
       }
+
+      setRatingMap((prev) => ({ ...prev, ...next }));
     } catch (e) {
-      console.error("GET rating error", e);
+      console.error("loadAllRatingsForAlbum error", e);
     }
   }
 
-  loadRating();
-}, [selectedAlbumId, activeUserId]);
-
+  loadAllRatingsForAlbum();
+}, [selectedAlbumId]);
 
   // 🔍 검색 / 필터 / 정렬 상태
   const [searchQuery, setSearchQuery] = useState("");
@@ -657,15 +664,31 @@ async function submitAddAlbum() {
 
 
   const displayAlbums = visibleAlbums.length > 0 ? visibleAlbums : albums;
-  async function saveRating(albumId: string, userId: string, score: number) {
+async function saveRating(albumId: string, userId: UserId, score: number) {
+  // 1) UI 즉시 반영
+  setRatingMap((prev) => ({
+    ...prev,
+    [`${albumId}:${userId}`]: score,
+  }));
+
+  // 2) 서버 저장
   await fetch("/api/ratings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ albumId, profileKey: userId, score }),
   });
-  
 }
+
+
 async function deleteRating(albumId: string, userId: UserId) {
+  // 1) UI 즉시 반영(삭제)
+  setRatingMap((prev) => {
+    const copy = { ...prev };
+    delete copy[`${albumId}:${userId}`];
+    return copy;
+  });
+
+  // 2) 서버 삭제
   await fetch("/api/ratings", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
