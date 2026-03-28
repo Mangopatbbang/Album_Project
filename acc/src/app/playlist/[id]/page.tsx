@@ -29,7 +29,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
   const user = USERS.find((u) => u.id === data.user_id);
 
   // 작성자의 평점 가져오기
-  const albumIds = entries.map((e: { albums: { id: string } | null }) => e.albums?.id).filter(Boolean);
+  const albumIds = entries.map((e: { albums: { id: string } | { id: string }[] | null }) => Array.isArray(e.albums) ? e.albums[0]?.id : e.albums?.id).filter(Boolean);
   const { data: ratings } = albumIds.length > 0
     ? await supabaseServer
         .from("ratings")
@@ -78,10 +78,11 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
 
         {/* 엔트리 목록 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-          {entries.map((entry: {
+          {(entries as any[]).map((entry: {
             id: string; sort_order: number; comment: string;
             albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string } | null;
           }, idx: number) => {
+            if (Array.isArray(entry.albums)) entry = { ...entry, albums: entry.albums[0] ?? null };
             const album = entry.albums;
             if (!album) return null;
 

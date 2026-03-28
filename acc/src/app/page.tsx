@@ -154,7 +154,7 @@ export default async function HomePage() {
 
       {/* 플레이리스트 */}
       <section style={{ ...containerStyle, paddingBottom: 64 }}>
-        <PlaylistSection initialPlaylists={playlists} />
+        <PlaylistSection initialPlaylists={playlists as any} />
       </section>
 
       {/* 베스트 & 테마 */}

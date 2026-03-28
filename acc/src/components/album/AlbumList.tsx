@@ -322,7 +322,7 @@ return (
       {showAddModal && (
         <AlbumAddModal
           onClose={() => setShowAddModal(false)}
-          onAdded={() => handleFilter(search, genre, sort, unrated)}
+          onAdded={() => handleFilter(search, genre, sort, unrated, myScore)}
         />
       )}
     </>

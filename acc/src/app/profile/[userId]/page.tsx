@@ -43,7 +43,7 @@ export default async function ProfilePage({
     .order("updated_at", { ascending: false })
     .limit(5000);
 
-  const ratings = (rawRatings ?? []) as RatingRow[];
+  const ratings = (rawRatings ?? []) as unknown as RatingRow[];
   const validRatings = ratings.filter((r) => r.albums !== null);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
