@@ -3,6 +3,9 @@ import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import Header from "@/components/layout/Header";
+import HallOfFameSection from "@/components/profile/HallOfFameSection";
+import ArtistSection from "@/components/profile/ArtistSection";
+import { generateBio } from "@/lib/bio";
 
 type RatingRow = {
   score: number;
@@ -18,13 +21,6 @@ type RatingRow = {
   } | null;
 };
 
-function median(sorted: number[]) {
-  if (sorted.length === 0) return null;
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0
-    ? sorted[mid]
-    : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
-}
 
 export default async function ProfilePage({
   params,
@@ -48,9 +44,46 @@ export default async function ProfilePage({
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
-  const maxScore = total > 0 ? Math.max(...scores) : null;
-  const minScore = total > 0 ? Math.min(...scores) : null;
-  const med = median(scores);
+  const reviewCount = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0).length;
+
+  // 아티스트 TOP 5
+  const artistMap = new Map<string, { count: number; total: number }>();
+  for (const r of validRatings) {
+    const artist = r.albums?.artist ?? "기타";
+    const prev = artistMap.get(artist) ?? { count: 0, total: 0 };
+    artistMap.set(artist, { count: prev.count + 1, total: prev.total + r.score });
+  }
+  const allArtistEntries = [...artistMap.entries()]
+    .map(([artist, { count, total: t }]) => ({ artist, count, avg: (t / count).toFixed(1) }));
+  const artistByCount = allArtistEntries
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const artistByAvg = allArtistEntries
+    .filter((a) => a.count >= 3)
+    .sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg))
+    .slice(0, 5);
+  const maxArtistCount = artistByCount[0]?.count ?? 1;
+  const maxArtistAvg = Math.max(...artistByAvg.map((a) => parseFloat(a.avg)), 1);
+
+  // 월별 청음 (최근 12개월)
+  const now = new Date();
+  const monthData = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = `${d.getMonth() + 1}월`;
+    return { key, label, count: 0 };
+  });
+  for (const r of validRatings) {
+    const key = r.updated_at.slice(0, 7);
+    const m = monthData.find((x) => x.key === key);
+    if (m) m.count++;
+  }
+  const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
+
+  // 최근 한줄 소감
+  const recentReviews = validRatings
+    .filter((r) => r.one_line_review && r.one_line_review.trim().length > 0)
+    .slice(0, 8);
 
   // 점수 분포 (1~8)
   const scoreDist = Array.from({ length: 8 }, (_, i) => ({
@@ -60,16 +93,18 @@ export default async function ProfilePage({
   const maxDistCount = Math.max(...scoreDist.map((d) => d.count), 1);
 
   // 장르 분포
-  const genreMap = new Map<string, number>();
+  const genreMap = new Map<string, { count: number; total: number }>();
   for (const r of validRatings) {
     const g = r.albums?.genre ?? "기타";
-    genreMap.set(g, (genreMap.get(g) ?? 0) + 1);
+    const prev = genreMap.get(g) ?? { count: 0, total: 0 };
+    genreMap.set(g, { count: prev.count + 1, total: prev.total + r.score });
   }
   const genreList = [...genreMap.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
-  const maxGenreCount = genreList[0]?.[1] ?? 1;
-  const topGenre = genreList[0]?.[0] ?? null;
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 8)
+    .map(([genre, { count, total }]) => ({ genre, count, avg: (total / count).toFixed(1) }));
+  const maxGenreCount = genreList[0]?.count ?? 1;
+  const topGenre = genreList[0]?.genre ?? null;
 
   // 명예의 전당 (8점)
   const hallOfFame = validRatings.filter((r) => r.score === 8);
@@ -117,6 +152,25 @@ export default async function ProfilePage({
     return { user: other, commonCount, diff };
   });
 
+  // 취향 궁합 (공통 5장 이상 중 diff 가장 작은 멤버)
+  const bestMatch = comparisons
+    .filter((c) => c.commonCount >= 5 && c.diff !== null)
+    .sort((a, b) => Math.abs(a.diff!) - Math.abs(b.diff!))[0] ?? null;
+
+  // 한줄 바이오
+  const topGenreEntry = genreList[0];
+  const topArtistEntry = artistByCount[0];
+  const bio = generateBio({
+    avg,
+    topGenre: topGenreEntry?.genre ?? null,
+    topGenreRatio: topGenreEntry ? topGenreEntry.count / Math.max(total, 1) : 0,
+    topArtist: topArtistEntry?.artist ?? null,
+    topArtistCount: topArtistEntry?.count ?? 0,
+    eightCount: hallOfFame.length,
+    total,
+    reviewCount,
+  });
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
@@ -144,7 +198,7 @@ export default async function ProfilePage({
           }}>
             {user.emoji}
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 24, letterSpacing: "-0.03em" }}>
               {user.display_name}
             </p>
@@ -152,15 +206,27 @@ export default async function ProfilePage({
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
+          {total >= 5 && (
+            <p style={{
+              color: "var(--text-muted)",
+              fontSize: 12,
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontStyle: "italic",
+              textAlign: "right",
+              lineHeight: 1.4,
+              flexShrink: 0,
+              maxWidth: 180,
+            }}>
+              {bio}
+            </p>
+          )}
         </div>
 
         {/* 핵심 스탯 4개 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {[
             { label: "평균 점수", value: avg ?? "—", unit: "/ 8", colorVal: avg },
-            { label: "최고점", value: maxScore ?? "—", unit: "점", colorVal: maxScore },
-            { label: "최저점", value: minScore ?? "—", unit: "점", colorVal: minScore },
-            { label: "중간값", value: med ?? "—", unit: "점", colorVal: med },
+            { label: "한줄 소감", value: reviewCount > 0 ? reviewCount : "—", unit: "개", colorVal: null },
           ].map((stat) => (
             <div key={stat.label} style={{
               backgroundColor: "var(--bg-elevated)",
@@ -182,33 +248,51 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* 점수 분포 */}
-      <div style={{
-        backgroundColor: "var(--bg-card)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "24px 28px",
-        marginBottom: 20,
-      }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-          SCORE DISTRIBUTION
-        </p>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
-          {scoreDist.map((d) => (
-            <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{d.count > 0 ? d.count : ""}</span>
-              <div style={{
-                width: "100%",
-                height: `${(d.count / maxDistCount) * 56 + (d.count > 0 ? 4 : 0)}px`,
-                backgroundColor: d.count > 0 ? scoreColor(d.score) : "var(--bg-elevated)",
-                borderRadius: "3px 3px 0 0",
-                opacity: d.count === 0 ? 0.3 : 1,
-                transition: "height 0.3s ease",
-                minHeight: 4,
-              }} />
-              <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{d.score}</span>
-            </div>
-          ))}
+      {/* 점수 분포 + 청음 캘린더 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            SCORE DISTRIBUTION
+          </p>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+            {scoreDist.map((d) => (
+              <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{d.count > 0 ? d.count : ""}</span>
+                <div style={{
+                  width: "100%",
+                  height: `${(d.count / maxDistCount) * 56 + (d.count > 0 ? 4 : 0)}px`,
+                  backgroundColor: d.count > 0 ? scoreColor(d.score) : "var(--bg-elevated)",
+                  borderRadius: "3px 3px 0 0",
+                  opacity: d.count === 0 ? 0.3 : 1,
+                  transition: "height 0.3s ease",
+                  minHeight: 4,
+                }} />
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{d.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            청음 캘린더
+          </p>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
+            {monthData.map((m) => (
+              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{m.count > 0 ? m.count : ""}</span>
+                <div style={{
+                  width: "100%",
+                  height: `${Math.max((m.count / maxMonthCount) * 60, m.count > 0 ? 4 : 2)}px`,
+                  backgroundColor: m.count > 0 ? "var(--accent)" : "var(--bg-elevated)",
+                  borderRadius: "3px 3px 0 0",
+                  opacity: m.count === 0 ? 0.3 : 1,
+                  transition: "height 0.3s ease",
+                }} />
+                <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{m.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -218,39 +302,41 @@ export default async function ProfilePage({
         {/* 왼쪽 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* 명예의 전당 */}
+          {/* 명반전 */}
           {hallOfFame.length > 0 && (
-            <div style={{
-              backgroundColor: "var(--bg-card)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              padding: "24px 28px",
-            }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 4 }}>
-                명반전
+            <HallOfFameSection
+              albums={hallOfFame.map((r) => ({ ...r.albums!, score: r.score }))}
+              count={hallOfFame.length}
+            />
+          )}
+
+          {/* 아티스트 TOP 5 */}
+          {artistByCount.length > 0 && (
+            <ArtistSection
+              byCount={artistByCount}
+              byAvg={artistByAvg}
+              maxCount={maxArtistCount}
+              maxAvg={maxArtistAvg}
+            />
+          )}
+
+          {/* 최근 한줄 소감 */}
+          {recentReviews.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+                최근 한줄 소감
               </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 16 }}>
-                8점 · {hallOfFame.length}장
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {hallOfFame.map((r) => (
-                  <div key={r.albums!.id} style={{ position: "relative" }} title={`${r.albums!.title} — ${r.albums!.artist}`}>
-                    <div style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 6,
-                      overflow: "hidden",
-                      backgroundColor: "var(--bg-elevated)",
-                      border: "1px solid var(--border)",
-                    }}>
-                      {r.albums!.cover_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r.albums!.cover_url} alt={r.albums!.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ color: "var(--text-muted)", fontSize: 20 }}>♪</span>
-                        </div>
-                      )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {recentReviews.map((r) => (
+                  <div key={r.albums!.id + r.updated_at} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 13, flexShrink: 0, width: 14, textAlign: "right" }}>{r.score}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11, fontStyle: "italic" }}>
+                        &ldquo;{r.one_line_review}&rdquo;
+                      </p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.albums!.title}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -353,11 +439,14 @@ export default async function ProfilePage({
               최다 <span style={{ color: "var(--accent)" }}>{topGenre}</span>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {genreList.map(([genre, count]) => (
+              {genreList.map(({ genre, count, avg: gAvg }) => (
                 <div key={genre}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span style={{ color: "var(--text-sub)", fontSize: 12 }}>{genre}</span>
-                    <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{count}장</span>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 600 }}>{gAvg}</span>
+                      <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{count}장</span>
+                    </div>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
@@ -372,6 +461,28 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
+
+          {/* 취향 궁합 */}
+          {bestMatch && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+                취향 궁합
+              </p>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 28, marginBottom: 8 }}>{bestMatch.user.emoji}</p>
+                <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>{bestMatch.user.display_name}</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
+                  공통 {bestMatch.commonCount}장 · 평균 차이{" "}
+                  <span style={{ color: Math.abs(bestMatch.diff!) < 0.3 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
+                    {Math.abs(bestMatch.diff!).toFixed(2)}점
+                  </span>
+                </p>
+                <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
+                  {Math.abs(bestMatch.diff!) < 0.3 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* 멤버 비교 */}
           <div style={{

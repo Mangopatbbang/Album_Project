@@ -7,6 +7,7 @@ import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
 import { fetchAllAlbumsWithRatings, getBestByYear, getEightClub, getUnanimous, getControversial, THEMES } from "@/lib/stats";
 import { scoreColor } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
+import CountUp from "@/components/ui/CountUp";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -111,8 +112,8 @@ export default async function HomePage() {
         >
           아차청음사
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 32 }}>
-          {totalCount}장의 음반과 함께 귀 기울여온 기록
+        <p style={{ color: "var(--text-sub)", fontSize: 48, marginBottom: 32, fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>
+          <CountUp target={totalCount} />
         </p>
         <div className="flex items-center justify-center gap-3 flex-wrap">
           <Link
