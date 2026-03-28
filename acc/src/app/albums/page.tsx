@@ -28,7 +28,7 @@ async function getInitialAlbums() {
       scores.length > 0
         ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
         : null;
-    return { ...album, ratings, avg } as AlbumWithRatings;
+    return { ...album, ratings, avg } as unknown as AlbumWithRatings;
   });
 
   return {
