@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
 
-const BATCH_SIZE = 50;
-const DELAY_MS = 250; // Spotify rate limit 대응
+const BATCH_SIZE = 5;
+const DELAY_MS = 300; // Spotify rate limit 대응
 
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
