@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
-import { AlbumStat } from "@/lib/stats";
+import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
-import { THEMES } from "@/lib/stats";
+
+const THEMES = [
+  { id: "eight_club", name: "8점 클럽", emoji: "⭐", description: "누군가 8점을 준 앨범들" },
+  { id: "unanimous", name: "만장일치 명반", emoji: "🤝", description: "전원 평가 · 평균 7점 이상" },
+  { id: "artist_best", name: "아티스트 대표작", emoji: "🎤", description: "2장 이상 청음한 아티스트의 최고작" },
+  { id: "hidden_gems", name: "숨겨진 명반", emoji: "💎", description: "한 명만 들었는데 7점 이상" },
+  { id: "controversial", name: "의견 충돌", emoji: "⚡", description: "멤버 간 점수 편차가 가장 큰 앨범들" },
+] as const;
 
 const THEME_LIMIT = 8;
 

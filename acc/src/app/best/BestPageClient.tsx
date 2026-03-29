@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
-import { AlbumStat } from "@/lib/stats";
+import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
 
