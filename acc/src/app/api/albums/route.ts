@@ -27,13 +27,19 @@ export async function GET(req: NextRequest) {
 
   // 특정 점수 필터: 내가 해당 점수를 준 앨범만
   if (myScore && userId) {
-    const { data: scored } = await supabaseServer
-      .from("ratings")
-      .select("album_id")
-      .eq("user_id", userId)
-      .eq("score", myScore)
-      .limit(10000);
-    const scoreIds = (scored ?? []).map((r) => r.album_id);
+    const scoredAll: { album_id: string }[] = [];
+    for (let page = 0; ; page++) {
+      const { data: scored } = await supabaseServer
+        .from("ratings")
+        .select("album_id")
+        .eq("user_id", userId)
+        .eq("score", myScore)
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!scored || scored.length === 0) break;
+      scoredAll.push(...scored);
+      if (scored.length < 1000) break;
+    }
+    const scoreIds = scoredAll.map((r) => r.album_id);
     if (scoreIds.length === 0) return NextResponse.json({ items: [], nextCursor: null, hasMore: false });
 
     let q = supabaseServer
@@ -51,12 +57,16 @@ export async function GET(req: NextRequest) {
   // 미평가 앨범: 내가 평가한 album_id 목록 제외
   let excludeIds: string[] = [];
   if (unrated && userId) {
-    const { data: rated } = await supabaseServer
-      .from("ratings")
-      .select("album_id")
-      .eq("user_id", userId)
-      .limit(10000);
-    excludeIds = (rated ?? []).map((r) => r.album_id);
+    for (let page = 0; ; page++) {
+      const { data: rated } = await supabaseServer
+        .from("ratings")
+        .select("album_id")
+        .eq("user_id", userId)
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!rated || rated.length === 0) break;
+      excludeIds.push(...rated.map((r) => r.album_id));
+      if (rated.length < 1000) break;
+    }
   }
 
   // 일반 정렬: DB 쿼리
@@ -112,13 +122,18 @@ async function handleMySort(params: {
 }) {
   const { limit, cursor, search, genre, sort, userId } = params;
 
-  const { data: myRatings } = await supabaseServer
-    .from("ratings")
-    .select("album_id, score")
-    .eq("user_id", userId)
-    .limit(10000);
-
-  const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
+  const myRatingsAll: { album_id: string; score: number }[] = [];
+  for (let page = 0; ; page++) {
+    const { data: myRatings } = await supabaseServer
+      .from("ratings")
+      .select("album_id, score")
+      .eq("user_id", userId)
+      .range(page * 1000, (page + 1) * 1000 - 1);
+    if (!myRatings || myRatings.length === 0) break;
+    myRatingsAll.push(...myRatings);
+    if (myRatings.length < 1000) break;
+  }
+  const myScoreMap = new Map(myRatingsAll.map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
@@ -176,19 +191,29 @@ async function handleAvgSort(params: {
 
   let excludeIds: string[] = [];
   if (unrated && userId) {
-    const { data: rated } = await supabaseServer
-      .from("ratings")
-      .select("album_id")
-      .eq("user_id", userId)
-      .limit(10000);
-    excludeIds = (rated ?? []).map((r) => r.album_id);
+    for (let page = 0; ; page++) {
+      const { data: rated } = await supabaseServer
+        .from("ratings")
+        .select("album_id")
+        .eq("user_id", userId)
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!rated || rated.length === 0) break;
+      excludeIds.push(...rated.map((r) => r.album_id));
+      if (rated.length < 1000) break;
+    }
   }
 
   // 1. 전체 평점 집계
-  const { data: ratingData } = await supabaseServer
-    .from("ratings")
-    .select("album_id, score")
-    .limit(10000);
+  const ratingData: { album_id: string; score: number }[] = [];
+  for (let page = 0; ; page++) {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("album_id, score")
+      .range(page * 1000, (page + 1) * 1000 - 1);
+    if (!data || data.length === 0) break;
+    ratingData.push(...data);
+    if (data.length < 1000) break;
+  }
 
   const totalMap = new Map<string, number>();
   const countMap = new Map<string, number>();
@@ -262,6 +287,22 @@ export async function POST(req: NextRequest) {
 
   if (!title?.trim() || !artist?.trim()) {
     return NextResponse.json({ error: "title and artist required" }, { status: 400 });
+  }
+
+  // 중복 체크
+  const { data: existing } = await supabaseServer
+    .from("albums")
+    .select("id, title, artist")
+    .ilike("title", title.trim())
+    .ilike("artist", artist.trim())
+    .limit(1)
+    .single();
+
+  if (existing) {
+    return NextResponse.json(
+      { error: `이미 등록된 음반입니다 (${existing.artist} - ${existing.title})`, duplicate: true, id: existing.id },
+      { status: 409 }
+    );
   }
 
   const newId = crypto.randomUUID();

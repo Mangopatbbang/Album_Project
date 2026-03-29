@@ -171,7 +171,7 @@ export default function SignupPage() {
         <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 24 }}>
           이미 청음사 식구인가요?{" "}
           <Link href="/login" style={{ color: "var(--accent)" }}>
-            로그인
+            입장
           </Link>
         </p>
       </div>

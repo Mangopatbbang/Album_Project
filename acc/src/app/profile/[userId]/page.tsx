@@ -5,7 +5,7 @@ import { scoreColor } from "@/lib/score";
 import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
-import { generateBio } from "@/lib/bio";
+import { generateBadges, koGenre } from "@/lib/bio";
 
 type RatingRow = {
   score: number;
@@ -31,16 +31,21 @@ export default async function ProfilePage({
   const user = USERS.find((u) => u.id === userId);
   if (!user) notFound();
 
-  // 내 전체 평점
-  const { data: rawRatings } = await supabaseServer
-    .from("ratings")
-    .select("score, one_line_review, updated_at, albums(id, title, artist, year, genre, cover_url)")
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false })
-    .limit(5000);
+  // 내 전체 평점 — 페이지네이션으로 1000행 제한 우회
+  const allRawRatings: RatingRow[] = [];
+  for (let page = 0; ; page++) {
+    const { data: pageData } = await supabaseServer
+      .from("ratings")
+      .select("score, one_line_review, updated_at, albums(id, title, artist, year, genre, cover_url)")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .range(page * 1000, (page + 1) * 1000 - 1);
+    if (!pageData || pageData.length === 0) break;
+    allRawRatings.push(...(pageData as unknown as RatingRow[]));
+    if (pageData.length < 1000) break;
+  }
 
-  const ratings = (rawRatings ?? []) as unknown as RatingRow[];
-  const validRatings = ratings.filter((r) => r.albums !== null);
+  const validRatings = allRawRatings.filter((r) => r.albums !== null);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
@@ -127,18 +132,10 @@ export default async function ProfilePage({
   }
   const otherRatings = otherRatingsAll;
 
-  // 비교용 전체 평점 맵 (페이지네이션으로 1000개 제한 우회)
-  const myAlbumScoreMap = new Map<string, number>();
-  for (let page = 0; ; page++) {
-    const { data: pageData } = await supabaseServer
-      .from("ratings")
-      .select("album_id, score")
-      .eq("user_id", userId)
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!pageData || pageData.length === 0) break;
-    for (const r of pageData) myAlbumScoreMap.set(r.album_id, r.score);
-    if (pageData.length < 1000) break;
-  }
+  // 비교용 평점 맵 — allRawRatings에서 바로 생성 (중복 쿼리 제거)
+  const myAlbumScoreMap = new Map<string, number>(
+    validRatings.map((r) => [r.albums!.id, r.score])
+  );
 
   const comparisons = otherUsers.map((other) => {
     const theirRatings = (otherRatings ?? []).filter((r) => r.user_id === other.id);
@@ -146,9 +143,9 @@ export default async function ProfilePage({
     const commonCount = common.length;
     if (commonCount === 0) return { user: other, commonCount: 0, diff: null };
 
-    const myAvgCommon = common.reduce((s, r) => s + (myAlbumScoreMap.get(r.album_id) ?? 0), 0) / commonCount;
-    const theirAvgCommon = common.reduce((s, r) => s + r.score, 0) / commonCount;
-    const diff = parseFloat((myAvgCommon - theirAvgCommon).toFixed(2));
+    // MAE: 앨범별 절댓값 차이의 평균 (평균 비교보다 정확)
+    const mae = common.reduce((s, r) => s + Math.abs((myAlbumScoreMap.get(r.album_id) ?? 0) - r.score), 0) / commonCount;
+    const diff = parseFloat(mae.toFixed(2));
     return { user: other, commonCount, diff };
   });
 
@@ -157,10 +154,10 @@ export default async function ProfilePage({
     .filter((c) => c.commonCount >= 5 && c.diff !== null)
     .sort((a, b) => Math.abs(a.diff!) - Math.abs(b.diff!))[0] ?? null;
 
-  // 한줄 바이오
+  // 뱃지
   const topGenreEntry = genreList[0];
   const topArtistEntry = artistByCount[0];
-  const bio = generateBio({
+  const badges = generateBadges({
     avg,
     topGenre: topGenreEntry?.genre ?? null,
     topGenreRatio: topGenreEntry ? topGenreEntry.count / Math.max(total, 1) : 0,
@@ -206,19 +203,24 @@ export default async function ProfilePage({
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
-          {total >= 5 && (
-            <p style={{
-              color: "var(--text-muted)",
-              fontSize: 12,
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontStyle: "italic",
-              textAlign: "right",
-              lineHeight: 1.4,
-              flexShrink: 0,
-              maxWidth: 180,
-            }}>
-              {bio}
-            </p>
+          {badges.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+              {badges.map((badge) => (
+                <span key={badge} style={{
+                  color: "var(--text-muted)",
+                  fontSize: 11,
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontStyle: "italic",
+                  backgroundColor: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 20,
+                  padding: "3px 10px",
+                  whiteSpace: "nowrap",
+                }}>
+                  {badge}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
@@ -249,7 +251,7 @@ export default async function ProfilePage({
       </div>
 
       {/* 점수 분포 + 청음 캘린더 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             SCORE DISTRIBUTION
@@ -297,7 +299,7 @@ export default async function ProfilePage({
       </div>
 
       {/* 메인 컨텐츠: 2컬럼 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 20 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
 
         {/* 왼쪽 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -436,13 +438,13 @@ export default async function ProfilePage({
               청음 장르
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 16 }}>
-              최다 <span style={{ color: "var(--accent)" }}>{topGenre}</span>
+              최다 <span style={{ color: "var(--accent)" }}>{topGenre ? koGenre(topGenre) : ""}</span>
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {genreList.map(({ genre, count, avg: gAvg }) => (
                 <div key={genre}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 12 }}>{genre}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 12 }}>{koGenre(genre)}</span>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 600 }}>{gAvg}</span>
                       <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{count}장</span>
@@ -472,13 +474,13 @@ export default async function ProfilePage({
                 <p style={{ fontSize: 28, marginBottom: 8 }}>{bestMatch.user.emoji}</p>
                 <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>{bestMatch.user.display_name}</p>
                 <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
-                  공통 {bestMatch.commonCount}장 · 평균 차이{" "}
-                  <span style={{ color: Math.abs(bestMatch.diff!) < 0.3 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
-                    {Math.abs(bestMatch.diff!).toFixed(2)}점
+                  공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
+                  <span style={{ color: bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
+                    {bestMatch.diff!.toFixed(2)}점 차이
                   </span>
                 </p>
                 <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
-                  {Math.abs(bestMatch.diff!) < 0.3 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
+                  {bestMatch.diff! < 0.8 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
                 </p>
               </div>
             </div>
@@ -496,47 +498,21 @@ export default async function ProfilePage({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {comparisons.map(({ user: other, commonCount, diff }) => (
-                <div key={other.id}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>
-                      {other.emoji} {other.display_name}
-                    </span>
-                    <span style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</span>
-                  </div>
-                  {diff !== null && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: 1, height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, position: "relative", overflow: "visible" }}>
-                        {/* 중앙 기준선 */}
-                        <div style={{
-                          position: "absolute",
-                          left: "50%",
-                          top: -2,
-                          width: 1,
-                          height: 8,
-                          backgroundColor: "var(--border-light)",
-                          transform: "translateX(-50%)",
-                        }} />
-                        {/* 차이 바 */}
-                        <div style={{
-                          position: "absolute",
-                          height: "100%",
-                          backgroundColor: diff > 0 ? "var(--accent)" : "var(--text-muted)",
-                          borderRadius: 2,
-                          width: `${Math.min(Math.abs(diff) / 4 * 50, 50)}%`,
-                          left: diff > 0 ? "50%" : `${50 - Math.min(Math.abs(diff) / 4 * 50, 50)}%`,
-                        }} />
-                      </div>
-                      <span style={{
-                        color: diff > 0.1 ? "var(--accent)" : diff < -0.1 ? "var(--text-muted)" : "var(--text-sub)",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        width: 44,
-                        textAlign: "right",
+                <div key={other.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                  <span style={{ color: "var(--text-sub)", fontSize: 13 }}>
+                    {other.emoji} {other.display_name}
+                  </span>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
+                    {diff !== null && (
+                      <p style={{
+                        color: diff < 0.8 ? "var(--accent)" : diff > 1.5 ? "var(--text-muted)" : "var(--text-sub)",
+                        fontSize: 12, fontWeight: 600, marginTop: 2,
                       }}>
-                        {diff > 0.1 ? `+${diff}` : diff < -0.1 ? `${diff}` : "비슷함"}
-                      </span>
-                    </div>
-                  )}
+                        {diff < 0.8 ? "취향 비슷" : `앨범당 ${diff}점 차이`}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

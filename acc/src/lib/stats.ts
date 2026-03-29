@@ -107,8 +107,37 @@ export function getControversial(albums: RawAlbum[]): AlbumStat[] {
     .sort((a, b) => (b.variance ?? 0) - (a.variance ?? 0));
 }
 
+// 테마: 숨겨진 명반 (1명만 들었는데 고점)
+export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
+  return albums
+    .filter((a) => a.ratings.length === 1 && a.ratings[0].score >= 7)
+    .map(toStat)
+    .sort((a, b) => b.avg - a.avg);
+}
+
+// 테마: 아티스트 대표작 (2장 이상 평가된 아티스트의 최고 앨범)
+export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
+  const valid = validAlbums(albums);
+  const artistMap = new Map<string, AlbumStat>();
+  const artistCount = new Map<string, number>();
+
+  for (const a of valid) {
+    artistCount.set(a.artist, (artistCount.get(a.artist) ?? 0) + 1);
+  }
+
+  for (const a of valid) {
+    if ((artistCount.get(a.artist) ?? 0) < 2) continue;
+    const prev = artistMap.get(a.artist);
+    if (!prev || a.avg > prev.avg) artistMap.set(a.artist, a);
+  }
+
+  return [...artistMap.values()].sort((a, b) => b.avg - a.avg);
+}
+
 export const THEMES = [
   { id: "eight_club", name: "8점 클럽", emoji: "⭐", description: "누군가 8점을 준 앨범들" },
-  { id: "unanimous", name: "만장일치 명반", emoji: "🤝", description: "전원 평가 + 평균 7점 이상" },
+  { id: "unanimous", name: "만장일치 명반", emoji: "🤝", description: "전원 평가 · 평균 7점 이상" },
+  { id: "artist_best", name: "아티스트 대표작", emoji: "🎤", description: "2장 이상 청음한 아티스트의 최고작" },
+  { id: "hidden_gems", name: "숨겨진 명반", emoji: "💎", description: "한 명만 들었는데 7점 이상" },
   { id: "controversial", name: "의견 충돌", emoji: "⚡", description: "멤버 간 점수 편차가 가장 큰 앨범들" },
 ] as const;

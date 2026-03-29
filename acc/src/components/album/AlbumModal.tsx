@@ -13,9 +13,10 @@ type FullAlbum = AlbumWithRatings & {
 type Props = {
   album: AlbumWithRatings;
   onClose: () => void;
+  onSaved?: (albumId: string) => void;
 };
 
-export default function AlbumModal({ album, onClose }: Props) {
+export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const { profile } = useAuth();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -82,6 +83,7 @@ export default function AlbumModal({ album, onClose }: Props) {
 
     setSaving(false);
     setSaved(true);
+    onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
   };
 

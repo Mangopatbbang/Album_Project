@@ -97,7 +97,7 @@ export default function LoginPage() {
               marginTop: 4,
             }}
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loading ? "입장 중..." : "입장"}
           </button>
         </form>
 

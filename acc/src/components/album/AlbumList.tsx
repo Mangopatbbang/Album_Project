@@ -316,7 +316,16 @@ return (
       )}
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal
+          album={selectedAlbum}
+          onClose={() => setSelectedAlbum(null)}
+          onSaved={async (albumId) => {
+            const res = await fetch(`/api/albums/${albumId}`);
+            if (!res.ok) return;
+            const updated = await res.json();
+            setAlbums((prev) => prev.map((a) => a.id === albumId ? { ...updated } : a));
+          }}
+        />
       )}
 
       {showAddModal && (

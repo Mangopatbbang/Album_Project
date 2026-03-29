@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { USERS, AlbumWithRatings } from "@/types";
 import PlaylistSection from "@/components/playlist/PlaylistSection";
 import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
-import { fetchAllAlbumsWithRatings, getBestByYear, getEightClub, getUnanimous, getControversial, THEMES } from "@/lib/stats";
+import { fetchAllAlbumsWithRatings, getBestByYear, getEightClub, getUnanimous, getControversial, getHiddenGems, getArtistBest, THEMES } from "@/lib/stats";
 import { scoreColor } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import CountUp from "@/components/ui/CountUp";
@@ -19,11 +19,19 @@ async function getRecentAlbums() {
 }
 
 async function getMemberStats() {
-  const { data } = await supabaseServer.from("ratings").select("user_id, score").limit(5000);
-  if (!data) return [];
+  const allData: { user_id: string; score: number }[] = [];
+  for (let page = 0; ; page++) {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("user_id, score")
+      .range(page * 1000, (page + 1) * 1000 - 1);
+    if (!data || data.length === 0) break;
+    allData.push(...data);
+    if (data.length < 1000) break;
+  }
 
   return USERS.map((user) => {
-    const userRatings = data.filter((r) => r.user_id === user.id);
+    const userRatings = allData.filter((r) => r.user_id === user.id);
     const avg =
       userRatings.length > 0
         ? (userRatings.reduce((a, b) => a + b.score, 0) / userRatings.length).toFixed(1)
@@ -74,6 +82,8 @@ async function getStatsPreview() {
   const themeData: Record<string, { count: number; covers: (string | null)[] }> = {
     eight_club: (() => { const l = getEightClub(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
     unanimous: (() => { const l = getUnanimous(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
+    artist_best: (() => { const l = getArtistBest(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
+    hidden_gems: (() => { const l = getHiddenGems(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
     controversial: (() => { const l = getControversial(albums).slice(0, 30); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
   };
   return { yearPreview, themeData };
@@ -115,22 +125,6 @@ export default async function HomePage() {
         <p style={{ color: "var(--text-sub)", fontSize: 48, marginBottom: 32, fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>
           <CountUp target={totalCount} />
         </p>
-        <div className="flex items-center justify-center gap-3 flex-wrap">
-          <Link
-            href="/albums"
-            style={{ backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600 }}
-            className="px-5 py-2.5 rounded text-sm hover:opacity-90 transition-opacity"
-          >
-            음반 둘러보기
-          </Link>
-          <Link
-            href={`/profile/${USERS[0].id}`}
-            style={{ border: "1px solid var(--border-light)", color: "var(--text-sub)" }}
-            className="px-5 py-2.5 rounded text-sm hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
-          >
-            멤버 프로필
-          </Link>
-        </div>
       </section>
 
       {/* 최근 아카이빙 */}
@@ -231,12 +225,14 @@ export default async function HomePage() {
 
       {/* 멤버 현황 */}
       <section style={{ ...containerStyle, paddingBottom: 96 }}>
-        <h2
-          style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }}
-          className="text-lg mb-6"
-        >
-          청음인 현황
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-lg">
+            청음인 현황
+          </h2>
+          <Link href="/members" style={{ color: "var(--text-muted)" }} className="text-xs hover:text-[var(--accent)] transition-colors">
+            전체보기 →
+          </Link>
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {memberStats.map((member) => (
