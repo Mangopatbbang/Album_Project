@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 
+export const metadata: Metadata = {
+  title: "음반고",
+  description: "아차청음사 전체 음반 목록",
+};
+
 const containerStyle = {
   width: "100%",
-  maxWidth: "1200px",
+  maxWidth: "1100px",
   margin: "0 auto",
   padding: "0 24px",
 };
@@ -54,30 +60,38 @@ async function getGenres(): Promise<string[]> {
   return unique as string[];
 }
 
+async function getTotalCount(): Promise<number> {
+  const { count } = await supabaseServer
+    .from("albums")
+    .select("id", { count: "exact", head: true });
+  return count ?? 0;
+}
+
 export default async function AlbumsPage() {
-  const [{ items, hasMore, nextCursor }, genres] = await Promise.all([
+  const [{ items, hasMore, nextCursor }, genres, totalCount] = await Promise.all([
     getInitialAlbums(),
     getGenres(),
+    getTotalCount(),
   ]);
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <div style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
+      <main style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
         <div style={{ marginBottom: 32 }}>
           <h1
             style={{
               color: "var(--text)",
               fontWeight: 700,
-              fontSize: 28,
+              fontSize: 22,
               letterSpacing: "-0.03em",
             }}
           >
             음반고
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-            {items.length > 0 ? `${items.length}장+` : ""} 청음된 음반
+            {totalCount > 0 ? `${totalCount}장` : ""} 청음된 음반
           </p>
         </div>
 
@@ -87,7 +101,7 @@ export default async function AlbumsPage() {
           initialNextCursor={nextCursor}
           genres={genres}
         />
-      </div>
+      </main>
     </div>
   );
 }

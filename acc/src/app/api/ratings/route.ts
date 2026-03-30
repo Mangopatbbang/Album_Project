@@ -10,9 +10,14 @@ export async function GET(req: NextRequest) {
   const albumId = searchParams.get("albumId");
   const userId = searchParams.get("userId");
 
+  if (!albumId && !userId) {
+    return NextResponse.json({ error: "albumId 또는 userId 필수" }, { status: 400 });
+  }
+
   let query = supabaseServer
     .from("ratings")
-    .select("id, album_id, user_id, score, one_line_review, created_at, updated_at");
+    .select("id, album_id, user_id, score, one_line_review, created_at, updated_at")
+    .limit(1000);
 
   if (albumId) query = query.eq("album_id", albumId);
   if (userId) query = query.eq("user_id", userId);
@@ -63,6 +68,26 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, rating: data });
+}
+
+// PATCH /api/ratings — liked_tracks만 업데이트
+// body: { albumId, userId, liked_tracks }
+export async function PATCH(req: NextRequest) {
+  const body = await req.json();
+  const { albumId, userId, liked_tracks } = body as { albumId: string; userId: UserId; liked_tracks: string | null };
+
+  if (!albumId || !userId) {
+    return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });
+  }
+
+  const { error } = await supabaseServer
+    .from("ratings")
+    .update({ liked_tracks })
+    .eq("album_id", albumId)
+    .eq("user_id", userId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
 
 // DELETE /api/ratings

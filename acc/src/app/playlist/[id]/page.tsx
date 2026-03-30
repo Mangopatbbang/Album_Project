@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
+import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,8 +14,8 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
     .select(`
       id, title, user_id, created_at,
       playlist_entries(
-        id, sort_order, comment,
-        albums(id, title, artist, year, release_date, genre, cover_url)
+        id, sort_order, comment, recommended_tracks,
+        albums(id, title, artist, year, release_date, genre, cover_url, tracklist)
       )
     `)
     .eq("id", id)
@@ -44,7 +45,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 96px" }}>
+      <main id="playlist-card" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 96px" }}>
         {/* 헤더 */}
         <div style={{ marginBottom: 40 }}>
           <Link
@@ -73,18 +74,28 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
             </span>
             <span style={{ color: "var(--border-light)" }}>·</span>
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{entries.length}장</span>
+            <ProfileCaptureButton targetId="playlist-card" />
           </div>
         </div>
 
         {/* 엔트리 목록 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {(entries as any[]).map((entry: {
-            id: string; sort_order: number; comment: string;
-            albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string } | null;
+            id: string; sort_order: number; comment: string; recommended_tracks: string | null;
+            albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string; tracklist?: string | null } | null;
           }, idx: number) => {
             if (Array.isArray(entry.albums)) entry = { ...entry, albums: entry.albums[0] ?? null };
             const album = entry.albums;
             if (!album) return null;
+
+            const tracklistArr = album.tracklist
+              ? album.tracklist.split(";").map((t: string) => t.trim()).filter(Boolean)
+              : [];
+            const recTracks = entry.recommended_tracks
+              ? entry.recommended_tracks.split(",").map(Number)
+                  .filter((i: number) => i >= 0 && i < tracklistArr.length)
+                  .map((i: number) => ({ idx: i, name: tracklistArr[i] }))
+              : [];
 
             return (
               <div key={entry.id} style={{
@@ -140,6 +151,25 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                     </div>
                   )}
                 </div>
+
+                {/* 추천 트랙 */}
+                {recTracks.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", marginRight: 4 }}>
+                      ♪
+                    </span>
+                    {recTracks.map(({ idx, name }) => (
+                      <span key={idx} style={{
+                        fontSize: 12, padding: "3px 10px", borderRadius: 12,
+                        border: "1px solid var(--accent)",
+                        color: "var(--accent)",
+                        backgroundColor: "rgba(232,255,72,0.06)",
+                      }}>
+                        {idx + 1}. {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* 감상 */}
                 {entry.comment && (

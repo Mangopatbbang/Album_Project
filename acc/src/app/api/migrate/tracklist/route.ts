@@ -56,6 +56,10 @@ export async function POST(req: NextRequest) {
       const errText = `${res.status} ${res.statusText}`;
       console.error(`[tracklist] ${album.spotify_id} → ${errText}`);
       if (!firstError) firstError = `spotify_id=${album.spotify_id} → ${errText}`;
+      if (res.status === 400) {
+        // 잘못된 spotify_id — 지워서 다음 실행 때 건너뜀
+        await supabaseServer.from("albums").update({ spotify_id: null }).eq("id", album.id);
+      }
       failed++;
       continue;
     }

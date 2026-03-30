@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Header() {
   const { profile, loading, signOut } = useAuth();
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   const navItems = [
     { href: "/albums", label: "음반고" },
@@ -35,8 +37,11 @@ export default function Header() {
             <Link
               key={href}
               href={href}
+              onMouseEnter={() => setHoveredNav(href)}
+              onMouseLeave={() => setHoveredNav(null)}
               style={{
-                color: "var(--text-sub)",
+                color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
+                backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
                 fontSize: 12,
                 fontWeight: 600,
                 letterSpacing: "0.06em",
@@ -45,9 +50,8 @@ export default function Header() {
                 display: "flex",
                 alignItems: "center",
                 textTransform: "uppercase",
-                transition: "color 0.15s, background 0.15s",
+                transition: "color 0.15s, background-color 0.15s",
               }}
-              className="hover:bg-[var(--bg-elevated)] hover:text-[var(--text)]"
             >
               {label}
             </Link>
@@ -58,9 +62,10 @@ export default function Header() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
           {!loading && profile && (
             <>
-              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+              <Link href={`/profile/${profile.id}`} style={{ color: "var(--text-muted)", fontSize: 12, textDecoration: "none" }}
+                className="hover:text-[var(--text)] transition-colors">
                 {profile.emoji} {profile.display_name}
-              </span>
+              </Link>
               <button
                 onClick={signOut}
                 style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}

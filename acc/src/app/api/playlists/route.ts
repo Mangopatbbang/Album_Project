@@ -7,7 +7,7 @@ export async function GET() {
     .select(`
       id, title, user_id, created_at,
       playlist_entries(
-        id, sort_order, comment,
+        id, sort_order, comment, recommended_tracks,
         albums(id, title, artist, cover_url)
       )
     `)
@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
 
   if (plErr) return NextResponse.json({ error: plErr.message }, { status: 500 });
 
-  const entryRows = entries.map((e: { album_id: string; comment: string; sort_order: number }) => ({
+  const entryRows = entries.map((e: { album_id: string; comment: string; sort_order: number; recommended_tracks?: string | null }) => ({
     playlist_id: playlist.id,
     album_id: e.album_id,
     comment: e.comment ?? "",
     sort_order: e.sort_order,
+    recommended_tracks: e.recommended_tracks ?? null,
   }));
 
   const { error: entErr } = await supabaseServer.from("playlist_entries").insert(entryRows);

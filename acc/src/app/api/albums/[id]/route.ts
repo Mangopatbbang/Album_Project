@@ -54,7 +54,7 @@ export async function GET(
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, tracklist, ratings(user_id, score, one_line_review)")
+    .select("id, title, artist, year, genre, cover_url, spotify_id, tracklist, ratings(user_id, score, one_line_review, liked_tracks)")
     .eq("id", id)
     .single();
 
@@ -62,7 +62,7 @@ export async function GET(
     return NextResponse.json({ error: "앨범을 찾을 수 없습니다" }, { status: 404 });
   }
 
-  const ratings = (data.ratings ?? []) as { user_id: string; score: number; one_line_review: string | null }[];
+  const ratings = (data.ratings ?? []) as { user_id: string; score: number; one_line_review: string | null; liked_tracks: string | null }[];
   const scores = ratings.map((r) => r.score);
   const avg = scores.length > 0
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)

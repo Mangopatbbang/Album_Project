@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, AlbumStat } from "@/lib/stats";
 import BestPageClient from "./BestPageClient";
+
+export const metadata: Metadata = {
+  title: "명반",
+  description: "아차청음사가 선정한 연도별·장르별 명반",
+};
 
 export default async function BestPage({
   searchParams,

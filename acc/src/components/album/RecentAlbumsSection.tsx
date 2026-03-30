@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlbumWithRatings } from "@/types";
 import AlbumModal from "./AlbumModal";
+import { glowShadow, glowBorder } from "@/lib/score";
 
 type Props = {
   albums: AlbumWithRatings[];
@@ -26,8 +27,8 @@ export default function RecentAlbumsSection({ albums }: Props) {
             <button
               key={album.id}
               onClick={() => setSelectedAlbum(album)}
-              style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", textAlign: "left" }}
-              className="rounded-lg overflow-hidden hover:border-[var(--border-light)] transition-colors cursor-pointer w-full"
+              style={{ backgroundColor: "var(--bg-card)", border: `1px solid ${glowBorder(avg)}`, textAlign: "left", boxShadow: glowShadow(avg) }}
+              className="rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer w-full"
             >
               <div
                 style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
@@ -59,7 +60,16 @@ export default function RecentAlbumsSection({ albums }: Props) {
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal
+          album={selectedAlbum}
+          onClose={() => setSelectedAlbum(null)}
+          onSaved={async (albumId) => {
+            const res = await fetch(`/api/albums/${albumId}`);
+            if (!res.ok) return;
+            const updated = await res.json();
+            setSelectedAlbum((prev) => prev?.id === albumId ? { ...updated } : prev);
+          }}
+        />
       )}
     </>
   );

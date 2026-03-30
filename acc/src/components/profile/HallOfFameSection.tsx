@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
+import { glowShadow, glowBorder } from "@/lib/score";
 
 type HallAlbum = {
   id: string;
@@ -14,12 +15,17 @@ type HallAlbum = {
   score: number;
 };
 
+const INITIAL_LIMIT = 16;
+
 export default function HallOfFameSection({ albums, count }: { albums: HallAlbum[]; count: number }) {
   const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const open = (a: HallAlbum) => {
     setSelected({ id: a.id, title: a.title, artist: a.artist, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
   };
+
+  const visible = showAll ? albums : albums.slice(0, INITIAL_LIMIT);
 
   return (
     <>
@@ -36,16 +42,18 @@ export default function HallOfFameSection({ albums, count }: { albums: HallAlbum
           8점 · {count}장
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {albums.map((a) => (
+          {visible.map((a) => (
             <button
               key={a.id}
               onClick={() => open(a)}
               title={`${a.title} — ${a.artist}`}
               style={{ padding: 0, background: "none", border: "none", cursor: "pointer" }}
+              className="transition-transform active:scale-[0.92]"
             >
               <div style={{
                 width: 64, height: 64, borderRadius: 6, overflow: "hidden",
-                backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(8)}`,
+                boxShadow: glowShadow(8),
                 transition: "opacity 0.15s",
               }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
@@ -63,6 +71,23 @@ export default function HallOfFameSection({ albums, count }: { albums: HallAlbum
             </button>
           ))}
         </div>
+        {count > INITIAL_LIMIT && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            style={{
+              marginTop: 12,
+              color: "var(--text-muted)",
+              fontSize: 11,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: 0,
+            }}
+          >
+            {showAll ? "접기" : `+${count - INITIAL_LIMIT}장 더보기`}
+          </button>
+        )}
       </div>
       {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} />}
     </>

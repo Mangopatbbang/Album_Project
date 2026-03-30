@@ -4,7 +4,7 @@ import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
 import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
-import { scoreColor } from "@/lib/score";
+import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 
 const TOP_N = 5;
 
@@ -52,6 +52,7 @@ function SectionPopup({
           maxHeight: "80dvh",
           display: "flex", flexDirection: "column",
           overflow: "hidden",
+          animation: "modalIn 0.18s ease-out",
         }}
       >
         {/* 헤더 */}
@@ -171,13 +172,15 @@ function SectionGrid({
             key={album.id}
             style={{ width: 90, flexShrink: 0, cursor: "pointer" }}
             onClick={() => onAlbumClick(album)}
+            className="transition-transform active:scale-[0.93]"
           >
             <div style={{
               width: 90, height: 90,
               borderRadius: 6,
               overflow: "hidden",
               backgroundColor: "var(--bg-elevated)",
-              border: "1px solid var(--border)",
+              border: `1px solid ${glowBorder(album.avg)}`,
+              boxShadow: glowShadow(album.avg),
               position: "relative",
               transition: "opacity 0.15s",
             }}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
@@ -5,6 +6,11 @@ import { scoreColor } from "@/lib/score";
 import { generateBadges } from "@/lib/bio";
 import Link from "next/link";
 import { ClickableAlbumRow } from "./MembersAlbumModal";
+
+export const metadata: Metadata = {
+  title: "청음인",
+  description: "아차청음사 청음단 멤버 소개",
+};
 
 type RatingRow = { user_id: string; album_id: string; score: number; one_line_review: string | null; albums: { id: string; genre: string | null; artist: string | null } | null };
 
@@ -41,20 +47,26 @@ export default async function MembersPage() {
 
     // 장르/아티스트 집계
     const genreMap = new Map<string, number>();
-    const artistMap = new Map<string, number>();
+    const artistMap = new Map<string, { count: number; total: number }>();
     for (const r of mine) {
       if (r.albums?.genre) genreMap.set(r.albums.genre, (genreMap.get(r.albums.genre) ?? 0) + 1);
-      if (r.albums?.artist) artistMap.set(r.albums.artist, (artistMap.get(r.albums.artist) ?? 0) + 1);
+      if (r.albums?.artist) {
+        const prev = artistMap.get(r.albums.artist) ?? { count: 0, total: 0 };
+        artistMap.set(r.albums.artist, { count: prev.count + 1, total: prev.total + r.score });
+      }
     }
     const topGenreEntry = [...genreMap.entries()].sort((a, b) => b[1] - a[1])[0];
-    const topArtistEntry = [...artistMap.entries()].sort((a, b) => b[1] - a[1])[0];
+    const topArtistEntry = [...artistMap.entries()]
+      .map(([artist, { count, total: t }]) => ({ artist, count, avg: t / count }))
+      .sort((a, b) => b.count - a.count)[0];
 
     const badges = generateBadges({
       avg: total > 0 ? avg.toFixed(2) : null,
       topGenre: topGenreEntry?.[0] ?? null,
       topGenreRatio: topGenreEntry ? topGenreEntry[1] / Math.max(total, 1) : 0,
-      topArtist: topArtistEntry?.[0] ?? null,
-      topArtistCount: topArtistEntry?.[1] ?? 0,
+      topArtist: topArtistEntry?.artist ?? null,
+      topArtistCount: topArtistEntry?.count ?? 0,
+      topArtistAvg: topArtistEntry?.avg ?? 0,
       eightCount,
       total,
       reviewCount,
@@ -137,11 +149,9 @@ export default async function MembersPage() {
               <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
                 <div style={{
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-                  borderRadius: 12, padding: "24px", cursor: "pointer",
-                  transition: "border-color 0.15s",
+                  borderRadius: 12, padding: "24px 28px", cursor: "pointer",
                 }}
-                  onMouseEnter={undefined}
-                  className="hover:border-[var(--border-light)]"
+                  className="transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -158,7 +168,6 @@ export default async function MembersPage() {
                       {badges.map((badge) => (
                         <span key={badge} style={{
                           color: "var(--text-muted)", fontSize: 10,
-                          fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic",
                           backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
                           borderRadius: 20, padding: "2px 8px", whiteSpace: "nowrap",
                         }}>
@@ -214,7 +223,7 @@ export default async function MembersPage() {
               {memberStats.map(({ user, total }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} {user.display_name}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link></span>
                     <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>{total}장</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
@@ -232,7 +241,7 @@ export default async function MembersPage() {
               {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} {user.display_name}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link></span>
                     <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600 }}>{avg!.toFixed(2)}</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
@@ -254,7 +263,9 @@ export default async function MembersPage() {
                 padding: "12px 16px", backgroundColor: "var(--bg-elevated)", borderRadius: 8,
               }}>
                 <span style={{ color: "var(--text-sub)", fontSize: 13 }}>
-                  {a.emoji} {a.display_name} × {b.emoji} {b.display_name}
+                  {a.emoji} <Link href={`/profile/${a.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{a.display_name}</Link>
+                  {" × "}
+                  {b.emoji} <Link href={`/profile/${b.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{b.display_name}</Link>
                 </span>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>

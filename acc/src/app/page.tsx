@@ -2,10 +2,9 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS, AlbumWithRatings } from "@/types";
-import PlaylistSection from "@/components/playlist/PlaylistSection";
 import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
-import { fetchAllAlbumsWithRatings, getBestByYear, getEightClub, getUnanimous, getControversial, getHiddenGems, getArtistBest, THEMES } from "@/lib/stats";
-import { scoreColor } from "@/lib/score";
+import { fetchAllAlbumsWithRatings, getBestByYear } from "@/lib/stats";
+import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import CountUp from "@/components/ui/CountUp";
 
@@ -23,10 +22,10 @@ async function getMemberStats() {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("ratings")
-      .select("user_id, score")
+      .select("user_id, score, albums!inner(id)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
-    allData.push(...data);
+    allData.push(...(data as unknown as { user_id: string; score: number }[]));
     if (data.length < 1000) break;
   }
 
@@ -40,16 +39,13 @@ async function getMemberStats() {
   });
 }
 
-async function getPlaylists() {
+
+async function getRecentPlaylists() {
   const { data } = await supabaseServer
     .from("playlists")
-    .select(`
-      id, title, user_id, created_at,
-      playlist_entries(id, sort_order, comment, albums(id, title, artist, cover_url))
-    `)
+    .select(`id, title, user_id, playlist_entries(id, sort_order, albums(id, cover_url))`)
     .order("created_at", { ascending: false })
-    .limit(10);
-
+    .limit(4);
   return (data ?? []).map((p) => ({
     ...p,
     playlist_entries: (p.playlist_entries ?? []).sort(
@@ -68,41 +64,31 @@ async function getTotalCount() {
 // 모든 섹션에 쓸 공통 컨테이너 클래스
 const containerStyle = {
   width: "100%",
-  maxWidth: "960px",
+  maxWidth: "1100px",
   margin: "0 auto",
   padding: "0 24px",
 };
 
-async function getStatsPreview() {
+async function getYearPreview() {
   const albums = await fetchAllAlbumsWithRatings();
   const byYear = getBestByYear(albums);
-  // 최근 5년 각 1위
-  const yearPreview = [...byYear.entries()].slice(0, 5).map(([year, list]) => ({ year, album: list[0] }));
-  // 테마 카운트 + 커버 4장
-  const themeData: Record<string, { count: number; covers: (string | null)[] }> = {
-    eight_club: (() => { const l = getEightClub(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
-    unanimous: (() => { const l = getUnanimous(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
-    artist_best: (() => { const l = getArtistBest(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
-    hidden_gems: (() => { const l = getHiddenGems(albums); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
-    controversial: (() => { const l = getControversial(albums).slice(0, 30); return { count: l.length, covers: l.slice(0, 4).map(a => a.cover_url) }; })(),
-  };
-  return { yearPreview, themeData };
+  return [...byYear.entries()].slice(0, 5).map(([year, list]) => ({ year, album: list[0] }));
 }
 
 export default async function HomePage() {
-  const [recentAlbums, memberStats, totalCount, playlists, statsPreview] = await Promise.all([
+  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists] = await Promise.all([
     getRecentAlbums(),
     getMemberStats(),
     getTotalCount(),
-    getPlaylists(),
-    getStatsPreview(),
+    getYearPreview(),
+    getRecentPlaylists(),
   ]);
-  const { yearPreview, themeData } = statsPreview;
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
+      <main>
       {/* 히어로 */}
       <section style={{ ...containerStyle, paddingTop: 72, paddingBottom: 64, textAlign: "center", position: "relative" }}>
         <div style={{ position: "absolute", top: 24, right: 24 }}>
@@ -147,16 +133,11 @@ export default async function HomePage() {
         <RecentAlbumsSection albums={recentAlbums as AlbumWithRatings[]} />
       </section>
 
-      {/* 플레이리스트 */}
-      <section style={{ ...containerStyle, paddingBottom: 64 }}>
-        <PlaylistSection initialPlaylists={playlists as any} />
-      </section>
-
       {/* 베스트 & 테마 */}
       <section style={{ ...containerStyle, paddingBottom: 64 }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 연도별 베스트 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
                 연도별 명반
@@ -169,7 +150,7 @@ export default async function HomePage() {
               {yearPreview.map(({ year, album }) => album ? (
                 <div key={year} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 600, width: 36, flexShrink: 0 }}>{year}</span>
-                  <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(album.avg)}`, boxShadow: glowShadow(album.avg) }}>
                     {album.cover_url
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -186,39 +167,45 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* 테마별 플레이리스트 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24 }}>
+          {/* 선곡집 */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
-                테마별 선곡집
+                선곡집
               </h2>
               <Link href="/themes" style={{ color: "var(--text-muted)" }} className="text-xs hover:text-[var(--accent)] transition-colors">
                 더보기 →
               </Link>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {THEMES.map((theme) => {
-                const td = themeData[theme.id];
-                return (
-                  <Link key={theme.id} href="/themes" style={{ textDecoration: "none" }} className="hover:opacity-80 transition-opacity">
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontSize: 18, flexShrink: 0 }}>{theme.emoji}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 13 }}>{theme.name}</p>
-                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{theme.description}</p>
-                      </div>
-                      <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
-                        {(td?.covers ?? []).filter(Boolean).slice(0, 4).map((url, i) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={i} src={url!} alt="" style={{ width: 24, height: 24, borderRadius: 3, objectFit: "cover" }} />
+            {recentPlaylists.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>아직 선곡집이 없습니다</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {recentPlaylists.map((pl) => {
+                  const user = USERS.find((u) => u.id === pl.user_id);
+                  const covers = pl.playlist_entries.slice(0, 4).map((e: { albums: { cover_url: string | null } | null }) => e.albums?.cover_url ?? null);
+                  return (
+                    <Link key={pl.id} href={`/playlist/${pl.id}`} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }} className="hover:opacity-80 transition-opacity">
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, width: 40, height: 40, borderRadius: 6, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)" }}>
+                        {[0,1,2,3].map((i) => (
+                          <div key={i} style={{ overflow: "hidden", backgroundColor: "var(--bg-elevated)" }}>
+                            {covers[i]
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={covers[i]!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              : <div style={{ width: "100%", height: "100%", backgroundColor: "var(--bg-elevated)" }} />
+                            }
+                          </div>
                         ))}
                       </div>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, marginLeft: 4 }}>{td?.count ?? 0}장</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pl.title}</p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{user ? `${user.emoji} ${user.display_name}` : pl.user_id} · {pl.playlist_entries.length}장</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -240,7 +227,7 @@ export default async function HomePage() {
               key={member.id}
               href={`/profile/${member.id}`}
               style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
-              className="rounded-lg p-4 hover:border-[var(--border-light)] transition-colors"
+              className="rounded-lg p-4 transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.97]"
             >
               <p className="text-2xl mb-2">{member.emoji}</p>
               <p style={{ color: "var(--text)", fontWeight: 500 }} className="text-sm">
@@ -266,6 +253,7 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+      </main>
     </div>
   );
 }

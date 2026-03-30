@@ -50,8 +50,10 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
               color: "var(--text-sub)", borderRadius: 6, padding: "5px 12px",
-              fontSize: 12, cursor: "pointer",
+              fontSize: 12, cursor: "pointer", transition: "all 0.15s",
             }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-light)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}
           >
             + 새 선곡집
           </button>

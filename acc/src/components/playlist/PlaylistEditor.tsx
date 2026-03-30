@@ -13,6 +13,9 @@ type Album = {
 type Entry = {
   album: Album;
   comment: string;
+  tracklist: string[];
+  recommended_tracks: Set<number>;
+  loadingTracklist: boolean;
 };
 
 type Props = {
@@ -55,11 +58,30 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
     }, 300);
   };
 
-  const addAlbum = (album: Album) => {
+  const addAlbum = async (album: Album) => {
     if (entries.find((e) => e.album.id === album.id)) return;
-    setEntries((prev) => [...prev, { album, comment: "" }]);
+    setEntries((prev) => [...prev, { album, comment: "", tracklist: [], recommended_tracks: new Set(), loadingTracklist: true }]);
     setSearch("");
     setSearchResults([]);
+    try {
+      const res = await fetch(`/api/albums/${album.id}`);
+      const data = await res.json();
+      const tracklist = data.tracklist
+        ? data.tracklist.split(";").map((t: string) => t.trim()).filter(Boolean)
+        : [];
+      setEntries((prev) => prev.map((e) => e.album.id === album.id ? { ...e, tracklist, loadingTracklist: false } : e));
+    } catch {
+      setEntries((prev) => prev.map((e) => e.album.id === album.id ? { ...e, loadingTracklist: false } : e));
+    }
+  };
+
+  const toggleRecommended = (albumId: string, idx: number) => {
+    setEntries((prev) => prev.map((e) => {
+      if (e.album.id !== albumId) return e;
+      const next = new Set(e.recommended_tracks);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return { ...e, recommended_tracks: next };
+    }));
   };
 
   const removeEntry = (id: string) => setEntries((prev) => prev.filter((e) => e.album.id !== id));
@@ -102,6 +124,9 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
           album_id: e.album.id,
           comment: e.comment,
           sort_order: i,
+          recommended_tracks: e.recommended_tracks.size > 0
+            ? [...e.recommended_tracks].sort((a, b) => a - b).join(",")
+            : null,
         })),
       }),
     });
@@ -263,7 +288,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                 </div>
 
                 {/* 감상 텍스트 */}
-                <div style={{ padding: "0 14px 12px" }}>
+                <div style={{ padding: "0 14px 8px" }}>
                   <textarea
                     value={entry.comment}
                     onChange={(e) => updateComment(entry.album.id, e.target.value)}
@@ -275,6 +300,38 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                     }}
                   />
                 </div>
+
+                {/* 추천 트랙 */}
+                {entry.loadingTracklist ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, padding: "0 14px 12px" }}>트랙 로딩 중...</p>
+                ) : entry.tracklist.length > 0 ? (
+                  <div style={{ padding: "0 14px 14px" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", marginBottom: 8 }}>
+                      추천 트랙
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {entry.tracklist.map((track, i) => {
+                        const on = entry.recommended_tracks.has(i);
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => toggleRecommended(entry.album.id, i)}
+                            style={{
+                              fontSize: 11, padding: "3px 9px", borderRadius: 12,
+                              border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
+                              backgroundColor: on ? "var(--accent)" : "transparent",
+                              color: on ? "var(--bg)" : "var(--text-muted)",
+                              cursor: "pointer", transition: "all 0.15s",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {i + 1}. {track}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

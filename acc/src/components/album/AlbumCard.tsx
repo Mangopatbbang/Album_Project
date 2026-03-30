@@ -1,25 +1,7 @@
 "use client";
 
 import { AlbumWithRatings, USERS } from "@/types";
-import { scoreColor } from "@/lib/score";
-
-function glowShadow(avg: string | null | undefined): string {
-  if (!avg) return "none";
-  const n = Math.floor(parseFloat(avg));
-  if (n >= 8) return "0 0 18px rgba(232,255,72,0.40), 0 0 6px rgba(232,255,72,0.25)";
-  if (n >= 7) return "0 0 12px rgba(48,160,184,0.30)";
-  if (n <= 1) return "0 0 12px rgba(224,80,80,0.28)";
-  return "none";
-}
-
-function glowBorder(avg: string | null | undefined): string {
-  if (!avg) return "var(--border)";
-  const n = Math.floor(parseFloat(avg));
-  if (n >= 8) return "rgba(232,255,72,0.55)";
-  if (n >= 7) return "rgba(48,160,184,0.40)";
-  if (n <= 1) return "rgba(224,80,80,0.38)";
-  return "var(--border)";
-}
+import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 
 type Props = {
   album: AlbumWithRatings;
@@ -37,7 +19,7 @@ export default function AlbumCard({ album, onClick }: Props) {
         width: "100%",
         boxShadow: glowShadow(album.avg),
       }}
-      className="rounded-lg overflow-hidden transition-all hover:scale-[1.02] cursor-pointer"
+      className="rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
     >
       {/* 커버 이미지 */}
       <div

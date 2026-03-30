@@ -27,14 +27,86 @@ type AlbumRow = {
   spotify_id: string | null;
 };
 
+type Stats = {
+  total: number;
+  hasSpotify: number;
+  hasCover: number;
+  hasTracklist: number;
+};
+
 export default function AdminPage() {
-  // --- 마이그레이션 ---
+  // --- 통계 ---
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  async function loadStats() {
+    setStatsLoading(true);
+    const res = await fetch("/api/admin/stats");
+    const data = await res.json();
+    setStats(data);
+    setStatsLoading(false);
+  }
+
+  // --- 마이그레이션 (Spotify 전체) ---
   const [running, setRunning] = useState(false);
   const [migLog, setMigLog] = useState<string[]>([]);
   const [totalSuccess, setTotalSuccess] = useState(0);
   const [totalNotFound, setTotalNotFound] = useState(0);
   const [remaining, setRemaining] = useState<number | null>(null);
   const stopRef = useRef(false);
+
+  // --- 트랙리스트 전용 마이그레이션 ---
+  const [trackRunning, setTrackRunning] = useState(false);
+  const [trackLog, setTrackLog] = useState<string[]>([]);
+  const [trackRemaining, setTrackRemaining] = useState<number | null>(null);
+  const trackStopRef = useRef(false);
+
+  async function runTracklistMigration() {
+    setTrackRunning(true);
+    trackStopRef.current = false;
+    setTrackLog([]);
+    let offset = 0;
+    let batchNum = 0;
+
+    while (!trackStopRef.current) {
+      batchNum++;
+      setTrackLog((prev) => [...prev, `배치 ${batchNum} 처리 중...`]);
+      try {
+        const res = await fetch("/api/migrate/tracklist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset }),
+        });
+        const data = await res.json();
+
+        if (data.retryAfter) {
+          const wait = data.retryAfter;
+          setTrackLog((prev) => [...prev, `  ⚠️ rate limit — ${wait}초 대기 중...`]);
+          await new Promise((r) => setTimeout(r, wait * 1000));
+          continue; // offset 그대로 재시도
+        }
+
+        if (data.remaining !== null) setTrackRemaining(data.remaining);
+        setTrackLog((prev) => [
+          ...prev,
+          `  ✓ ${data.success}개 성공, ${data.failed}개 실패 | 남은: ${data.remaining ?? "?"}개${data.firstError ? ` | ${data.firstError}` : ""}`,
+        ]);
+
+        if (data.done || data.processed === 0) {
+          setTrackLog((prev) => [...prev, "✅ 트랙리스트 완료!"]);
+          break;
+        }
+
+        offset = data.nextOffset;
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch (e) {
+        setTrackLog((prev) => [...prev, `❌ 오류: ${String(e)}`]);
+        break;
+      }
+    }
+
+    setTrackRunning(false);
+  }
 
   async function runMigration() {
     setRunning(true);
@@ -148,6 +220,60 @@ export default function AdminPage() {
           Admin
         </p>
 
+        {/* ── 통계 ── */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>DB 현황</p>
+            <button
+              onClick={loadStats}
+              disabled={statsLoading}
+              style={{
+                padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)",
+                cursor: statsLoading ? "not-allowed" : "pointer",
+                backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600,
+              }}
+            >
+              {statsLoading ? "로딩 중..." : "새로고침"}
+            </button>
+          </div>
+          {stats ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+              {[
+                { label: "전체 앨범", value: stats.total, sub: null },
+                { label: "Spotify 매칭", value: stats.hasSpotify, sub: stats.total - stats.hasSpotify },
+                { label: "커버 이미지", value: stats.hasCover, sub: stats.total - stats.hasCover },
+                { label: "트랙리스트", value: stats.hasTracklist, sub: stats.total - stats.hasTracklist },
+              ].map((s) => (
+                <div key={s.label} style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "14px 16px", border: "1px solid var(--border)" }}>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 8 }}>
+                    {s.label.toUpperCase()}
+                  </p>
+                  <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: 22 }}>
+                    {s.value}
+                    <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 400, marginLeft: 3 }}>/ {stats.total}</span>
+                  </p>
+                  {s.sub !== null && s.sub > 0 && (
+                    <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
+                      미완료 <span style={{ color: "#e07070", fontWeight: 600 }}>{s.sub}</span>개
+                    </p>
+                  )}
+                  {/* 진행바 */}
+                  <div style={{ height: 3, backgroundColor: "var(--border)", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${(s.value / Math.max(stats.total, 1)) * 100}%`,
+                      backgroundColor: s.sub && s.sub > 0 ? "#e07070" : "var(--accent)",
+                      borderRadius: 2,
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>새로고침을 눌러 확인하세요</p>
+          )}
+        </div>
+
         {/* ── 마이그레이션 ── */}
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
@@ -198,6 +324,56 @@ export default function AdminPage() {
               {migLog.map((line, i) => (
                 <span key={i}>{line}</span>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── 트랙리스트 마이그레이션 ── */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            트랙리스트 채우기 (spotify_id 있는 앨범 대상)
+          </p>
+
+          {trackRemaining !== null && (
+            <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>
+              남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{trackRemaining}</span>개
+            </p>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <button
+              onClick={runTracklistMigration}
+              disabled={trackRunning}
+              style={{
+                padding: "8px 20px", borderRadius: 6, border: "none", cursor: trackRunning ? "not-allowed" : "pointer",
+                backgroundColor: trackRunning ? "var(--bg-elevated)" : "var(--accent)",
+                color: trackRunning ? "var(--text-muted)" : "var(--bg)",
+                fontWeight: 600, fontSize: 13,
+              }}
+            >
+              {trackRunning ? "실행 중..." : "▶ 시작"}
+            </button>
+            {trackRunning && (
+              <button
+                onClick={() => { trackStopRef.current = true; }}
+                style={{
+                  padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
+                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
+                  color: "var(--text-muted)", fontWeight: 600, fontSize: 13,
+                }}
+              >
+                ■ 중지
+              </button>
+            )}
+          </div>
+
+          {trackLog.length > 0 && (
+            <div style={{
+              backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px",
+              maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)",
+              fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2,
+            }}>
+              {trackLog.map((line, i) => <span key={i}>{line}</span>)}
             </div>
           )}
         </div>

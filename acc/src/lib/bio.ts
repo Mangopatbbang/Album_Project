@@ -34,13 +34,14 @@ type BioParams = {
   topGenreRatio: number;
   topArtist: string | null;
   topArtistCount: number;
+  topArtistAvg: number;
   eightCount: number;
   total: number;
   reviewCount: number;
 };
 
 export function generateBadges(params: BioParams): string[] {
-  const { avg, topGenre, topGenreRatio, topArtist, topArtistCount, eightCount, total, reviewCount } = params;
+  const { avg, topGenre, topGenreRatio, topArtist, topArtistCount, topArtistAvg, eightCount, total, reviewCount } = params;
   if (total < 5) return [];
 
   const avgNum = avg ? parseFloat(avg) : 0;
@@ -61,8 +62,8 @@ export function generateBadges(params: BioParams): string[] {
     badges.push(`${koGenre(topGenre)} 청음인`);
   }
 
-  // 3. 아티스트 뱃지
-  if (topArtist && topArtistCount >= 5) {
+  // 3. 아티스트 뱃지 — 3장 이상 + 평균 6.0 이상이어야 진짜 애청자
+  if (topArtist && topArtistCount >= 3 && topArtistAvg >= 6.0) {
     badges.push(`${topArtist} 애청자`);
   }
 

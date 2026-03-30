@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlbumWithRatings, USERS } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { scoreColor } from "@/lib/score";
+import { captureElement } from "@/lib/capture";
+
+type RatingWithLikes = {
+  user_id: string;
+  score: number;
+  one_line_review: string | null;
+  liked_tracks: string | null;
+};
 
 type FullAlbum = AlbumWithRatings & {
   tracklist?: string | null;
+  ratings: RatingWithLikes[];
 };
 
 type Props = {
@@ -23,7 +32,48 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const [myReview, setMyReview] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
+  const [closing, setClosing] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [captured, setCaptured] = useState(false);
+  const [myLikedTracks, setMyLikedTracks] = useState<Set<number>>(new Set());
+  const [savingLike, setSavingLike] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleCapture = async () => {
+    if (!cardRef.current || capturing) return;
+    setCapturing(true);
+    await captureElement(cardRef.current);
+    setCapturing(false);
+    setCaptured(true);
+    setTimeout(() => setCaptured(false), 2000);
+  };
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 160);
+  };
+
+  const handleToggleLike = async (idx: number) => {
+    if (!profile || savingLike) return;
+    const hasRating = full?.ratings?.find((r) => r.user_id === profile.id);
+    if (!hasRating) return;
+    const next = new Set(myLikedTracks);
+    if (next.has(idx)) next.delete(idx); else next.add(idx);
+    setMyLikedTracks(next);
+    setSavingLike(true);
+    await fetch("/api/ratings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        albumId: album.id,
+        userId: profile.id,
+        liked_tracks: next.size > 0 ? [...next].sort((a, b) => a - b).join(",") : null,
+      }),
+    });
+    setSavingLike(false);
+  };
 
   const toggleReview = (userId: string) => {
     setExpandedReviews((prev) => {
@@ -48,6 +98,9 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           if (myRating) {
             setMyScore(myRating.score);
             setMyReview(myRating.one_line_review ?? "");
+            if (myRating.liked_tracks) {
+              setMyLikedTracks(new Set(myRating.liked_tracks.split(",").map(Number)));
+            }
           }
         }
       });
@@ -61,10 +114,25 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
   // ESC 닫기
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDelete = async () => {
+    if (!profile || myScore === null) return;
+    setDeleting(true);
+    await fetch("/api/ratings", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: album.id, userId: profile.id }),
+    });
+    setMyScore(null);
+    setMyReview("");
+    setDeleting(false);
+    onSaved?.(album.id);
+  };
 
   const handleSave = async () => {
     if (!profile || myScore === null) return;
@@ -103,10 +171,12 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
+        animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
+        ref={cardRef}
         style={{
           backgroundColor: "var(--bg-card)",
           border: "1px solid var(--border)",
@@ -115,7 +185,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           maxWidth: 680,
           maxHeight: "90vh",
           overflowY: "auto",
-          animation: "modalIn 0.18s ease-out",
+          animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -155,12 +225,31 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, flexShrink: 0, cursor: "pointer", background: "none", border: "none" }}
-              >
-                ✕
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={handleCapture}
+                  disabled={capturing}
+                  title="이미지로 저장"
+                  style={{
+                    background: "none", border: "none", cursor: capturing ? "default" : "pointer",
+                    color: captured ? "var(--accent)" : "var(--text-muted)",
+                    fontSize: 15, lineHeight: 1, padding: "2px 4px",
+                    transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
+                  }}
+                >
+                  {captured ? "✓" : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={handleClose}
+                  style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", background: "none", border: "none" }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {data.genre && (
@@ -206,7 +295,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 <div key={user.id} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                   {/* 이모지 + 이름 */}
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{user.emoji}</span>
-                  <span style={{ color: "var(--text-sub)", fontSize: 13, width: 110, flexShrink: 0 }}>{user.display_name}</span>
+                  <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, width: 110, flexShrink: 0, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
 
                   {r ? (
                     <>
@@ -306,24 +395,46 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{myReview.length}/100</span>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || myScore === null}
-                  style={{
-                    backgroundColor: saved ? "var(--bg-elevated)" : "var(--accent)",
-                    color: saved ? "var(--text-sub)" : "var(--bg)",
-                    fontWeight: 600,
-                    fontSize: 13,
-                    padding: "6px 16px",
-                    borderRadius: 6,
-                    cursor: myScore === null ? "default" : "pointer",
-                    opacity: myScore === null ? 0.4 : 1,
-                    transition: "all 0.2s",
-                    border: "none",
-                  }}
-                >
-                  {saved ? "저장됨 ✓" : saving ? "저장 중..." : "저장"}
-                </button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {full?.ratings?.find((r) => r.user_id === profile?.id) && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      style={{
+                        backgroundColor: "transparent",
+                        color: "var(--text-muted)",
+                        fontWeight: 400,
+                        fontSize: 12,
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        cursor: deleting ? "default" : "pointer",
+                        opacity: deleting ? 0.4 : 1,
+                        border: "1px solid var(--border)",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {deleting ? "삭제 중..." : "삭제"}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || myScore === null}
+                    style={{
+                      backgroundColor: saved ? "var(--bg-elevated)" : "var(--accent)",
+                      color: saved ? "var(--text-sub)" : "var(--bg)",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      padding: "6px 16px",
+                      borderRadius: 6,
+                      cursor: myScore === null ? "default" : "pointer",
+                      opacity: myScore === null ? 0.4 : 1,
+                      transition: "all 0.2s",
+                      border: "none",
+                    }}
+                  >
+                    {saved ? "저장됨 ✓" : saving ? "저장 중..." : "저장"}
+                  </button>
+                </div>
               </div>
             </>
           ) : (
@@ -342,27 +453,51 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 수록곡
               </p>
-              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                {tracklist.map((track, i) => (
-                  <li key={i} style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
-                    <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
-                      {i + 1}
-                    </span>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{track}</span>
-                  </li>
-                ))}
+              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                {tracklist.map((track, i) => {
+                  const othersWhoLiked = USERS.filter((u) => {
+                    if (u.id === profile?.id) return false;
+                    const r = full?.ratings?.find((rt) => rt.user_id === u.id);
+                    return r?.liked_tracks?.split(",").map(Number).includes(i);
+                  });
+                  const iLiked = myLikedTracks.has(i);
+                  const hasMyRating = !!full?.ratings?.find((r) => r.user_id === profile?.id);
+                  return (
+                    <li key={i} style={{ display: "flex", gap: 10, alignItems: "center", padding: "3px 0" }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
+                        {i + 1}
+                      </span>
+                      <span style={{ color: iLiked ? "var(--text)" : "var(--text-sub)", fontSize: 13, flex: 1, fontWeight: iLiked ? 500 : 400 }}>
+                        {track}
+                      </span>
+                      {othersWhoLiked.length > 0 && (
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, letterSpacing: "0.05em" }}>
+                          {othersWhoLiked.map((u) => u.emoji).join("")}
+                        </span>
+                      )}
+                      {profile && hasMyRating && (
+                        <button
+                          onClick={() => handleToggleLike(i)}
+                          disabled={savingLike}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: iLiked ? "#e05050" : "var(--border)",
+                            fontSize: 13, padding: "0 2px", flexShrink: 0,
+                            transition: "color 0.15s",
+                          }}
+                        >
+                          ♥
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           </>
         )}
       </div>
 
-      <style>{`
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 }

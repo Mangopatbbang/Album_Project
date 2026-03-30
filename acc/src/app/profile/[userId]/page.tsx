@@ -1,11 +1,25 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
+import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
 import { generateBadges, koGenre } from "@/lib/bio";
+import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
+
+export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
+  const { userId } = await params;
+  const user = USERS.find((u) => u.id === userId);
+  if (!user) return {};
+  return {
+    title: `${user.display_name}의 청음 기록`,
+    description: `${user.display_name}의 아차청음사 청음 기록`,
+  };
+}
 
 type RatingRow = {
   score: number;
@@ -163,6 +177,7 @@ export default async function ProfilePage({
     topGenreRatio: topGenreEntry ? topGenreEntry.count / Math.max(total, 1) : 0,
     topArtist: topArtistEntry?.artist ?? null,
     topArtistCount: topArtistEntry?.count ?? 0,
+    topArtistAvg: topArtistEntry ? parseFloat(topArtistEntry.avg) : 0,
     eightCount: hallOfFame.length,
     total,
     reviewCount,
@@ -173,6 +188,7 @@ export default async function ProfilePage({
     <Header />
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
 
+      <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
       {/* 프로필 헤더 */}
       <div style={{
         backgroundColor: "var(--bg-card)",
@@ -203,14 +219,13 @@ export default async function ProfilePage({
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
+          <ProfileCaptureButton targetId="profile-card" />
           {badges.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
               {badges.map((badge) => (
                 <span key={badge} style={{
                   color: "var(--text-muted)",
                   fontSize: 11,
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontStyle: "italic",
                   backgroundColor: "var(--bg-elevated)",
                   border: "1px solid var(--border)",
                   borderRadius: 20,
@@ -328,21 +343,11 @@ export default async function ProfilePage({
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
                 최근 한줄 소감
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {recentReviews.map((r) => (
-                  <div key={r.albums!.id + r.updated_at} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 13, flexShrink: 0, width: 14, textAlign: "right" }}>{r.score}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11, fontStyle: "italic" }}>
-                        &ldquo;{r.one_line_review}&rdquo;
-                      </p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {r.albums!.title}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <RecentReviewsSection items={recentReviews.map((r) => ({
+                id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
+                year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
+                score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
+              }))} />
             </div>
           )}
 
@@ -356,71 +361,11 @@ export default async function ProfilePage({
             <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
               최근 청음
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {recent.map((r) => (
-                <div key={r.albums!.id + r.updated_at} className="rating-row" style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  transition: "background 0.15s",
-                }}>
-                  {/* 커버 */}
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    flexShrink: 0,
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    backgroundColor: "var(--bg-elevated)",
-                    border: "1px solid var(--border)",
-                  }}>
-                    {r.albums!.cover_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.albums!.cover_url} alt={r.albums!.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ fontSize: 14 }}>♪</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 앨범 정보 */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.albums!.title}
-                    </p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
-                      {r.albums!.artist}
-                      {r.albums!.genre && <span style={{ marginLeft: 6, opacity: 0.7 }}>{r.albums!.genre}</span>}
-                    </p>
-                  </div>
-
-                  {/* 날짜 */}
-                  <span style={{ color: "var(--text-muted)", fontSize: 11, flexShrink: 0 }}>
-                    {new Date(r.updated_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
-                  </span>
-
-                  {/* 점수 */}
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 6,
-                    backgroundColor: "var(--bg-elevated)",
-                    border: `1px solid var(--border)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 14 }}>
-                      {r.score}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <RecentListSection items={recent.map((r) => ({
+              id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
+              year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
+              score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
+            }))} />
           </div>
         </div>
 
@@ -472,7 +417,7 @@ export default async function ProfilePage({
               </p>
               <div style={{ textAlign: "center" }}>
                 <p style={{ fontSize: 28, marginBottom: 8 }}>{bestMatch.user.emoji}</p>
-                <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 14 }}>{bestMatch.user.display_name}</p>
+                <Link href={`/profile/${bestMatch.user.id}`} style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{bestMatch.user.display_name}</Link>
                 <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
                   공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
                   <span style={{ color: bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
@@ -494,14 +439,14 @@ export default async function ProfilePage({
             padding: "24px 28px",
           }}>
             <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-              VS MEMBERS
+              멤버 비교
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {comparisons.map(({ user: other, commonCount, diff }) => (
-                <div key={other.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                  <span style={{ color: "var(--text-sub)", fontSize: 13 }}>
+                <div key={other.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }} className="hover:opacity-70 transition-opacity cursor-default">
+                  <Link href={`/profile/${other.id}`} style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">
                     {other.emoji} {other.display_name}
-                  </span>
+                  </Link>
                   <div style={{ textAlign: "right" }}>
                     <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
                     {diff !== null && (
@@ -518,6 +463,7 @@ export default async function ProfilePage({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </main>
     </div>
