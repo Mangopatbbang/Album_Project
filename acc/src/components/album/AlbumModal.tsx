@@ -57,7 +57,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
   const handleToggleLike = async (idx: number) => {
     if (!profile || savingLike) return;
-    const hasRating = full?.ratings?.find((r) => r.user_id === profile.id);
+    const hasRating = ratings.find((r) => r.user_id === profile.id);
     if (!hasRating) return;
     const next = new Set(myLikedTracks);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
@@ -87,8 +87,9 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   // 상세 데이터 fetch
   useEffect(() => {
     fetch(`/api/albums/${album.id}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
+        if (!data || !Array.isArray(data.ratings)) return;
         setFull(data);
         // 내 기존 평점 불러오기
         if (profile) {
@@ -156,6 +157,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   };
 
   const data = full ?? album;
+  const ratings = (data as FullAlbum).ratings ?? album.ratings ?? [];
   const tracklist = full?.tracklist
     ? full.tracklist.split(";").map((t) => t.trim()).filter(Boolean)
     : [];
@@ -286,7 +288,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {USERS.map((user) => {
-              const r = data.ratings.find((rt) => rt.user_id === user.id);
+              const r = ratings.find((rt) => rt.user_id === user.id);
               const review = r?.one_line_review ?? "";
               const LIMIT = 36;
               const isLong = review.length > LIMIT;
@@ -396,7 +398,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{myReview.length}/100</span>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {full?.ratings?.find((r) => r.user_id === profile?.id) && (
+                  {ratings.find((r) => r.user_id === profile?.id) && (
                     <button
                       onClick={handleDelete}
                       disabled={deleting}
@@ -457,11 +459,11 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 {tracklist.map((track, i) => {
                   const othersWhoLiked = USERS.filter((u) => {
                     if (u.id === profile?.id) return false;
-                    const r = full?.ratings?.find((rt) => rt.user_id === u.id);
+                    const r = ratings.find((rt) => rt.user_id === u.id);
                     return r?.liked_tracks?.split(",").map(Number).includes(i);
                   });
                   const iLiked = myLikedTracks.has(i);
-                  const hasMyRating = !!full?.ratings?.find((r) => r.user_id === profile?.id);
+                  const hasMyRating = !!ratings.find((r) => r.user_id === profile?.id);
                   return (
                     <li key={i} style={{ display: "flex", gap: 10, alignItems: "center", padding: "3px 0" }}>
                       <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
