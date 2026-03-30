@@ -183,7 +183,10 @@ export default async function HomePage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {recentPlaylists.map((pl) => {
                   const user = USERS.find((u) => u.id === pl.user_id);
-                  const covers = pl.playlist_entries.slice(0, 4).map((e: { albums: { cover_url: string | null } | null }) => e.albums?.cover_url ?? null);
+                  const covers = pl.playlist_entries.slice(0, 4).map((e: { albums: { cover_url: string | null } | { cover_url: string | null }[] | null }) => {
+                    const a = Array.isArray(e.albums) ? e.albums[0] : e.albums;
+                    return a?.cover_url ?? null;
+                  });
                   return (
                     <Link key={pl.id} href={`/playlist/${pl.id}`} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12 }} className="hover:opacity-80 transition-opacity">
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, width: 40, height: 40, borderRadius: 6, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)" }}>
