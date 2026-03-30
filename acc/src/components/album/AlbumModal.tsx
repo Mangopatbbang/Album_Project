@@ -14,7 +14,7 @@ type RatingWithLikes = {
   liked_tracks: string | null;
 };
 
-type FullAlbum = AlbumWithRatings & {
+type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
   ratings: RatingWithLikes[];
 };
