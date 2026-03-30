@@ -104,7 +104,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             }
           }
         }
-      });
+      })
+      .catch(() => {});
   }, [album.id, profile]);
 
   // 배경 스크롤 잠금
@@ -139,7 +140,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     if (!profile || myScore === null) return;
     setSaving(true);
 
-    await fetch("/api/ratings", {
+    const res = await fetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -151,6 +152,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     });
 
     setSaving(false);
+    if (!res.ok) return;
     setSaved(true);
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
