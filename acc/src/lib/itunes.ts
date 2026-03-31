@@ -10,54 +10,75 @@ export type ItunesAlbumResult = {
   name: string;
   artist: string;
   release_date: string | null;
+  collection_type: string;
+  genre: string | null;
 };
 
-export async function searchItunesAlbum(
+// iTunes 장르 → 내부 장르 매핑
+const GENRE_MAP: Record<string, string> = {
+  "Hip-Hop/Rap": "Hip-Hop",
+  "R&B/Soul": "R&B",
+  "Dance": "Electronic",
+  "Electronica": "Electronic",
+  "Singer/Songwriter": "Folk",
+  "New Age": "Ambient",
+  "Soundtrack": "기타",
+  "Christian & Gospel": "기타",
+  "Vocal": "Pop",
+};
+
+export function mapItunesGenre(raw: string): string | null {
+  if (!raw || raw === "Music") return null;
+  return GENRE_MAP[raw] ?? raw;
+}
+
+export async function searchItunesAlbumCandidates(
   title: string,
   artist: string
-): Promise<ItunesAlbumResult | null> {
-  const queries = [
-    `${title} ${artist}`,
-    `${title}`,
-  ];
+): Promise<ItunesAlbumResult[]> {
+  const combined = [title, artist].filter(Boolean).join(" ");
+  const queries = combined !== title && combined !== artist
+    ? [combined, title || artist]
+    : [combined];
 
   for (const q of queries) {
     await sleep(DELAY_MS);
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=5`;
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=200`;
 
     const res = await fetch(url);
     if (!res.ok) continue;
 
     const data = await res.json();
-    const results = data.results ?? [];
+    const results: Record<string, unknown>[] = data.results ?? [];
     if (results.length === 0) continue;
 
-    // 아티스트 이름 앞 3글자로 매칭 시도, 없으면 첫 번째 결과
-    const matched =
-      results.find((r: { artistName: string }) =>
-        r.artistName?.toLowerCase().includes(artist.toLowerCase().slice(0, 3))
-      ) ?? results[0];
-
-    if (!matched) continue;
-
-    // artworkUrl100 → 600x600으로 교체
-    const cover = (matched.artworkUrl100 as string)?.replace("100x100", "600x600") ?? "";
-
-    // releaseDate: "2024-01-01T08:00:00Z" → "2024-01-01"
-    const release_date = matched.releaseDate
-      ? (matched.releaseDate as string).slice(0, 10)
-      : null;
-
-    return {
-      collection_id: matched.collectionId,
-      cover_url: cover,
-      name: matched.collectionName,
-      artist: matched.artistName,
-      release_date,
-    };
+    return results
+      .map((r) => ({
+        collection_id: r.collectionId as number,
+        cover_url: ((r.artworkUrl100 as string) ?? "").replace("100x100", "600x600"),
+        name: r.collectionName as string,
+        artist: r.artistName as string,
+        release_date: r.releaseDate ? (r.releaseDate as string).slice(0, 10) : null,
+        collection_type: (r.collectionType as string) ?? "Album",
+        genre: mapItunesGenre((r.primaryGenreName as string) ?? ""),
+      }))
+      .filter((r) => r.collection_type !== "Single");
   }
 
-  return null;
+  return [];
+}
+
+export async function searchItunesAlbum(
+  title: string,
+  artist: string
+): Promise<ItunesAlbumResult | null> {
+  const candidates = await searchItunesAlbumCandidates(title, artist);
+  if (candidates.length === 0) return null;
+  return (
+    candidates.find((c) =>
+      c.artist?.toLowerCase().includes(artist.toLowerCase().slice(0, 3))
+    ) ?? candidates[0]
+  );
 }
 
 export async function fetchItunesTracklist(collectionId: number): Promise<string | null> {

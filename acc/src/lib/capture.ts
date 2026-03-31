@@ -5,7 +5,7 @@ export async function captureElement(el: HTMLElement): Promise<void> {
     backgroundColor: "#242220", // --bg-card
     useCORS: true,
     allowTaint: false,
-    scale: 2,
+    scale: Math.min(window.devicePixelRatio * 2, 4),
     logging: false,
   });
 

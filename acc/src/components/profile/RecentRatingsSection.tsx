@@ -21,13 +21,17 @@ function toModal(a: RatingItem): AlbumWithRatings {
   return { id: a.id, title: a.title, artist: a.artist, year: a.year ?? undefined, genre: a.genre ?? undefined, cover_url: a.cover_url ?? undefined, ratings: [] };
 }
 
+const INITIAL_COUNT = 8;
+
 export function RecentListSection({ items }: { items: RatingItem[] }) {
   const [selected, setSelected] = useState<RatingItem | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? items : items.slice(0, INITIAL_COUNT);
 
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {items.map((r) => (
+        {visible.map((r) => (
           <div
             key={r.id + r.updated_at}
             onClick={() => setSelected(r)}
@@ -70,11 +74,23 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 14 }}>{r.score}</span>
+              <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 14, lineHeight: 1, display: "block" }}>{r.score}</span>
             </div>
           </div>
         ))}
       </div>
+      {items.length > INITIAL_COUNT && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          style={{
+            marginTop: 8, color: "var(--text-muted)", fontSize: 11,
+            background: "none", border: "none", cursor: "pointer",
+            textDecoration: "underline", padding: 0,
+          }}
+        >
+          {showAll ? "접기" : `+${items.length - INITIAL_COUNT}개 더보기`}
+        </button>
+      )}
       {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} />}
     </>
   );

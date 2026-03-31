@@ -21,9 +21,10 @@ async function getInitialAlbums() {
     .from("albums")
     .select("id, title, artist, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
     .order("created_at", { ascending: false })
-    .limit(31);
+    .order("id", { ascending: false })
+    .range(0, 30);
 
-  if (error || !data) return { items: [], hasMore: false, nextCursor: null };
+  if (error || !data) return { items: [], hasMore: false, nextOffset: null };
 
   const hasMore = data.length > 30;
   const page = hasMore ? data.slice(0, 30) : data;
@@ -40,7 +41,7 @@ async function getInitialAlbums() {
   return {
     items,
     hasMore,
-    nextCursor: hasMore ? (page[page.length - 1].created_at ?? null) : null,
+    nextOffset: hasMore ? 30 : null,
   };
 }
 
@@ -68,7 +69,7 @@ async function getTotalCount(): Promise<number> {
 }
 
 export default async function AlbumsPage() {
-  const [{ items, hasMore, nextCursor }, genres, totalCount] = await Promise.all([
+  const [{ items, hasMore, nextOffset }, genres, totalCount] = await Promise.all([
     getInitialAlbums(),
     getGenres(),
     getTotalCount(),
@@ -98,7 +99,7 @@ export default async function AlbumsPage() {
         <AlbumList
           initialAlbums={items}
           initialHasMore={hasMore}
-          initialNextCursor={nextCursor}
+          initialNextOffset={nextOffset}
           genres={genres}
         />
       </main>

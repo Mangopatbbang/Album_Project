@@ -10,6 +10,9 @@ import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
 import { generateBadges, koGenre } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
+import ProfileEditButton from "@/components/profile/ProfileEditButton";
+import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
+import WatchlistSection from "@/components/profile/WatchlistSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -44,6 +47,17 @@ export default async function ProfilePage({
   const { userId } = await params;
   const user = USERS.find((u) => u.id === userId);
   if (!user) notFound();
+
+  // DB에서 최신 프로필 정보 가져오기 (avatar_url, display_name, emoji 반영)
+  const { data: dbUser } = await supabaseServer
+    .from("users")
+    .select("id, display_name, emoji, avatar_url")
+    .eq("id", userId)
+    .single();
+
+  const displayName = (dbUser as { display_name?: string } | null)?.display_name ?? user.display_name;
+  const displayEmoji = (dbUser as { emoji?: string } | null)?.emoji ?? user.emoji;
+  const avatarUrl = (dbUser as { avatar_url?: string | null } | null)?.avatar_url ?? null;
 
   // 내 전체 평점 — 페이지네이션으로 1000행 제한 우회
   const allRawRatings: RatingRow[] = [];
@@ -198,28 +212,17 @@ export default async function ProfilePage({
         marginBottom: 20,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
-          <div style={{
-            width: 72,
-            height: 72,
-            borderRadius: "50%",
-            backgroundColor: "var(--bg-elevated)",
-            border: "2px solid var(--border-light)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 32,
-          }}>
-            {user.emoji}
-          </div>
+          <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
           <div style={{ flex: 1 }}>
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 24, letterSpacing: "-0.03em" }}>
-              {user.display_name}
+              {displayName}
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
           <ProfileCaptureButton targetId="profile-card" />
+          <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           {badges.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
               {badges.map((badge) => (
@@ -408,6 +411,9 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
+
+          {/* 나중에 들을 앨범 (본인만 보임) */}
+          <WatchlistSection userId={userId} />
 
           {/* 취향 궁합 */}
           {bestMatch && (

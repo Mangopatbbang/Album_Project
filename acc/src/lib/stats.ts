@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 export type AlbumStat = {
@@ -22,7 +23,7 @@ type RawAlbum = {
   ratings: { user_id: string; score: number }[];
 };
 
-export async function fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
+async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   const result: RawAlbum[] = [];
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
@@ -35,6 +36,13 @@ export async function fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   }
   return result;
 }
+
+// 1시간 캐시 — 앨범/평점이 추가되면 revalidatePath("/best")로 갱신
+export const fetchAllAlbumsWithRatings = unstable_cache(
+  _fetchAllAlbumsWithRatings,
+  ["all-albums-with-ratings"],
+  { revalidate: 3600 }
+);
 
 function toStat(album: RawAlbum): AlbumStat & { variance: number } {
   const scores = album.ratings.map((r) => r.score);
@@ -113,6 +121,23 @@ export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
     .filter((a) => a.ratings.length === 1 && a.ratings[0].score >= 7)
     .map(toStat)
     .sort((a, b) => b.avg - a.avg);
+}
+
+// 아티스트별: 2장 이상인 아티스트의 앨범 목록 (아티스트 평균 내림차순)
+export function getBestByArtist(albums: RawAlbum[]): Map<string, AlbumStat[]> {
+  const valid = validAlbums(albums);
+  const map = new Map<string, AlbumStat[]>();
+  for (const a of valid) {
+    if (!map.has(a.artist)) map.set(a.artist, []);
+    map.get(a.artist)!.push(a);
+  }
+  // 3장 미만 또는 Various Artists 제거, 각 아티스트 앨범 avg 내림차순
+  for (const [artist, list] of map) {
+    if (list.length < 3 || artist.toLowerCase().includes("various")) { map.delete(artist); continue; }
+    list.sort((a, b) => b.avg - a.avg);
+  }
+  // 기본 정렬: 보유 앨범 수 내림차순
+  return new Map([...map.entries()].sort((a, b) => b[1].length - a[1].length));
 }
 
 // 테마: 아티스트 대표작 (2장 이상 평가된 아티스트의 최고 앨범)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import AlbumCard from "./AlbumCard";
 import AlbumModal from "./AlbumModal";
 import AlbumAddModal from "./AlbumAddModal";
@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 type Props = {
   initialAlbums: AlbumWithRatings[];
   initialHasMore: boolean;
-  initialNextCursor: string | null;
+  initialNextOffset: number | null;
   genres: string[];
 };
 
@@ -30,14 +30,14 @@ const MY_SORT_OPTIONS = [
 export default function AlbumList({
   initialAlbums,
   initialHasMore,
-  initialNextCursor,
+  initialNextOffset,
   genres,
 }: Props) {
   const { profile } = useAuth();
   const [albums, setAlbums] = useState<AlbumWithRatings[]>(initialAlbums);
   const [showAddModal, setShowAddModal] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
+  const [nextOffset, setNextOffset] = useState<number | null>(initialNextOffset);
   const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -47,13 +47,14 @@ export default function AlbumList({
   const [myScore, setMyScore] = useState<number | null>(null);
 const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const sortOptions = profile
     ? [...BASE_SORT_OPTIONS, ...MY_SORT_OPTIONS]
     : BASE_SORT_OPTIONS;
 
   const fetchAlbums = useCallback(
-    async (params: { search: string; genre: string; sort: string; unrated: boolean; myScore: number | null; cursor?: string | null }) => {
+    async (params: { search: string; genre: string; sort: string; unrated: boolean; myScore: number | null; offset?: number }) => {
       const q = new URLSearchParams();
       if (params.search) q.set("search", params.search);
       if (params.genre) q.set("genre", params.genre);
@@ -69,13 +70,13 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
       if ((params.sort === "my_desc" || params.sort === "my_asc") && profile) {
         q.set("userId", profile.id);
       }
-      if (params.cursor) q.set("cursor", params.cursor);
+      if (params.offset) q.set("offset", String(params.offset));
 
       const res = await fetch(`/api/albums?${q.toString()}`);
       return res.json() as Promise<{
         items: AlbumWithRatings[];
         hasMore: boolean;
-        nextCursor: string | null;
+        nextOffset: number | null;
       }>;
     },
     [profile]
@@ -85,23 +86,36 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null) => {
       setLoading(true);
       const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore });
-      setAlbums(data.items);
+      setAlbums(data.items ?? []);
       setHasMore(data.hasMore);
-      setNextCursor(data.nextCursor);
+      setNextOffset(data.nextOffset);
       setLoading(false);
     },
     [fetchAlbums]
   );
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = useCallback(async () => {
     if (!hasMore || loading) return;
     setLoading(true);
-    const data = await fetchAlbums({ search, genre, sort, unrated, myScore, cursor: nextCursor });
+    const data = await fetchAlbums({ search, genre, sort, unrated, myScore, offset: nextOffset ?? 0 });
+    if (!data.items) { setLoading(false); return; }
     setAlbums((prev) => [...prev, ...data.items]);
     setHasMore(data.hasMore);
-    setNextCursor(data.nextCursor);
+    setNextOffset(data.nextOffset);
     setLoading(false);
-  };
+  }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, nextOffset]);
+
+  // 무한 스크롤: sentinel이 뷰포트에 들어오면 자동 로드
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) handleLoadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [handleLoadMore]);
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
@@ -293,25 +307,11 @@ return (
         </div>
       )}
 
-      {/* 더 보기 */}
-      {hasMore && (
-        <div className="flex justify-center mt-10">
-          <button
-            onClick={handleLoadMore}
-            disabled={loading}
-            style={{
-              border: "1px solid var(--border-light)",
-              color: "var(--text-sub)",
-              backgroundColor: "transparent",
-              borderRadius: 6,
-              padding: "8px 24px",
-              fontSize: 13,
-              cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.5 : 1,
-            }}
-          >
-            {loading ? "불러오는 중..." : "더 보기"}
-          </button>
+      {/* 무한 스크롤 sentinel */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {loading && albums.length > 0 && (
+        <div style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
+          불러오는 중...
         </div>
       )}
 
@@ -324,6 +324,7 @@ return (
             if (!res.ok) return;
             const updated = await res.json();
             setAlbums((prev) => prev.map((a) => a.id === albumId ? { ...updated } : a));
+            setSelectedAlbum((prev) => prev?.id === albumId ? { ...updated } : prev);
           }}
         />
       )}

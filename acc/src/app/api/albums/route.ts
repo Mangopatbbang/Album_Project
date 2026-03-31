@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 const LIMIT = 30;
@@ -7,7 +8,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const limit = Math.min(Number(searchParams.get("limit") ?? LIMIT), 100);
-  const cursor = searchParams.get("cursor");
+  const offset = Number(searchParams.get("offset") ?? 0);
   const search = searchParams.get("search")?.trim();
   const genre = searchParams.get("genre")?.trim();
   const sort = searchParams.get("sort") ?? "newest";
@@ -15,80 +16,66 @@ export async function GET(req: NextRequest) {
   const unrated = searchParams.get("unrated") === "true";
   const myScore = searchParams.get("myScore") ? Number(searchParams.get("myScore")) : null;
 
-  // avg 정렬
+  // avg 정렬 — 전체 정렬 후 offset 슬라이스
   if (sort === "avg_desc" || sort === "avg_asc") {
-    return handleAvgSort({ limit, cursor, search, genre, sort, userId, unrated });
+    return handleAvgSort({ limit, offset, search, genre, sort, userId, unrated });
   }
 
-  // 내 평점 기준 정렬
+  // 내 평점 기준 정렬 — 전체 정렬 후 offset 슬라이스
   if ((sort === "my_desc" || sort === "my_asc") && userId) {
-    return handleMySort({ limit, cursor, search, genre, sort, userId, unrated });
+    return handleMySort({ limit, offset, search, genre, sort, userId });
   }
 
-  // 특정 점수 필터: 내가 해당 점수를 준 앨범만
+  // 특정 점수 필터
   if (myScore && userId) {
-    const scoredAll: { album_id: string }[] = [];
-    for (let page = 0; ; page++) {
-      const { data: scored } = await supabaseServer
-        .from("ratings")
-        .select("album_id")
-        .eq("user_id", userId)
-        .eq("score", myScore)
-        .range(page * 1000, (page + 1) * 1000 - 1);
-      if (!scored || scored.length === 0) break;
-      scoredAll.push(...scored);
-      if (scored.length < 1000) break;
-    }
-    const scoreIds = scoredAll.map((r) => r.album_id);
-    if (scoreIds.length === 0) return NextResponse.json({ items: [], nextCursor: null, hasMore: false });
+    const { data: scored, error: scoreErr } = await supabaseServer
+      .from("ratings")
+      .select("album_id")
+      .eq("user_id", userId)
+      .eq("score", myScore);
+    if (scoreErr) return NextResponse.json({ error: scoreErr.message }, { status: 500 });
+
+    const scoreIds = (scored ?? []).map((r) => r.album_id);
+    if (scoreIds.length === 0) return NextResponse.json({ items: [], nextOffset: null, hasMore: false });
 
     let q = supabaseServer
       .from("albums")
-      .select("id, title, artist, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
+      .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
       .in("id", scoreIds);
     if (search) q = q.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
     if (genre) q = q.eq("genre", genre);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ items: (data ?? []).map(mapAlbum), nextCursor: null, hasMore: false });
+    return NextResponse.json({ items: (data ?? []).map(mapAlbum), nextOffset: null, hasMore: false });
   }
 
-  // 미평가 앨범: 내가 평가한 album_id 목록 제외
+  // 미평가 앨범 — 내가 평가한 album_id 제외
   let excludeIds: string[] = [];
   if (unrated && userId) {
-    for (let page = 0; ; page++) {
-      const { data: rated } = await supabaseServer
-        .from("ratings")
-        .select("album_id")
-        .eq("user_id", userId)
-        .range(page * 1000, (page + 1) * 1000 - 1);
-      if (!rated || rated.length === 0) break;
-      excludeIds.push(...rated.map((r) => r.album_id));
-      if (rated.length < 1000) break;
-    }
+    const { data: rated } = await supabaseServer
+      .from("ratings")
+      .select("album_id")
+      .eq("user_id", userId);
+    excludeIds = (rated ?? []).map((r) => r.album_id);
   }
 
-  // 일반 정렬: DB 쿼리
+  // 일반 정렬 — DB에서 offset 기반으로 직접 가져오기 (전체 로드 없음)
   let query = supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
-    .limit(limit + 1);
+    .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+    .range(offset, offset + limit);
 
   if (search) query = query.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
   if (genre) query = query.eq("genre", genre);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
   if (sort === "oldest") {
-    query = query.order("created_at", { ascending: true });
-    if (cursor) query = query.gt("created_at", cursor);
+    query = query.order("created_at", { ascending: true }).order("id", { ascending: true });
   } else if (sort === "title") {
-    query = query.order("title", { ascending: true });
-    if (cursor) query = query.gt("title", cursor);
+    query = query.order("title", { ascending: true }).order("id", { ascending: true });
   } else {
-    // newest (기본)
-    query = query.order("created_at", { ascending: false });
-    if (cursor) query = query.lt("created_at", cursor);
+    query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
   }
 
   const { data, error } = await query;
@@ -98,47 +85,33 @@ export async function GET(req: NextRequest) {
   const hasMore = items.length > limit;
   const page = hasMore ? items.slice(0, limit) : items;
 
-  const mapped = page.map(mapAlbum);
-  const nextCursor = hasMore
-    ? sort === "title"
-      ? mapped[mapped.length - 1].title
-      : sort === "oldest" || sort === "newest"
-        ? (page[page.length - 1] as { created_at?: string }).created_at ?? null
-        : String(mapped[mapped.length - 1].id)
-    : null;
-
-  return NextResponse.json({ items: mapped, nextCursor, hasMore });
+  return NextResponse.json({
+    items: page.map(mapAlbum),
+    nextOffset: hasMore ? offset + limit : null,
+    hasMore,
+  });
 }
 
 // 내 평점 기준 정렬
 async function handleMySort(params: {
   limit: number;
-  cursor: string | null;
+  offset: number;
   search?: string;
   genre?: string;
   sort: string;
   userId: string;
-  unrated: boolean;
 }) {
-  const { limit, cursor, search, genre, sort, userId } = params;
+  const { limit, offset, search, genre, sort, userId } = params;
 
-  const myRatingsAll: { album_id: string; score: number }[] = [];
-  for (let page = 0; ; page++) {
-    const { data: myRatings } = await supabaseServer
-      .from("ratings")
-      .select("album_id, score")
-      .eq("user_id", userId)
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!myRatings || myRatings.length === 0) break;
-    myRatingsAll.push(...myRatings);
-    if (myRatings.length < 1000) break;
-  }
-  const myScoreMap = new Map(myRatingsAll.map((r) => [r.album_id, r.score]));
+  const { data: myRatings } = await supabaseServer
+    .from("ratings")
+    .select("album_id, score")
+    .eq("user_id", userId);
+  const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
   if (genre) albumQuery = albumQuery.eq("genre", genre);
-
   const { data: allAlbums } = await albumQuery;
 
   const sorted = (allAlbums ?? [])
@@ -146,20 +119,11 @@ async function handleMySort(params: {
     .map((a) => ({ id: a.id, score: myScoreMap.get(a.id)! }))
     .sort((a, b) => sort === "my_desc" ? b.score - a.score : a.score - b.score);
 
-  let startIndex = 0;
-  if (cursor) {
-    const idx = sorted.findIndex((a) => a.id === cursor);
-    startIndex = idx >= 0 ? idx + 1 : 0;
-  }
+  const pageItems = sorted.slice(offset, offset + limit + 1);
+  const hasMore = pageItems.length > limit;
+  const pageIds = pageItems.slice(0, limit).map((a) => a.id);
 
-  const pageSlice = sorted.slice(startIndex, startIndex + limit + 1);
-  const hasMore = pageSlice.length > limit;
-  const pageItems = pageSlice.slice(0, limit);
-  const pageIds = pageItems.map((a) => a.id);
-
-  if (pageIds.length === 0) {
-    return NextResponse.json({ items: [], nextCursor: null, hasMore: false });
-  }
+  if (pageIds.length === 0) return NextResponse.json({ items: [], nextOffset: null, hasMore: false });
 
   const { data, error } = await supabaseServer
     .from("albums")
@@ -169,41 +133,37 @@ async function handleMySort(params: {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const orderMap = new Map(pageIds.map((id, i) => [id, i]));
-  const reordered = (data ?? []).sort(
-    (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0)
-  );
+  const reordered = (data ?? []).sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
 
-  const nextCursor = hasMore ? pageItems[pageItems.length - 1].id : null;
-  return NextResponse.json({ items: reordered.map(mapAlbum), nextCursor, hasMore });
+  return NextResponse.json({
+    items: reordered.map(mapAlbum),
+    nextOffset: hasMore ? offset + limit : null,
+    hasMore,
+  });
 }
 
-// avg 정렬: 전체 평점 집계 후 정렬 → index 기반 페이지네이션
+// avg 정렬 — 전체 rating 집계 후 정렬, offset 슬라이스
 async function handleAvgSort(params: {
   limit: number;
-  cursor: string | null;
+  offset: number;
   search?: string;
   genre?: string;
   sort: string;
   userId?: string;
   unrated?: boolean;
 }) {
-  const { limit, cursor, search, genre, sort, userId, unrated } = params;
+  const { limit, offset, search, genre, sort, userId, unrated } = params;
 
   let excludeIds: string[] = [];
   if (unrated && userId) {
-    for (let page = 0; ; page++) {
-      const { data: rated } = await supabaseServer
-        .from("ratings")
-        .select("album_id")
-        .eq("user_id", userId)
-        .range(page * 1000, (page + 1) * 1000 - 1);
-      if (!rated || rated.length === 0) break;
-      excludeIds.push(...rated.map((r) => r.album_id));
-      if (rated.length < 1000) break;
-    }
+    const { data: rated } = await supabaseServer
+      .from("ratings")
+      .select("album_id")
+      .eq("user_id", userId);
+    excludeIds = (rated ?? []).map((r) => r.album_id);
   }
 
-  // 1. 전체 평점 집계
+  // 전체 rating 집계 (페이지네이션으로 1000건 제한 우회)
   const ratingData: { album_id: string; score: number }[] = [];
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
@@ -217,27 +177,22 @@ async function handleAvgSort(params: {
 
   const totalMap = new Map<string, number>();
   const countMap = new Map<string, number>();
-
-  for (const r of ratingData ?? []) {
+  for (const r of ratingData) {
     totalMap.set(r.album_id, (totalMap.get(r.album_id) ?? 0) + r.score);
     countMap.set(r.album_id, (countMap.get(r.album_id) ?? 0) + 1);
   }
 
-  // 2. 필터 조건에 맞는 앨범 ID 목록 가져오기
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
-
   const { data: allAlbums } = await albumQuery;
 
-  // 3. 전체 정렬
   const sorted = (allAlbums ?? [])
     .map((a) => {
       const total = totalMap.get(a.id);
       const count = countMap.get(a.id) ?? 0;
-      const avg = total != null && count > 0 ? total / count : null;
-      return { id: a.id, avg };
+      return { id: a.id, avg: total != null && count > 0 ? total / count : null };
     })
     .sort((a, b) => {
       if (a.avg === null && b.avg === null) return 0;
@@ -246,23 +201,12 @@ async function handleAvgSort(params: {
       return sort === "avg_desc" ? b.avg - a.avg : a.avg - b.avg;
     });
 
-  // 4. 커서 기반 페이지네이션 (index)
-  let startIndex = 0;
-  if (cursor) {
-    const idx = sorted.findIndex((a) => a.id === cursor);
-    startIndex = idx >= 0 ? idx + 1 : 0;
-  }
+  const pageItems = sorted.slice(offset, offset + limit + 1);
+  const hasMore = pageItems.length > limit;
+  const pageIds = pageItems.slice(0, limit).map((a) => a.id);
 
-  const pageSlice = sorted.slice(startIndex, startIndex + limit + 1);
-  const hasMore = pageSlice.length > limit;
-  const pageItems = pageSlice.slice(0, limit);
-  const pageIds = pageItems.map((a) => a.id);
+  if (pageIds.length === 0) return NextResponse.json({ items: [], nextOffset: null, hasMore: false });
 
-  if (pageIds.length === 0) {
-    return NextResponse.json({ items: [], nextCursor: null, hasMore: false });
-  }
-
-  // 5. 실제 앨범 데이터 조회
   const { data, error } = await supabaseServer
     .from("albums")
     .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
@@ -270,15 +214,14 @@ async function handleAvgSort(params: {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // 6. 정렬 순서 복원
   const orderMap = new Map(pageIds.map((id, i) => [id, i]));
-  const reordered = (data ?? []).sort(
-    (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0)
-  );
+  const reordered = (data ?? []).sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
 
-  const nextCursor = hasMore ? pageItems[pageItems.length - 1].id : null;
-
-  return NextResponse.json({ items: reordered.map(mapAlbum), nextCursor, hasMore });
+  return NextResponse.json({
+    items: reordered.map(mapAlbum),
+    nextOffset: hasMore ? offset + limit : null,
+    hasMore,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -289,7 +232,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   }
 
-  // 중복 체크
   const { data: existing } = await supabaseServer
     .from("albums")
     .select("id, title, artist")
@@ -306,7 +248,6 @@ export async function POST(req: NextRequest) {
   }
 
   const newId = crypto.randomUUID();
-
   const { data, error } = await supabaseServer
     .from("albums")
     .insert({ id: newId, title: title.trim(), artist: artist.trim(), year, release_date, genre, cover_url, tracklist })
@@ -314,6 +255,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/best"); // 도감 캐시 갱신
   return NextResponse.json(data, { status: 201 });
 }
 
@@ -329,10 +271,9 @@ function mapAlbum(album: {
 }) {
   const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
   const scores = ratings.map((r) => r.score).filter((s) => typeof s === "number");
-  const avg =
-    scores.length > 0
-      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
-      : null;
+  const avg = scores.length > 0
+    ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+    : null;
 
   return {
     id: album.id,

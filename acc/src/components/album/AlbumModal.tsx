@@ -6,12 +6,14 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { scoreColor } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
+import AlbumEditModal from "@/components/album/AlbumEditModal";
 
 type RatingWithLikes = {
   user_id: string;
   score: number;
   one_line_review: string | null;
   liked_tracks: string | null;
+  liked_by: string | null;
 };
 
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
@@ -37,9 +39,15 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const [closing, setClosing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [captured, setCaptured] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [myLikedTracks, setMyLikedTracks] = useState<Set<number>>(new Set());
+  const [myLikedReviews, setMyLikedReviews] = useState<Set<string>>(new Set());
+  const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
+  const [hoveredReview, setHoveredReview] = useState<string | null>(null);
   const [savingLike, setSavingLike] = useState(false);
+  const [isWatchlisted, setIsWatchlisted] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnBackdrop = useRef(false);
 
   const handleCapture = async () => {
     if (!cardRef.current || capturing) return;
@@ -75,6 +83,29 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     setSavingLike(false);
   };
 
+  const handleToggleLikeReview = async (reviewerId: string) => {
+    if (!profile || savingLike) return;
+    const next = new Set(myLikedReviews);
+    if (next.has(reviewerId)) next.delete(reviewerId); else next.add(reviewerId);
+    setMyLikedReviews(next);
+    setSavingLike(true);
+    const res = await fetch("/api/ratings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: album.id, reviewerId, likerId: profile.id }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setFull((prev) => prev ? {
+        ...prev,
+        ratings: prev.ratings.map((r) =>
+          r.user_id === reviewerId ? { ...r, liked_by: data.liked_by } : r
+        ),
+      } : prev);
+    }
+    setSavingLike(false);
+  };
+
   const toggleReview = (userId: string) => {
     setExpandedReviews((prev) => {
       const next = new Set(prev);
@@ -91,7 +122,6 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
         setFull(data);
-        // 내 기존 평점 불러오기
         if (profile) {
           const myRating = data.ratings?.find(
             (r: { user_id: string }) => r.user_id === profile.id
@@ -103,10 +133,41 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               setMyLikedTracks(new Set(myRating.liked_tracks.split(",").map(Number)));
             }
           }
+          const likedReviews = new Set<string>();
+          (data.ratings as RatingWithLikes[]).forEach((r) => {
+            if (r.liked_by?.split(",").includes(profile.id)) {
+              likedReviews.add(r.user_id);
+            }
+          });
+          setMyLikedReviews(likedReviews);
         }
       })
       .catch(() => {});
   }, [album.id, profile]);
+
+  // 찜 여부 fetch
+  useEffect(() => {
+    if (!profile) return;
+    fetch(`/api/watchlist?userId=${profile.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.items) {
+          setIsWatchlisted(data.items.some((i: { album_id: string }) => i.album_id === album.id));
+        }
+      })
+      .catch(() => {});
+  }, [album.id, profile]);
+
+  const handleToggleWatchlist = async () => {
+    if (!profile) return;
+    const method = isWatchlisted ? "DELETE" : "POST";
+    setIsWatchlisted(!isWatchlisted);
+    await fetch("/api/watchlist", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: profile.id, albumId: album.id }),
+    });
+  };
 
   // 배경 스크롤 잠금
   useEffect(() => {
@@ -116,7 +177,13 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
   // ESC 닫기
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { handleClose(); return; }
+      if (e.key === "Backspace") {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag !== "INPUT" && tag !== "TEXTAREA") e.preventDefault();
+      }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,6 +199,15 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     });
     setMyScore(null);
     setMyReview("");
+    setMyLikedTracks(new Set());
+    // 삭제 후 최신 데이터로 갱신
+    const refreshed = await fetch(`/api/albums/${album.id}`);
+    if (refreshed.ok) {
+      const data = await refreshed.json();
+      if (data && Array.isArray(data.ratings)) setFull(data);
+    } else {
+      setFull(null);
+    }
     setDeleting(false);
     onSaved?.(album.id);
   };
@@ -153,6 +229,21 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
     setSaving(false);
     if (!res.ok) return;
+    // 저장 후 최신 데이터로 갱신
+    const refreshed = await fetch(`/api/albums/${album.id}`);
+    if (refreshed.ok) {
+      const data = await refreshed.json();
+      if (data && Array.isArray(data.ratings)) setFull(data);
+    }
+    // 평점 저장 시 찜 자동 해제
+    if (isWatchlisted) {
+      fetch("/api/watchlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: profile.id, albumId: album.id }),
+      });
+      setIsWatchlisted(false);
+    }
     setSaved(true);
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
@@ -165,6 +256,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     : [];
 
   return (
+    <>
     <div
       style={{
         position: "fixed",
@@ -177,7 +269,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         padding: 24,
         animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
-      onClick={handleClose}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); mouseDownOnBackdrop.current = false; }}
     >
       <div
         ref={cardRef}
@@ -230,6 +323,38 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 </p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                {/* 찜하기 버튼: 로그인 + 미평가 시 */}
+                {profile && !ratings.find((r) => r.user_id === profile.id) && (
+                  <button
+                    onClick={handleToggleWatchlist}
+                    title={isWatchlisted ? "찜 해제" : "나중에 듣기"}
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
+                      fontSize: 12, lineHeight: 1,
+                      padding: "2px 6px", borderRadius: 4,
+                      border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
+                      transition: "color 0.15s, border-color 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
+                  </button>
+                )}
+                {profile?.role === "admin" && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    title="앨범 수정"
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                      padding: "2px 6px", borderRadius: 4,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    수정
+                  </button>
+                )}
                 <button
                   onClick={handleCapture}
                   disabled={capturing}
@@ -295,49 +420,66 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               const LIMIT = 36;
               const isLong = review.length > LIMIT;
               const isExpanded = expandedReviews.has(user.id);
+              const iLikedReview = myLikedReviews.has(user.id);
+              const likedByUsers = USERS.filter((u) => r?.liked_by?.split(",").includes(u.id));
+              const canLikeReview = !!profile && !!ratings.find((rt) => rt.user_id === profile.id) && user.id !== profile.id && !!review;
+              const showReviewHeart = canLikeReview && (hoveredReview === user.id || iLikedReview);
               return (
-                <div key={user.id} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  {/* 이모지 + 이름 */}
+                <div
+                  key={user.id}
+                  style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  onMouseEnter={() => setHoveredReview(user.id)}
+                  onMouseLeave={() => setHoveredReview(null)}
+                >
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{user.emoji}</span>
                   <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, width: 110, flexShrink: 0, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
 
                   {r ? (
                     <>
-                      {/* 점수 뱃지 */}
-                      <span style={{
-                        color: scoreColor(r.score),
-                        fontWeight: 700,
-                        fontSize: 15,
-                        flexShrink: 0,
-                        width: 18,
-                        textAlign: "right",
-                      }}>
+                      <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 15, flexShrink: 0, width: 18, textAlign: "right" }}>
                         {r.score}
                       </span>
 
-                      {/* 한줄평 */}
                       {review && (
                         <span style={{ color: "var(--text-muted)", fontSize: 12, fontStyle: "italic", flex: 1, minWidth: 0 }}>
                           &ldquo;{isExpanded || !isLong ? review : review.slice(0, LIMIT)}
                           {isLong && !isExpanded && (
-                            <button
-                              onClick={() => toggleReview(user.id)}
-                              style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: "0 2px", textDecoration: "underline" }}
-                            >
+                            <button onClick={() => toggleReview(user.id)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: "0 2px", textDecoration: "underline" }}>
                               ...더보기
                             </button>
                           )}
                           {isLong && isExpanded && (
-                            <button
-                              onClick={() => toggleReview(user.id)}
-                              style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: "0 2px", textDecoration: "underline" }}
-                            >
+                            <button onClick={() => toggleReview(user.id)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: "0 2px", textDecoration: "underline" }}>
                               {" "}접기
                             </button>
                           )}
                           &rdquo;
                         </span>
                       )}
+                      {!review && <span style={{ flex: 1 }} />}
+
+                      {/* 좋아요 누른 사람 이모지 */}
+                      {likedByUsers.length > 0 && (
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, letterSpacing: "0.05em" }}>
+                          {likedByUsers.map((u) => u.emoji).join("")}
+                        </span>
+                      )}
+
+                      {/* 리뷰 하트 */}
+                      <button
+                        onClick={() => handleToggleLikeReview(user.id)}
+                        disabled={savingLike}
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          color: iLikedReview ? "#e05050" : "var(--text-muted)",
+                          fontSize: 13, padding: "0 2px", flexShrink: 0,
+                          opacity: showReviewHeart ? 1 : 0,
+                          transition: "opacity 0.15s, color 0.15s",
+                          pointerEvents: showReviewHeart ? "auto" : "none",
+                        }}
+                      >
+                        ♥
+                      </button>
                     </>
                   ) : (
                     <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>
@@ -467,32 +609,46 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   const iLiked = myLikedTracks.has(i);
                   const hasMyRating = !!ratings.find((r) => r.user_id === profile?.id);
                   return (
-                    <li key={i} style={{ display: "flex", gap: 10, alignItems: "center", padding: "3px 0" }}>
+                    <li
+                      key={i}
+                      style={{ display: "flex", gap: 8, alignItems: "center", padding: "3px 0" }}
+                      onMouseEnter={() => setHoveredTrack(i)}
+                      onMouseLeave={() => setHoveredTrack(null)}
+                    >
                       <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
                         {i + 1}
                       </span>
-                      <span style={{ color: iLiked ? "var(--text)" : "var(--text-sub)", fontSize: 13, flex: 1, fontWeight: iLiked ? 500 : 400 }}>
-                        {track}
-                      </span>
-                      {othersWhoLiked.length > 0 && (
-                        <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, letterSpacing: "0.05em" }}>
-                          {othersWhoLiked.map((u) => u.emoji).join("")}
+                      {/* 트랙명 + 하트 인라인 */}
+                      <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ color: iLiked ? "var(--text)" : "var(--text-sub)", fontSize: 13, fontWeight: iLiked ? 500 : 400 }}>
+                          {track}
                         </span>
-                      )}
-                      {profile && hasMyRating && (
-                        <button
-                          onClick={() => handleToggleLike(i)}
-                          disabled={savingLike}
-                          style={{
-                            background: "none", border: "none", cursor: "pointer",
-                            color: iLiked ? "#e05050" : "var(--border)",
-                            fontSize: 13, padding: "0 2px", flexShrink: 0,
-                            transition: "color 0.15s",
-                          }}
-                        >
-                          ♥
-                        </button>
-                      )}
+                        {profile && hasMyRating && (
+                          <button
+                            onClick={() => handleToggleLike(i)}
+                            disabled={savingLike}
+                            style={{
+                              background: "none", border: "none", cursor: "pointer",
+                              color: iLiked ? "#e05050" : "var(--text-muted)",
+                              fontSize: 11, padding: 0, flexShrink: 0, lineHeight: 1,
+                              opacity: hoveredTrack === i || iLiked ? 1 : 0,
+                              transition: "opacity 0.15s, color 0.15s",
+                              pointerEvents: hoveredTrack === i || iLiked ? "auto" : "none",
+                            }}
+                          >
+                            ♥
+                          </button>
+                        )}
+                      </span>
+                      {/* 좋아요 총 개수 */}
+                      {(() => {
+                        const total = othersWhoLiked.length + (iLiked ? 1 : 0);
+                        return total > 0 ? (
+                          <span style={{ color: "#e05050", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
+                            ♥ {total}
+                          </span>
+                        ) : null;
+                      })()}
                     </li>
                   );
                 })}
@@ -503,5 +659,29 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       </div>
 
     </div>
+
+      {editing && (
+        <AlbumEditModal
+          album={{
+            id: album.id,
+            title: data.title,
+            artist: data.artist,
+            year: data.year ?? null,
+            genre: data.genre ?? null,
+            cover_url: data.cover_url ?? null,
+            tracklist: full?.tracklist ?? null,
+          }}
+          onClose={() => setEditing(false)}
+          onSaved={async () => {
+            const refreshed = await fetch(`/api/albums/${album.id}`);
+            if (refreshed.ok) {
+              const updated = await refreshed.json();
+              if (updated && Array.isArray(updated.ratings)) setFull(updated);
+            }
+            onSaved?.(album.id);
+          }}
+        />
+      )}
+    </>
   );
 }

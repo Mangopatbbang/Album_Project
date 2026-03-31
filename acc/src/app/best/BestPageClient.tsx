@@ -228,6 +228,79 @@ function SectionGrid({
   );
 }
 
+function ArtistSection({
+  artist,
+  list,
+  onAlbumClick,
+}: {
+  artist: string;
+  list: AlbumStat[];
+  onAlbumClick: (a: AlbumStat) => void;
+}) {
+  const artistAvg = (list.reduce((s, a) => s + a.avg, 0) / list.length);
+  return (
+    <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
+        <h2 style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>
+          {artist}
+        </h2>
+        <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
+        <span style={{ color: scoreColor(artistAvg), fontSize: 12, fontWeight: 600, marginLeft: "auto" }}>
+          avg {artistAvg.toFixed(2)}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {list.map((album, idx) => (
+          <div
+            key={album.id}
+            style={{ width: 80, flexShrink: 0, cursor: "pointer" }}
+            onClick={() => onAlbumClick(album)}
+            className="transition-transform active:scale-[0.93]"
+          >
+            <div style={{
+              width: 80, height: 80, borderRadius: 6, overflow: "hidden",
+              backgroundColor: "var(--bg-elevated)",
+              border: `1px solid ${glowBorder(album.avg)}`,
+              boxShadow: glowShadow(album.avg),
+              position: "relative", transition: "opacity 0.15s",
+            }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+            >
+              {album.cover_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 18, color: "var(--text-muted)" }}>♪</span>
+                  </div>
+              }
+              <div style={{
+                position: "absolute", top: 4, left: 4,
+                backgroundColor: idx === 0 ? "var(--accent)" : "rgba(0,0,0,0.6)",
+                color: idx === 0 ? "var(--bg)" : "var(--text-muted)",
+                fontSize: 9, fontWeight: 700, borderRadius: 3, padding: "1px 4px",
+              }}>
+                {idx + 1}
+              </div>
+              <div style={{
+                position: "absolute", bottom: 4, right: 4,
+                backgroundColor: "rgba(0,0,0,0.7)",
+                color: scoreColor(album.avg),
+                fontSize: 10, fontWeight: 700, borderRadius: 3, padding: "1px 4px",
+              }}>
+                {album.avg.toFixed(1)}
+              </div>
+            </div>
+            <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {album.title}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function BestPageClient({
   sections,
   view,
@@ -237,6 +310,15 @@ export default function BestPageClient({
 }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [artistSort, setArtistSort] = useState<"count" | "avg">("count");
+
+  const sortedArtistSections = artistSort === "avg"
+    ? [...sections].sort((a, b) => {
+        const avgA = a[1].reduce((s, x) => s + x.avg, 0) / a[1].length;
+        const avgB = b[1].reduce((s, x) => s + x.avg, 0) / b[1].length;
+        return avgB - avgA;
+      })
+    : sections;
 
   const openSectionData = openSection
     ? sections.find(([label]) => label === openSection)
@@ -244,19 +326,50 @@ export default function BestPageClient({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ minWidth: 0 }}>
-        {sections.map(([label, list]) => (
-          <SectionGrid
-            key={label}
-            label={label}
-            list={list}
-            onAlbumClick={(a) => setSelectedAlbum(a)}
-            onMoreClick={() => setOpenSection(label)}
-          />
-        ))}
-      </div>
+      {view === "artist" ? (
+        <>
+          <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+            {(["avg", "count"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setArtistSort(s)}
+                style={{
+                  padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  backgroundColor: artistSort === s ? "var(--accent)" : "var(--bg-elevated)",
+                  color: artistSort === s ? "var(--bg)" : "var(--text-sub)",
+                  border: `1px solid ${artistSort === s ? "var(--accent)" : "var(--border)"}`,
+                  cursor: "pointer",
+                }}
+              >
+                {s === "count" ? "음반 수" : "평균 평점"}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {sortedArtistSections.map(([artist, list]) => (
+              <ArtistSection
+                key={artist}
+                artist={artist}
+                list={list}
+                onAlbumClick={(a) => setSelectedAlbum(a)}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ minWidth: 0 }}>
+          {sections.map(([label, list]) => (
+            <SectionGrid
+              key={label}
+              label={label}
+              list={list}
+              onAlbumClick={(a) => setSelectedAlbum(a)}
+              onMoreClick={() => setOpenSection(label)}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* 앨범 모달 */}
       {selectedAlbum && (
         <AlbumModal
           album={toAlbumWithRatings(selectedAlbum)}
@@ -264,7 +377,6 @@ export default function BestPageClient({
         />
       )}
 
-      {/* 더보기 팝업 */}
       {openSectionData && (
         <SectionPopup
           label={openSectionData[0]}

@@ -7,6 +7,7 @@ import { fetchAllAlbumsWithRatings, getBestByYear } from "@/lib/stats";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import CountUp from "@/components/ui/CountUp";
+import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -150,13 +151,15 @@ export default async function HomePage() {
               {yearPreview.map(({ year, album }) => album ? (
                 <div key={year} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 600, width: 36, flexShrink: 0 }}>{year}</span>
-                  <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(album.avg)}`, boxShadow: glowShadow(album.avg) }}>
-                    {album.cover_url
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span></div>
-                    }
-                  </div>
+                  <AlbumCoverButton album={{ ...album, cover_url: album.cover_url ?? null }} style={{ flexShrink: 0 }} hoverOpacity>
+                    <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(album.avg)}`, boxShadow: glowShadow(album.avg) }}>
+                      {album.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span></div>
+                      }
+                    </div>
+                  </AlbumCoverButton>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
                     <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist}</p>

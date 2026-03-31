@@ -5,6 +5,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
+import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,12 +35,13 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
   const { data: ratings } = albumIds.length > 0
     ? await supabaseServer
         .from("ratings")
-        .select("album_id, score")
+        .select("album_id, score, liked_tracks")
         .eq("user_id", data.user_id)
         .in("album_id", albumIds)
     : { data: [] };
 
   const ratingMap = new Map((ratings ?? []).map((r: { album_id: string; score: number }) => [r.album_id, r.score]));
+  const likedTracksMap = new Map((ratings ?? []).map((r: { album_id: string; liked_tracks: string | null }) => [r.album_id, r.liked_tracks]));
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -96,6 +98,11 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                   .filter((i: number) => i >= 0 && i < tracklistArr.length)
                   .map((i: number) => ({ idx: i, name: tracklistArr[i] }))
               : [];
+            const likedTracks = tracklistArr.length > 0 && likedTracksMap.get(album.id)
+              ? (likedTracksMap.get(album.id) as string).split(",").map(Number)
+                  .filter((i: number) => i >= 0 && i < tracklistArr.length)
+                  .map((i: number) => ({ idx: i, name: tracklistArr[i] }))
+              : [];
 
             return (
               <div key={entry.id} style={{
@@ -105,16 +112,18 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
               }}>
                 {/* 앨범 헤더 */}
                 <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                  <div style={{
-                    width: 80, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0,
-                    backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                  }}>
-                    {album.cover_url
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 28, color: "var(--text-muted)" }}>♪</span></div>
-                    }
-                  </div>
+                  <AlbumCoverButton album={album} style={{ flexShrink: 0 }} hoverOpacity>
+                    <div style={{
+                      width: 80, height: 80, borderRadius: 8, overflow: "hidden",
+                      backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                    }}>
+                      {album.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 28, color: "var(--text-muted)" }}>♪</span></div>
+                      }
+                    </div>
+                  </AlbumCoverButton>
                   <div style={{ flex: 1 }}>
                     <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}>{String(idx + 1).padStart(2, "0")}</span>
                     <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em", marginTop: 2 }}>
@@ -164,6 +173,23 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                         border: "1px solid var(--accent)",
                         color: "var(--accent)",
                         backgroundColor: "rgba(232,255,72,0.06)",
+                      }}>
+                        {idx + 1}. {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* 하트 트랙 */}
+                {likedTracks.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <span style={{ color: "#e05050", fontSize: 11, opacity: 0.7, marginRight: 4 }}>♥</span>
+                    {likedTracks.map(({ idx, name }) => (
+                      <span key={idx} style={{
+                        fontSize: 12, padding: "3px 10px", borderRadius: 12,
+                        border: "1px solid rgba(224,80,80,0.35)",
+                        color: "#e05050",
+                        backgroundColor: "rgba(224,80,80,0.06)",
                       }}>
                         {idx + 1}. {name}
                       </span>

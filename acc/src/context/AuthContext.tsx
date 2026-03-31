@@ -10,6 +10,7 @@ type UserProfile = {
   emoji: string;
   role: "admin" | "user";
   auth_id: string;
+  avatar_url?: string | null;
 };
 
 type AuthContextType = {
@@ -17,6 +18,7 @@ type AuthContextType = {
   profile: UserProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,18 +35,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabaseBrowser
+    const { data, error } = await supabaseBrowser
       .from("users")
-      .select("id, display_name, emoji, role, auth_id")
+      .select("id, display_name, emoji, role, auth_id, avatar_url")
       .eq("auth_id", userId)
       .single();
+    if (error) {
+      // avatar_url 컬럼이 아직 없을 경우 폴백
+      const { data: fallback } = await supabaseBrowser
+        .from("users")
+        .select("id, display_name, emoji, role, auth_id")
+        .eq("auth_id", userId)
+        .single();
+      setProfile(fallback as UserProfile | null);
+      return;
+    }
     setProfile(data as UserProfile | null);
   }
 
   useEffect(() => {
-    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+    supabaseBrowser.auth.getSession().then(async ({ data: { session } }) => {
       setAuthUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) await fetchProfile(session.user.id);
       setLoading(false);
     });
 
@@ -61,12 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const refreshProfile = async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (session?.user) await fetchProfile(session.user.id);
+  };
+
   const signOut = async () => {
     await supabaseBrowser.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ authUser, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ authUser, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

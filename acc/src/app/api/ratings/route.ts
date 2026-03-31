@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { UserId } from "@/types";
 
@@ -16,8 +17,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseServer
     .from("ratings")
-    .select("id, album_id, user_id, score, one_line_review, created_at, updated_at")
-    .limit(1000);
+    .select("id, album_id, user_id, score, one_line_review, created_at, updated_at");
 
   if (albumId) query = query.eq("album_id", albumId);
   if (userId) query = query.eq("user_id", userId);
@@ -67,27 +67,62 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidatePath("/best"); // 도감 캐시 갱신
   return NextResponse.json({ ok: true, rating: data });
 }
 
-// PATCH /api/ratings — liked_tracks만 업데이트
-// body: { albumId, userId, liked_tracks }
+// PATCH /api/ratings
+// liked_tracks: { albumId, userId, liked_tracks }
+// 리뷰 좋아요 토글: { albumId, reviewerId, likerId }
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { albumId, userId, liked_tracks } = body as { albumId: string; userId: UserId; liked_tracks: string | null };
+  const { albumId, userId, liked_tracks, reviewerId, likerId } = body as {
+    albumId: string;
+    userId?: UserId;
+    liked_tracks?: string | null;
+    reviewerId?: string;
+    likerId?: string;
+  };
 
-  if (!albumId || !userId) {
-    return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });
+  if (!albumId) return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
+
+  // liked_tracks 업데이트
+  if (userId && liked_tracks !== undefined) {
+    const { error } = await supabaseServer
+      .from("ratings")
+      .update({ liked_tracks })
+      .eq("album_id", albumId)
+      .eq("user_id", userId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
   }
 
-  const { error } = await supabaseServer
-    .from("ratings")
-    .update({ liked_tracks })
-    .eq("album_id", albumId)
-    .eq("user_id", userId);
+  // 리뷰 좋아요 토글 (서버사이드 read-modify-write)
+  if (reviewerId && likerId) {
+    const { data: current } = await supabaseServer
+      .from("ratings")
+      .select("liked_by")
+      .eq("album_id", albumId)
+      .eq("user_id", reviewerId)
+      .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+    const likers = (current?.liked_by ?? "").split(",").filter(Boolean);
+    const idx = likers.indexOf(likerId);
+    if (idx >= 0) likers.splice(idx, 1);
+    else likers.push(likerId);
+
+    const newVal = likers.length > 0 ? likers.join(",") : null;
+    const { error } = await supabaseServer
+      .from("ratings")
+      .update({ liked_by: newVal })
+      .eq("album_id", albumId)
+      .eq("user_id", reviewerId);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, liked_by: newVal });
+  }
+
+  return NextResponse.json({ error: "잘못된 요청" }, { status: 400 });
 }
 
 // DELETE /api/ratings

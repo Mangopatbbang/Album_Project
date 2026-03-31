@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { captureElement } from "@/lib/capture";
 
 export default function ProfileCaptureButton({ targetId }: { targetId: string }) {
