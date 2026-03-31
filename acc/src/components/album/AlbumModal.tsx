@@ -27,6 +27,9 @@ type Props = {
   onSaved?: (albumId: string) => void;
 };
 
+// 세션 내 앨범 상세 캐시 (같은 앨범 재오픈 시 즉시 표시)
+const albumCache = new Map<string, FullAlbum>();
+
 export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const { profile } = useAuth();
   const [full, setFull] = useState<FullAlbum | null>(null);
@@ -115,12 +118,32 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     });
   };
 
-  // 상세 데이터 fetch
+  // 상세 데이터 fetch (캐시 활용)
   useEffect(() => {
+    const cached = albumCache.get(album.id);
+    if (cached) {
+      setFull(cached);
+      if (profile) {
+        const myRating = cached.ratings?.find((r) => r.user_id === profile.id);
+        if (myRating) {
+          setMyScore(myRating.score);
+          setMyReview(myRating.one_line_review ?? "");
+          if (myRating.liked_tracks) {
+            setMyLikedTracks(new Set(myRating.liked_tracks.split(",").map(Number)));
+          }
+        }
+        const likedReviews = new Set<string>();
+        cached.ratings.forEach((r) => {
+          if (r.liked_by?.split(",").includes(profile.id)) likedReviews.add(r.user_id);
+        });
+        setMyLikedReviews(likedReviews);
+      }
+    }
     fetch(`/api/albums/${album.id}`)
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
+        albumCache.set(album.id, data);
         setFull(data);
         if (profile) {
           const myRating = data.ratings?.find(
@@ -200,11 +223,12 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     setMyScore(null);
     setMyReview("");
     setMyLikedTracks(new Set());
-    // 삭제 후 최신 데이터로 갱신
+    // 삭제 후 최신 데이터로 갱신 (캐시 무효화)
+    albumCache.delete(album.id);
     const refreshed = await fetch(`/api/albums/${album.id}`);
     if (refreshed.ok) {
       const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) setFull(data);
+      if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
     } else {
       setFull(null);
     }
@@ -229,11 +253,12 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
     setSaving(false);
     if (!res.ok) return;
-    // 저장 후 최신 데이터로 갱신
+    // 저장 후 최신 데이터로 갱신 (캐시 무효화)
+    albumCache.delete(album.id);
     const refreshed = await fetch(`/api/albums/${album.id}`);
     if (refreshed.ok) {
       const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) setFull(data);
+      if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
     }
     // 평점 저장 시 찜 자동 해제
     if (isWatchlisted) {

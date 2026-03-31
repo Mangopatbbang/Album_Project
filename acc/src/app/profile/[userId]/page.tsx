@@ -13,6 +13,7 @@ import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
+import ComparisonSection from "@/components/profile/ComparisonSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -144,43 +145,6 @@ export default async function ProfilePage({
 
   // 최근 20개
   const recent = validRatings.slice(0, 20);
-
-  // 다른 멤버와 비교
-  const otherUsers = USERS.filter((u) => u.id !== userId);
-  const otherRatingsAll: { user_id: string; album_id: string; score: number }[] = [];
-  for (let page = 0; ; page++) {
-    const { data: pageData } = await supabaseServer
-      .from("ratings")
-      .select("user_id, album_id, score")
-      .in("user_id", otherUsers.map((u) => u.id))
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!pageData || pageData.length === 0) break;
-    otherRatingsAll.push(...pageData);
-    if (pageData.length < 1000) break;
-  }
-  const otherRatings = otherRatingsAll;
-
-  // 비교용 평점 맵 — allRawRatings에서 바로 생성 (중복 쿼리 제거)
-  const myAlbumScoreMap = new Map<string, number>(
-    validRatings.map((r) => [r.albums!.id, r.score])
-  );
-
-  const comparisons = otherUsers.map((other) => {
-    const theirRatings = (otherRatings ?? []).filter((r) => r.user_id === other.id);
-    const common = theirRatings.filter((r) => myAlbumScoreMap.has(r.album_id));
-    const commonCount = common.length;
-    if (commonCount === 0) return { user: other, commonCount: 0, diff: null };
-
-    // MAE: 앨범별 절댓값 차이의 평균 (평균 비교보다 정확)
-    const mae = common.reduce((s, r) => s + Math.abs((myAlbumScoreMap.get(r.album_id) ?? 0) - r.score), 0) / commonCount;
-    const diff = parseFloat(mae.toFixed(2));
-    return { user: other, commonCount, diff };
-  });
-
-  // 취향 궁합 (공통 5장 이상 중 diff 가장 작은 멤버)
-  const bestMatch = comparisons
-    .filter((c) => c.commonCount >= 5 && c.diff !== null)
-    .sort((a, b) => Math.abs(a.diff!) - Math.abs(b.diff!))[0] ?? null;
 
   // 뱃지
   const topGenreEntry = genreList[0];
@@ -415,59 +379,8 @@ export default async function ProfilePage({
           {/* 나중에 들을 앨범 (본인만 보임) */}
           <WatchlistSection userId={userId} />
 
-          {/* 취향 궁합 */}
-          {bestMatch && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-                취향 궁합
-              </p>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ fontSize: 28, marginBottom: 8 }}>{bestMatch.user.emoji}</p>
-                <Link href={`/profile/${bestMatch.user.id}`} style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{bestMatch.user.display_name}</Link>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
-                  공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
-                  <span style={{ color: bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
-                    {bestMatch.diff!.toFixed(2)}점 차이
-                  </span>
-                </p>
-                <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
-                  {bestMatch.diff! < 0.8 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 멤버 비교 */}
-          <div style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "24px 28px",
-          }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-              멤버 비교
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {comparisons.map(({ user: other, commonCount, diff }) => (
-                <div key={other.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }} className="hover:opacity-70 transition-opacity cursor-default">
-                  <Link href={`/profile/${other.id}`} style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">
-                    {other.emoji} {other.display_name}
-                  </Link>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
-                    {diff !== null && (
-                      <p style={{
-                        color: diff < 0.8 ? "var(--accent)" : diff > 1.5 ? "var(--text-muted)" : "var(--text-sub)",
-                        fontSize: 12, fontWeight: 600, marginTop: 2,
-                      }}>
-                        {diff < 0.8 ? "취향 비슷" : `앨범당 ${diff}점 차이`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* 취향 궁합 + 멤버 비교 (lazy load) */}
+          <ComparisonSection userId={userId} />
         </div>
       </div>
       </div>
