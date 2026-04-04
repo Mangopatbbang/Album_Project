@@ -14,6 +14,7 @@ import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
+import { fetchProfileRatings, type ProfileRatingRow } from "@/lib/stats";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -25,20 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ userId: s
   };
 }
 
-type RatingRow = {
-  score: number;
-  one_line_review: string | null;
-  updated_at: string;
-  albums: {
-    id: string;
-    title: string;
-    artist: string;
-    year: string | null;
-    genre: string | null;
-    cover_url: string | null;
-  } | null;
-};
-
+type RatingRow = ProfileRatingRow;
 
 export default async function ProfilePage({
   params,
@@ -60,19 +48,8 @@ export default async function ProfilePage({
   const displayEmoji = (dbUser as { emoji?: string } | null)?.emoji ?? user.emoji;
   const avatarUrl = (dbUser as { avatar_url?: string | null } | null)?.avatar_url ?? null;
 
-  // 내 전체 평점 — 페이지네이션으로 1000행 제한 우회
-  const allRawRatings: RatingRow[] = [];
-  for (let page = 0; ; page++) {
-    const { data: pageData } = await supabaseServer
-      .from("ratings")
-      .select("score, one_line_review, updated_at, albums(id, title, artist, year, genre, cover_url)")
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false })
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!pageData || pageData.length === 0) break;
-    allRawRatings.push(...(pageData as unknown as RatingRow[]));
-    if (pageData.length < 1000) break;
-  }
+  // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
+  const allRawRatings: RatingRow[] = await fetchProfileRatings(userId);
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);

@@ -1,6 +1,44 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
+export type ProfileRatingRow = {
+  score: number;
+  one_line_review: string | null;
+  updated_at: string;
+  albums: {
+    id: string;
+    title: string;
+    artist: string;
+    year: string | null;
+    genre: string | null;
+    cover_url: string | null;
+  } | null;
+};
+
+const _fetchProfileRatings = unstable_cache(
+  async (userId: string): Promise<ProfileRatingRow[]> => {
+    const all: ProfileRatingRow[] = [];
+    for (let page = 0; ; page++) {
+      const { data } = await supabaseServer
+        .from("ratings")
+        .select("score, one_line_review, updated_at, albums(id, title, artist, year, genre, cover_url)")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!data || data.length === 0) break;
+      all.push(...(data as unknown as ProfileRatingRow[]));
+      if (data.length < 1000) break;
+    }
+    return all;
+  },
+  ["profile-ratings"],
+  { tags: ["profile-ratings"], revalidate: 3600 }
+);
+
+export function fetchProfileRatings(userId: string) {
+  return _fetchProfileRatings(userId);
+}
+
 export type AlbumStat = {
   id: string;
   title: string;

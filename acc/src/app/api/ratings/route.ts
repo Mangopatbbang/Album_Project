@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { UserId } from "@/types";
 
@@ -67,7 +67,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  revalidatePath("/best"); // 도감 캐시 갱신
+  revalidatePath("/best");
+  revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
   return NextResponse.json({ ok: true, rating: data });
 }
 
@@ -145,5 +146,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
   return NextResponse.json({ ok: true });
 }
