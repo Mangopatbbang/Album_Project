@@ -126,7 +126,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     if (c.release_date) setYear(c.release_date.slice(0, 4));
     if (c.genre && GENRES.includes(c.genre)) setGenre(c.genre);
     setLoadingTracklist(true);
-    const q = new URLSearchParams({ title: title.trim(), artist: artist.trim(), collectionId: String(c.collection_id) });
+    // state 업데이트는 비동기이므로 c에서 직접 최신값 사용
+    const q = new URLSearchParams({ title: c.name.trim(), artist: c.artist.trim(), collectionId: String(c.collection_id) });
     const res = await fetch(`/api/itunes/search?${q.toString()}`);
     const data = await res.json();
     setTracklist(data.tracklist ?? "");

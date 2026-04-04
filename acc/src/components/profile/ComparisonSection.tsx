@@ -17,16 +17,17 @@ type Props = {
 export default function ComparisonSection({ userId }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const loadedRef = useRef(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
+    loadedRef.current = false; // userId 변경 시 재fetch 허용
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loaded) {
-          setLoaded(true);
+        if (entries[0].isIntersecting && !loadedRef.current) {
+          loadedRef.current = true;
           fetch(`/api/profile/${userId}/comparison`)
             .then((r) => r.json())
             .then((data) => {
@@ -40,7 +41,7 @@ export default function ComparisonSection({ userId }: Props) {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [userId, loaded]);
+  }, [userId]);
 
   return (
     <div ref={sectionRef}>

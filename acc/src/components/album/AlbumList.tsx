@@ -85,11 +85,16 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   const handleFilter = useCallback(
     async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null) => {
       setLoading(true);
-      const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore });
-      setAlbums(data.items ?? []);
-      setHasMore(data.hasMore);
-      setNextOffset(data.nextOffset);
-      setLoading(false);
+      try {
+        const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore });
+        setAlbums(data.items ?? []);
+        setHasMore(data.hasMore ?? false);
+        setNextOffset(data.nextOffset ?? null);
+      } catch {
+        // 네트워크 오류 시 기존 목록 유지
+      } finally {
+        setLoading(false);
+      }
     },
     [fetchAlbums]
   );
@@ -97,12 +102,17 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   const handleLoadMore = useCallback(async () => {
     if (!hasMore || loading) return;
     setLoading(true);
-    const data = await fetchAlbums({ search, genre, sort, unrated, myScore, offset: nextOffset ?? 0 });
-    if (!data.items) { setLoading(false); return; }
-    setAlbums((prev) => [...prev, ...data.items]);
-    setHasMore(data.hasMore);
-    setNextOffset(data.nextOffset);
-    setLoading(false);
+    try {
+      const data = await fetchAlbums({ search, genre, sort, unrated, myScore, offset: nextOffset ?? 0 });
+      if (!data.items) return;
+      setAlbums((prev) => [...prev, ...data.items]);
+      setHasMore(data.hasMore);
+      setNextOffset(data.nextOffset);
+    } catch {
+      // 네트워크 오류 시 현재 목록 유지
+    } finally {
+      setLoading(false);
+    }
   }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, nextOffset]);
 
   // 무한 스크롤: sentinel이 뷰포트에 들어오면 자동 로드
