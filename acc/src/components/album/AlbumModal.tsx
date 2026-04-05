@@ -288,6 +288,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       <div
         ref={cardRef}
         style={{
+          position: "relative",
           backgroundColor: "var(--bg-card)",
           border: "1px solid var(--border)",
           borderRadius: 12,
@@ -298,7 +299,6 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
-        style={{ position: "relative" }}
       >
         {/* 닫기 버튼 — 절대 위치 (별도 row 없이 높이 차지 안 함) */}
         <button
@@ -341,7 +341,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
               {data.title}
             </p>
-            <p style={{ color: "var(--text-sub)", fontSize: 13, marginTop: 4 }}>
+            <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
               {data.artist}
               {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
             </p>
@@ -352,7 +352,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             {data.genre && (
               <span style={{
                 display: "inline-block",
-                marginTop: 8,
+                marginTop: 10,
                 backgroundColor: "var(--bg-elevated)",
                 color: "var(--text-muted)",
                 fontSize: 11,
@@ -366,7 +366,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
             {/* 평균 점수 */}
             {data.avg && (
-              <p style={{ color: scoreColor(data.avg), fontWeight: 700, fontSize: 20, marginTop: 8 }}>
+              <p style={{ color: scoreColor(data.avg), fontWeight: 700, fontSize: 22, marginTop: 10 }}>
                 {data.avg}
                 <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
               </p>
