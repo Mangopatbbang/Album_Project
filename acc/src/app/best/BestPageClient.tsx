@@ -89,7 +89,8 @@ function SectionPopup({
               onClick={() => { onClose(); onAlbumClick(album); }}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
-                padding: "9px 24px",
+                padding: "10px 24px",
+                minHeight: 44,
                 cursor: "pointer",
                 borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none",
                 transition: "background 0.12s",

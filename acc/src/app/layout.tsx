@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -49,9 +50,11 @@ export default function RootLayout({
     >
       <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
         <AuthProvider>
-          <SplashScreen />
-          {children}
-          <BottomNav />
+          <ToastProvider>
+            <SplashScreen />
+            {children}
+            <BottomNav />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

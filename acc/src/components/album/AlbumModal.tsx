@@ -8,6 +8,7 @@ import { scoreColor } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import { useToast } from "@/components/ui/Toast";
 
 type RatingWithLikes = {
   user_id: string;
@@ -33,6 +34,7 @@ const albumCache = new Map<string, FullAlbum>();
 
 export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const { profile } = useAuth();
+  const { showToast } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [myReview, setMyReview] = useState("");
@@ -166,13 +168,14 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
   const handleToggleWatchlist = async () => {
     if (!profile) return;
-    const method = isWatchlisted ? "DELETE" : "POST";
-    setIsWatchlisted(!isWatchlisted);
+    const adding = !isWatchlisted;
+    setIsWatchlisted(adding);
     await fetch("/api/watchlist", {
-      method,
+      method: adding ? "POST" : "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: profile.id, albumId: album.id }),
     });
+    showToast(adding ? "나중에 들을 목록에 추가했어요" : "목록에서 제거했어요", "info");
   };
 
   // 배경 스크롤 잠금
@@ -216,6 +219,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       setFull(null);
     }
     setDeleting(false);
+    showToast("평점을 삭제했어요", "info");
     onSaved?.(album.id);
   };
 
@@ -253,6 +257,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       setIsWatchlisted(false);
     }
     setSaved(true);
+    showToast("평점을 저장했어요");
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -294,8 +299,19 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 상단 */}
-        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pt-5">
+        {/* 닫기 버튼 — 모달 우상단 고정 */}
+        <div className="flex justify-end px-4 sm:px-6 pt-4">
+          <button
+            onClick={handleClose}
+            style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", background: "none", border: "none" }}
+            className="touch-target"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 상단: 커버 + 정보 */}
+        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pb-5">
           {/* 커버 */}
           <div
             style={{
@@ -319,83 +335,21 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
           {/* 앨범 정보 */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-              <div>
-                <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
-                  {data.title}
-                </p>
-                <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
-                  {data.artist}
-                  {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
-                </p>
-                <div style={{ marginTop: 6 }}>
-                  <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                {/* 찜하기 버튼: 로그인 + 미평가 시 */}
-                {profile && !ratings.find((r) => r.user_id === profile.id) && (
-                  <button
-                    onClick={handleToggleWatchlist}
-                    title={isWatchlisted ? "찜 해제" : "나중에 듣기"}
-                    style={{
-                      background: "none", cursor: "pointer",
-                      color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
-                      fontSize: 12, lineHeight: 1,
-                      padding: "2px 6px", borderRadius: 4,
-                      border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                      transition: "color 0.15s, border-color 0.15s",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
-                  </button>
-                )}
-                {profile?.role === "admin" && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    title="앨범 수정"
-                    style={{
-                      background: "none", cursor: "pointer",
-                      color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
-                      padding: "2px 6px", borderRadius: 4,
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    수정
-                  </button>
-                )}
-                <button
-                  onClick={handleCapture}
-                  disabled={capturing}
-                  title="이미지로 저장"
-                  style={{
-                    background: "none", border: "none", cursor: capturing ? "default" : "pointer",
-                    color: captured ? "var(--accent)" : "var(--text-muted)",
-                    fontSize: 15, lineHeight: 1, padding: "2px 4px",
-                    transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
-                  }}
-                >
-                  {captured ? "✓" : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
-                    </svg>
-                  )}
-                </button>
-                <button
-                  onClick={handleClose}
-                  style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", background: "none", border: "none" }}
-                  className="touch-target"
-                >
-                  ✕
-                </button>
-              </div>
+            <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
+              {data.title}
+            </p>
+            <p style={{ color: "var(--text-sub)", fontSize: 13, marginTop: 4 }}>
+              {data.artist}
+              {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
+            </p>
+            <div style={{ marginTop: 5 }}>
+              <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
             </div>
 
             {data.genre && (
               <span style={{
                 display: "inline-block",
-                marginTop: 10,
+                marginTop: 8,
                 backgroundColor: "var(--bg-elevated)",
                 color: "var(--text-muted)",
                 fontSize: 11,
@@ -409,11 +363,60 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
             {/* 평균 점수 */}
             {data.avg && (
-              <p style={{ color: scoreColor(data.avg), fontWeight: 700, fontSize: 22, marginTop: 10 }}>
+              <p style={{ color: scoreColor(data.avg), fontWeight: 700, fontSize: 20, marginTop: 8 }}>
                 {data.avg}
                 <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
               </p>
             )}
+
+            {/* 액션 버튼들 */}
+            <div className="flex items-center gap-2 mt-3">
+              {profile && !ratings.find((r) => r.user_id === profile.id) && (
+                <button
+                  onClick={handleToggleWatchlist}
+                  style={{
+                    background: "none", cursor: "pointer",
+                    color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
+                    fontSize: 12, lineHeight: 1,
+                    padding: "4px 8px", borderRadius: 4,
+                    border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
+                    transition: "color 0.15s, border-color 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
+                </button>
+              )}
+              {profile?.role === "admin" && (
+                <button
+                  onClick={() => setEditing(true)}
+                  style={{
+                    background: "none", cursor: "pointer",
+                    color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                    padding: "4px 8px", borderRadius: 4,
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  수정
+                </button>
+              )}
+              <button
+                onClick={handleCapture}
+                disabled={capturing}
+                style={{
+                  background: "none", border: "none", cursor: capturing ? "default" : "pointer",
+                  color: captured ? "var(--accent)" : "var(--text-muted)",
+                  fontSize: 15, lineHeight: 1, padding: "4px",
+                  transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
+                }}
+              >
+                {captured ? "✓" : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -217,7 +217,7 @@ export default async function ProfilePage({
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             SCORE DISTRIBUTION
           </p>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80 }}>
             {scoreDist.map((d) => (
               <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{d.count > 0 ? d.count : ""}</span>
@@ -230,7 +230,7 @@ export default async function ProfilePage({
                   transition: "height 0.3s ease",
                   minHeight: 4,
                 }} />
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{d.score}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{d.score}</span>
               </div>
             ))}
           </div>
@@ -243,7 +243,7 @@ export default async function ProfilePage({
           <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
             {monthData.map((m) => (
               <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{m.count > 0 ? m.count : ""}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{m.count > 0 ? m.count : ""}</span>
                 <div style={{
                   width: "100%",
                   height: `${Math.max((m.count / maxMonthCount) * 60, m.count > 0 ? 4 : 2)}px`,
@@ -252,7 +252,7 @@ export default async function ProfilePage({
                   opacity: m.count === 0 ? 0.3 : 1,
                   transition: "height 0.3s ease",
                 }} />
-                <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{m.label}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{m.label}</span>
               </div>
             ))}
           </div>

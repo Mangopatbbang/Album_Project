@@ -71,7 +71,7 @@ export default function WatchlistSection({ userId }: Props) {
             앨범 모달에서 &ldquo;+ 나중에&rdquo; 버튼으로 추가하세요
           </p>
         ) : null}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {items.slice(0, INITIAL_LIMIT).map(({ album_id, albums }) => {
             // AlbumModal에 넘길 때 ratings/avg 기본값 추가
             const album: AlbumWithRatings = {
@@ -86,7 +86,7 @@ export default function WatchlistSection({ userId }: Props) {
             return (
               <div
                 key={album_id}
-                style={{ display: "flex", alignItems: "center", gap: 10 }}
+                style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "4px 0" }}
               >
                 <button
                   onClick={() => setSelectedAlbum(album)}
@@ -188,7 +188,7 @@ export default function WatchlistSection({ userId }: Props) {
                 style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}
               >✕</button>
             </div>
-            <div style={{ overflowY: "auto", padding: "12px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ overflowY: "auto", padding: "8px 24px", display: "flex", flexDirection: "column", gap: 0 }}>
               {items.map(({ album_id, albums }) => {
                 const album: AlbumWithRatings = {
                   ...albums,
@@ -200,7 +200,7 @@ export default function WatchlistSection({ userId }: Props) {
                   avg: undefined,
                 };
                 return (
-                  <div key={album_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div key={album_id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
                     <button
                       onClick={() => { setPopupOpen(false); setSelectedAlbum(album); }}
                       style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer", padding: 0 }}
