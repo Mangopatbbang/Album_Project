@@ -6,15 +6,20 @@ export async function GET(req: NextRequest) {
   const title = searchParams.get("title") ?? "";
   const artist = searchParams.get("artist") ?? "";
 
-  if (!title) return NextResponse.json({ error: "title 필요" }, { status: 400 });
+  if (!title && !artist) return NextResponse.json({ error: "title 또는 artist 필요" }, { status: 400 });
 
   const token = await getAccessToken();
 
-  const queries = [
-    `album:${title} artist:${artist}`,
-    `${title} ${artist}`,
-    title,
-  ];
+  const queries = title
+    ? [
+        `album:${title}${artist ? ` artist:${artist}` : ""}`,
+        `${title}${artist ? ` ${artist}` : ""}`,
+        title,
+      ]
+    : [
+        `artist:${artist}`,
+        artist,
+      ];
 
   const seen = new Set<string>();
   const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];

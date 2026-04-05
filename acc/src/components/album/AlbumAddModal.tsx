@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const GENRES = [
-  "Rock", "Pop", "Jazz", "R&B", "Hip-Hop", "Electronic", "Classical",
-  "Folk", "Country", "Metal", "Indie", "Soul", "Funk", "Blues",
-  "Reggae", "Latin", "World", "Ambient", "Punk", "Alternative", "기타",
+  "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
+  "Ballad", "Electronica", "컴필레이션", "Folk", "Alternative",
+  "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
 ];
 
 type ItunesCandidate = {
@@ -83,6 +83,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [selectedCandidate, setSelectedCandidate] = useState<ItunesCandidate | null>(null);
   const [loadingTracklist, setLoadingTracklist] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateAlbum[]>([]);
+  const [spotifyId, setSpotifyId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -160,10 +161,20 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     if (c.release_date) setReleaseDate(c.release_date);
     if (c.genre && GENRES.includes(c.genre)) setGenre(c.genre);
     setLoadingTracklist(true);
-    const q = new URLSearchParams({ title: title.trim(), artist: artist.trim(), collectionId: String(c.collection_id) });
-    const res = await fetch(`/api/itunes/search?${q.toString()}`);
-    const data = await res.json();
-    setTracklist(data.tracklist ?? "");
+    setSpotifyId(null);
+    // iTunes 트랙리스트 + Spotify ID 동시 fetch
+    const [itunesRes, spotifyRes] = await Promise.all([
+      fetch(`/api/itunes/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}&collectionId=${c.collection_id}`),
+      fetch(`/api/migrate/spotify/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}`),
+    ]);
+    const itunesData = await itunesRes.json();
+    setTracklist(itunesData.tracklist ?? "");
+    const spotifyData = await spotifyRes.json();
+    const matched = spotifyData.results?.[0];
+    if (matched) {
+      setSpotifyId(matched.spotify_id);
+      if (!c.cover_url && matched.cover_url) setCoverUrl(matched.cover_url);
+    }
     setLoadingTracklist(false);
   };
 
@@ -195,6 +206,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
         genre: genre || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
+        spotify_id: spotifyId || null,
       }),
     });
 

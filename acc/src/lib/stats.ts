@@ -46,6 +46,7 @@ export type AlbumStat = {
   year: string | null;
   genre: string | null;
   cover_url: string | null;
+  spotify_id?: string | null;
   avg: number;
   count: number;
   variance?: number;
@@ -58,6 +59,7 @@ type RawAlbum = {
   year?: string | null;
   genre?: string | null;
   cover_url?: string | null;
+  spotify_id?: string | null;
   ratings: { user_id: string; score: number }[];
 };
 
@@ -66,7 +68,7 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("albums")
-      .select("id, title, artist, year, genre, cover_url, ratings(user_id, score)")
+      .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
     result.push(...(data as RawAlbum[]));
@@ -96,6 +98,7 @@ function toStat(album: RawAlbum): AlbumStat & { variance: number } {
     year: album.year ? album.year.slice(0, 4) : null,
     genre: album.genre ?? null,
     cover_url: album.cover_url ?? null,
+    spotify_id: album.spotify_id ?? null,
     avg,
     count: scores.length,
     variance,

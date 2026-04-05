@@ -2,6 +2,7 @@
 
 import { AlbumWithRatings, USERS } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 type Props = {
   album: AlbumWithRatings;
@@ -23,7 +24,7 @@ export default function AlbumCard({ album, onClick }: Props) {
     >
       {/* 커버 이미지 */}
       <div
-        style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1", position: "relative" }}
+        style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
         className="w-full flex items-center justify-center overflow-hidden"
       >
         {album.cover_url ? (
@@ -39,59 +40,62 @@ export default function AlbumCard({ album, onClick }: Props) {
             <span style={{ color: "var(--text-muted)" }} className="text-xs">커버 없음</span>
           </div>
         )}
+      </div>
 
-        {/* 평균 점수 뱃지 */}
+      {/* 점수 컬러 바 */}
+      <div style={{ height: 3, backgroundColor: "var(--bg-elevated)" }}>
         {album.avg && (
           <div
             style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              backgroundColor: "rgba(0,0,0,0.75)",
-              color: scoreColor(album.avg),
-              fontWeight: 700,
-              fontSize: 13,
-              padding: "2px 7px",
-              borderRadius: 4,
+              height: "100%",
+              width: `${(parseFloat(album.avg) / 10) * 100}%`,
+              backgroundColor: scoreColor(album.avg),
+              boxShadow: parseFloat(album.avg) >= 7
+                ? `0 0 6px ${scoreColor(album.avg)}`
+                : "none",
+              transition: "width 0.4s ease",
             }}
-          >
-            {album.avg}
-          </div>
+          />
         )}
       </div>
 
       {/* 정보 */}
       <div className="p-3">
-        <p
-          style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}
-          className="truncate leading-snug"
-        >
-          {album.title}
-        </p>
+        <div className="flex items-baseline justify-between gap-1">
+          <p
+            style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}
+            className="truncate leading-snug"
+          >
+            {album.title}
+          </p>
+          {album.avg && (
+            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+              {album.avg}
+            </span>
+          )}
+        </div>
         <p style={{ color: "var(--text-sub)", fontSize: 12 }} className="truncate mt-0.5">
           {album.artist}
         </p>
 
-        {/* 유저별 평점 */}
-        {album.ratings.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        {/* 유저별 평점 + Spotify attribution */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {USERS.map((user) => {
               const r = album.ratings.find((rt) => rt.user_id === user.id);
               if (!r) return null;
               return (
                 <span
                   key={user.id}
-                  style={{
-                    fontSize: 11,
-                    color: scoreColor(r.score),
-                  }}
+                  style={{ fontSize: 11, color: scoreColor(r.score) }}
                 >
                   {user.emoji}{r.score}
                 </span>
               );
             })}
           </div>
-        )}
+          <SpotifyAttribution spotifyId={album.spotify_id} />
+        </div>
       </div>
     </button>
   );

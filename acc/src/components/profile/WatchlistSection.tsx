@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 type WatchlistAlbum = {
   id: string;
@@ -30,6 +31,8 @@ export default function WatchlistSection({ userId }: Props) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   const isOwner = profile?.id === userId;
+  const [popupOpen, setPopupOpen] = useState(false);
+  const INITIAL_LIMIT = 5;
 
   useEffect(() => {
     if (!isOwner) return;
@@ -69,7 +72,7 @@ export default function WatchlistSection({ userId }: Props) {
           </p>
         ) : null}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {items.map(({ album_id, albums }) => {
+          {items.slice(0, INITIAL_LIMIT).map(({ album_id, albums }) => {
             // AlbumModal에 넘길 때 ratings/avg 기본값 추가
             const album: AlbumWithRatings = {
               ...albums,
@@ -109,9 +112,12 @@ export default function WatchlistSection({ userId }: Props) {
                   <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {album.title}
                   </p>
-                  <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
-                    {album.artist}{album.year ? ` · ${album.year}` : ""}
-                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                      {album.artist}{album.year ? ` · ${album.year}` : ""}
+                    </p>
+                    <SpotifyAttribution spotifyId={album.spotify_id} />
+                  </div>
                 </button>
                 <button
                   onClick={() => handleRemove(album_id)}
@@ -128,7 +134,107 @@ export default function WatchlistSection({ userId }: Props) {
             );
           })}
         </div>
+        {items.length > INITIAL_LIMIT && (
+          <button
+            onClick={() => setPopupOpen(true)}
+            style={{
+              marginTop: 10,
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+              padding: "4px 0",
+              textDecoration: "underline", textUnderlineOffset: 3,
+            }}
+          >
+            더보기 +{items.length - INITIAL_LIMIT}
+          </button>
+        )}
       </div>
+
+      {popupOpen && (
+        <div
+          onClick={() => setPopupOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            backgroundColor: "rgba(0,0,0,0.7)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: 14,
+              width: "100%", maxWidth: 480,
+              maxHeight: "80dvh",
+              display: "flex", flexDirection: "column",
+              overflow: "hidden",
+              animation: "modalIn 0.18s ease-out",
+            }}
+          >
+            <div style={{
+              padding: "18px 24px 14px",
+              borderBottom: "1px solid var(--border)",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>나중에 들을 앨범</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{items.length}장</span>
+              </div>
+              <button
+                onClick={() => setPopupOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}
+              >✕</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "12px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {items.map(({ album_id, albums }) => {
+                const album: AlbumWithRatings = {
+                  ...albums,
+                  year: albums.year ?? undefined,
+                  genre: albums.genre ?? undefined,
+                  cover_url: albums.cover_url ?? undefined,
+                  spotify_id: albums.spotify_id ?? undefined,
+                  ratings: [],
+                  avg: undefined,
+                };
+                return (
+                  <div key={album_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <button
+                      onClick={() => { setPopupOpen(false); setSelectedAlbum(album); }}
+                      style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer", padding: 0 }}
+                    >
+                      {album.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ color: "var(--text-muted)", fontSize: 16 }}>♪</span>
+                      }
+                    </button>
+                    <button
+                      onClick={() => { setPopupOpen(false); setSelectedAlbum(album); }}
+                      style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                          {album.artist}{album.year ? ` · ${album.year}` : ""}
+                        </p>
+                        <SpotifyAttribution spotifyId={album.spotify_id} />
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handleRemove(album_id)}
+                      title="찜 해제"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16, padding: "2px 4px", flexShrink: 0, lineHeight: 1 }}
+                    >✕</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedAlbum && (
         <AlbumModal

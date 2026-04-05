@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const GENRES = [
-  "Rock", "Pop", "Jazz", "R&B", "Hip-Hop", "Electronic", "Classical",
-  "Folk", "Country", "Metal", "Indie", "Soul", "Funk", "Blues",
-  "Reggae", "Latin", "World", "Ambient", "Punk", "Alternative", "기타",
+  "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
+  "Ballad", "Electronica", "컴필레이션", "Folk", "Alternative",
+  "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
 ];
 
 type ItunesCandidate = {

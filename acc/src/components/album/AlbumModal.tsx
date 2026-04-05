@@ -7,6 +7,7 @@ import Link from "next/link";
 import { scoreColor } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 type RatingWithLikes = {
   user_id: string;
@@ -118,28 +119,10 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     });
   };
 
-  // 상세 데이터 fetch (캐시 활용)
+  // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
   useEffect(() => {
-    const cached = albumCache.get(album.id);
-    if (cached) {
-      setFull(cached);
-      if (profile) {
-        const myRating = cached.ratings?.find((r) => r.user_id === profile.id);
-        if (myRating) {
-          setMyScore(myRating.score);
-          setMyReview(myRating.one_line_review ?? "");
-          if (myRating.liked_tracks) {
-            setMyLikedTracks(new Set(myRating.liked_tracks.split(",").map(Number)));
-          }
-        }
-        const likedReviews = new Set<string>();
-        cached.ratings.forEach((r) => {
-          if (r.liked_by?.split(",").includes(profile.id)) likedReviews.add(r.user_id);
-        });
-        setMyLikedReviews(likedReviews);
-      }
-    }
-    fetch(`/api/albums/${album.id}`)
+    albumCache.delete(album.id);
+    fetch(`/api/albums/${album.id}`, { cache: "no-store" })
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
@@ -225,7 +208,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     setMyLikedTracks(new Set());
     // 삭제 후 최신 데이터로 갱신 (캐시 무효화)
     albumCache.delete(album.id);
-    const refreshed = await fetch(`/api/albums/${album.id}`);
+    const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
     if (refreshed.ok) {
       const data = await refreshed.json();
       if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
@@ -255,7 +238,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     if (!res.ok) return;
     // 저장 후 최신 데이터로 갱신 (캐시 무효화)
     albumCache.delete(album.id);
-    const refreshed = await fetch(`/api/albums/${album.id}`);
+    const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
     if (refreshed.ok) {
       const data = await refreshed.json();
       if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
@@ -346,6 +329,9 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   {data.artist}
                   {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
                 </p>
+                <div style={{ marginTop: 6 }}>
+                  <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
+                </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 {/* 찜하기 버튼: 로그인 + 미평가 시 */}
@@ -698,7 +684,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           }}
           onClose={() => setEditing(false)}
           onSaved={async () => {
-            const refreshed = await fetch(`/api/albums/${album.id}`);
+            const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
             if (refreshed.ok) {
               const updated = await refreshed.json();
               if (updated && Array.isArray(updated.ratings)) setFull(updated);

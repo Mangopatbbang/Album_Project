@@ -5,6 +5,7 @@ import AlbumModal from "@/components/album/AlbumModal";
 import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 const TOP_N = 5;
 
@@ -16,6 +17,7 @@ function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
     year: a.year ?? undefined,
     genre: a.genre ?? undefined,
     cover_url: a.cover_url ?? undefined,
+    spotify_id: a.spotify_id ?? undefined,
     ratings: [],
   };
 }
@@ -181,7 +183,6 @@ function SectionGrid({
               backgroundColor: "var(--bg-elevated)",
               border: `1px solid ${glowBorder(album.avg)}`,
               boxShadow: glowShadow(album.avg),
-              position: "relative",
               transition: "opacity 0.15s",
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
@@ -194,33 +195,20 @@ function SectionGrid({
                     <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
                   </div>
               }
-              {/* 순위 뱃지 */}
-              <div style={{
-                position: "absolute", top: 5, left: 5,
-                backgroundColor: idx === 0 ? "var(--accent)" : "rgba(0,0,0,0.6)",
-                color: idx === 0 ? "var(--bg)" : "var(--text-muted)",
-                fontSize: 10, fontWeight: 700,
-                borderRadius: 4, padding: "2px 5px",
-              }}>
-                {idx + 1}
-              </div>
-              {/* 점수 뱃지 */}
-              <div style={{
-                position: "absolute", bottom: 5, right: 5,
-                backgroundColor: "rgba(0,0,0,0.7)",
-                color: scoreColor(album.avg),
-                fontSize: 11, fontWeight: 700,
-                borderRadius: 4, padding: "2px 5px",
-              }}>
-                {album.avg.toFixed(1)}
-              </div>
             </div>
-            <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 500, marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
+              <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
+              <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
+            </div>
+            <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {album.title}
             </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {album.artist}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                {album.artist}
+              </p>
+              <SpotifyAttribution spotifyId={album.spotify_id} />
+            </div>
           </div>
         ))}
       </div>
@@ -262,7 +250,7 @@ function ArtistSection({
               backgroundColor: "var(--bg-elevated)",
               border: `1px solid ${glowBorder(album.avg)}`,
               boxShadow: glowShadow(album.avg),
-              position: "relative", transition: "opacity 0.15s",
+              transition: "opacity 0.15s",
             }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
@@ -274,24 +262,12 @@ function ArtistSection({
                     <span style={{ fontSize: 18, color: "var(--text-muted)" }}>♪</span>
                   </div>
               }
-              <div style={{
-                position: "absolute", top: 4, left: 4,
-                backgroundColor: idx === 0 ? "var(--accent)" : "rgba(0,0,0,0.6)",
-                color: idx === 0 ? "var(--bg)" : "var(--text-muted)",
-                fontSize: 9, fontWeight: 700, borderRadius: 3, padding: "1px 4px",
-              }}>
-                {idx + 1}
-              </div>
-              <div style={{
-                position: "absolute", bottom: 4, right: 4,
-                backgroundColor: "rgba(0,0,0,0.7)",
-                color: scoreColor(album.avg),
-                fontSize: 10, fontWeight: 700, borderRadius: 3, padding: "1px 4px",
-              }}>
-                {album.avg.toFixed(1)}
-              </div>
             </div>
-            <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, gap: 4 }}>
+              <span style={{ color: scoreColor(album.avg), fontSize: 10, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
+              <SpotifyAttribution spotifyId={album.spotify_id} />
+            </div>
+            <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {album.title}
             </p>
           </div>

@@ -8,6 +8,7 @@ import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import CountUp from "@/components/ui/CountUp";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -162,7 +163,10 @@ export default async function HomePage() {
                   </AlbumCoverButton>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{album.artist}</p>
+                      <SpotifyAttribution spotifyId={album.spotify_id} />
+                    </div>
                   </div>
                   <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
                 </div>

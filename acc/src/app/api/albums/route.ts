@@ -226,7 +226,7 @@ async function handleAvgSort(params: {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { title, artist, year, release_date, genre, cover_url, tracklist } = body;
+  const { title, artist, year, release_date, genre, cover_url, tracklist, spotify_id } = body;
 
   if (!title?.trim() || !artist?.trim()) {
     return NextResponse.json({ error: "title and artist required" }, { status: 400 });
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
   const newId = crypto.randomUUID();
   const { data, error } = await supabaseServer
     .from("albums")
-    .insert({ id: newId, title: title.trim(), artist: artist.trim(), year, release_date, genre, cover_url, tracklist })
+    .insert({ id: newId, title: title.trim(), artist: artist.trim(), year, release_date, genre, cover_url, tracklist, spotify_id: spotify_id || null })
     .select()
     .single();
 

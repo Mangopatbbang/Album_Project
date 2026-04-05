@@ -40,10 +40,14 @@ export async function PATCH(
     } catch {}
   }
 
-  const { error } = await supabaseServer.from("albums").update(update).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: updateData, error, count } = await supabaseServer
+    .from("albums")
+    .update(update)
+    .eq("id", id)
+    .select("id, tracklist, spotify_id");
+  if (error) return NextResponse.json({ error: error.message, id, update }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, tracklistSaved: !!update.tracklist, id, rowsUpdated: count, updatedRow: updateData });
 }
 
 export async function GET(
@@ -68,5 +72,7 @@ export async function GET(
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
     : null;
 
-  return NextResponse.json({ ...data, ratings, avg });
+  return NextResponse.json({ ...data, ratings, avg }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
