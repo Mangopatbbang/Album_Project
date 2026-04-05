@@ -164,8 +164,9 @@ return (
       {/* 필터 바 */}
       <div style={{ borderBottom: "1px solid var(--border)", marginBottom: 32 }} className="py-4 flex flex-col gap-3">
 
-      {/* Row 1: 검색 + 입고 */}
-      <div className="flex items-center gap-2">
+      {/* 필터 컨트롤: 데스크탑 1줄, 모바일 2줄 */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* 검색 */}
         <input
           type="text"
           placeholder="제목 / 아티스트 검색"
@@ -176,13 +177,14 @@ return (
             border: "1px solid var(--border)",
             color: "var(--text)",
             borderRadius: 6,
-            padding: "7px 12px",
+            padding: "6px 12px",
             fontSize: 13,
             outline: "none",
-            flex: 1,
-            minWidth: 0,
+            flex: "1 1 200px",
           }}
         />
+
+        {/* 모바일에서 검색 다음 줄 강제 (입고 버튼 오른쪽 끝 배치) */}
         {profile && (
           <button
             onClick={() => setShowAddModal(true)}
@@ -191,21 +193,21 @@ return (
               border: "none",
               color: "var(--bg)",
               borderRadius: 6,
-              padding: "7px 14px",
+              padding: "6px 14px",
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
               whiteSpace: "nowrap",
-              flexShrink: 0,
             }}
+            className="sm:order-last"
           >
             입고
           </button>
         )}
-      </div>
 
-      {/* Row 2: 장르, 정렬, 미청음만, 개수 */}
-      <div className="flex flex-wrap items-center gap-2">
+        {/* 모바일: 검색 아래 새 줄 강제 구분자 */}
+        <div className="basis-full sm:hidden" style={{ height: 0 }} />
+
         {/* 장르 */}
         <select
           value={genre}
@@ -215,11 +217,9 @@ return (
             border: "1px solid var(--border)",
             color: genre ? "var(--text)" : "var(--text-muted)",
             borderRadius: 6,
-            padding: "6px 10px",
+            padding: "6px 12px",
             fontSize: 13,
             cursor: "pointer",
-            flex: "1 1 auto",
-            minWidth: 0,
           }}
         >
           <option value="">전체 장르</option>
@@ -237,11 +237,9 @@ return (
             border: "1px solid var(--border)",
             color: "var(--text)",
             borderRadius: 6,
-            padding: "6px 10px",
+            padding: "6px 12px",
             fontSize: 13,
             cursor: "pointer",
-            flex: "1 1 auto",
-            minWidth: 0,
           }}
         >
           {sortOptions.map((o) => (
@@ -258,41 +256,40 @@ return (
               border: `1px solid ${unrated ? "var(--accent)" : "var(--border)"}`,
               color: unrated ? "var(--bg)" : "var(--text-muted)",
               borderRadius: 6,
-              padding: "6px 10px",
+              padding: "6px 12px",
               fontSize: 13,
               cursor: "pointer",
               fontWeight: unrated ? 600 : 400,
               whiteSpace: "nowrap",
-              flexShrink: 0,
             }}
           >
             미청음만
           </button>
         )}
 
-        <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: "auto", flexShrink: 0 }}>
+        <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: "auto" }}>
           {albums.length}장{hasMore ? "+" : ""}
         </span>
       </div>
 
       {/* 내 점수 필터 (로그인 시) */}
       {profile && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>내 평점</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}>내 평점</span>
           {[1,2,3,4,5,6,7,8].map((s) => (
             <button
               key={s}
               onClick={() => handleScoreFilter(s)}
               style={{
-                width: 36, height: 36,
                 borderRadius: 6,
                 border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
                 backgroundColor: myScore === s ? "var(--accent)" : "var(--bg-card)",
                 color: myScore === s ? "var(--bg)" : "var(--text-muted)",
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: myScore === s ? 700 : 400,
                 cursor: "pointer",
               }}
+              className="w-7 h-7 sm:w-7 sm:h-7 max-sm:w-9 max-sm:h-9"
             >
               {s}
             </button>

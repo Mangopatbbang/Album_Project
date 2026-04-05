@@ -63,13 +63,13 @@ export default function AlbumCard({ album, onClick }: Props) {
       <div className="p-3 sm:p-3.5">
         <div className="flex items-baseline justify-between gap-1">
           <p
-            style={{ color: "var(--text)", fontWeight: 500, fontSize: 14 }}
+            style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}
             className="truncate leading-snug"
           >
             {album.title}
           </p>
           {album.avg && (
-            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
               {album.avg}
             </span>
           )}
