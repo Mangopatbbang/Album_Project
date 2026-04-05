@@ -13,7 +13,6 @@ const containerStyle = {
   width: "100%",
   maxWidth: "1100px",
   margin: "0 auto",
-  padding: "0 16px",
 };
 
 async function getInitialAlbums() {
@@ -79,7 +78,7 @@ export default async function AlbumsPage() {
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <main style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }}>
+      <main style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }} className="px-4 sm:px-6">
         <div style={{ marginBottom: 32 }}>
           <h1
             style={{

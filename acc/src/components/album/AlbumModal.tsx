@@ -336,17 +336,73 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             )}
           </div>
 
-          {/* 앨범 정보 (오른쪽 패딩: 닫기 버튼과 겹침 방지) */}
-          <div style={{ flex: 1, minWidth: 0, paddingRight: 28 }}>
-            <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
-              {data.title}
-            </p>
-            <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
-              {data.artist}
-              {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
-            </p>
-            <div style={{ marginTop: 5 }}>
-              <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
+          {/* 앨범 정보 */}
+          {/* 모바일: paddingRight으로 ✕ 버튼 겹침 방지. 데스크탑: pr-0 */}
+          <div style={{ flex: 1, minWidth: 0 }} className="pr-7 sm:pr-0">
+            {/* 데스크탑: 제목/아티스트 왼쪽 + 버튼 오른쪽 (space-between) */}
+            {/* 모바일: 제목/아티스트 위, 버튼 아래 (flex-col) */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+              <div className="sm:flex-1 sm:min-w-0">
+                <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
+                  {data.title}
+                </p>
+                <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
+                  {data.artist}
+                  {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
+                </p>
+                <div style={{ marginTop: 5 }}>
+                  <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
+                </div>
+              </div>
+
+              {/* 액션 버튼: 데스크탑 오른쪽, 모바일 아래 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} className="mt-2 sm:mt-0">
+                {profile && !ratings.find((r) => r.user_id === profile.id) && (
+                  <button
+                    onClick={handleToggleWatchlist}
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
+                      fontSize: 12, lineHeight: 1,
+                      padding: "2px 6px", borderRadius: 4,
+                      border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
+                      transition: "color 0.15s, border-color 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
+                  </button>
+                )}
+                {profile?.role === "admin" && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                      padding: "2px 6px", borderRadius: 4,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    수정
+                  </button>
+                )}
+                <button
+                  onClick={handleCapture}
+                  disabled={capturing}
+                  style={{
+                    background: "none", border: "none", cursor: capturing ? "default" : "pointer",
+                    color: captured ? "var(--accent)" : "var(--text-muted)",
+                    fontSize: 15, lineHeight: 1, padding: "2px 4px",
+                    transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
+                  }}
+                >
+                  {captured ? "✓" : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {data.genre && (
@@ -371,55 +427,6 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
               </p>
             )}
-
-            {/* 액션 버튼들 */}
-            <div className="flex items-center gap-2 mt-3">
-              {profile && !ratings.find((r) => r.user_id === profile.id) && (
-                <button
-                  onClick={handleToggleWatchlist}
-                  style={{
-                    background: "none", cursor: "pointer",
-                    color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
-                    fontSize: 12, lineHeight: 1,
-                    padding: "4px 8px", borderRadius: 4,
-                    border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                    transition: "color 0.15s, border-color 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
-                </button>
-              )}
-              {profile?.role === "admin" && (
-                <button
-                  onClick={() => setEditing(true)}
-                  style={{
-                    background: "none", cursor: "pointer",
-                    color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
-                    padding: "4px 8px", borderRadius: 4,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  수정
-                </button>
-              )}
-              <button
-                onClick={handleCapture}
-                disabled={capturing}
-                style={{
-                  background: "none", border: "none", cursor: capturing ? "default" : "pointer",
-                  color: captured ? "var(--accent)" : "var(--text-muted)",
-                  fontSize: 15, lineHeight: 1, padding: "4px",
-                  transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
-                }}
-              >
-                {captured ? "✓" : (
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
-                  </svg>
-                )}
-              </button>
-            </div>
           </div>
         </div>
 
