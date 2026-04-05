@@ -217,7 +217,7 @@ export default async function ProfilePage({
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             SCORE DISTRIBUTION
           </p>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
             {scoreDist.map((d) => (
               <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{d.count > 0 ? d.count : ""}</span>

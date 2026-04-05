@@ -298,20 +298,23 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
+        style={{ position: "relative" }}
       >
-        {/* 닫기 버튼 — 모달 우상단 고정 */}
-        <div className="flex justify-end px-4 sm:px-6 pt-4">
-          <button
-            onClick={handleClose}
-            style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", background: "none", border: "none" }}
-            className="touch-target"
-          >
-            ✕
-          </button>
-        </div>
+        {/* 닫기 버튼 — 절대 위치 (별도 row 없이 높이 차지 안 함) */}
+        <button
+          onClick={handleClose}
+          style={{
+            position: "absolute", top: 12, right: 12,
+            color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
+            cursor: "pointer", background: "none", border: "none",
+            zIndex: 1, padding: 8,
+          }}
+        >
+          ✕
+        </button>
 
         {/* 상단: 커버 + 정보 */}
-        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pb-5">
+        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pt-5 pb-5">
           {/* 커버 */}
           <div
             style={{
@@ -333,8 +336,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             )}
           </div>
 
-          {/* 앨범 정보 */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          {/* 앨범 정보 (오른쪽 패딩: 닫기 버튼과 겹침 방지) */}
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 28 }}>
             <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
               {data.title}
             </p>
