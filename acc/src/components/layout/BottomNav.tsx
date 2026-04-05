@@ -86,7 +86,7 @@ export default function BottomNav() {
                 color: active ? "var(--accent)" : "var(--text-muted)",
                 transition: "color 0.15s",
               }}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-2 active:opacity-60"
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-3 active:opacity-60"
             >
               <Icon />
               <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.04em" }}>

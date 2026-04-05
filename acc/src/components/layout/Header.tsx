@@ -19,7 +19,7 @@ export default function Header() {
   return (
     <header
       style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}
-      className="sticky top-0 z-50"
+      className="sticky top-0 z-50 hidden sm:block"
     >
       <div style={{ padding: "0 24px", display: "grid", gridTemplateColumns: "180px 1fr 180px", alignItems: "center", height: 52 }}>
 

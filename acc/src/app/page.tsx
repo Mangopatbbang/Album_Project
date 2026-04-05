@@ -68,7 +68,7 @@ const containerStyle = {
   width: "100%",
   maxWidth: "1100px",
   margin: "0 auto",
-  padding: "0 24px",
+  padding: "0 16px",
 };
 
 async function getYearPreview() {
@@ -92,8 +92,8 @@ export default async function HomePage() {
 
       <main>
       {/* 히어로 */}
-      <section style={{ ...containerStyle, paddingBottom: 64, textAlign: "center", position: "relative" }} className="pt-10 sm:pt-[72px]">
-        <div style={{ position: "absolute", top: 16, right: 16 }} className="sm:top-6 sm:right-6">
+      <section style={{ ...containerStyle, textAlign: "center", position: "relative" }} className="pt-8 sm:pt-[72px] pb-8 sm:pb-16">
+        <div style={{ position: "absolute", top: 12, right: 16 }} className="sm:top-6 sm:right-6">
           <RandomButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
@@ -116,7 +116,7 @@ export default async function HomePage() {
       </section>
 
       {/* 최근 아카이빙 */}
-      <section style={{ ...containerStyle, paddingBottom: 64 }}>
+      <section style={{ ...containerStyle }} className="pb-8 sm:pb-16">
         <div className="flex items-center justify-between mb-6">
           <h2
             style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }}
@@ -136,10 +136,10 @@ export default async function HomePage() {
       </section>
 
       {/* 베스트 & 테마 */}
-      <section style={{ ...containerStyle, paddingBottom: 64 }}>
+      <section style={{ ...containerStyle }} className="pb-8 sm:pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 연도별 베스트 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
                 연도별 명반
@@ -175,7 +175,7 @@ export default async function HomePage() {
           </div>
 
           {/* 선곡집 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
                 선곡집
@@ -221,7 +221,7 @@ export default async function HomePage() {
       </section>
 
       {/* 멤버 현황 */}
-      <section style={{ ...containerStyle, paddingBottom: 96 }}>
+      <section style={{ ...containerStyle }} className="pb-10 sm:pb-24">
         <div className="flex items-center justify-between mb-6">
           <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-lg">
             청음인 현황

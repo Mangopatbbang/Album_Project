@@ -13,7 +13,7 @@ const containerStyle = {
   width: "100%",
   maxWidth: "1100px",
   margin: "0 auto",
-  padding: "0 24px",
+  padding: "0 16px",
 };
 
 async function getInitialAlbums() {
