@@ -168,16 +168,15 @@ function SectionGrid({
           </button>
         )}
       </div>
-      <div style={{ display: "flex", gap: 8, overflow: "hidden" }}>
+      <div className="flex gap-2 sm:gap-2.5 overflow-x-auto pb-1">
         {top.map((album, idx) => (
           <div
             key={album.id}
-            style={{ width: 90, flexShrink: 0, cursor: "pointer" }}
+            style={{ flexShrink: 0, cursor: "pointer" }}
+            className="w-[72px] sm:w-[90px]"
             onClick={() => onAlbumClick(album)}
-            className="transition-transform active:scale-[0.93]"
           >
             <div style={{
-              width: 90, height: 90,
               borderRadius: 6,
               overflow: "hidden",
               backgroundColor: "var(--bg-elevated)",
@@ -185,6 +184,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
+            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px]"
             onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
             >
@@ -237,21 +237,22 @@ function ArtistSection({
           avg {artistAvg.toFixed(2)}
         </span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div className="flex flex-wrap gap-2 sm:gap-2.5">
         {list.map((album, idx) => (
           <div
             key={album.id}
-            style={{ width: 80, flexShrink: 0, cursor: "pointer" }}
+            style={{ flexShrink: 0, cursor: "pointer" }}
+            className="w-[72px] sm:w-[80px] transition-transform active:scale-[0.93]"
             onClick={() => onAlbumClick(album)}
-            className="transition-transform active:scale-[0.93]"
           >
             <div style={{
-              width: 80, height: 80, borderRadius: 6, overflow: "hidden",
+              borderRadius: 6, overflow: "hidden",
               backgroundColor: "var(--bg-elevated)",
               border: `1px solid ${glowBorder(album.avg)}`,
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
+            className="w-[72px] h-[72px] sm:w-[80px] sm:h-[80px]"
               onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
             >

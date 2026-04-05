@@ -111,12 +111,12 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                 borderBottom: idx < entries.length - 1 ? "1px solid var(--border)" : "none",
               }}>
                 {/* 앨범 헤더 */}
-                <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <AlbumCoverButton album={album} style={{ flexShrink: 0 }} hoverOpacity>
                     <div style={{
-                      width: 80, height: 80, borderRadius: 8, overflow: "hidden",
+                      borderRadius: 8, overflow: "hidden",
                       backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                    }}>
+                    }} className="w-[60px] h-[60px] sm:w-[80px] sm:h-[80px]">
                       {album.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />

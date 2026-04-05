@@ -141,7 +141,7 @@ export default async function ProfilePage({
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <main style={{ maxWidth: 1100, margin: "0 auto" }} className="px-4 sm:px-6 py-8 sm:py-10 pb-20">
 
       <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
       {/* 프로필 헤더 */}
@@ -149,23 +149,25 @@ export default async function ProfilePage({
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         borderRadius: 12,
-        padding: "32px 36px",
         marginBottom: 20,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
+      }} className="p-5 sm:p-8">
+        {/* 아바타 + 이름 + 버튼들 */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-5 mb-6">
           <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
-          <div style={{ flex: 1 }}>
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 24, letterSpacing: "-0.03em" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em" }} className="text-xl sm:text-2xl">
               {displayName}
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
-          <ProfileCaptureButton targetId="profile-card" />
-          <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <ProfileCaptureButton targetId="profile-card" />
+            <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
+          </div>
           {badges.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", flexShrink: 0 }}>
+            <div className="flex flex-wrap gap-1.5 w-full sm:w-auto sm:flex-col sm:items-end">
               {badges.map((badge) => (
                 <span key={badge} style={{
                   color: "var(--text-muted)",
@@ -183,8 +185,8 @@ export default async function ProfilePage({
           )}
         </div>
 
-        {/* 핵심 스탯 4개 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+        {/* 핵심 스탯 */}
+        <div className="grid grid-cols-2 gap-3">
           {[
             { label: "평균 점수", value: avg ?? "—", unit: "/ 8", colorVal: avg },
             { label: "한줄 소감", value: reviewCount > 0 ? reviewCount : "—", unit: "개", colorVal: null },

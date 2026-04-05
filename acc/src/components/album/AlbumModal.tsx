@@ -274,9 +274,9 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 24,
         animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
+      className="p-3 sm:p-6"
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); mouseDownOnBackdrop.current = false; }}
     >
@@ -295,18 +295,17 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* 상단 */}
-        <div style={{ padding: "20px 24px 0", display: "flex", gap: 20 }}>
+        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pt-5">
           {/* 커버 */}
           <div
             style={{
-              width: 120,
-              height: 120,
               flexShrink: 0,
               backgroundColor: "var(--bg-elevated)",
               borderRadius: 8,
               overflow: "hidden",
               border: "1px solid var(--border)",
             }}
+            className="w-[88px] h-[88px] sm:w-[120px] sm:h-[120px]"
           >
             {data.cover_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -322,7 +321,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <div>
-                <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 20, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
                   {data.title}
                 </p>
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
@@ -386,6 +385,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 <button
                   onClick={handleClose}
                   style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, cursor: "pointer", background: "none", border: "none" }}
+                  className="touch-target"
                 >
                   ✕
                 </button>
@@ -420,7 +420,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
 
         {/* 멤버 평점 */}
-        <div style={{ padding: "0 24px" }}>
+        <div className="px-4 sm:px-6">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             청음단 평점
           </p>
@@ -443,7 +443,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   onMouseLeave={() => setHoveredReview(null)}
                 >
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{user.emoji}</span>
-                  <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, width: 110, flexShrink: 0, textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
+                  <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, flexShrink: 0, textDecoration: "none" }} className="w-[72px] sm:w-[110px] hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
 
                   {r ? (
                     <>
@@ -477,20 +477,26 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                       )}
 
                       {/* 리뷰 하트 */}
-                      <button
-                        onClick={() => handleToggleLikeReview(user.id)}
-                        disabled={savingLike}
-                        style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: iLikedReview ? "#e05050" : "var(--text-muted)",
-                          fontSize: 13, padding: "0 2px", flexShrink: 0,
-                          opacity: showReviewHeart ? 1 : 0,
-                          transition: "opacity 0.15s, color 0.15s",
-                          pointerEvents: showReviewHeart ? "auto" : "none",
-                        }}
-                      >
-                        ♥
-                      </button>
+                      {canLikeReview && (
+                        <button
+                          onClick={() => handleToggleLikeReview(user.id)}
+                          disabled={savingLike}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            color: iLikedReview ? "#e05050" : "var(--text-muted)",
+                            fontSize: 13, flexShrink: 0,
+                            transition: "opacity 0.15s, color 0.15s",
+                          }}
+                          className={[
+                            "p-2 -m-2 active:scale-90",
+                            iLikedReview || showReviewHeart
+                              ? "opacity-100"
+                              : "opacity-0 sm:opacity-0 max-sm:opacity-30",
+                          ].join(" ")}
+                        >
+                          ♥
+                        </button>
+                      )}
                     </>
                   ) : (
                     <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>
@@ -504,20 +510,19 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
 
         {/* 내 평점 입력 */}
-        <div style={{ padding: "0 24px" }}>
+        <div className="px-4 sm:px-6">
           {profile ? (
             <>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 {profile.emoji} 나의 청음 점수
               </p>
-              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              <div className="flex gap-1 sm:gap-1.5 mb-3">
                 {[1,2,3,4,5,6,7,8].map((n) => (
                   <button
                     key={n}
                     onClick={() => setMyScore(n)}
+                    className="flex-1 h-8 sm:h-9"
                     style={{
-                      width: 36,
-                      height: 36,
                       borderRadius: 6,
                       border: `1px solid ${myScore === n ? "var(--accent)" : "var(--border)"}`,
                       backgroundColor: myScore === n ? "var(--accent)" : "var(--bg-elevated)",
@@ -606,7 +611,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         {tracklist.length > 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
-            <div style={{ padding: "0 24px 24px" }}>
+            <div className="px-4 sm:px-6 pb-6">
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 수록곡
               </p>
@@ -641,11 +646,15 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                             style={{
                               background: "none", border: "none", cursor: "pointer",
                               color: iLiked ? "#e05050" : "var(--text-muted)",
-                              fontSize: 11, padding: 0, flexShrink: 0, lineHeight: 1,
-                              opacity: hoveredTrack === i || iLiked ? 1 : 0,
+                              fontSize: 13, flexShrink: 0, lineHeight: 1,
                               transition: "opacity 0.15s, color 0.15s",
-                              pointerEvents: hoveredTrack === i || iLiked ? "auto" : "none",
                             }}
+                            className={[
+                              "p-2 -m-2 active:scale-90",
+                              iLiked || hoveredTrack === i
+                                ? "opacity-100"
+                                : "opacity-0 sm:opacity-0 max-sm:opacity-30",
+                            ].join(" ")}
                           >
                             ♥
                           </button>

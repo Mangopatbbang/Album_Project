@@ -92,8 +92,8 @@ export default async function HomePage() {
 
       <main>
       {/* 히어로 */}
-      <section style={{ ...containerStyle, paddingTop: 72, paddingBottom: 64, textAlign: "center", position: "relative" }}>
-        <div style={{ position: "absolute", top: 24, right: 24 }}>
+      <section style={{ ...containerStyle, paddingBottom: 64, textAlign: "center", position: "relative" }} className="pt-10 sm:pt-[72px]">
+        <div style={{ position: "absolute", top: 16, right: 16 }} className="sm:top-6 sm:right-6">
           <RandomButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
@@ -106,11 +106,11 @@ export default async function HomePage() {
             lineHeight: 1.1,
             letterSpacing: "-0.04em",
           }}
-          className="text-6xl mb-6"
+          className="text-4xl sm:text-6xl mb-6"
         >
           아차청음사
         </h1>
-        <p style={{ color: "var(--text-sub)", fontSize: 48, marginBottom: 32, fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 32 }} className="text-4xl sm:text-[48px]">
           <CountUp target={totalCount} />
         </p>
       </section>

@@ -51,7 +51,7 @@ export default async function ThemesPage() {
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
+      <main style={{ maxWidth: 1100, margin: "0 auto" }} className="px-4 sm:px-6 pt-8 sm:pt-10 pb-20">
         <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 32 }}>
           청음집
         </p>

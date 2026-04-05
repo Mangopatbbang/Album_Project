@@ -88,6 +88,28 @@ main {
   background-color: var(--bg-elevated);
 }
 
+/* ── 모바일 터치 UX ── */
+
+/* 탭 시 파란 하이라이트 제거 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 터치 디바이스: active 피드백 */
+@media (hover: none) {
+  button:active,
+  a:active {
+    opacity: 0.65;
+    transition: opacity 0.08s;
+  }
+}
+
+/* 터치 영역 확장 유틸: padding으로 hit area만 키우고 -margin으로 시각적 크기 유지 */
+.touch-target {
+  padding: 10px;
+  margin: -10px;
+}
+
 /* 스크롤바 */
 ::-webkit-scrollbar {
   width: 6px;

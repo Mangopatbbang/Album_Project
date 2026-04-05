@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import SplashScreen from "@/components/ui/SplashScreen";
+import BottomNav from "@/components/layout/BottomNav";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -41,10 +42,11 @@ export default function RootLayout({
       lang="ko"
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-dvh flex flex-col">
+      <body className="min-h-dvh flex flex-col pb-[64px] sm:pb-0">
         <AuthProvider>
           <SplashScreen />
           {children}
+          <BottomNav />
         </AuthProvider>
       </body>
     </html>

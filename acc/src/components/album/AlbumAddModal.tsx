@@ -248,18 +248,21 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
       onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
-        zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
       }}
+      className="p-3 sm:p-6"
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "90vh",
-        overflowY: "auto", padding: 32, display: "flex", flexDirection: "column", gap: 20,
-      }}>
+        overflowY: "auto", display: "flex", flexDirection: "column", gap: 20,
+      }}
+      className="p-5 sm:p-8"
+      >
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>음반 입고</p>
-          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
+          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
         </div>
 
         {/* 제목 + 아티스트 */}
@@ -352,22 +355,24 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
               onClick={() => setShowCandidatePopup(false)}
               style={{
                 position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
-                zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+                zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
               }}
+              className="p-3 sm:p-6"
             >
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
                   borderRadius: 14, width: "100%", maxWidth: 600, maxHeight: "80vh",
-                  overflowY: "auto", padding: 28, display: "flex", flexDirection: "column", gap: 16,
+                  overflowY: "auto", display: "flex", flexDirection: "column", gap: 16,
                 }}
+                className="p-5 sm:p-7"
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>검색 결과 전체 ({candidates.length}개)</p>
                   <button onClick={() => setShowCandidatePopup(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 12 }}>
                   {candidates.map((c) => (
                     <CandidateItem
                       key={c.collection_id}
@@ -406,7 +411,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
         </div>
 
         {/* 발매일 + 장르 */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label style={labelStyle}>RELEASE DATE</label>
             <input
