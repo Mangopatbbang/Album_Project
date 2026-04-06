@@ -9,7 +9,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "year", "genre"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "year", "genre", "search_tags"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
@@ -58,7 +58,7 @@ export async function GET(
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, tracklist, ratings(user_id, score, one_line_review, liked_tracks)")
+    .select("id, title, artist, year, genre, cover_url, spotify_id, tracklist, search_tags, ratings(user_id, score, one_line_review, liked_tracks)")
     .eq("id", id)
     .single();
 

@@ -8,6 +8,7 @@ import { scoreColor } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import { useToast } from "@/components/ui/Toast";
 
 type RatingWithLikes = {
@@ -20,6 +21,7 @@ type RatingWithLikes = {
 
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
+  search_tags?: string | null;
   ratings: RatingWithLikes[];
 };
 
@@ -356,8 +358,9 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   {data.artist}
                   {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
                 </p>
-                <div style={{ marginTop: 5 }}>
+                <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
+                  <AppleMusicLink artist={data.artist} title={data.title} />
                 </div>
               </div>
 
@@ -368,7 +371,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                     onClick={handleToggleWatchlist}
                     style={{
                       background: "none", cursor: "pointer",
-                      color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
+                      color: isWatchlisted ? "var(--accent)" : "var(--text-sub)",
                       fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
                       border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
@@ -384,7 +387,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                     onClick={() => setEditing(true)}
                     style={{
                       background: "none", cursor: "pointer",
-                      color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                      color: "var(--text-sub)", fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
                       border: "1px solid var(--border)",
                     }}
@@ -397,7 +400,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   disabled={capturing}
                   style={{
                     background: "none", border: "none", cursor: capturing ? "default" : "pointer",
-                    color: captured ? "var(--accent)" : "var(--text-muted)",
+                    color: captured ? "var(--accent)" : "var(--text-sub)",
                     fontSize: 15, lineHeight: 1, padding: "2px 4px",
                     transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
                   }}
@@ -584,7 +587,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                       disabled={deleting}
                       style={{
                         backgroundColor: "transparent",
-                        color: "var(--text-muted)",
+                        color: "var(--text-sub)",
                         fontWeight: 400,
                         fontSize: 12,
                         padding: "6px 10px",
@@ -710,6 +713,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             genre: data.genre ?? null,
             cover_url: data.cover_url ?? null,
             tracklist: full?.tracklist ?? null,
+            search_tags: full?.search_tags ?? null,
           }}
           onClose={() => setEditing(false)}
           onSaved={async () => {

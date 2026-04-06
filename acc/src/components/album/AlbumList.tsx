@@ -254,7 +254,7 @@ return (
             style={{
               backgroundColor: unrated ? "var(--accent)" : "var(--bg-card)",
               border: `1px solid ${unrated ? "var(--accent)" : "var(--border)"}`,
-              color: unrated ? "var(--bg)" : "var(--text-muted)",
+              color: unrated ? "var(--bg)" : "var(--text-sub)",
               borderRadius: 6,
               padding: "6px 12px",
               fontSize: 13,
@@ -284,7 +284,7 @@ return (
                 borderRadius: 6,
                 border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
                 backgroundColor: myScore === s ? "var(--accent)" : "var(--bg-card)",
-                color: myScore === s ? "var(--bg)" : "var(--text-muted)",
+                color: myScore === s ? "var(--bg)" : "var(--text-sub)",
                 fontSize: 12,
                 fontWeight: myScore === s ? 700 : 400,
                 cursor: "pointer",

@@ -26,7 +26,7 @@ export default function HeroLogoutButton() {
       }}
     >
       <span style={{ fontSize: 26, lineHeight: 1 }}>🚪</span>
-      <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
+      <span style={{ color: "var(--text-sub)", fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
         로그아웃
       </span>
     </button>

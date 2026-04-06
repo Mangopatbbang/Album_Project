@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       .from("albums")
       .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
       .in("id", scoreIds);
-    if (search) q = q.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+    if (search) q = q.or(`title.ilike.%${search}%,artist.ilike.%${search}%,search_tags.ilike.%${search}%`);
     if (genre) q = q.eq("genre", genre);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
     .range(offset, offset + limit);
 
-  if (search) query = query.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) query = query.or(`title.ilike.%${search}%,artist.ilike.%${search}%,search_tags.ilike.%${search}%`);
   if (genre) query = query.eq("genre", genre);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
@@ -110,7 +110,7 @@ async function handleMySort(params: {
   const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%,search_tags.ilike.%${search}%`);
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   const { data: allAlbums } = await albumQuery;
 
@@ -183,7 +183,7 @@ async function handleAvgSort(params: {
   }
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%,search_tags.ilike.%${search}%`);
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
   const { data: allAlbums } = await albumQuery;
