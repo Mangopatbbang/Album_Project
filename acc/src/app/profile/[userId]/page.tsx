@@ -11,6 +11,7 @@ import { RecentListSection, RecentReviewsSection } from "@/components/profile/Re
 import { generateBadges, koGenre } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
+import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
 import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
@@ -163,6 +164,7 @@ export default async function ProfilePage({
             </p>
           </div>
           <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:flex-shrink-0 sm:justify-start">
+            <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           </div>
