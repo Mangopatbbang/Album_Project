@@ -21,7 +21,6 @@ type RatingWithLikes = {
 
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
-  search_tags?: string | null;
   ratings: RatingWithLikes[];
 };
 
@@ -713,7 +712,6 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             genre: data.genre ?? null,
             cover_url: data.cover_url ?? null,
             tracklist: full?.tracklist ?? null,
-            search_tags: full?.search_tags ?? null,
           }}
           onClose={() => setEditing(false)}
           onSaved={async () => {

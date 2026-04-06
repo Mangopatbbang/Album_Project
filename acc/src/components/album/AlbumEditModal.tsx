@@ -28,7 +28,6 @@ type Props = {
     genre?: string | null;
     cover_url?: string | null;
     tracklist?: string | null;
-    search_tags?: string | null;
   };
   onClose: () => void;
   onSaved: () => void;
@@ -71,7 +70,6 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const [genre, setGenre] = useState(album.genre ?? "");
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");
-  const [searchTags, setSearchTags] = useState(album.search_tags ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -161,7 +159,6 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         genre: genre || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
-        search_tags: searchTags.trim() || null,
       }),
     });
 
@@ -355,20 +352,6 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             onChange={(e) => setTracklist(e.target.value)}
             placeholder="트랙은 ; 로 구분"
           />
-        </div>
-
-        {/* 검색 태그 */}
-        <div>
-          <label style={labelStyle}>검색 태그</label>
-          <input
-            style={inputStyle}
-            value={searchTags}
-            onChange={(e) => setSearchTags(e.target.value)}
-            placeholder="쉼표 구분 (예: 키키, delulu, kpop)"
-          />
-          <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
-            한국어·별명 등 대체 검색어 — 사용자 검색에만 쓰임
-          </p>
         </div>
 
         {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
