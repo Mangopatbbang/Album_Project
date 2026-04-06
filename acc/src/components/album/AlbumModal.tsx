@@ -61,6 +61,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     await captureElement(cardRef.current);
     setCapturing(false);
     setCaptured(true);
+    showToast("이미지로 저장했어요", "info");
     setTimeout(() => setCaptured(false), 2000);
   };
 
@@ -74,6 +75,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
     const hasRating = ratings.find((r) => r.user_id === profile.id);
     if (!hasRating) return;
     const next = new Set(myLikedTracks);
+    const liked = !next.has(idx);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
     setMyLikedTracks(next);
     setSavingLike(true);
@@ -87,6 +89,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       }),
     });
     setSavingLike(false);
+    showToast(liked ? "트랙을 좋아요했어요 ♥" : "트랙 좋아요를 취소했어요", "info");
   };
 
   const handleToggleLikeReview = async (reviewerId: string) => {
@@ -110,6 +113,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       } : prev);
     }
     setSavingLike(false);
+    const reviewLiked = next.has(reviewerId);
+    showToast(reviewLiked ? "소감을 좋아요했어요 ♥" : "소감 좋아요를 취소했어요", "info");
   };
 
   const toggleReview = (userId: string) => {
@@ -281,7 +286,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         justifyContent: "center",
         animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
-      className="p-3 sm:p-6"
+      className="p-3 sm:p-8"
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); mouseDownOnBackdrop.current = false; }}
     >
@@ -293,9 +298,10 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           border: "1px solid var(--border)",
           borderRadius: 12,
           width: "100%",
-          maxWidth: 680,
+          maxWidth: 760,
           maxHeight: "90vh",
           overflowY: "auto",
+          textAlign: "left",
           animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -304,7 +310,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         <button
           onClick={handleClose}
           style={{
-            position: "absolute", top: 12, right: 12,
+            position: "absolute", top: 14, right: 20,
             color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
             cursor: "pointer", background: "none", border: "none",
             zIndex: 1, padding: 8,
@@ -314,7 +320,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         </button>
 
         {/* 상단: 커버 + 정보 */}
-        <div className="flex gap-3 sm:gap-5 px-4 sm:px-6 pt-5 pb-5">
+        <div style={{ display: "flex", gap: 20, padding: "28px 32px 24px" }}>
           {/* 커버 */}
           <div
             style={{
@@ -338,7 +344,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
           {/* 앨범 정보 */}
           {/* 모바일: paddingRight으로 ✕ 버튼 겹침 방지. 데스크탑: pr-0 */}
-          <div style={{ flex: 1, minWidth: 0 }} className="pr-7 sm:pr-0">
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 44 }}>
             {/* 데스크탑: 제목/아티스트 왼쪽 + 버튼 오른쪽 (space-between) */}
             {/* 모바일: 제목/아티스트 위, 버튼 아래 (flex-col) */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-2">
@@ -430,10 +436,10 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           </div>
         </div>
 
-        <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
+        <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 
         {/* 멤버 평점 */}
-        <div className="px-4 sm:px-6">
+        <div style={{ paddingLeft: 32, paddingRight: 32 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             청음단 평점
           </p>
@@ -520,22 +526,23 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           </div>
         </div>
 
-        <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
+        <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 
         {/* 내 평점 입력 */}
-        <div className="px-4 sm:px-6">
+        <div style={{ paddingLeft: 32, paddingRight: 32 }}>
           {profile ? (
             <>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 {profile.emoji} 나의 청음 점수
               </p>
-              <div className="flex gap-1 sm:gap-1.5 mb-3">
+              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
                 {[1,2,3,4,5,6,7,8].map((n) => (
                   <button
                     key={n}
                     onClick={() => setMyScore(n)}
-                    className="flex-1 h-8 sm:h-9"
                     style={{
+                      width: 36,
+                      height: 36,
                       borderRadius: 6,
                       border: `1px solid ${myScore === n ? "var(--accent)" : "var(--border)"}`,
                       backgroundColor: myScore === n ? "var(--accent)" : "var(--bg-elevated)",
@@ -623,8 +630,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         {/* 트랙리스트 */}
         {tracklist.length > 0 && (
           <>
-            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "20px 0" }} />
-            <div className="px-4 sm:px-6 pb-6">
+            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
+            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 28 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 수록곡
               </p>

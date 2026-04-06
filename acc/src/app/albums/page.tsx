@@ -78,7 +78,7 @@ export default async function AlbumsPage() {
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <main style={{ ...containerStyle, paddingTop: 40, paddingBottom: 80 }} className="px-4 sm:px-6">
+      <main style={{ ...containerStyle, padding: "40px 24px 80px" }}>
         <div style={{ marginBottom: 32 }}>
           <h1
             style={{

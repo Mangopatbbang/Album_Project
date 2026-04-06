@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 
 const GENRES = [
   "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
@@ -62,6 +63,7 @@ function CandidateItem({ c, selected, onSelect }: { c: ItunesCandidate; selected
 }
 
 export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
+  const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
   const [artist, setArtist] = useState(album.artist);
   const [year, setYear] = useState(album.year ?? "");
@@ -168,6 +170,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     }
 
     setSaving(false);
+    showToast("앨범 정보를 수정했어요");
     onSaved();
     onClose();
   };

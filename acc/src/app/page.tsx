@@ -91,8 +91,8 @@ export default async function HomePage() {
 
       <main>
       {/* 히어로 */}
-      <section style={{ ...containerStyle, textAlign: "center", position: "relative" }} className="px-4 sm:px-6 pt-8 sm:pt-[72px] pb-8 sm:pb-16">
-        <div style={{ position: "absolute", top: 12, right: 16 }} className="sm:top-6 sm:right-6">
+      <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 80px" }}>
+        <div style={{ position: "absolute", top: 20, right: 20 }}>
           <RandomButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
@@ -115,7 +115,7 @@ export default async function HomePage() {
       </section>
 
       {/* 최근 아카이빙 */}
-      <section style={{ ...containerStyle }} className="px-4 sm:px-6 pb-8 sm:pb-16">
+      <section style={{ ...containerStyle, padding: "0 24px 80px" }}>
         <div className="flex items-center justify-between mb-6">
           <h2
             style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }}
@@ -135,10 +135,10 @@ export default async function HomePage() {
       </section>
 
       {/* 베스트 & 테마 */}
-      <section style={{ ...containerStyle }} className="px-4 sm:px-6 pb-8 sm:pb-16">
+      <section style={{ ...containerStyle, padding: "0 24px 80px" }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 연도별 베스트 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28 }}>
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
                 연도별 명반
@@ -174,7 +174,7 @@ export default async function HomePage() {
           </div>
 
           {/* 선곡집 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 28 }}>
             <div className="flex items-center justify-between mb-5">
               <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-base">
                 선곡집
@@ -220,7 +220,7 @@ export default async function HomePage() {
       </section>
 
       {/* 멤버 현황 */}
-      <section style={{ ...containerStyle }} className="px-4 sm:px-6 pb-10 sm:pb-24">
+      <section style={{ ...containerStyle, padding: "0 24px 100px" }}>
         <div className="flex items-center justify-between mb-6">
           <h2 style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }} className="text-lg">
             청음인 현황

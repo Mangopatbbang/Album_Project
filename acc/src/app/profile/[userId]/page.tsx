@@ -141,7 +141,7 @@ export default async function ProfilePage({
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
-    <main style={{ maxWidth: 1100, margin: "0 auto" }} className="px-4 sm:px-6 py-8 sm:py-10 pb-20">
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
 
       <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
       {/* 프로필 헤더 */}

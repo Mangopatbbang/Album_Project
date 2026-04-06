@@ -58,10 +58,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           flexDirection: "column",
           alignItems: "center",
           gap: 8,
-          padding: "0 16px",
+          padding: "0 16px 80px",
           pointerEvents: "none",
         }}
-        className="pb-[84px] sm:pb-6"
       >
         {toasts.map((toast) => (
           <div
