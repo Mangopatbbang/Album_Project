@@ -13,6 +13,7 @@ export default function Header() {
     { href: "/best", label: "도감" },
     { href: "/themes", label: "청음집" },
     { href: "/members", label: "청음인" },
+    { href: "/board", label: "청음판" },
     ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록" }] : []),
   ];
 

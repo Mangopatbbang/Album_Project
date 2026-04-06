@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseServer } from "@/lib/supabase";
+
+export async function GET() {
+  const { data, error } = await supabaseServer
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
+}
+
+export async function POST(req: NextRequest) {
+  const { content, show_popup, userId } = await req.json();
+
+  const { data: user } = await supabaseServer.from("users").select("role").eq("id", userId ?? "").single();
+  if (user?.role !== "admin") return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+
+  if (!content?.trim()) return NextResponse.json({ error: "내용을 입력해주세요" }, { status: 400 });
+
+  const { data, error } = await supabaseServer
+    .from("announcements")
+    .insert({ content: content.trim(), show_popup: show_popup ?? false })
+    .select()
+    .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data, { status: 201 });
+}

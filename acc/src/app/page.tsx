@@ -11,6 +11,7 @@ import CountUp from "@/components/ui/CountUp";
 import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import HomePopup from "@/components/ui/HomePopup";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -89,6 +90,7 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
+      <HomePopup />
       <Header />
 
       <main>
