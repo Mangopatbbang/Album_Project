@@ -2,11 +2,10 @@
 
 type Props = {
   artist: string;
-  title: string;
 };
 
-export default function AppleMusicLink({ artist, title }: Props) {
-  const url = `https://music.apple.com/search?term=${encodeURIComponent(`${artist} ${title}`)}`;
+export default function AppleMusicLink({ artist }: Props) {
+  const url = `https://music.apple.com/search?term=${encodeURIComponent(artist)}`;
 
   return (
     <a

@@ -121,7 +121,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
           borderRadius: 6,
           padding: "4px 10px",
           cursor: "pointer",
-          color: "var(--text-sub)",
+          color: "var(--text)",
           fontSize: 11,
           flexShrink: 0,
           transition: "color 0.15s",
@@ -211,7 +211,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 onClick={() => setOpen(false)}
                 style={{
                   backgroundColor: "transparent", border: "1px solid var(--border)",
-                  color: "var(--text-sub)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
+                  color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
                 }}
               >
                 취소

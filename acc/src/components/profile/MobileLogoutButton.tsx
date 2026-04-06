@@ -18,7 +18,7 @@ export default function MobileLogoutButton({ userId }: { userId: string }) {
         borderRadius: 6,
         padding: "4px 10px",
         cursor: "pointer",
-        color: "var(--text-sub)",
+        color: "var(--text)",
         fontSize: 11,
         flexShrink: 0,
       }}

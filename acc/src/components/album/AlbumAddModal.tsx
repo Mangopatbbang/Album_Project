@@ -450,7 +450,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{
             backgroundColor: "transparent", border: "1px solid var(--border)",
-            color: "var(--text-sub)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
+            color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
           }}>취소</button>
           <button onClick={handleSubmit} disabled={saving || duplicates.length > 0} style={{
             backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",

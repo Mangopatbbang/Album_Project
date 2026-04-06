@@ -83,7 +83,7 @@ export default function BottomNav() {
               key={href}
               href={href}
               style={{
-                color: active ? "var(--accent)" : "var(--text-sub)",
+                color: active ? "var(--accent)" : "var(--text)",
                 transition: "color 0.15s",
               }}
               className="flex-1 flex flex-col items-center justify-center gap-1 py-3 active:opacity-60"

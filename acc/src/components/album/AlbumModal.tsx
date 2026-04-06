@@ -307,21 +307,22 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 닫기 버튼 — 절대 위치 (별도 row 없이 높이 차지 안 함) */}
-        <button
-          onClick={handleClose}
-          style={{
-            position: "absolute", top: 14, right: 20,
-            color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
-            cursor: "pointer", background: "none", border: "none",
-            zIndex: 1, padding: 8,
-          }}
-        >
-          ✕
-        </button>
+        {/* 닫기 버튼 전용 행 — 오버랩 없음 */}
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 14px 0" }}>
+          <button
+            onClick={handleClose}
+            style={{
+              color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
+              cursor: "pointer", background: "none", border: "none",
+              padding: "4px 8px",
+            }}
+          >
+            ✕
+          </button>
+        </div>
 
         {/* 상단: 커버 + 정보 */}
-        <div style={{ display: "flex", gap: 20, padding: "28px 32px 24px" }}>
+        <div style={{ display: "flex", gap: 20, padding: "8px 32px 24px" }}>
           {/* 커버 */}
           <div
             style={{
@@ -359,7 +360,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 </p>
                 <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
-                  <AppleMusicLink artist={data.artist} title={data.title} />
+                  <AppleMusicLink artist={data.artist} />
                 </div>
               </div>
 
@@ -370,7 +371,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                     onClick={handleToggleWatchlist}
                     style={{
                       background: "none", cursor: "pointer",
-                      color: isWatchlisted ? "var(--accent)" : "var(--text-sub)",
+                      color: isWatchlisted ? "var(--accent)" : "var(--text)",
                       fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
                       border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
@@ -386,7 +387,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                     onClick={() => setEditing(true)}
                     style={{
                       background: "none", cursor: "pointer",
-                      color: "var(--text-sub)", fontSize: 12, lineHeight: 1,
+                      color: "var(--text)", fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
                       border: "1px solid var(--border)",
                     }}
@@ -399,7 +400,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   disabled={capturing}
                   style={{
                     background: "none", border: "none", cursor: capturing ? "default" : "pointer",
-                    color: captured ? "var(--accent)" : "var(--text-sub)",
+                    color: captured ? "var(--accent)" : "var(--text)",
                     fontSize: 15, lineHeight: 1, padding: "2px 4px",
                     transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
                   }}
@@ -586,7 +587,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                       disabled={deleting}
                       style={{
                         backgroundColor: "transparent",
-                        color: "var(--text-sub)",
+                        color: "var(--text)",
                         fontWeight: 400,
                         fontSize: 12,
                         padding: "6px 10px",
