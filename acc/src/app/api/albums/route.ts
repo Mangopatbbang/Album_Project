@@ -232,6 +232,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   }
 
+  if (tracklist) {
+    const trackCount = tracklist.split(";").map((t: string) => t.trim()).filter(Boolean).length;
+    if (trackCount <= 2) {
+      return NextResponse.json({ error: "싱글 앨범은 등록할 수 없습니다. (수록곡 3개 이상)" }, { status: 400 });
+    }
+  }
+
   const { data: existing } = await supabaseServer
     .from("albums")
     .select("id, title, artist")

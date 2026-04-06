@@ -43,6 +43,7 @@ export default function AppleMusicLink({ artist, title }: Props) {
         <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
         <path d="M15.5 7.5v5.8a2 2 0 1 1-1.5-1.94V9.2L10 10.1v4.4a2 2 0 1 1-1.5-1.94V8.8L15.5 7.5z" fill="currentColor"/>
       </svg>
+      <span>Apple</span>
     </a>
   );
 }

@@ -444,6 +444,20 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
           />
         </div>
 
+        {isSingle && (
+          <div style={{
+            padding: "10px 12px", borderRadius: 6,
+            backgroundColor: "rgba(224,80,80,0.08)", border: "1px solid rgba(224,80,80,0.3)",
+          }}>
+            <p style={{ color: "#e05050", fontSize: 12, fontWeight: 600 }}>
+              싱글은 등록할 수 없어요
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
+              수록곡이 {trackCount}개입니다. 3개 이상인 앨범만 등록 가능해요.
+            </p>
+          </div>
+        )}
+
         {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
 
         {/* 버튼 */}
@@ -452,11 +466,11 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
             backgroundColor: "transparent", border: "1px solid var(--border)",
             color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
           }}>취소</button>
-          <button onClick={handleSubmit} disabled={saving || duplicates.length > 0} style={{
+          <button onClick={handleSubmit} disabled={saving || duplicates.length > 0 || isSingle} style={{
             backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
             borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 600,
-            cursor: saving || duplicates.length > 0 ? "not-allowed" : "pointer",
-            opacity: saving || duplicates.length > 0 ? 0.4 : 1,
+            cursor: saving || duplicates.length > 0 || isSingle ? "not-allowed" : "pointer",
+            opacity: saving || duplicates.length > 0 || isSingle ? 0.4 : 1,
           }}>
             {saving ? "입고 중..." : "입고"}
           </button>
