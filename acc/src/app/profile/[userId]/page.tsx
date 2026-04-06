@@ -162,7 +162,7 @@ export default async function ProfilePage({
               총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:flex-shrink-0 sm:justify-start">
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           </div>
