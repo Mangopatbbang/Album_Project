@@ -6,6 +6,7 @@ import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
 import { fetchAllAlbumsWithRatings, getBestByYear } from "@/lib/stats";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
+import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
 import CountUp from "@/components/ui/CountUp";
 import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
@@ -93,8 +94,11 @@ export default async function HomePage() {
       <main>
       {/* 히어로 */}
       <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 80px" }}>
-        <div style={{ position: "absolute", top: 20, right: 20 }}>
+        <div style={{ position: "absolute", top: 20, left: 20 }}>
           <RandomButton />
+        </div>
+        <div style={{ position: "absolute", top: 20, right: 20 }}>
+          <HeroLogoutButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
           청음의 기록
