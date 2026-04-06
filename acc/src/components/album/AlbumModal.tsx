@@ -360,7 +360,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 </p>
                 <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
-                  <AppleMusicLink artist={data.artist} />
+                  <AppleMusicLink artist={data.artist} title={data.title} />
                 </div>
               </div>
 
