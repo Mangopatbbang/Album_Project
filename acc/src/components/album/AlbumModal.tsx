@@ -344,7 +344,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
           {/* 앨범 정보 */}
           {/* 모바일: paddingRight으로 ✕ 버튼 겹침 방지. 데스크탑: pr-0 */}
-          <div style={{ flex: 1, minWidth: 0, paddingRight: 44 }}>
+          <div style={{ flex: 1, minWidth: 0 }} className="pr-7 sm:pr-11">
             {/* 데스크탑: 제목/아티스트 왼쪽 + 버튼 오른쪽 (space-between) */}
             {/* 모바일: 제목/아티스트 위, 버튼 아래 (flex-col) */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-2">

@@ -7,6 +7,7 @@ import { fetchAllAlbumsWithRatings, getBestByYear } from "@/lib/stats";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import CountUp from "@/components/ui/CountUp";
+import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
@@ -112,6 +113,7 @@ export default async function HomePage() {
         <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 32 }} className="text-4xl sm:text-[48px]">
           <CountUp target={totalCount} />
         </p>
+        <MobileLoginHint />
       </section>
 
       {/* 최근 아카이빙 */}

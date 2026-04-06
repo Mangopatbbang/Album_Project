@@ -81,7 +81,7 @@ export default async function ProfilePage({
   const monthData = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = `${d.getMonth() + 1}월`;
+    const label = `${d.getMonth() + 1}`;
     return { key, label, count: 0 };
   });
   for (const r of validRatings) {
@@ -213,7 +213,7 @@ export default async function ProfilePage({
 
       {/* 점수 분포 + 청음 캘린더 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             SCORE DISTRIBUTION
           </p>
@@ -236,7 +236,7 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             청음 캘린더
           </p>
@@ -252,7 +252,10 @@ export default async function ProfilePage({
                   opacity: m.count === 0 ? 0.3 : 1,
                   transition: "height 0.3s ease",
                 }} />
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{m.label}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                  <span className="sm:hidden">{m.label}</span>
+                  <span className="hidden sm:block">{m.label}월</span>
+                </span>
               </div>
             ))}
           </div>
