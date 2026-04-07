@@ -34,6 +34,15 @@ type Stats = {
   hasTracklist: number;
 };
 
+type ItunesMismatch = {
+  id: string;
+  title: string;
+  artist: string;
+  dbDate: string;
+  itunesDate: string;
+  fixed?: boolean;
+};
+
 export default function AdminPage() {
   // --- 통계 ---
   const [stats, setStats] = useState<Stats | null>(null);
@@ -209,6 +218,74 @@ export default function AdminPage() {
       }
     }
     setDateRunning(false);
+  }
+
+  // --- iTunes 발매일 비교 ---
+  const [itunesRunning, setItunesRunning] = useState(false);
+  const [itunesProgress, setItunesProgress] = useState({ current: 0, total: 0 });
+  const [itunesMismatches, setItunesMismatches] = useState<ItunesMismatch[]>([]);
+  const [itunesScope, setItunesScope] = useState<"2026" | "all">("2026");
+  const itunesStopRef = useRef(false);
+
+  async function runItunesCheck() {
+    setItunesRunning(true);
+    itunesStopRef.current = false;
+    setItunesMismatches([]);
+
+    // 1) DB에서 앨범 전부 수집
+    const albums: { id: string; title: string; artist: string; release_date: string }[] = [];
+    let offset = 0;
+    while (true) {
+      const res = await fetch(`/api/albums?limit=100&offset=${offset}`);
+      const data = await res.json();
+      const items = data.items ?? [];
+      for (const a of items) {
+        if (!a.release_date) continue;
+        if (itunesScope === "2026" && !a.release_date.startsWith("2026")) continue;
+        albums.push({ id: a.id, title: a.title, artist: a.artist, release_date: a.release_date });
+      }
+      if (!data.hasMore) break;
+      offset = data.nextOffset;
+    }
+
+    setItunesProgress({ current: 0, total: albums.length });
+
+    // 2) iTunes 조회 및 비교
+    const mismatches: ItunesMismatch[] = [];
+    for (let i = 0; i < albums.length; i++) {
+      if (itunesStopRef.current) break;
+      const a = albums[i];
+      setItunesProgress({ current: i + 1, total: albums.length });
+      try {
+        const res = await fetch(
+          `https://itunes.apple.com/search?term=${encodeURIComponent(a.artist + " " + a.title)}&entity=album&limit=5&country=us`
+        );
+        const data = await res.json();
+        if (!data.results || data.results.length === 0) continue;
+        const itunesDate = data.results[0].releaseDate?.slice(0, 10);
+        if (!itunesDate) continue;
+        // 연도가 다르면 불일치
+        if (itunesDate.slice(0, 4) !== a.release_date.slice(0, 4)) {
+          mismatches.push({ id: a.id, title: a.title, artist: a.artist, dbDate: a.release_date, itunesDate });
+          setItunesMismatches([...mismatches]);
+        }
+      } catch { /* skip */ }
+      await new Promise((r) => setTimeout(r, 80));
+    }
+
+    setItunesRunning(false);
+  }
+
+  async function applyItunesDate(m: ItunesMismatch) {
+    const year = m.itunesDate.slice(0, 4);
+    const res = await fetch(`/api/albums/${m.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ release_date: m.itunesDate, year }),
+    });
+    if (res.ok) {
+      setItunesMismatches((prev) => prev.map((x) => x.id === m.id ? { ...x, fixed: true } : x));
+    }
   }
 
   // --- 커버 교정 ---
@@ -616,6 +693,82 @@ export default function AdminPage() {
             }}>
               {dateLog.map((line, i) => <span key={i}>{line}</span>)}
             </div>
+          )}
+        </div>
+
+        {/* ── iTunes 발매일 비교 ── */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            iTunes 발매일 비교 검증
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+            <select
+              value={itunesScope}
+              onChange={(e) => setItunesScope(e.target.value as "2026" | "all")}
+              disabled={itunesRunning}
+              style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
+            >
+              <option value="2026">2026년 앨범만 (빠름)</option>
+              <option value="all">전체 앨범 (느림)</option>
+            </select>
+            {!itunesRunning ? (
+              <button onClick={runItunesCheck} style={{ padding: "7px 18px", borderRadius: 6, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                ▶ 조회 시작
+              </button>
+            ) : (
+              <button onClick={() => { itunesStopRef.current = true; }} style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>
+                ■ 중지
+              </button>
+            )}
+            {itunesRunning && (
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                {itunesProgress.current} / {itunesProgress.total} 처리 중...
+              </span>
+            )}
+          </div>
+
+          {itunesMismatches.length > 0 && (
+            <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", gap: 0, backgroundColor: "var(--bg-elevated)", padding: "8px 14px", borderBottom: "1px solid var(--border)" }}>
+                {["앨범", "아티스트", "현재 (DB)", "iTunes", ""].map((h, i) => (
+                  <span key={i} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" }}>{h}</span>
+                ))}
+              </div>
+              <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                {itunesMismatches.map((m) => (
+                  <div key={m.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", gap: 0, padding: "10px 14px", borderBottom: "1px solid var(--border)", backgroundColor: m.fixed ? "rgba(100,180,100,0.06)" : "transparent", alignItems: "center" }}>
+                    <span style={{ color: m.fixed ? "var(--text-muted)" : "var(--text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.artist}</span>
+                    <span style={{ color: "#e06060", fontSize: 12, fontFamily: "monospace" }}>{m.dbDate}</span>
+                    <span style={{ color: "#60c060", fontSize: 12, fontFamily: "monospace" }}>{m.itunesDate}</span>
+                    {m.fixed ? (
+                      <span style={{ color: "#60c060", fontSize: 11 }}>✓ 수정됨</span>
+                    ) : (
+                      <button onClick={() => applyItunesDate(m)} style={{ padding: "3px 10px", borderRadius: 4, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 11 }}>
+                        적용
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "10px 14px", backgroundColor: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                  불일치 {itunesMismatches.length}개 발견 · 미수정 {itunesMismatches.filter(m => !m.fixed).length}개
+                </span>
+                {itunesMismatches.some(m => !m.fixed) && (
+                  <button
+                    onClick={() => { if (confirm("불일치 항목을 전부 iTunes 날짜로 수정할까요?")) itunesMismatches.filter(m => !m.fixed).forEach(applyItunesDate); }}
+                    style={{ marginLeft: 16, padding: "3px 12px", borderRadius: 4, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 11, fontWeight: 600 }}
+                  >
+                    전체 적용
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!itunesRunning && itunesProgress.total > 0 && itunesMismatches.length === 0 && (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>✓ 불일치 항목 없음</p>
           )}
         </div>
 
