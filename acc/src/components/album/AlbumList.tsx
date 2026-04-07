@@ -15,8 +15,10 @@ type Props = {
 };
 
 const BASE_SORT_OPTIONS = [
-  { value: "newest", label: "최신순" },
-  { value: "oldest", label: "오래된순" },
+  { value: "newest", label: "아카이빙 최신순" },
+  { value: "oldest", label: "아카이빙 오래된순" },
+  { value: "release_desc", label: "발매일 최신순" },
+  { value: "release_asc", label: "발매일 오래된순" },
   { value: "avg_desc", label: "평점 높은순" },
   { value: "avg_asc", label: "평점 낮은순" },
   { value: "title", label: "가나다순" },

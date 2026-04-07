@@ -74,6 +74,10 @@ export async function GET(req: NextRequest) {
     query = query.order("created_at", { ascending: true }).order("id", { ascending: true });
   } else if (sort === "title") {
     query = query.order("title", { ascending: true }).order("id", { ascending: true });
+  } else if (sort === "release_desc") {
+    query = query.order("release_date", { ascending: false, nullsFirst: false }).order("id", { ascending: false });
+  } else if (sort === "release_asc") {
+    query = query.order("release_date", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
   } else {
     query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
   }
