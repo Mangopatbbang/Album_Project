@@ -25,6 +25,7 @@ type Props = {
     title: string;
     artist: string;
     year?: string | null;
+    release_date?: string | null;
     genre?: string | null;
     cover_url?: string | null;
     tracklist?: string | null;
@@ -66,7 +67,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
   const [artist, setArtist] = useState(album.artist);
-  const [year, setYear] = useState(album.year ?? "");
+  const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
   const [genre, setGenre] = useState(album.genre ?? "");
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");
@@ -125,7 +126,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     setTitle(c.name);
     setArtist(c.artist);
     setCoverUrl(c.cover_url);
-    if (c.release_date) setYear(c.release_date.slice(0, 4));
+    if (c.release_date) setReleaseDate(c.release_date);
     if (c.genre && GENRES.includes(c.genre)) setGenre(c.genre);
     setLoadingTracklist(true);
     // state 업데이트는 비동기이므로 c에서 직접 최신값 사용
@@ -155,7 +156,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
       body: JSON.stringify({
         title: title.trim(),
         artist: artist.trim(),
-        year: year ? year.slice(0, 4) : null,
+        release_date: releaseDate || null,
+        year: releaseDate ? releaseDate.slice(0, 4) : null,
         genre: genre || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
@@ -331,8 +333,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         {/* 발매일 + 장르 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label style={labelStyle}>YEAR</label>
-            <input style={inputStyle} value={year} onChange={(e) => setYear(e.target.value)} placeholder="YYYY" maxLength={4} />
+            <label style={labelStyle}>RELEASE DATE</label>
+            <input style={inputStyle} value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} placeholder="YYYY-MM-DD" />
           </div>
           <div>
             <label style={labelStyle}>GENRE</label>

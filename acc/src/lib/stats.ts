@@ -10,6 +10,7 @@ export type ProfileRatingRow = {
     title: string;
     artist: string;
     year: string | null;
+    release_date: string | null;
     genre: string | null;
     cover_url: string | null;
   } | null;
@@ -21,7 +22,7 @@ const _fetchProfileRatings = unstable_cache(
     for (let page = 0; ; page++) {
       const { data } = await supabaseServer
         .from("ratings")
-        .select("score, one_line_review, updated_at, albums(id, title, artist, year, genre, cover_url)")
+        .select("score, one_line_review, updated_at, albums(id, title, artist, year, release_date, genre, cover_url)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
         .range(page * 1000, (page + 1) * 1000 - 1);
@@ -44,6 +45,7 @@ export type AlbumStat = {
   title: string;
   artist: string;
   year: string | null;
+  release_date: string | null;
   genre: string | null;
   cover_url: string | null;
   spotify_id?: string | null;
@@ -57,6 +59,7 @@ type RawAlbum = {
   title: string;
   artist: string;
   year?: string | null;
+  release_date?: string | null;
   genre?: string | null;
   cover_url?: string | null;
   spotify_id?: string | null;
@@ -68,7 +71,7 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("albums")
-      .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+      .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
     result.push(...(data as RawAlbum[]));
@@ -96,6 +99,7 @@ function toStat(album: RawAlbum): AlbumStat & { variance: number } {
     title: album.title,
     artist: album.artist,
     year: album.year ? album.year.slice(0, 4) : null,
+    release_date: album.release_date ?? null,
     genre: album.genre ?? null,
     cover_url: album.cover_url ?? null,
     spotify_id: album.spotify_id ?? null,

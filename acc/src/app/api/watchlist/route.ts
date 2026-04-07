@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from("watchlist")
-    .select("album_id, created_at, albums(id, title, artist, year, genre, cover_url, spotify_id)")
+    .select("album_id, created_at, albums(id, title, artist, year, release_date, genre, cover_url, spotify_id)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 

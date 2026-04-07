@@ -19,6 +19,12 @@ export async function PATCH(
     return NextResponse.json({ error: "업데이트할 필드 없음" }, { status: 400 });
   }
 
+  // release_date가 제공되면 year 자동 동기화 (year가 별도로 지정되지 않은 경우)
+  if ("release_date" in update && !("year" in update)) {
+    const rd = update.release_date as string | null;
+    update.year = rd ? rd.slice(0, 4) : null;
+  }
+
   // spotify_id가 새로 설정되고 tracklist가 없으면 자동으로 트랙리스트 가져오기
   if (update.spotify_id && !update.tracklist) {
     try {

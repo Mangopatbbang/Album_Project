@@ -271,6 +271,7 @@ function mapAlbum(album: {
   title: string;
   artist: string;
   year?: string | null;
+  release_date?: string | null;
   genre?: string | null;
   cover_url?: string | null;
   spotify_id?: string | null;
@@ -287,6 +288,7 @@ function mapAlbum(album: {
     title: album.title,
     artist: album.artist,
     year: album.year,
+    release_date: album.release_date ?? null,
     genre: album.genre,
     cover_url: album.cover_url,
     spotify_id: album.spotify_id,

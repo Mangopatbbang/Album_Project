@@ -11,6 +11,7 @@ export type Album = {
   title: string;
   artist: string;
   year?: string;
+  release_date?: string | null;
   genre?: string;
   tracklist?: string;
   spotify_id?: string;

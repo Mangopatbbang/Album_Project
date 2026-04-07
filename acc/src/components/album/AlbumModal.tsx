@@ -736,6 +736,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             title: data.title,
             artist: data.artist,
             year: data.year ?? null,
+            release_date: (full as FullAlbum)?.release_date ?? null,
             genre: data.genre ?? null,
             cover_url: data.cover_url ?? null,
             tracklist: full?.tracklist ?? null,
