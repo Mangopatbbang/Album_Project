@@ -88,6 +88,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,6 +177,13 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     if (matched) {
       setSpotifyId(matched.spotify_id);
       if (!c.cover_url && matched.cover_url) setCoverUrl(matched.cover_url);
+      // 발매일 교차검증: iTunes vs Spotify 연도가 다르면 경고
+      if (c.release_date && matched.release_date &&
+          c.release_date.slice(0, 4) !== matched.release_date.slice(0, 4)) {
+        setDateConflict({ itunesDate: c.release_date, spotifyDate: matched.release_date });
+      } else {
+        setDateConflict(null);
+      }
     }
     setLoadingTracklist(false);
   };
@@ -420,9 +428,43 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
             <input
               style={inputStyle}
               value={releaseDate}
-              onChange={(e) => setReleaseDate(e.target.value)}
+              onChange={(e) => { setReleaseDate(e.target.value); setDateConflict(null); }}
               placeholder="YYYY-MM-DD"
             />
+            {dateConflict && (
+              <div style={{
+                marginTop: 8, padding: "10px 12px", borderRadius: 6,
+                backgroundColor: "rgba(232,213,163,0.08)", border: "1px solid rgba(232,213,163,0.35)",
+              }}>
+                <p style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600, marginBottom: 8 }}>
+                  ⚠ iTunes · Spotify 발매일이 달라요
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setReleaseDate(dateConflict.itunesDate); setDateConflict(null); }}
+                    style={{
+                      textAlign: "left", background: releaseDate === dateConflict.itunesDate ? "rgba(232,213,163,0.15)" : "none",
+                      border: "1px solid var(--border)", borderRadius: 5, padding: "5px 10px",
+                      color: "var(--text)", fontSize: 12, cursor: "pointer",
+                    }}
+                  >
+                    iTunes  {dateConflict.itunesDate}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setReleaseDate(dateConflict.spotifyDate); setDateConflict(null); }}
+                    style={{
+                      textAlign: "left", background: releaseDate === dateConflict.spotifyDate ? "rgba(232,213,163,0.15)" : "none",
+                      border: "1px solid var(--border)", borderRadius: 5, padding: "5px 10px",
+                      color: "var(--text)", fontSize: 12, cursor: "pointer",
+                    }}
+                  >
+                    Spotify  {dateConflict.spotifyDate}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label style={labelStyle}>GENRE</label>
