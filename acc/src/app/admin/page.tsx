@@ -231,23 +231,13 @@ export default function AdminPage() {
     setItunesRunning(true);
     itunesStopRef.current = false;
     setItunesMismatches([]);
+    setItunesProgress({ current: 0, total: 0 });
 
-    // 1) DB에서 앨범 전부 수집
-    const albums: { id: string; title: string; artist: string; release_date: string }[] = [];
-    let offset = 0;
-    while (true) {
-      const res = await fetch(`/api/albums?limit=100&offset=${offset}`);
-      const data = await res.json();
-      const items = data.items ?? [];
-      for (const a of items) {
-        if (!a.release_date) continue;
-        if (itunesScope === "2026" && !a.release_date.startsWith("2026")) continue;
-        albums.push({ id: a.id, title: a.title, artist: a.artist, release_date: a.release_date });
-      }
-      if (!data.hasMore) break;
-      offset = data.nextOffset;
-    }
+    // 1) 전용 엔드포인트로 DB 앨범 직접 조회 (release_date 포함)
+    const res0 = await fetch(`/api/admin/albums-dates?scope=${itunesScope}`);
+    const albums: { id: string; title: string; artist: string; release_date: string }[] = await res0.json();
 
+    if (!albums.length) { setItunesRunning(false); return; }
     setItunesProgress({ current: 0, total: albums.length });
 
     // 2) iTunes 조회 및 비교
@@ -261,15 +251,14 @@ export default function AdminPage() {
           `/api/admin/itunes-date?artist=${encodeURIComponent(a.artist)}&title=${encodeURIComponent(a.title)}`
         );
         const data = await res.json();
-        const itunesDate = data.date;
+        const itunesDate: string | null = data.date;
         if (!itunesDate) continue;
-        // 연도가 다르면 불일치
         if (itunesDate.slice(0, 4) !== a.release_date.slice(0, 4)) {
           mismatches.push({ id: a.id, title: a.title, artist: a.artist, dbDate: a.release_date, itunesDate });
           setItunesMismatches([...mismatches]);
         }
       } catch { /* skip */ }
-      await new Promise((r) => setTimeout(r, 80));
+      await new Promise((r) => setTimeout(r, 100));
     }
 
     setItunesRunning(false);
