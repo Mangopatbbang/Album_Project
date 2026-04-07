@@ -9,6 +9,7 @@ import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import AppleMusicLink from "@/components/ui/AppleMusicLink";
+import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
 
 type RatingWithLikes = {
@@ -361,6 +362,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
                   <AppleMusicLink artist={data.artist} title={data.title} />
+                  <YoutubeMusicLink artist={data.artist} title={data.title} />
                 </div>
               </div>
 
@@ -634,7 +636,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         {tracklist.length > 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 28 }}>
+            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 0 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 수록곡
               </p>
@@ -699,6 +701,17 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
             </div>
           </>
         )}
+        {/* 문의 링크 */}
+        <div style={{ textAlign: "center", padding: "20px 32px 28px" }}>
+          <Link
+            href="/board"
+            onClick={handleClose}
+            style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.02em" }}
+            className="hover:text-[var(--text-sub)] transition-colors"
+          >
+            문제가 있나요? 문의하기 →
+          </Link>
+        </div>
       </div>
 
     </div>

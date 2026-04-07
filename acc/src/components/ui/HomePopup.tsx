@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Announcement = { id: number; content: string; show_popup: boolean };
 
 export default function HomePopup() {
   const [text, setText] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"in" | "hold" | "out" | "done">("in");
+  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState<{ top: string; left: string } | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const dismiss = () => {
+    setVisible(false);
+    timersRef.current.forEach(clearTimeout);
+  };
 
   useEffect(() => {
     if (sessionStorage.getItem("popup_shown")) return;
@@ -17,43 +24,57 @@ export default function HomePopup() {
         const popup = list.find((a) => a.show_popup);
         if (!popup) return;
         sessionStorage.setItem("popup_shown", "1");
-        setText(popup.content);
 
-        // fade-in 600ms → hold 2.8s → fade-out 800ms
-        const holdTimer = setTimeout(() => setPhase("out"), 600 + 2800);
-        const doneTimer = setTimeout(() => setPhase("done"), 600 + 2800 + 800);
-        return () => { clearTimeout(holdTimer); clearTimeout(doneTimer); };
+        // 화면 안쪽 랜덤 위치 (박스 크기 ~280x80 고려)
+        const top = `${10 + Math.random() * 55}vh`;
+        const left = `${8 + Math.random() * 52}vw`;
+        setPos({ top, left });
+        setText(popup.content);
+        setVisible(true);
+
+        // 3번 깜빡이고 (~3.6s) 자동 숨김
+        const autoHide = setTimeout(() => setVisible(false), 3600);
+        timersRef.current = [autoHide];
       });
+
+    // 어떤 상호작용이든 즉시 닫기
+    const events = ["click", "touchstart", "keydown", "wheel"] as const;
+    events.forEach((ev) => document.addEventListener(ev, dismiss, { once: true, passive: true }));
+
+    return () => {
+      events.forEach((ev) => document.removeEventListener(ev, dismiss));
+      timersRef.current.forEach(clearTimeout);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!text || phase === "done") return null;
+  if (!text || !pos || !visible) return null;
 
   return (
     <div
       style={{
         position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        top: pos.top,
+        left: pos.left,
         zIndex: 200,
         pointerEvents: "none",
-        padding: "0 32px",
+        backgroundColor: "rgba(36,34,32,0.88)",
+        border: "1px solid var(--border-light)",
+        borderRadius: 8,
+        padding: "13px 18px",
+        maxWidth: 280,
+        minWidth: 180,
+        animation: "popupBlink 3.6s ease forwards",
       }}
     >
       <p
         style={{
           color: "var(--text-sub)",
-          fontSize: "clamp(13px, 3vw, 17px)",
+          fontSize: 13,
           fontWeight: 500,
-          letterSpacing: "-0.02em",
-          lineHeight: 1.7,
-          textAlign: "center",
-          maxWidth: 480,
+          lineHeight: 1.65,
           whiteSpace: "pre-wrap",
-          animation: phase === "out"
-            ? "popupFadeOut 0.8s ease-in forwards"
-            : "popupFadeIn 0.6s ease-out forwards",
+          margin: 0,
         }}
       >
         {text}

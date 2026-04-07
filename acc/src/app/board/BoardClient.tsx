@@ -129,8 +129,8 @@ export default function BoardClient() {
 
   const handleSubmitInquiry = async () => {
     if (!inquiryContent.trim()) return;
-    if (!profile && !inquiryName.trim()) {
-      showToast("이름을 입력해주세요", "error");
+    if (!profile) {
+      showToast("로그인 후 문의를 남길 수 있어요", "error");
       return;
     }
     setSavingInquiry(true);
@@ -166,7 +166,7 @@ export default function BoardClient() {
       {/* 페이지 타이틀 */}
       <div style={{ marginBottom: 40 }}>
         <h1 style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>
-          청음판
+          문의판
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
           공지사항 및 문의 게시판
@@ -321,43 +321,39 @@ export default function BoardClient() {
         {/* 문의 작성 폼 */}
         <div style={{ ...cardStyle, padding: "20px 24px" }}>
           <p style={{ ...labelStyle, marginBottom: 14 }}>문의 남기기</p>
-          {!profile && (
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>이름</label>
-              <input
-                value={inquiryName}
-                onChange={(e) => setInquiryName(e.target.value)}
-                placeholder="이름을 입력하세요"
-                style={inputStyle}
-              />
+          {!profile ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 8 }}>로그인 후 문의를 남길 수 있어요</p>
+              <a href="/login" style={{ color: "var(--accent)", fontSize: 13 }}>입문하기 →</a>
             </div>
+          ) : (
+            <>
+              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
+                {profile.emoji} {profile.display_name} 으로 제출됩니다
+              </p>
+              <textarea
+                value={inquiryContent}
+                onChange={(e) => setInquiryContent(e.target.value)}
+                rows={4}
+                placeholder="불편한 점, 궁금한 점, 건의사항을 자유롭게 남겨주세요"
+                style={{ ...inputStyle, resize: "vertical", marginBottom: 12 }}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={handleSubmitInquiry}
+                  disabled={savingInquiry || !inquiryContent.trim()}
+                  style={{
+                    backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
+                    borderRadius: 6, padding: "7px 20px", fontSize: 13, fontWeight: 600,
+                    cursor: savingInquiry || !inquiryContent.trim() ? "not-allowed" : "pointer",
+                    opacity: savingInquiry || !inquiryContent.trim() ? 0.4 : 1,
+                  }}
+                >
+                  {savingInquiry ? "제출 중..." : "문의하기"}
+                </button>
+              </div>
+            </>
           )}
-          {profile && (
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
-              {profile.emoji} {profile.display_name} 으로 제출됩니다
-            </p>
-          )}
-          <textarea
-            value={inquiryContent}
-            onChange={(e) => setInquiryContent(e.target.value)}
-            rows={4}
-            placeholder="불편한 점, 궁금한 점, 건의사항을 자유롭게 남겨주세요"
-            style={{ ...inputStyle, resize: "vertical", marginBottom: 12 }}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              onClick={handleSubmitInquiry}
-              disabled={savingInquiry || !inquiryContent.trim()}
-              style={{
-                backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
-                borderRadius: 6, padding: "7px 20px", fontSize: 13, fontWeight: 600,
-                cursor: savingInquiry || !inquiryContent.trim() ? "not-allowed" : "pointer",
-                opacity: savingInquiry || !inquiryContent.trim() ? 0.4 : 1,
-              }}
-            >
-              {savingInquiry ? "제출 중..." : "문의하기"}
-            </button>
-          </div>
         </div>
       </section>
     </main>
