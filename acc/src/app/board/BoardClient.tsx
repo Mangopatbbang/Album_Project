@@ -16,6 +16,7 @@ type Inquiry = {
   content: string;
   author_id: string | null;
   author_name: string | null;
+  category: string | null;
   created_at: string;
 };
 
@@ -68,6 +69,7 @@ export default function BoardClient() {
   // 문의 폼
   const [inquiryContent, setInquiryContent] = useState("");
   const [inquiryName, setInquiryName] = useState("");
+  const [inquiryCategory, setInquiryCategory] = useState("");
   const [savingInquiry, setSavingInquiry] = useState(false);
 
   const fetchAnnouncements = useCallback(async () => {
@@ -141,12 +143,14 @@ export default function BoardClient() {
         content: inquiryContent,
         author_id: profile?.id || null,
         author_name: profile ? profile.display_name : inquiryName,
+        category: inquiryCategory || null,
       }),
     });
     setSavingInquiry(false);
     if (res.ok) {
       setInquiryContent("");
       setInquiryName("");
+      setInquiryCategory("");
       showToast("문의를 남겼어요");
       if (isAdmin) fetchInquiries();
     }
@@ -297,7 +301,7 @@ export default function BoardClient() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
                 {inquiries.map((q) => (
                   <div key={q.id} style={{ ...cardStyle, padding: "14px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                       <span style={{
                         color: "var(--accent)", fontSize: 11, fontWeight: 600,
                         backgroundColor: "rgba(232,213,163,0.1)", border: "1px solid rgba(232,213,163,0.2)",
@@ -305,6 +309,15 @@ export default function BoardClient() {
                       }}>
                         {q.author_name ?? "익명"}
                       </span>
+                      {q.category && (
+                        <span style={{
+                          color: "var(--text-sub)", fontSize: 11,
+                          backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                          borderRadius: 4, padding: "1px 8px",
+                        }}>
+                          {q.category}
+                        </span>
+                      )}
                       <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{formatDate(q.created_at)}</span>
                     </div>
                     <p style={{ color: "var(--text)", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
@@ -331,6 +344,27 @@ export default function BoardClient() {
               <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
                 {profile.emoji} {profile.display_name} 으로 제출됩니다
               </p>
+              {/* 카테고리 선택 (optional) */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={labelStyle}>관련 항목 <span style={{ fontWeight: 400, opacity: 0.6 }}>(선택)</span></label>
+                <select
+                  value={inquiryCategory}
+                  onChange={(e) => setInquiryCategory(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    width: "auto",
+                    minWidth: 140,
+                    cursor: "pointer",
+                    appearance: "auto",
+                  }}
+                >
+                  <option value="">없음</option>
+                  <option value="게시판">게시판</option>
+                  <option value="앨범">앨범</option>
+                  <option value="아티스트">아티스트</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
               <textarea
                 value={inquiryContent}
                 onChange={(e) => setInquiryContent(e.target.value)}

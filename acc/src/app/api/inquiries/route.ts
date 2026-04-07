@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { content, author_id, author_name } = await req.json();
+  const { content, author_id, author_name, category } = await req.json();
   if (!content?.trim()) return NextResponse.json({ error: "내용을 입력해주세요" }, { status: 400 });
 
   const { data, error } = await supabaseServer
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       content: content.trim(),
       author_id: author_id || null,
       author_name: author_name?.trim() || null,
+      category: category?.trim() || null,
     })
     .select()
     .single();
