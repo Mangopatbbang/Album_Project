@@ -12,6 +12,11 @@ import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
 
+function formatReleaseDate(raw: string): string {
+  // "2023-04-07" → "2023.04.07", "2023-04" → "2023.04", "2023" → "2023"
+  return raw.replace(/-/g, ".");
+}
+
 type RatingWithLikes = {
   user_id: string;
   score: number;
@@ -22,6 +27,7 @@ type RatingWithLikes = {
 
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
+  release_date?: string | null;
   ratings: RatingWithLikes[];
 };
 
@@ -357,7 +363,14 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 </p>
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
                   {data.artist}
-                  {data.year && <span style={{ color: "var(--text-muted)" }}> · {data.year}</span>}
+                  {((full as FullAlbum)?.release_date || data.year) && (
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {" · "}
+                      {(full as FullAlbum)?.release_date
+                        ? formatReleaseDate((full as FullAlbum).release_date!)
+                        : data.year}
+                    </span>
+                  )}
                 </p>
                 <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
