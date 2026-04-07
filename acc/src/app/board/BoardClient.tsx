@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 
@@ -70,7 +70,13 @@ export default function BoardClient() {
   const [inquiryContent, setInquiryContent] = useState("");
   const [inquiryName, setInquiryName] = useState("");
   const [inquiryCategory, setInquiryCategory] = useState("");
+  const [inquirySubSelect, setInquirySubSelect] = useState(""); // 게시판 하위 선택
+  const [inquirySearchInput, setInquirySearchInput] = useState(""); // 앨범/아티스트 검색어
+  const [inquirySearchResults, setInquirySearchResults] = useState<{ label: string }[]>([]);
+  const [inquirySearchSelected, setInquirySearchSelected] = useState(""); // 선택된 앨범/아티스트
+  const [searchLoading, setSearchLoading] = useState(false);
   const [savingInquiry, setSavingInquiry] = useState(false);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchAnnouncements = useCallback(async () => {
     const res = await fetch("/api/notices");
@@ -129,6 +135,55 @@ export default function BoardClient() {
     }
   };
 
+  const handleCategoryChange = (cat: string) => {
+    setInquiryCategory(cat);
+    setInquirySubSelect("");
+    setInquirySearchInput("");
+    setInquirySearchResults([]);
+    setInquirySearchSelected("");
+  };
+
+  const handleSearchInput = (value: string) => {
+    setInquirySearchInput(value);
+    setInquirySearchSelected("");
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    if (!value.trim()) { setInquirySearchResults([]); return; }
+    searchDebounce.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        if (inquiryCategory === "앨범") {
+          const res = await fetch(`/api/albums?search=${encodeURIComponent(value)}&limit=8`);
+          const data = await res.json();
+          setInquirySearchResults(
+            (data.items ?? []).map((a: { title: string; artist: string }) => ({
+              label: `${a.title} — ${a.artist}`,
+            }))
+          );
+        } else if (inquiryCategory === "아티스트") {
+          const res = await fetch(`/api/albums/artists?q=${encodeURIComponent(value)}`);
+          const artists: string[] = await res.json();
+          setInquirySearchResults(artists.map((a) => ({ label: a })));
+        }
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 280);
+  };
+
+  // 최종 제출 시 카테고리 문자열 조합
+  const buildCategoryString = () => {
+    if (!inquiryCategory) return null;
+    if (inquiryCategory === "게시판") {
+      return inquirySubSelect ? `게시판 > ${inquirySubSelect}` : "게시판";
+    }
+    if (inquiryCategory === "앨범" || inquiryCategory === "아티스트") {
+      return inquirySearchSelected
+        ? `${inquiryCategory} > ${inquirySearchSelected}`
+        : inquiryCategory;
+    }
+    return inquiryCategory; // 기타
+  };
+
   const handleSubmitInquiry = async () => {
     if (!inquiryContent.trim()) return;
     if (!profile) {
@@ -143,7 +198,7 @@ export default function BoardClient() {
         content: inquiryContent,
         author_id: profile?.id || null,
         author_name: profile ? profile.display_name : inquiryName,
-        category: inquiryCategory || null,
+        category: buildCategoryString(),
       }),
     });
     setSavingInquiry(false);
@@ -151,6 +206,10 @@ export default function BoardClient() {
       setInquiryContent("");
       setInquiryName("");
       setInquiryCategory("");
+      setInquirySubSelect("");
+      setInquirySearchInput("");
+      setInquirySearchResults([]);
+      setInquirySearchSelected("");
       showToast("문의를 남겼어요");
       if (isAdmin) fetchInquiries();
     }
@@ -347,23 +406,82 @@ export default function BoardClient() {
               {/* 카테고리 선택 (optional) */}
               <div style={{ marginBottom: 12 }}>
                 <label style={labelStyle}>관련 항목 <span style={{ fontWeight: 400, opacity: 0.6 }}>(선택)</span></label>
-                <select
-                  value={inquiryCategory}
-                  onChange={(e) => setInquiryCategory(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    width: "auto",
-                    minWidth: 140,
-                    cursor: "pointer",
-                    appearance: "auto",
-                  }}
-                >
-                  <option value="">없음</option>
-                  <option value="게시판">게시판</option>
-                  <option value="앨범">앨범</option>
-                  <option value="아티스트">아티스트</option>
-                  <option value="기타">기타</option>
-                </select>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <select
+                    value={inquiryCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    style={{ ...inputStyle, width: "auto", minWidth: 130, cursor: "pointer", appearance: "auto" }}
+                  >
+                    <option value="">없음</option>
+                    <option value="게시판">게시판</option>
+                    <option value="앨범">앨범</option>
+                    <option value="아티스트">아티스트</option>
+                    <option value="기타">기타</option>
+                  </select>
+
+                  {/* 게시판 → 하위 선택 */}
+                  {inquiryCategory === "게시판" && (
+                    <select
+                      value={inquirySubSelect}
+                      onChange={(e) => setInquirySubSelect(e.target.value)}
+                      style={{ ...inputStyle, width: "auto", minWidth: 120, cursor: "pointer", appearance: "auto" }}
+                    >
+                      <option value="">전체</option>
+                      <option value="공지사항">공지사항</option>
+                      <option value="문의판">문의판</option>
+                    </select>
+                  )}
+
+                  {/* 앨범/아티스트 → 검색 */}
+                  {(inquiryCategory === "앨범" || inquiryCategory === "아티스트") && (
+                    <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
+                      <input
+                        value={inquirySearchSelected || inquirySearchInput}
+                        onChange={(e) => {
+                          if (inquirySearchSelected) setInquirySearchSelected("");
+                          handleSearchInput(e.target.value);
+                        }}
+                        placeholder={inquiryCategory === "앨범" ? "앨범명 검색..." : "아티스트명 검색..."}
+                        style={{ ...inputStyle }}
+                      />
+                      {inquirySearchResults.length > 0 && !inquirySearchSelected && (
+                        <div style={{
+                          position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10,
+                          backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                          borderRadius: 6, marginTop: 2, overflow: "hidden",
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                        }}>
+                          {inquirySearchResults.map((r, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setInquirySearchSelected(r.label);
+                                setInquirySearchInput(r.label);
+                                setInquirySearchResults([]);
+                              }}
+                              style={{
+                                display: "block", width: "100%", textAlign: "left",
+                                padding: "8px 12px", background: "none", border: "none",
+                                color: "var(--text)", fontSize: 13, cursor: "pointer",
+                                borderBottom: i < inquirySearchResults.length - 1 ? "1px solid var(--border)" : "none",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {searchLoading && (
+                        <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: 11 }}>
+                          검색 중...
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <textarea
                 value={inquiryContent}

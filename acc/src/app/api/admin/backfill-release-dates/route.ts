@@ -5,22 +5,17 @@ import { getAccessToken } from "@/lib/spotify";
 const BATCH_SIZE = 30;
 
 export async function POST(req: NextRequest) {
-  const { offset = 0 } = await req.json().catch(() => ({ offset: 0 }));
+  const { offset = 0, force = false } = await req.json().catch(() => ({ offset: 0, force: false }));
 
-  // 전체 대상 수 (미완료만)
-  const { count: remaining } = await supabaseServer
-    .from("albums")
-    .select("id", { count: "exact", head: true })
-    .not("spotify_id", "is", null)
-    .is("release_date", null);
+  // 전체 대상 수
+  let countQuery = supabaseServer.from("albums").select("id", { count: "exact", head: true }).not("spotify_id", "is", null);
+  if (!force) countQuery = countQuery.is("release_date", null);
+  const { count: remaining } = await countQuery;
 
   // 배치 조회
-  const { data: albums, error } = await supabaseServer
-    .from("albums")
-    .select("id, spotify_id, release_date")
-    .not("spotify_id", "is", null)
-    .is("release_date", null)
-    .range(offset, offset + BATCH_SIZE - 1);
+  let batchQuery = supabaseServer.from("albums").select("id, spotify_id, release_date").not("spotify_id", "is", null);
+  if (!force) batchQuery = batchQuery.is("release_date", null);
+  const { data: albums, error } = await batchQuery.range(offset, offset + BATCH_SIZE - 1);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!albums || albums.length === 0) {

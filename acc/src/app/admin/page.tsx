@@ -172,10 +172,10 @@ export default function AdminPage() {
   const [dateRemaining, setDateRemaining] = useState<number | null>(null);
   const dateStopRef = useRef(false);
 
-  async function runDateBackfill() {
+  async function runDateBackfill(force = false) {
     setDateRunning(true);
     dateStopRef.current = false;
-    setDateLog([]);
+    setDateLog([force ? "⚡ 강제 전체 갱신 시작..." : "▶ 빈 항목만 채우기 시작..."]);
     let offset = 0;
     let batchNum = 0;
 
@@ -186,7 +186,7 @@ export default function AdminPage() {
         const res = await fetch("/api/admin/backfill-release-dates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ offset }),
+          body: JSON.stringify({ offset, force }),
         });
         const data = await res.json();
         if (data.error) {
@@ -550,9 +550,9 @@ export default function AdminPage() {
               남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{dateRemaining}</span>개
             </p>
           )}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <button
-              onClick={runDateBackfill}
+              onClick={() => runDateBackfill(false)}
               disabled={dateRunning}
               style={{
                 padding: "8px 20px", borderRadius: 6, border: "none", cursor: dateRunning ? "not-allowed" : "pointer",
@@ -561,7 +561,19 @@ export default function AdminPage() {
                 fontWeight: 600, fontSize: 13,
               }}
             >
-              {dateRunning ? "실행 중..." : "▶ 시작"}
+              {dateRunning ? "실행 중..." : "▶ 빈 항목만 채우기"}
+            </button>
+            <button
+              onClick={() => { if (confirm("모든 앨범의 발매일을 Spotify에서 강제로 덮어씁니다. 계속할까요?")) runDateBackfill(true); }}
+              disabled={dateRunning}
+              style={{
+                padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
+                cursor: dateRunning ? "not-allowed" : "pointer",
+                backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
+                fontWeight: 600, fontSize: 13,
+              }}
+            >
+              ⚡ 전체 강제 갱신
             </button>
             {dateRunning && (
               <button
