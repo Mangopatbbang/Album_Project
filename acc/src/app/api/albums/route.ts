@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     let q = supabaseServer
       .from("albums")
-      .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+      .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
       .in("id", scoreIds);
     if (search) q = q.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
     if (genre) q = q.eq("genre", genre);
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
   // 일반 정렬 — DB에서 offset 기반으로 직접 가져오기 (전체 로드 없음)
   let query = supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
     .range(offset, offset + limit);
 
   if (search) query = query.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
@@ -127,7 +127,7 @@ async function handleMySort(params: {
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
     .in("id", pageIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -209,7 +209,7 @@ async function handleAvgSort(params: {
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, ratings(user_id, score)")
+    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
     .in("id", pageIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

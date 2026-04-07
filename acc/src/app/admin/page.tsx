@@ -258,11 +258,10 @@ export default function AdminPage() {
       setItunesProgress({ current: i + 1, total: albums.length });
       try {
         const res = await fetch(
-          `https://itunes.apple.com/search?term=${encodeURIComponent(a.artist + " " + a.title)}&entity=album&limit=5&country=us`
+          `/api/admin/itunes-date?artist=${encodeURIComponent(a.artist)}&title=${encodeURIComponent(a.title)}`
         );
         const data = await res.json();
-        if (!data.results || data.results.length === 0) continue;
-        const itunesDate = data.results[0].releaseDate?.slice(0, 10);
+        const itunesDate = data.date;
         if (!itunesDate) continue;
         // 연도가 다르면 불일치
         if (itunesDate.slice(0, 4) !== a.release_date.slice(0, 4)) {
