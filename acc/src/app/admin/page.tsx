@@ -170,14 +170,16 @@ export default function AdminPage() {
   const [dateRunning, setDateRunning] = useState(false);
   const [dateLog, setDateLog] = useState<string[]>([]);
   const [dateRemaining, setDateRemaining] = useState<number | null>(null);
+  const [dateStartBatch, setDateStartBatch] = useState(1);
   const dateStopRef = useRef(false);
 
   async function runDateBackfill(force = false) {
     setDateRunning(true);
     dateStopRef.current = false;
-    setDateLog([force ? "⚡ 강제 전체 갱신 시작..." : "▶ 빈 항목만 채우기 시작..."]);
-    let offset = 0;
-    let batchNum = 0;
+    const startOffset = (dateStartBatch - 1) * 30;
+    setDateLog([force ? `⚡ 강제 전체 갱신 — 배치 ${dateStartBatch}(offset ${startOffset})부터 시작...` : `▶ 빈 항목만 채우기 — 배치 ${dateStartBatch}부터 시작...`]);
+    let offset = startOffset;
+    let batchNum = dateStartBatch - 1;
 
     while (!dateStopRef.current) {
       batchNum++;
@@ -550,6 +552,24 @@ export default function AdminPage() {
               남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{dateRemaining}</span>개
             </p>
           )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <label style={{ color: "var(--text-muted)", fontSize: 12 }}>시작 배치 번호</label>
+            <input
+              type="number"
+              min={1}
+              value={dateStartBatch}
+              onChange={(e) => setDateStartBatch(Math.max(1, Number(e.target.value)))}
+              disabled={dateRunning}
+              style={{
+                width: 72, padding: "4px 8px", borderRadius: 6,
+                border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)",
+                color: "var(--text)", fontSize: 13, textAlign: "center",
+              }}
+            />
+            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+              → offset {(dateStartBatch - 1) * 30}
+            </span>
+          </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <button
               onClick={() => runDateBackfill(false)}
