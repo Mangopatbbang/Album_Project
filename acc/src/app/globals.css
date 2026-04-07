@@ -86,12 +86,16 @@ body {
 
 @keyframes popupBlink {
   0%   { opacity: 0; }
-  12%  { opacity: 1; }
-  25%  { opacity: 0; }
-  38%  { opacity: 1; }
-  51%  { opacity: 0; }
-  64%  { opacity: 1; }
+  8%   { opacity: 1; }
+  18%  { opacity: 0; }
+  28%  { opacity: 1; }
+  38%  { opacity: 0; }
+  48%  { opacity: 1; }
+  58%  { opacity: 0; }
+  68%  { opacity: 1; }
+  78%  { opacity: 0; }
   88%  { opacity: 1; }
+  96%  { opacity: 1; }
   100% { opacity: 0; }
 }
 

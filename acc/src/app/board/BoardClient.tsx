@@ -419,15 +419,20 @@ export default function BoardClient() {
                     <option value="기타">기타</option>
                   </select>
 
-                  {/* 게시판 → 하위 선택 */}
+                  {/* 게시판 → 사이트 탭 선택 */}
                   {inquiryCategory === "게시판" && (
                     <select
                       value={inquirySubSelect}
                       onChange={(e) => setInquirySubSelect(e.target.value)}
                       style={{ ...inputStyle, width: "auto", minWidth: 120, cursor: "pointer", appearance: "auto" }}
                     >
-                      <option value="">전체</option>
-                      <option value="공지사항">공지사항</option>
+                      <option value="">탭 선택</option>
+                      <option value="홈">홈</option>
+                      <option value="음반고">음반고</option>
+                      <option value="도감">도감</option>
+                      <option value="청음집">청음집</option>
+                      <option value="청음인">청음인</option>
+                      <option value="청음록">청음록</option>
                       <option value="문의판">문의판</option>
                     </select>
                   )}

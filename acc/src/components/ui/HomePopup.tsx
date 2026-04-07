@@ -32,8 +32,8 @@ export default function HomePopup() {
         setText(popup.content);
         setVisible(true);
 
-        // 3번 깜빡 (~3.6s) 후 자동 소멸
-        const autoHide = setTimeout(() => setVisible(false), 3800);
+        // 5번 깜빡 (~5s) 후 자동 소멸
+        const autoHide = setTimeout(() => setVisible(false), 5000);
         timersRef.current = [autoHide];
       });
 
@@ -67,7 +67,7 @@ export default function HomePopup() {
         maxWidth: 300,
         minWidth: 200,
         boxShadow: "0 0 20px rgba(232,213,163,0.18), 0 4px 24px rgba(0,0,0,0.6)",
-        animation: "popupBlink 3.8s ease forwards",
+        animation: "popupBlink 5s ease forwards",
       }}
     >
       <p
