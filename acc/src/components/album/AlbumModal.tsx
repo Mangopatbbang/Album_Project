@@ -28,6 +28,7 @@ type RatingWithLikes = {
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
   release_date?: string | null;
+  added_by?: string | null;
   ratings: RatingWithLikes[];
 };
 
@@ -60,8 +61,29 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const [hoveredReview, setHoveredReview] = useState<string | null>(null);
   const [savingLike, setSavingLike] = useState(false);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
+  const [deletingAlbum, setDeletingAlbum] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
+
+  const handleDeleteAlbum = async () => {
+    if (!profile) return;
+    if (!confirm("이 앨범을 삭제할까요? 모든 평점도 함께 삭제됩니다.")) return;
+    setDeletingAlbum(true);
+    const res = await fetch(`/api/albums/${album.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: profile.id, role: profile.role }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      showToast(data.error ?? "삭제 실패", "info");
+      setDeletingAlbum(false);
+      return;
+    }
+    showToast("앨범을 삭제했어요", "info");
+    onSaved?.(album.id);
+    handleClose();
+  };
 
   const handleCapture = async () => {
     if (!cardRef.current || capturing) return;
@@ -408,6 +430,21 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                     }}
                   >
                     수정
+                  </button>
+                )}
+                {profile && (profile.role === "admin" || (full as FullAlbum)?.added_by === profile.id) && (
+                  <button
+                    onClick={handleDeleteAlbum}
+                    disabled={deletingAlbum}
+                    style={{
+                      background: "none", cursor: deletingAlbum ? "default" : "pointer",
+                      color: "#e05050", fontSize: 12, lineHeight: 1,
+                      padding: "2px 6px", borderRadius: 4,
+                      border: "1px solid rgba(224,80,80,0.4)",
+                      opacity: deletingAlbum ? 0.5 : 1,
+                    }}
+                  >
+                    {deletingAlbum ? "삭제 중..." : "삭제"}
                   </button>
                 )}
                 <button

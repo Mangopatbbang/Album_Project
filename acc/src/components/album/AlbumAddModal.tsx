@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
 
 const GENRES = [
   "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
@@ -63,6 +64,7 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
 
 export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const { showToast } = useToast();
+  const { profile } = useAuth();
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
@@ -208,6 +210,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
         spotify_id: spotifyId || null,
+        added_by: profile?.id ?? null,
       }),
     });
 

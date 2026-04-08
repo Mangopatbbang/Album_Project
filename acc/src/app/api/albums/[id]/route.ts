@@ -64,7 +64,7 @@ export async function GET(
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, tracklist, ratings(user_id, score, one_line_review, liked_tracks)")
+    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks)")
     .eq("id", id)
     .single();
 
@@ -81,4 +81,31 @@ export async function GET(
   return NextResponse.json({ ...data, ratings, avg }, {
     headers: { "Cache-Control": "no-store" },
   });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { userId, role } = await req.json();
+
+  if (!userId) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  // 권한 체크: admin은 모두 삭제 가능, user는 본인이 추가한 것만
+  if (role !== "admin") {
+    const { data: album } = await supabaseServer
+      .from("albums")
+      .select("added_by")
+      .eq("id", id)
+      .single();
+
+    if (!album) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
+    if (album.added_by !== userId) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
+  }
+
+  const { error } = await supabaseServer.from("albums").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
 }
