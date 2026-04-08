@@ -8,50 +8,64 @@ export async function GET(req: NextRequest) {
 
   if (!title && !artist) return NextResponse.json({ error: "title 또는 artist 필요" }, { status: 400 });
 
-  const token = await getAccessToken();
+  let token: string;
+  try {
+    token = await getAccessToken();
+  } catch {
+    return NextResponse.json({ results: [], error: "token_failed", message: "Spotify 인증 실패. 잠시 후 다시 시도해주세요." });
+  }
 
-  // Spotify 쿼리 파서에서 와일드카드/특수문자로 해석되는 문자 제거
   const sanitize = (s: string) => s.replace(/[*^]/g, "").replace(/\s+/g, " ").trim();
   const t = sanitize(title);
   const a = sanitize(artist);
 
   const seen = new Set<string>();
-  const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
+  const allResults: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
 
-  // Spotify API limit 최대 20, 여러 페이지 fetch
-  async function runQuery(q: string, pages = 1) {
-    for (let page = 0; page < pages; page++) {
-      const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${page * 20}&market=KR`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      const items = data.albums?.items ?? [];
-      for (const item of items) {
-        if (seen.has(item.id)) continue;
-        seen.add(item.id);
-        results.push({
-          spotify_id: item.id,
-          name: item.name,
-          artist: item.artists?.[0]?.name ?? "",
-          cover_url: item.images?.[0]?.url ?? "",
-          release_date: item.release_date ?? "",
-        });
-      }
-      if (items.length < 20) break; // 마지막 페이지면 중단
+  async function fetchPage(q: string, offset = 0): Promise<{ id: string; name: string; artists: { name: string }[]; images: { url: string }[]; release_date: string }[]> {
+    const res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${offset}&market=KR`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.status === 429) throw new Error("rate_limit");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.albums?.items ?? [];
+  }
+
+  // 쿼리 조합 병렬 실행
+  const queryPromises: Promise<{ id: string; name: string; artists: { name: string }[]; images: { url: string }[]; release_date: string }[]>[] = [];
+
+  if (t && a) queryPromises.push(fetchPage(`${t} ${a}`));
+  if (t) queryPromises.push(fetchPage(t));
+  if (a) {
+    queryPromises.push(fetchPage(a, 0));
+    queryPromises.push(fetchPage(a, 20));
+  }
+
+  let pages: { id: string; name: string; artists: { name: string }[]; images: { url: string }[]; release_date: string }[][];
+  try {
+    pages = await Promise.all(queryPromises);
+  } catch (err) {
+    if (err instanceof Error && err.message === "rate_limit") {
+      return NextResponse.json({ results: [], error: "rate_limit", message: "Spotify API 요청 한도 초과 (Rate Limit). 잠시 후 다시 시도해주세요." });
+    }
+    return NextResponse.json({ results: [], error: "fetch_failed", message: "Spotify 검색 중 오류가 발생했습니다." });
+  }
+
+  for (const items of pages) {
+    for (const item of items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      allResults.push({
+        spotify_id: item.id,
+        name: item.name,
+        artist: item.artists?.[0]?.name ?? "",
+        cover_url: item.images?.[0]?.url ?? "",
+        release_date: item.release_date ?? "",
+      });
     }
   }
 
-  // 제목+아티스트 조합, 제목 단독
-  if (t && a) await runQuery(`${t} ${a}`);
-  if (t) await runQuery(t);
-
-  // 아티스트 단독은 항상 실행 — 5페이지(100개)까지 탐색
-  if (a) {
-    await runQuery(`artist:${a}`, 5);
-    await runQuery(a, 5);
-  }
-
-  return NextResponse.json({ results });
+  return NextResponse.json({ results: allResults });
 }

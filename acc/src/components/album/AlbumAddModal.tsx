@@ -18,6 +18,12 @@ type SpotifyCandidate = {
   release_date: string | null;
 };
 
+type ArtistHint = {
+  name: string;
+  followers: number;
+  image: string | null;
+};
+
 type DuplicateAlbum = {
   id: string;
   title: string;
@@ -75,11 +81,13 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [searching, setSearching] = useState(false);
   const [searchDone, setSearchDone] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [candidates, setCandidates] = useState<SpotifyCandidate[]>([]);
   const [showCandidatePopup, setShowCandidatePopup] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<SpotifyCandidate | null>(null);
   const [loadingTracklist, setLoadingTracklist] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateAlbum[]>([]);
+  const [artistHints, setArtistHints] = useState<ArtistHint[]>([]);
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -131,20 +139,42 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     setSearching(true);
     setSearchDone(false);
     setNotFound(false);
+    setSearchError("");
     setCandidates([]);
+    setArtistHints([]);
     setShowCandidatePopup(false);
     setSelectedCandidate(null);
     setError("");
 
-    const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
-    const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
-    const data = await res.json();
+    let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
+    try {
+      const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
+      const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
+      data = await res.json();
+    } catch {
+      setSearching(false);
+      setSearchDone(true);
+      setSearchError("네트워크 오류: 검색 요청에 실패했습니다.");
+      return;
+    }
 
     setSearching(false);
     setSearchDone(true);
 
+    if (data.error) {
+      setSearchError(data.message ?? "Spotify 검색 오류가 발생했습니다.");
+      return;
+    }
+
     if (!data.results?.length) {
       setNotFound(true);
+      // 아티스트명이 있으면 Spotify 실제 등록명 힌트 fetch
+      if (artist.trim()) {
+        fetch(`/api/spotify/artist-hint?artist=${encodeURIComponent(artist.trim())}`)
+          .then((r) => r.json())
+          .then((d) => setArtistHints(d.hints ?? []))
+          .catch(() => {});
+      }
       return;
     }
 
@@ -323,10 +353,47 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
             {searching ? "검색 중..." : "Spotify에서 검색"}
           </button>
 
-          {searchDone && notFound && (
-            <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-              Spotify에서 찾지 못했습니다. 직접 입력하거나 그냥 저장하세요.
+          {searchError && (
+            <p style={{ color: "#e05050", fontSize: 12, marginTop: 4 }}>
+              ⚠ {searchError}
             </p>
+          )}
+
+          {searchDone && notFound && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                Spotify에서 찾지 못했습니다. 아티스트 영문명이 다를 수 있어요.
+              </p>
+              {artistHints.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}>
+                    혹시 이 아티스트를 찾으셨나요?
+                  </p>
+                  {artistHints.map((h) => (
+                    <button
+                      key={h.name}
+                      type="button"
+                      onClick={() => { setArtist(h.name); setArtistHints([]); setNotFound(false); setSearchDone(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                        borderRadius: 6, padding: "6px 10px", cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      {h.image && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={h.image} alt={h.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                      )}
+                      <div>
+                        <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}>{h.name}</p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 10 }}>팔로워 {h.followers.toLocaleString()}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {/* 후보 목록 */}
