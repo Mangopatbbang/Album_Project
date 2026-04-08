@@ -10,16 +10,12 @@ export async function GET(req: NextRequest) {
 
   const token = await getAccessToken();
 
-  const queries = title
-    ? [
-        `album:${title}${artist ? ` artist:${artist}` : ""}`,
-        `${title}${artist ? ` ${artist}` : ""}`,
-        title,
-      ]
-    : [
-        `artist:${artist}`,
-        artist,
-      ];
+  // 필드 필터(album:, artist:)는 특수문자(*^[]&- 등)에서 깨지므로 plain text만 사용
+  const queries = title && artist
+    ? [`${title} ${artist}`, title, artist]
+    : title
+    ? [title]
+    : [artist];
 
   const seen = new Set<string>();
   const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
