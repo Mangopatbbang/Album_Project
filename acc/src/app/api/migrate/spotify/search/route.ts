@@ -15,20 +15,22 @@ export async function GET(req: NextRequest) {
   const t = sanitize(title);
   const a = sanitize(artist);
 
-  // 필드 필터(album:, artist:)는 특수문자에서 깨지므로 plain text만 사용
+  // title+artist 조합, title 단독, artist 필드 필터(아티스트 전체 앨범), artist 단독 순으로 시도
+  // artist: 필드 필터는 한글/영문에서 안전, *^등 특수문자는 title에서만 문제
   const queries = t && a
-    ? [`${t} ${a}`, t, a]
+    ? [`${t} ${a}`, t, `artist:${a}`, a]
     : t
     ? [t]
-    : [a];
+    : [`artist:${a}`, a];
 
   const seen = new Set<string>();
   const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
 
   for (const q of queries) {
     if (results.length >= 50) break;
+    const isArtistFilter = q.startsWith("artist:");
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&market=KR`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=${isArtistFilter ? 50 : 20}&market=KR`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!res.ok) continue;
