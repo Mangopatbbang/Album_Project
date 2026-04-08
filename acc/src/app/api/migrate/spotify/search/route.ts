@@ -15,37 +15,42 @@ export async function GET(req: NextRequest) {
   const t = sanitize(title);
   const a = sanitize(artist);
 
-  // title+artist 조합, title 단독, artist 필드 필터(아티스트 전체 앨범), artist 단독 순으로 시도
-  // artist: 필드 필터는 한글/영문에서 안전, *^등 특수문자는 title에서만 문제
-  const queries = t && a
-    ? [`${t} ${a}`, t, `artist:${a}`, a]
-    : t
-    ? [t]
-    : [`artist:${a}`, a];
-
   const seen = new Set<string>();
   const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
 
-  for (const q of queries) {
-    if (results.length >= 50) break;
-    const isArtistFilter = q.startsWith("artist:");
-    const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=${isArtistFilter ? 50 : 20}&market=KR`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!res.ok) continue;
-    const data = await res.json();
-    for (const item of data.albums?.items ?? []) {
-      if (seen.has(item.id)) continue;
-      seen.add(item.id);
-      results.push({
-        spotify_id: item.id,
-        name: item.name,
-        artist: item.artists?.[0]?.name ?? "",
-        cover_url: item.images?.[0]?.url ?? "",
-        release_date: item.release_date ?? "",
-      });
+  // Spotify API limit 최대 20, 여러 페이지 fetch
+  async function runQuery(q: string, pages = 1) {
+    for (let page = 0; page < pages; page++) {
+      const res = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${page * 20}&market=KR`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.albums?.items ?? [];
+      for (const item of items) {
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
+        results.push({
+          spotify_id: item.id,
+          name: item.name,
+          artist: item.artists?.[0]?.name ?? "",
+          cover_url: item.images?.[0]?.url ?? "",
+          release_date: item.release_date ?? "",
+        });
+      }
+      if (items.length < 20) break; // 마지막 페이지면 중단
     }
+  }
+
+  // 제목+아티스트 조합, 제목 단독
+  if (t && a) await runQuery(`${t} ${a}`);
+  if (t) await runQuery(t);
+
+  // 아티스트 단독은 항상 실행 — 5페이지(100개)까지 탐색
+  if (a) {
+    await runQuery(`artist:${a}`, 5);
+    await runQuery(a, 5);
   }
 
   return NextResponse.json({ results });
