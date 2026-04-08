@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const token = await getAccessToken();
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist&limit=5&market=KR`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist&limit=5`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!res.ok) return NextResponse.json({ hints: [] });

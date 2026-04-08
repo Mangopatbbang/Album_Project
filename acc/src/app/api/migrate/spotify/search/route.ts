@@ -24,11 +24,14 @@ export async function GET(req: NextRequest) {
 
   async function fetchPage(q: string, offset = 0): Promise<{ id: string; name: string; artists: { name: string }[]; images: { url: string }[]; release_date: string }[]> {
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${offset}&market=KR`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${offset}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (res.status === 429) throw new Error("rate_limit");
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`Spotify search failed: ${res.status} for query "${q}"`);
+      return [];
+    }
     const data = await res.json();
     return data.albums?.items ?? [];
   }
