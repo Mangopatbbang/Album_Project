@@ -9,19 +9,12 @@ const GENRES = [
   "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
 ];
 
-type ItunesCandidate = {
-  collection_id: number;
+type SpotifyCandidate = {
+  spotify_id: string;
   cover_url: string;
   name: string;
   artist: string;
   release_date: string | null;
-  collection_type: string;
-  genre: string | null;
-};
-
-type ItunesResult = {
-  found: boolean;
-  candidates?: ItunesCandidate[];
 };
 
 type DuplicateAlbum = {
@@ -35,8 +28,8 @@ type Props = {
   onAdded: () => void;
 };
 
-function CandidateItem({ c, selected, onSelect }: { c: ItunesCandidate; selected: ItunesCandidate | null; onSelect: (c: ItunesCandidate) => void }) {
-  const isSelected = selected?.collection_id === c.collection_id;
+function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selected: SpotifyCandidate | null; onSelect: (c: SpotifyCandidate) => void }) {
+  const isSelected = selected?.spotify_id === c.spotify_id;
   return (
     <div
       onClick={() => onSelect(c)}
@@ -80,9 +73,9 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [searching, setSearching] = useState(false);
   const [searchDone, setSearchDone] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [candidates, setCandidates] = useState<ItunesCandidate[]>([]);
+  const [candidates, setCandidates] = useState<SpotifyCandidate[]>([]);
   const [showCandidatePopup, setShowCandidatePopup] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<ItunesCandidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<SpotifyCandidate | null>(null);
   const [loadingTracklist, setLoadingTracklist] = useState(false);
   const [duplicates, setDuplicates] = useState<DuplicateAlbum[]>([]);
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
@@ -131,7 +124,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     checkDuplicates(val, artist);
   };
 
-  const handleItunesSearch = async () => {
+  const handleSpotifySearch = async () => {
     if (!title.trim() && !artist.trim()) return;
     setSearching(true);
     setSearchDone(false);
@@ -142,47 +135,45 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     setError("");
 
     const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
-    const res = await fetch(`/api/itunes/search?${q.toString()}`);
-    const data: ItunesResult = await res.json();
+    const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
+    const data = await res.json();
 
     setSearching(false);
     setSearchDone(true);
 
-    if (!data.found || !data.candidates?.length) {
+    if (!data.results?.length) {
       setNotFound(true);
       return;
     }
 
-    setCandidates(data.candidates);
+    setCandidates(data.results);
   };
 
-  const handleSelectCandidate = async (c: ItunesCandidate) => {
+  const handleSelectCandidate = async (c: SpotifyCandidate) => {
     setSelectedCandidate(c);
     setTitle(c.name);
     setArtist(c.artist);
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
-    if (c.genre && GENRES.includes(c.genre)) setGenre(c.genre);
+    setSpotifyId(c.spotify_id);
     setLoadingTracklist(true);
-    setSpotifyId(null);
-    // iTunes 트랙리스트 + Spotify ID 동시 fetch
-    const [itunesRes, spotifyRes] = await Promise.all([
-      fetch(`/api/itunes/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}&collectionId=${c.collection_id}`),
-      fetch(`/api/migrate/spotify/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}`),
+    setDateConflict(null);
+
+    // Spotify 트랙리스트 + iTunes 보완(장르·발매일 교차검증) 병렬 fetch
+    const [trackRes, itunesRes] = await Promise.all([
+      fetch(`/api/spotify/tracks?id=${c.spotify_id}`),
+      fetch(`/api/itunes/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}`),
     ]);
+    const trackData = await trackRes.json();
+    setTracklist(trackData.tracklist ?? "");
+
     const itunesData = await itunesRes.json();
-    setTracklist(itunesData.tracklist ?? "");
-    const spotifyData = await spotifyRes.json();
-    const matched = spotifyData.results?.[0];
-    if (matched) {
-      setSpotifyId(matched.spotify_id);
-      if (!c.cover_url && matched.cover_url) setCoverUrl(matched.cover_url);
-      // 발매일 교차검증: iTunes vs Spotify 연도가 다르면 경고
-      if (c.release_date && matched.release_date &&
-          c.release_date.slice(0, 4) !== matched.release_date.slice(0, 4)) {
-        setDateConflict({ itunesDate: c.release_date, spotifyDate: matched.release_date });
-      } else {
-        setDateConflict(null);
+    const itunesMatch = itunesData.candidates?.[0];
+    if (itunesMatch) {
+      if (itunesMatch.genre && GENRES.includes(itunesMatch.genre)) setGenre(itunesMatch.genre);
+      if (c.release_date && itunesMatch.release_date &&
+          c.release_date.slice(0, 4) !== itunesMatch.release_date.slice(0, 4)) {
+        setDateConflict({ itunesDate: itunesMatch.release_date, spotifyDate: c.release_date });
       }
     }
     setLoadingTracklist(false);
@@ -284,7 +275,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
               style={inputStyle}
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleItunesSearch(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
               placeholder="음반 제목"
             />
             {/* 중복 경고 */}
@@ -310,13 +301,13 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
               style={inputStyle}
               value={artist}
               onChange={(e) => { setArtist(e.target.value); setSearchDone(false); checkDuplicates(title, e.target.value); }}
-              onKeyDown={(e) => { if (e.key === "Enter") handleItunesSearch(); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
               placeholder="아티스트"
             />
           </div>
 
           <button
-            onClick={handleItunesSearch}
+            onClick={handleSpotifySearch}
             disabled={searching || (!title.trim() && !artist.trim())}
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
@@ -352,7 +343,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
                 )}
               </div>
               <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-                {candidates.slice(0, 5).map((c) => <CandidateItem key={c.collection_id} c={c} selected={selectedCandidate} onSelect={handleSelectCandidate} />)}
+                {candidates.slice(0, 5).map((c) => <CandidateItem key={c.spotify_id} c={c} selected={selectedCandidate} onSelect={handleSelectCandidate} />)}
               </div>
               {loadingTracklist && (
                 <p style={{ color: "var(--text-muted)", fontSize: 11 }}>수록곡 불러오는 중...</p>
@@ -386,7 +377,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 12 }}>
                   {candidates.map((c) => (
                     <CandidateItem
-                      key={c.collection_id}
+                      key={c.spotify_id}
                       c={c}
                       selected={selectedCandidate}
                       onSelect={(candidate) => { handleSelectCandidate(candidate); setShowCandidatePopup(false); }}

@@ -25,9 +25,9 @@ export async function GET(req: NextRequest) {
   const results: { spotify_id: string; name: string; artist: string; cover_url: string; release_date: string }[] = [];
 
   for (const q of queries) {
-    if (results.length >= 8) break;
+    if (results.length >= 50) break;
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=5&market=KR`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&market=KR`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!res.ok) continue;

@@ -9,14 +9,12 @@ const GENRES = [
   "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
 ];
 
-type ItunesCandidate = {
-  collection_id: number;
+type SpotifyCandidate = {
+  spotify_id: string;
   cover_url: string;
   name: string;
   artist: string;
   release_date: string | null;
-  collection_type: string;
-  genre: string | null;
 };
 
 type Props = {
@@ -34,8 +32,8 @@ type Props = {
   onSaved: () => void;
 };
 
-function CandidateItem({ c, selected, onSelect }: { c: ItunesCandidate; selected: ItunesCandidate | null; onSelect: (c: ItunesCandidate) => void }) {
-  const isSelected = selected?.collection_id === c.collection_id;
+function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selected: SpotifyCandidate | null; onSelect: (c: SpotifyCandidate) => void }) {
+  const isSelected = selected?.spotify_id === c.spotify_id;
   return (
     <div
       onClick={() => onSelect(c)}
@@ -73,11 +71,12 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [spotifyId, setSpotifyId] = useState<string | null>(null);
 
   const [searching, setSearching] = useState(false);
-  const [candidates, setCandidates] = useState<ItunesCandidate[]>([]);
+  const [candidates, setCandidates] = useState<SpotifyCandidate[]>([]);
   const [showCandidatePopup, setShowCandidatePopup] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<ItunesCandidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<SpotifyCandidate | null>(null);
   const [loadingTracklist, setLoadingTracklist] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
@@ -110,29 +109,27 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     setError("");
 
     const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
-    const res = await fetch(`/api/itunes/search?${q.toString()}`);
+    const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
     const data = await res.json();
     setSearching(false);
 
-    if (!data.found || !data.candidates?.length) {
+    if (!data.results?.length) {
       setNotFound(true);
       return;
     }
-    setCandidates(data.candidates);
+    setCandidates(data.results);
   };
 
-  const handleSelectCandidate = async (c: ItunesCandidate) => {
+  const handleSelectCandidate = async (c: SpotifyCandidate) => {
     setSelectedCandidate(c);
     setTitle(c.name);
     setArtist(c.artist);
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
-    if (c.genre && GENRES.includes(c.genre)) setGenre(c.genre);
+    setSpotifyId(c.spotify_id);
     setLoadingTracklist(true);
-    // state 업데이트는 비동기이므로 c에서 직접 최신값 사용
-    const q = new URLSearchParams({ title: c.name.trim(), artist: c.artist.trim(), collectionId: String(c.collection_id) });
     try {
-      const res = await fetch(`/api/itunes/search?${q.toString()}`);
+      const res = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
       const data = await res.json();
       setTracklist(data.tracklist ?? "");
     } catch {
@@ -161,6 +158,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         genre: genre || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
+        ...(spotifyId ? { spotify_id: spotifyId } : {}),
       }),
     });
 
@@ -275,7 +273,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
               </div>
               <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
                 {candidates.slice(0, 5).map((c) => (
-                  <CandidateItem key={c.collection_id} c={c} selected={selectedCandidate} onSelect={handleSelectCandidate} />
+                  <CandidateItem key={c.spotify_id} c={c} selected={selectedCandidate} onSelect={handleSelectCandidate} />
                 ))}
               </div>
               {loadingTracklist && <p style={{ color: "var(--text-muted)", fontSize: 11 }}>수록곡 불러오는 중...</p>}
@@ -301,7 +299,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 12 }}>
                   {candidates.map((c) => (
                     <CandidateItem
-                      key={c.collection_id} c={c} selected={selectedCandidate}
+                      key={c.spotify_id} c={c} selected={selectedCandidate}
                       onSelect={(candidate) => { handleSelectCandidate(candidate); setShowCandidatePopup(false); }}
                     />
                   ))}
