@@ -32,40 +32,56 @@ export function mapItunesGenre(raw: string): string | null {
   return GENRE_MAP[raw] ?? raw;
 }
 
+function parseResults(results: Record<string, unknown>[]): ItunesAlbumResult[] {
+  return results
+    .map((r) => ({
+      collection_id: r.collectionId as number,
+      cover_url: ((r.artworkUrl100 as string) ?? "").replace("100x100", "600x600"),
+      name: r.collectionName as string,
+      artist: r.artistName as string,
+      release_date: r.releaseDate ? (r.releaseDate as string).slice(0, 10) : null,
+      collection_type: (r.collectionType as string) ?? "Album",
+      genre: mapItunesGenre((r.primaryGenreName as string) ?? ""),
+    }))
+    .filter((r) => r.collection_type !== "Single");
+}
+
+async function itunesSearch(term: string, country: string): Promise<ItunesAlbumResult[]> {
+  await sleep(DELAY_MS);
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=album&limit=200&country=${country}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return parseResults(data.results ?? []);
+}
+
 export async function searchItunesAlbumCandidates(
   title: string,
   artist: string
 ): Promise<ItunesAlbumResult[]> {
   const combined = [title, artist].filter(Boolean).join(" ");
-  const queries = combined !== title && combined !== artist
-    ? [combined, title || artist]
-    : [combined];
 
-  for (const q of queries) {
-    await sleep(DELAY_MS);
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=200`;
+  // KR + US 각각, combined + title단독 + artist단독 쿼리 병렬 실행
+  const queries = Array.from(new Set([combined, title, artist].filter(Boolean)));
+  const countries = ["kr", "us"];
 
-    const res = await fetch(url);
-    if (!res.ok) continue;
+  const allResults = await Promise.all(
+    countries.flatMap((country) => queries.map((q) => itunesSearch(q, country)))
+  );
 
-    const data = await res.json();
-    const results: Record<string, unknown>[] = data.results ?? [];
-    if (results.length === 0) continue;
-
-    return results
-      .map((r) => ({
-        collection_id: r.collectionId as number,
-        cover_url: ((r.artworkUrl100 as string) ?? "").replace("100x100", "600x600"),
-        name: r.collectionName as string,
-        artist: r.artistName as string,
-        release_date: r.releaseDate ? (r.releaseDate as string).slice(0, 10) : null,
-        collection_type: (r.collectionType as string) ?? "Album",
-        genre: mapItunesGenre((r.primaryGenreName as string) ?? ""),
-      }))
-      .filter((r) => r.collection_type !== "Single");
+  // 중복 제거 (collection_id 기준)
+  const seen = new Set<number>();
+  const merged: ItunesAlbumResult[] = [];
+  for (const batch of allResults) {
+    for (const item of batch) {
+      if (!seen.has(item.collection_id)) {
+        seen.add(item.collection_id);
+        merged.push(item);
+      }
+    }
   }
 
-  return [];
+  return merged;
 }
 
 export async function searchItunesAlbum(
