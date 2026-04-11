@@ -238,6 +238,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
 
   const handleDelete = async () => {
     if (!profile || myScore === null) return;
+    if (!confirm("평점을 삭제할까요?")) return;
     setDeleting(true);
     await fetch("/api/ratings", {
       method: "DELETE",
@@ -357,8 +358,20 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           </button>
         </div>
 
-        {/* 상단: 커버 + 정보 */}
-        <div style={{ display: "flex", gap: 20, padding: "8px 32px 24px" }}>
+        {/* 상단: 블러 배경 + 커버 + 정보 */}
+        <div style={{ position: "relative", overflow: "hidden" }}>
+          {/* 블러 배경 */}
+          {data.cover_url && (
+            <div style={{
+              position: "absolute", inset: 0, zIndex: 0,
+              backgroundImage: `url(${data.cover_url})`,
+              backgroundSize: "cover", backgroundPosition: "center",
+              filter: "blur(28px) saturate(1.4)",
+              transform: "scale(1.1)",
+              opacity: 0.18,
+            }} />
+          )}
+          <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 20, padding: "8px 32px 24px" }}>
           {/* 커버 */}
           <div
             style={{
@@ -511,7 +524,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
               </p>
             )}
           </div>
-        </div>
+          </div>{/* end 정보 row */}
+        </div>{/* end 블러 wrapper */}
 
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 

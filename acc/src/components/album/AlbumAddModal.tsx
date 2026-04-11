@@ -229,6 +229,9 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
       setError("싱글 앨범은 등록할 수 없습니다. (수록곡 3개 이상)");
       return;
     }
+    if (!spotifyId && !confirm("Spotify 연결 없이 등록하면 커버/트랙리스트가 없을 수 있어요. 그래도 등록할까요?")) {
+      return;
+    }
     setSaving(true);
     setError("");
 
