@@ -339,7 +339,12 @@ return (
           onClose={() => setSelectedAlbum(null)}
           onSaved={async (albumId) => {
             const res = await fetch(`/api/albums/${albumId}`);
-            if (!res.ok) return;
+            if (!res.ok) {
+              // 앨범이 삭제된 경우 목록에서 제거
+              setAlbums((prev) => prev.filter((a) => a.id !== albumId));
+              setSelectedAlbum(null);
+              return;
+            }
             const updated = await res.json();
             setAlbums((prev) => prev.map((a) => a.id === albumId ? { ...updated } : a));
             setSelectedAlbum((prev) => prev?.id === albumId ? { ...updated } : prev);
