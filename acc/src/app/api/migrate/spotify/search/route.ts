@@ -21,10 +21,15 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // 특수문자 제거
+  // 특수문자 제거 (plain 쿼리용)
   const sanitize = (s: string) => s.replace(/[*^[\]]/g, "").replace(/\s+/g, " ").trim();
   const t = sanitize(title);
   const a = sanitize(artist);
+
+  // album:/artist: 필드 필터용: & 등 필터를 깨는 문자도 제거
+  const sanitizeField = (s: string) => s.replace(/[*^[\]&]/g, "").replace(/\s+/g, " ").trim();
+  const tf = sanitizeField(title);
+  const af = sanitizeField(artist);
 
   async function fetchPage(q: string, offset = 0) {
     try {
@@ -41,10 +46,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 쿼리 구성: 제목+아티스트 콤보 / 제목 단독 / 아티스트 2페이지 — 모두 병렬
+  // 쿼리 구성 — 모두 병렬
   const queries: { q: string; offset: number }[] = [];
+
+  // 1) album:/artist: 필드 필터 (정밀도 높음, 특수문자 없을 때 효과적)
+  if (tf && af) queries.push({ q: `album:${tf} artist:${af}`, offset: 0 });
+  else if (tf)  queries.push({ q: `album:${tf}`, offset: 0 });
+
+  // 2) 플레인 텍스트 (필드 필터 못 잡는 케이스 커버)
   if (t && a) queries.push({ q: `${t} ${a}`, offset: 0 });
   if (t)      queries.push({ q: t, offset: 0 });
+
+  // 3) 아티스트 단독 2페이지 (아티스트 입력 시)
   if (a)      queries.push({ q: a, offset: 0 }, { q: a, offset: 20 });
 
   const pages = await Promise.all(queries.map(({ q, offset }) => fetchPage(q, offset)));
