@@ -778,12 +778,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                           </button>
                         )}
                       </span>
-                      {/* 좋아요 누른 유저 이모지 */}
-                      {othersWhoLiked.length > 0 && (
-                        <span style={{ fontSize: 11, flexShrink: 0, letterSpacing: "0.05em", opacity: 0.7 }}>
-                          {othersWhoLiked.map((u) => u.emoji).join("")}
-                        </span>
-                      )}
+                      {/* 좋아요 수 */}
+                      {(() => {
+                        const total = othersWhoLiked.length + (iLiked ? 1 : 0);
+                        return total > 0 ? (
+                          <span style={{ color: "#e05050", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
+                            ♥ {total}
+                          </span>
+                        ) : null;
+                      })()}
                     </li>
                   );
                 })}
