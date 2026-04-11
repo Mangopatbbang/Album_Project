@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlbumWithRatings, USERS } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { scoreColor } from "@/lib/score";
+import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -627,26 +627,30 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 {profile.emoji} 나의 청음 점수
               </p>
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                {[1,2,3,4,5,6,7,8].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setMyScore(n)}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 6,
-                      border: `1px solid ${myScore === n ? "var(--accent)" : "var(--border)"}`,
-                      backgroundColor: myScore === n ? "var(--accent)" : "var(--bg-elevated)",
-                      color: myScore === n ? "var(--bg)" : "var(--text-sub)",
-                      fontWeight: myScore === n ? 700 : 400,
-                      fontSize: 14,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {n}
-                  </button>
-                ))}
+                {[1,2,3,4,5,6,7,8].map((n) => {
+                  const color = SCORE_COLORS[n];
+                  const selected = myScore === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setMyScore(n)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 6,
+                        border: `1px solid ${selected ? color : "var(--border)"}`,
+                        backgroundColor: selected ? color : `${color}22`,
+                        color: selected ? (n === 8 ? "#111" : "var(--bg)") : color,
+                        fontWeight: 700,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
               </div>
               <textarea
                 placeholder="한줄 소감 (100자 이내)"

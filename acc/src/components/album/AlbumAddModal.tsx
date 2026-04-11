@@ -34,6 +34,7 @@ type DuplicateAlbum = {
 type Props = {
   onClose: () => void;
   onAdded: () => void;
+  initialSearch?: string;
 };
 
 function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selected: SpotifyCandidate | null; onSelect: (c: SpotifyCandidate) => void }) {
@@ -69,10 +70,10 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
   );
 }
 
-export default function AlbumAddModal({ onClose, onAdded }: Props) {
+export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props) {
   const { showToast } = useToast();
   const { profile } = useAuth();
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialSearch ?? "");
   const [artist, setArtist] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [genre, setGenre] = useState("");

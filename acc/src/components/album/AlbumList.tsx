@@ -318,8 +318,20 @@ return (
           불러오는 중...
         </div>
       ) : albums.length === 0 ? (
-        <div style={{ color: "var(--text-muted)" }} className="text-center py-20 text-sm">
-          인연 닿는 음반이 없습니다
+        <div className="text-center py-20 flex flex-col items-center gap-3">
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>인연 닿는 음반이 없습니다</p>
+          {search && profile && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
+                borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              &ldquo;{search}&rdquo; 바로 추가하기
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -360,6 +372,7 @@ return (
         <AlbumAddModal
           onClose={() => setShowAddModal(false)}
           onAdded={() => handleFilter(search, genre, sort, unrated, myScore)}
+          initialSearch={albums.length === 0 && search ? search : undefined}
         />
       )}
     </>
