@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 
@@ -11,12 +12,31 @@ export type TickerItem = {
   album_artist: string;
 };
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function ReviewTicker({ items }: { items: TickerItem[] }) {
+  // SSR은 원본 순서, 마운트 시 셔플 (hydration mismatch 방지)
+  const [shuffled, setShuffled] = useState(items);
+
+  useEffect(() => {
+    setShuffled(shuffle(items));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (items.length === 0) return null;
 
-  // 아이템이 적으면 여러 번 복제해서 끊김 없이 채우기
-  const repeat = Math.max(3, Math.ceil(30 / items.length));
-  const track = Array.from({ length: repeat }, () => items).flat();
+  // 화면을 채울 수 있도록 최소한만 반복
+  const repeat = Math.max(2, Math.ceil(12 / shuffled.length));
+  const track = Array.from({ length: repeat }, () => shuffled).flat();
+
+  // 아이템 하나가 화면을 지나가는 시간 ≈ 3.5초 고정
+  const duration = Math.max(20, track.length * 3.5);
 
   return (
     <div
@@ -44,8 +64,14 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
 
       {/* 마퀴 트랙 — 두 벌 이어붙여서 seamless loop */}
       <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          whiteSpace: "nowrap",
+          willChange: "transform",
+          animation: `ticker-scroll ${duration}s linear infinite`,
+        }}
         className="ticker-track"
-        style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", willChange: "transform" }}
       >
         {[...track, ...track].map((item, i) => {
           const user = USERS.find((u) => u.id === item.user_id);
@@ -62,10 +88,8 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
                 flexShrink: 0,
               }}
             >
-              {/* 구분점 */}
               <span style={{ color: "var(--border-light)", fontSize: 10, marginRight: -14 }}>◆</span>
 
-              {/* 유저 이모지 + 점수 */}
               {user && (
                 <span style={{ flexShrink: 0 }}>
                   <span>{user.emoji}</span>
@@ -75,12 +99,10 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
                 </span>
               )}
 
-              {/* 앨범명 */}
               <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>
                 {item.album_title}
               </span>
 
-              {/* 한줄 평 */}
               <span style={{ color: "var(--text-sub)", fontStyle: "italic", flexShrink: 0 }}>
                 &ldquo;{item.one_line_review}&rdquo;
               </span>
@@ -90,12 +112,7 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
       </div>
 
       <style>{`
-        .ticker-track {
-          animation: ticker-scroll 60s linear infinite;
-        }
-        .ticker-track:hover {
-          animation-play-state: paused;
-        }
+        .ticker-track:hover { animation-play-state: paused; }
         @keyframes ticker-scroll {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
