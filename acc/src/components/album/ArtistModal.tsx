@@ -15,16 +15,22 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const [avgScore, setAvgScore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [closing, setClosing] = useState(false);
   const mouseDownOnBackdrop = useRef(false);
 
   useEffect(() => {
+    setFetchError(false);
     fetch(`/api/albums/by-artist?name=${encodeURIComponent(artistName)}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.json();
+      })
       .then((d) => {
         setAlbums(d.albums ?? []);
         setAvgScore(d.avg);
       })
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, [artistName]);
 
@@ -87,6 +93,10 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
           {loading ? (
             <div className="flex justify-center py-12">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>
+            </div>
+          ) : fetchError ? (
+            <div className="flex justify-center py-12">
+              <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오기 실패 — 잠시 후 다시 시도해주세요</span>
             </div>
           ) : albums.length === 0 ? (
             <div className="flex justify-center py-12">
