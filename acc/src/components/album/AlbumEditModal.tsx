@@ -14,6 +14,7 @@ type SpotifyCandidate = {
   cover_url: string;
   name: string;
   artist: string;
+  extra_artists?: string;
   release_date: string | null;
 };
 
@@ -155,7 +156,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     setSelectedCandidate(c);
     setTitle(c.name);
     setArtist(c.artist);
-    setExtraArtists((c as SpotifyCandidate & { extra_artists?: string }).extra_artists ?? "");
+    setExtraArtists(c.extra_artists ?? "");
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
     setSpotifyId(c.spotify_id);

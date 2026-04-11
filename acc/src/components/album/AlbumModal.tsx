@@ -37,12 +37,13 @@ type Props = {
   album: AlbumWithRatings;
   onClose: () => void;
   onSaved?: (albumId: string) => void;
+  zIndex?: number;
 };
 
 // 세션 내 앨범 상세 캐시 (같은 앨범 재오픈 시 즉시 표시)
 const albumCache = new Map<string, FullAlbum>();
 
-export default function AlbumModal({ album, onClose, onSaved }: Props) {
+export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Props) {
   const { profile } = useAuth();
   const { showToast } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
@@ -318,7 +319,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         position: "fixed",
         inset: 0,
         backgroundColor: "rgba(0,0,0,0.75)",
-        zIndex: 100,
+        zIndex,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -819,6 +820,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
           album={nestedAlbum}
           onClose={() => setNestedAlbum(null)}
           onSaved={onSaved}
+          zIndex={120}
         />
       )}
 

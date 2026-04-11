@@ -36,7 +36,8 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
   const track = Array.from({ length: repeat }, () => shuffled).flat();
 
   // 아이템 하나가 화면을 지나가는 시간 ≈ 3.5초 고정
-  const duration = Math.max(20, track.length * 3.5);
+  // repeat은 시각적 패딩용이므로 duration은 고유 아이템 수 기준으로 계산
+  const duration = Math.min(120, Math.max(20, shuffled.length * 3.5));
 
   return (
     <div
