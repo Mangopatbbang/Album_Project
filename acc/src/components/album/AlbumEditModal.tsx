@@ -28,6 +28,7 @@ type Props = {
     id: string;
     title: string;
     artist: string;
+    extra_artists?: string | null;
     year?: string | null;
     release_date?: string | null;
     genre?: string | null;
@@ -71,6 +72,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
   const [artist, setArtist] = useState(album.artist);
+  const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
   const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
   const [genre, setGenre] = useState(album.genre ?? "");
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
@@ -153,6 +155,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
     setSelectedCandidate(c);
     setTitle(c.name);
     setArtist(c.artist);
+    setExtraArtists((c as SpotifyCandidate & { extra_artists?: string }).extra_artists ?? "");
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
     setSpotifyId(c.spotify_id);
@@ -182,6 +185,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
       body: JSON.stringify({
         title: title.trim(),
         artist: artist.trim(),
+        extra_artists: extraArtists.trim() || null,
         release_date: releaseDate || null,
         year: releaseDate ? releaseDate.slice(0, 4) : null,
         genre: genre || null,
@@ -264,6 +268,14 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
               style={inputStyle} value={artist}
               onChange={(e) => setArtist(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>FEAT. / 참여 아티스트</label>
+            <input
+              style={inputStyle} value={extraArtists}
+              onChange={(e) => setExtraArtists(e.target.value)}
+              placeholder="여러 명이면 ; 로 구분"
             />
           </div>
           <button

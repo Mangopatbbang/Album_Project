@@ -64,6 +64,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
   const [artistModal, setArtistModal] = useState<string | null>(null);
+  const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -261,7 +262,11 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!profile || myScore === null) return;
+    if (!profile) return;
+    if (myScore === null) {
+      showToast("점수를 먼저 선택해주세요", "info");
+      return;
+    }
     setSaving(true);
 
     const res = await fetch("/api/ratings", {
@@ -672,7 +677,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   )}
                   <button
                     onClick={handleSave}
-                    disabled={saving || myScore === null}
+                    disabled={saving}
                     style={{
                       backgroundColor: saved ? "var(--bg-elevated)" : "var(--accent)",
                       color: saved ? "var(--text-sub)" : "var(--bg)",
@@ -680,8 +685,8 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                       fontSize: 13,
                       padding: "6px 16px",
                       borderRadius: 6,
-                      cursor: myScore === null ? "default" : "pointer",
-                      opacity: myScore === null ? 0.4 : 1,
+                      cursor: saving ? "default" : "pointer",
+                      opacity: saving ? 0.4 : 1,
                       transition: "all 0.2s",
                       border: "none",
                     }}
@@ -787,6 +792,15 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
         <ArtistModal
           artistName={artistModal}
           onClose={() => setArtistModal(null)}
+          onAlbumClick={(a) => { setArtistModal(null); setNestedAlbum(a); }}
+        />
+      )}
+
+      {nestedAlbum && (
+        <AlbumModal
+          album={nestedAlbum}
+          onClose={() => setNestedAlbum(null)}
+          onSaved={onSaved}
         />
       )}
 
