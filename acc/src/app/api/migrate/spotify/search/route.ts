@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   async function fetchPage(q: string, offset = 0) {
     try {
       const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${offset}`,
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=20&offset=${offset}&market=KR`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.status === 429) return { rateLimit: true, items: [] };
