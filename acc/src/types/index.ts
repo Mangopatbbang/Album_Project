@@ -10,6 +10,7 @@ export type Album = {
   id: string;
   title: string;
   artist: string;
+  extra_artists?: string | null;
   year?: string;
   release_date?: string | null;
   genre?: string;

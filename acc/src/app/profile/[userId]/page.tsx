@@ -58,12 +58,17 @@ export default async function ProfilePage({
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
   const reviewCount = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0).length;
 
-  // 아티스트 TOP 5
+  // 아티스트 TOP 5 (extra_artists 포함 — 콜라보 앨범도 각 아티스트 집계에 반영)
   const artistMap = new Map<string, { count: number; total: number }>();
   for (const r of validRatings) {
-    const artist = r.albums?.artist ?? "기타";
-    const prev = artistMap.get(artist) ?? { count: 0, total: 0 };
-    artistMap.set(artist, { count: prev.count + 1, total: prev.total + r.score });
+    const primary = r.albums?.artist ?? "기타";
+    const extras = r.albums?.extra_artists
+      ? r.albums.extra_artists.split(";").map((s) => s.trim()).filter(Boolean)
+      : [];
+    for (const artist of [primary, ...extras]) {
+      const prev = artistMap.get(artist) ?? { count: 0, total: 0 };
+      artistMap.set(artist, { count: prev.count + 1, total: prev.total + r.score });
+    }
   }
   const allArtistEntries = [...artistMap.entries()]
     .map(([artist, { count, total: t }]) => ({ artist, count, avg: (t / count).toFixed(1) }));

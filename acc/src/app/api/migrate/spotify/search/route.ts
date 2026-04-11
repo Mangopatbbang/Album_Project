@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     spotify_id: string;
     name: string;
     artist: string;
+    extra_artists: string;
     cover_url: string;
     release_date: string;
   }[] = [];
@@ -65,10 +66,12 @@ export async function GET(req: NextRequest) {
       for (const item of data.albums?.items ?? []) {
         if (seen.has(item.id)) continue;
         seen.add(item.id);
+        const allArtists: { name: string }[] = item.artists ?? [];
         results.push({
           spotify_id: item.id,
           name: item.name,
-          artist: item.artists?.[0]?.name ?? "",
+          artist: allArtists[0]?.name ?? "",
+          extra_artists: allArtists.slice(1).map((ar) => ar.name).join("; "),
           cover_url: item.images?.[0]?.url ?? "",
           release_date: item.release_date ?? "",
         });

@@ -9,6 +9,7 @@ export type ProfileRatingRow = {
     id: string;
     title: string;
     artist: string;
+    extra_artists?: string | null;
     year: string | null;
     release_date: string | null;
     genre: string | null;
@@ -22,7 +23,7 @@ const _fetchProfileRatings = unstable_cache(
     for (let page = 0; ; page++) {
       const { data } = await supabaseServer
         .from("ratings")
-        .select("score, one_line_review, updated_at, albums(id, title, artist, year, release_date, genre, cover_url)")
+        .select("score, one_line_review, updated_at, albums(id, title, artist, extra_artists, year, release_date, genre, cover_url)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
         .range(page * 1000, (page + 1) * 1000 - 1);

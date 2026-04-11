@@ -385,6 +385,11 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                 </p>
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
                   {data.artist}
+                  {data.extra_artists && (
+                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                      {" · "}{data.extra_artists.split(";").map((a) => a.trim()).filter(Boolean).join(", ")}
+                    </span>
+                  )}
                   {((full as FullAlbum)?.release_date || data.year) && (
                     <span style={{ color: "var(--text-muted)" }}>
                       {" · "}

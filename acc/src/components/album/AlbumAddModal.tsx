@@ -15,6 +15,7 @@ type SpotifyCandidate = {
   cover_url: string;
   name: string;
   artist: string;
+  extra_artists: string;
   release_date: string | null;
 };
 
@@ -89,6 +90,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [duplicates, setDuplicates] = useState<DuplicateAlbum[]>([]);
   const [artistHints, setArtistHints] = useState<ArtistHint[]>([]);
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
+  const [extraArtists, setExtraArtists] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
@@ -186,6 +188,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
     setSelectedCandidate(c);
     setTitle(c.name);
     setArtist(c.artist);
+    setExtraArtists(c.extra_artists ?? "");
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
     setSpotifyId(c.spotify_id);
@@ -235,6 +238,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
       body: JSON.stringify({
         title: title.trim(),
         artist: artist.trim(),
+        extra_artists: extraArtists || null,
         year: releaseDate ? releaseDate.slice(0, 4) : null,
         release_date: releaseDate || null,
         genre: genre || null,

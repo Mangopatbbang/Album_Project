@@ -9,7 +9,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "year", "release_date", "genre"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "extra_artists", "year", "release_date", "genre"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];

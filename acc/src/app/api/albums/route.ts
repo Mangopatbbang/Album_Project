@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       .from("albums")
       .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
       .in("id", scoreIds);
-    if (search) { const s = escapeSearch(search); if (s) q = q.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
+    if (search) { const s = escapeSearch(search); if (s) q = q.or(`title.ilike.%${s}%,artist.ilike.%${s}%,extra_artists.ilike.%${s}%`); }
     if (genre) q = q.eq("genre", genre);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
     .range(offset, offset + limit);
 
-  if (search) { const s = escapeSearch(search); if (s) query = query.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
+  if (search) { const s = escapeSearch(search); if (s) query = query.or(`title.ilike.%${s}%,artist.ilike.%${s}%,extra_artists.ilike.%${s}%`); }
   if (genre) query = query.eq("genre", genre);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
@@ -119,7 +119,7 @@ async function handleMySort(params: {
   const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
+  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%,extra_artists.ilike.%${s}%`); }
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   const { data: allAlbums } = await albumQuery;
 
@@ -192,7 +192,7 @@ async function handleAvgSort(params: {
   }
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
+  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%,extra_artists.ilike.%${s}%`); }
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
   const { data: allAlbums } = await albumQuery;
@@ -235,7 +235,7 @@ async function handleAvgSort(params: {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { title, artist, year, release_date, genre, cover_url, tracklist, spotify_id, added_by } = body;
+  const { title, artist, extra_artists, year, release_date, genre, cover_url, tracklist, spotify_id, added_by } = body;
 
   if (!title?.trim() || !artist?.trim()) {
     return NextResponse.json({ error: "title and artist required" }, { status: 400 });
@@ -283,7 +283,7 @@ export async function POST(req: NextRequest) {
   const newId = crypto.randomUUID();
   const { data, error } = await supabaseServer
     .from("albums")
-    .insert({ id: newId, title: title.trim(), artist: artist.trim(), year, release_date, genre, cover_url, tracklist, spotify_id: spotify_id || null, added_by: added_by || null })
+    .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, cover_url, tracklist, spotify_id: spotify_id || null, added_by: added_by || null })
     .select()
     .single();
 
