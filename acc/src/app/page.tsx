@@ -12,6 +12,7 @@ import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import HomePopup from "@/components/ui/HomePopup";
+import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -59,6 +60,31 @@ async function getRecentPlaylists() {
   }));
 }
 
+async function getTickerReviews(): Promise<TickerItem[]> {
+  const { data } = await supabaseServer
+    .from("ratings")
+    .select("user_id, score, one_line_review, albums(title, artist)")
+    .not("one_line_review", "is", null)
+    .neq("one_line_review", "")
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (!data) return [];
+  return (data as unknown as {
+    user_id: string;
+    score: number;
+    one_line_review: string;
+    albums: { title: string; artist: string } | null;
+  }[])
+    .filter((r) => r.albums)
+    .map((r) => ({
+      user_id: r.user_id,
+      score: r.score,
+      one_line_review: r.one_line_review,
+      album_title: r.albums!.title,
+      album_artist: r.albums!.artist,
+    }));
+}
+
 async function getTotalCount() {
   const { count } = await supabaseServer
     .from("albums")
@@ -80,18 +106,20 @@ async function getYearPreview() {
 }
 
 export default async function HomePage() {
-  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists] = await Promise.all([
+  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists, tickerItems] = await Promise.all([
     getRecentAlbums(),
     getMemberStats(),
     getTotalCount(),
     getYearPreview(),
     getRecentPlaylists(),
+    getTickerReviews(),
   ]);
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <HomePopup />
       <Header />
+      <ReviewTicker items={tickerItems} />
 
       <main>
       {/* 히어로 */}
