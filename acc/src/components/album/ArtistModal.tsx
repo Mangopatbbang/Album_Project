@@ -57,7 +57,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
         }}
       >
         {/* 닫기 버튼 */}
-        <div className="flex justify-end px-6 pt-5 shrink-0">
+        <div className="flex justify-end px-8 pt-6 shrink-0">
           <button
             onClick={handleClose}
             style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
@@ -68,7 +68,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
         </div>
 
         {/* 아티스트 정보 영역 (추후 사진 + 상세 정보 추가 예정) */}
-        <div className="px-8 pb-6 shrink-0">
+        <div className="px-10 pb-7 shrink-0">
           <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
             {/* 아티스트 사진 플레이스홀더 */}
             <div style={{
@@ -104,7 +104,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
         <div style={{ height: 1, backgroundColor: "var(--border)", marginBottom: 0 }} />
 
         {/* 앨범 그리드 */}
-        <div className="overflow-y-auto px-6 py-5">
+        <div className="overflow-y-auto px-10 pt-5 pb-8">
           {loading ? (
             <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>

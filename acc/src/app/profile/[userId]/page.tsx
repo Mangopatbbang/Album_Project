@@ -16,6 +16,7 @@ import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
 import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
+import CalendarSection from "@/components/profile/CalendarSection";
 import { fetchProfileRatings, type ProfileRatingRow } from "@/lib/stats";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
@@ -98,6 +99,13 @@ export default async function ProfilePage({
   }
   const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
 
+  // 일별 청음 (히트맵용 — 전체 기간)
+  const dailyData: Record<string, number> = {};
+  for (const r of validRatings) {
+    const key = r.updated_at.slice(0, 10); // "YYYY-MM-DD"
+    dailyData[key] = (dailyData[key] ?? 0) + 1;
+  }
+
   // 최근 한줄 소감
   const recentReviews = validRatings
     .filter((r) => r.one_line_review && r.one_line_review.trim().length > 0)
@@ -160,7 +168,7 @@ export default async function ProfilePage({
         marginBottom: 16,
         padding: "20px 24px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div className="flex flex-wrap items-center gap-3">
           <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em", fontSize: 20 }}>
@@ -189,7 +197,8 @@ export default async function ProfilePage({
               </div>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {/* 버튼: 모바일 full-width 우측 정렬, sm 이상은 자동 */}
+          <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start">
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
@@ -264,31 +273,7 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* 청음 캘린더 */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-            청음 캘린더
-          </p>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
-            {monthData.map((m) => (
-              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{m.count > 0 ? m.count : ""}</span>
-                <div style={{
-                  width: "100%",
-                  height: `${Math.max((m.count / maxMonthCount) * 52, m.count > 0 ? 4 : 2)}px`,
-                  backgroundColor: m.count > 0 ? "var(--accent)" : "var(--bg-elevated)",
-                  borderRadius: "3px 3px 0 0",
-                  opacity: m.count === 0 ? 0.3 : 0.85,
-                  transition: "height 0.3s ease",
-                }} />
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                  <span className="sm:hidden">{m.label}</span>
-                  <span className="hidden sm:block">{m.label}월</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CalendarSection monthData={monthData} maxMonthCount={maxMonthCount} dailyData={dailyData} />
       </div>
 
       {/* ── 메인 컨텐츠: 2컬럼 ── */}
@@ -337,6 +322,9 @@ export default async function ProfilePage({
         {/* 오른쪽 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+          {/* 나중에 들을 앨범 */}
+          <WatchlistSection userId={userId} />
+
           {/* 장르 분포 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
@@ -370,9 +358,6 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
-
-          {/* 나중에 들을 앨범 */}
-          <WatchlistSection userId={userId} />
 
           {/* 취향 궁합 + 멤버 비교 */}
           <ComparisonSection userId={userId} />
