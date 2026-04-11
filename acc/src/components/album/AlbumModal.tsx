@@ -783,7 +783,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                         const total = othersWhoLiked.length + (iLiked ? 1 : 0);
                         return total > 0 ? (
                           <span style={{ color: "#e05050", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
-                            ♥ {total}
+                            {total}
                           </span>
                         ) : null;
                       })()}

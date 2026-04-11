@@ -56,54 +56,69 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
           animation: closing ? "modalOut 0.18s ease forwards" : "modalIn 0.22s ease",
         }}
       >
-        {/* 헤더 */}
-        <div
-          className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: "1px solid var(--border)" }}
-        >
-          <div className="flex items-baseline gap-3 min-w-0">
-            <h2
-              style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}
-              className="truncate"
-            >
-              {artistName}
-            </h2>
-            {!loading && (
-              <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                앨범 {albums.length}장
-                {avgScore && (
-                  <span style={{ color: scoreColor(avgScore), marginLeft: 6 }}>
-                    avg {avgScore}
-                  </span>
-                )}
-              </span>
-            )}
-          </div>
+        {/* 닫기 버튼 */}
+        <div className="flex justify-end px-6 pt-5 shrink-0">
           <button
             onClick={handleClose}
             style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
-            className="ml-3 shrink-0 hover:opacity-70 transition-opacity"
+            className="hover:opacity-70 transition-opacity"
           >
             ✕
           </button>
         </div>
 
-        {/* 바디 */}
-        <div className="overflow-y-auto p-4">
+        {/* 아티스트 정보 영역 (추후 사진 + 상세 정보 추가 예정) */}
+        <div className="px-8 pb-6 shrink-0">
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
+            {/* 아티스트 사진 플레이스홀더 */}
+            <div style={{
+              width: 72, height: 72, borderRadius: 10, flexShrink: 0,
+              backgroundColor: "var(--bg-elevated)",
+              border: "1px dashed var(--border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ color: "var(--border-light)", fontSize: 22 }}>♪</span>
+            </div>
+            {/* 아티스트 이름 + 통계 */}
+            <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+              <h2 style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                {artistName}
+              </h2>
+              {!loading && (
+                <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                    앨범 <span style={{ color: "var(--text-sub)", fontWeight: 600 }}>{albums.length}</span>장
+                  </span>
+                  {avgScore && (
+                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                      평균 <span style={{ color: scoreColor(avgScore), fontWeight: 700 }}>{avgScore}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ height: 1, backgroundColor: "var(--border)", marginBottom: 0 }} />
+
+        {/* 앨범 그리드 */}
+        <div className="overflow-y-auto px-6 py-5">
           {loading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>
             </div>
           ) : fetchError ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오기 실패 — 잠시 후 다시 시도해주세요</span>
             </div>
           ) : albums.length === 0 ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>등록된 앨범이 없습니다</span>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {albums.map((album) => (
                 <ArtistAlbumCard
                   key={album.id}

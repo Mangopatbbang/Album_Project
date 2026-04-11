@@ -99,7 +99,7 @@ function toStat(album: RawAlbum): AlbumStat & { variance: number } {
     id: album.id,
     title: album.title,
     artist: album.artist,
-    year: album.year ? album.year.slice(0, 4) : (album.release_date ? album.release_date.slice(0, 4) : null),
+    year: album.release_date ? album.release_date.slice(0, 4) : (album.year ? album.year.slice(0, 4) : null),
     release_date: album.release_date ?? null,
     genre: album.genre ?? null,
     cover_url: album.cover_url ?? null,
