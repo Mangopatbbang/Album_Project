@@ -21,15 +21,20 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const queries = title
+  // 따옴표 등 Spotify 쿼리 파서를 깨는 문자 제거
+  const clean = (s: string) => s.replace(/['"]/g, "").trim();
+  const t = clean(title);
+  const a = clean(artist);
+
+  const queries = t
     ? [
-        `album:${title}${artist ? ` artist:${artist}` : ""}`,
-        `${title}${artist ? ` ${artist}` : ""}`,
-        title,
+        `album:${t}${a ? ` artist:${a}` : ""}`,
+        `${t}${a ? ` ${a}` : ""}`,
+        t,
       ]
     : [
-        `artist:${artist}`,
-        artist,
+        `artist:${a}`,
+        a,
       ];
 
   const seen = new Set<string>();

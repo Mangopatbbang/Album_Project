@@ -107,7 +107,11 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     try {
       const data = await fetchAlbums({ search, genre, sort, unrated, myScore, offset: nextOffset ?? 0 });
       if (!data.items) return;
-      setAlbums((prev) => [...prev, ...data.items]);
+      setAlbums((prev) => {
+        const existingIds = new Set(prev.map((a) => a.id));
+        const newItems = data.items.filter((a) => !existingIds.has(a.id));
+        return [...prev, ...newItems];
+      });
       setHasMore(data.hasMore);
       setNextOffset(data.nextOffset);
     } catch {

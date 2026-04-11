@@ -4,6 +4,11 @@ import { supabaseServer } from "@/lib/supabase";
 
 const LIMIT = 30;
 
+// PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거
+function escapeSearch(s: string) {
+  return s.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -42,7 +47,7 @@ export async function GET(req: NextRequest) {
       .from("albums")
       .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
       .in("id", scoreIds);
-    if (search) q = q.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+    if (search) { const s = escapeSearch(search); if (s) q = q.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
     if (genre) q = q.eq("genre", genre);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
@@ -66,7 +71,7 @@ export async function GET(req: NextRequest) {
     .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
     .range(offset, offset + limit);
 
-  if (search) query = query.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) { const s = escapeSearch(search); if (s) query = query.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
   if (genre) query = query.eq("genre", genre);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
@@ -114,7 +119,7 @@ async function handleMySort(params: {
   const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   const { data: allAlbums } = await albumQuery;
 
@@ -187,7 +192,7 @@ async function handleAvgSort(params: {
   }
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(`title.ilike.%${search}%,artist.ilike.%${search}%`);
+  if (search) { const s = escapeSearch(search); if (s) albumQuery = albumQuery.or(`title.ilike.%${s}%,artist.ilike.%${s}%`); }
   if (genre) albumQuery = albumQuery.eq("genre", genre);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
   const { data: allAlbums } = await albumQuery;
@@ -243,6 +248,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // spotify_id 기준 중복 체크 (우선)
+  if (spotify_id) {
+    const { data: bySpotify } = await supabaseServer
+      .from("albums")
+      .select("id, title, artist")
+      .eq("spotify_id", spotify_id)
+      .limit(1)
+      .single();
+    if (bySpotify) {
+      return NextResponse.json(
+        { error: `이미 등록된 음반입니다 (${bySpotify.artist} - ${bySpotify.title})`, duplicate: true, id: bySpotify.id },
+        { status: 409 }
+      );
+    }
+  }
+
+  // title+artist 기준 중복 체크
   const { data: existing } = await supabaseServer
     .from("albums")
     .select("id, title, artist")

@@ -94,6 +94,7 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
 
   const backdropRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnBackdrop = useRef(false);
   const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -280,7 +281,8 @@ export default function AlbumAddModal({ onClose, onAdded }: Props) {
   return (
     <div
       ref={backdropRef}
-      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) onClose(); mouseDownOnBackdrop.current = false; }}
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
         zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
