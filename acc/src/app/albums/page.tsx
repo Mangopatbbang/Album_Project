@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Header from "@/components/layout/Header";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
@@ -95,12 +96,14 @@ export default async function AlbumsPage() {
           </p>
         </div>
 
-        <AlbumList
-          initialAlbums={items}
-          initialHasMore={hasMore}
-          initialNextOffset={nextOffset}
-          genres={genres}
-        />
+        <Suspense fallback={null}>
+          <AlbumList
+            initialAlbums={items}
+            initialHasMore={hasMore}
+            initialNextOffset={nextOffset}
+            genres={genres}
+          />
+        </Suspense>
       </main>
     </div>
   );

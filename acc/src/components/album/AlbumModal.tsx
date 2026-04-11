@@ -639,13 +639,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                         width: 36,
                         height: 36,
                         borderRadius: 6,
-                        border: `1px solid ${selected ? color : "var(--border)"}`,
-                        backgroundColor: selected ? color : `${color}22`,
-                        color: selected ? (n === 8 ? "#111" : "var(--bg)") : color,
-                        fontWeight: 700,
+                        border: selected ? `2px solid ${color}` : "1px solid var(--border)",
+                        backgroundColor: selected ? color : "var(--bg-elevated)",
+                        color: selected ? (n === 8 ? "#111" : "#fff") : "var(--text-muted)",
+                        fontWeight: selected ? 800 : 500,
                         fontSize: 14,
                         cursor: "pointer",
-                        transition: "all 0.15s",
+                        transition: "all 0.12s",
+                        transform: selected ? "scale(1.1)" : "scale(1)",
+                        boxShadow: selected ? `0 0 10px ${color}55` : "none",
                       }}
                     >
                       {n}
@@ -776,15 +778,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                           </button>
                         )}
                       </span>
-                      {/* 좋아요 총 개수 */}
-                      {(() => {
-                        const total = othersWhoLiked.length + (iLiked ? 1 : 0);
-                        return total > 0 ? (
-                          <span style={{ color: "#e05050", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
-                            ♥ {total}
-                          </span>
-                        ) : null;
-                      })()}
+                      {/* 좋아요 누른 유저 이모지 */}
+                      {othersWhoLiked.length > 0 && (
+                        <span style={{ fontSize: 11, flexShrink: 0, letterSpacing: "0.05em", opacity: 0.7 }}>
+                          {othersWhoLiked.map((u) => u.emoji).join("")}
+                        </span>
+                      )}
                     </li>
                   );
                 })}

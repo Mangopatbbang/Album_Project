@@ -15,6 +15,7 @@ import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
 import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
+import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import { fetchProfileRatings, type ProfileRatingRow } from "@/lib/stats";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
@@ -147,116 +148,137 @@ export default async function ProfilePage({
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
 
       <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
-      {/* 프로필 헤더 */}
+
+      {/* ── 프로필 헤더 (압축) ── */}
       <div style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         borderRadius: 12,
-        marginBottom: 20,
-      }} className="p-5 sm:p-8">
-        {/* 아바타 + 이름 + 버튼들 */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-5 mb-6">
+        marginBottom: 16,
+        padding: "20px 24px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em" }} className="text-xl sm:text-2xl">
+            <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em", fontSize: 20 }}>
               {displayName}
             </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-              총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장 청음
-            </p>
+            {/* 인라인 스탯 */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", marginTop: 4 }}>
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                청음 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장
+              </span>
+              {avg && (
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                  평균 <span style={{ color: scoreColor(avg), fontWeight: 600 }}>{avg}점</span>
+                </span>
+              )}
+              {reviewCount > 0 && (
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                  소감 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{reviewCount}개</span>
+                </span>
+              )}
+            </div>
+            {/* 뱃지 */}
+            {badges.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <BadgesWithTooltip badges={badges} />
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:flex-shrink-0 sm:justify-start">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           </div>
-          {badges.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 w-full sm:w-auto sm:flex-col sm:items-end">
-              {badges.map((badge) => (
-                <span key={badge} style={{
-                  color: "var(--text-muted)",
-                  fontSize: 11,
-                  backgroundColor: "var(--bg-elevated)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 20,
-                  padding: "3px 10px",
-                  whiteSpace: "nowrap",
-                }}>
-                  {badge}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 핵심 스탯 */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "평균 점수", value: avg ?? "—", unit: "/ 8", colorVal: avg },
-            { label: "한줄 소감", value: reviewCount > 0 ? reviewCount : "—", unit: "개", colorVal: null },
-          ].map((stat) => (
-            <div key={stat.label} style={{
-              backgroundColor: "var(--bg-elevated)",
-              borderRadius: 8,
-              padding: "14px 16px",
-              border: "1px solid var(--border)",
-            }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>
-                {stat.label.toUpperCase()}
-              </p>
-              <p style={{ color: scoreColor(stat.colorVal), fontWeight: 700, fontSize: 22 }}>
-                {stat.value}
-                <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 400, marginLeft: 3 }}>
-                  {stat.unit}
-                </span>
-              </p>
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* 점수 분포 + 청음 캘린더 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+      {/* ── 명반전 (상단 강조) ── */}
+      {hallOfFame.length > 0 && (
+        <div style={{
+          borderRadius: 12,
+          marginBottom: 16,
+          overflow: "hidden",
+          border: "1px solid var(--border)",
+        }}>
+          {/* 헤더 배너 */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(232,213,163,0.12) 0%, rgba(232,213,163,0.04) 100%)",
+            borderBottom: "1px solid var(--border)",
+            padding: "14px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ color: "var(--accent)", fontSize: 16 }}>★</span>
+              <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>명반전</span>
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>8점 · {hallOfFame.length}장</span>
+            </div>
+          </div>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
+            <HallOfFameSection
+              albums={hallOfFame.map((r) => ({ ...r.albums!, score: r.score }))}
+              count={hallOfFame.length}
+              inline
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── 점수 분포 + 청음 캘린더 ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {/* 점수 분포 — 클릭하면 음반고로 이동 */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             SCORE DISTRIBUTION
           </p>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 72 }}>
             {scoreDist.map((d) => (
-              <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <Link
+                key={d.score}
+                href={d.count > 0 ? `/albums?score=${d.score}&scoreUserId=${userId}` : "#"}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none" }}
+                title={d.count > 0 ? `${d.score}점 앨범 ${d.count}장 보기` : undefined}
+                className={d.count > 0 ? "group" : ""}
+              >
                 <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{d.count > 0 ? d.count : ""}</span>
                 <div style={{
                   width: "100%",
-                  height: `${(d.count / maxDistCount) * 56 + (d.count > 0 ? 4 : 0)}px`,
+                  height: `${(d.count / maxDistCount) * 48 + (d.count > 0 ? 4 : 0)}px`,
                   backgroundColor: d.count > 0 ? scoreColor(d.score) : "var(--bg-elevated)",
                   borderRadius: "3px 3px 0 0",
-                  opacity: d.count === 0 ? 0.3 : 1,
-                  transition: "height 0.3s ease",
+                  opacity: d.count === 0 ? 0.3 : 0.85,
+                  transition: "opacity 0.15s",
                   minHeight: 4,
-                }} />
-                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{d.score}</span>
-              </div>
+                }}
+                  className={d.count > 0 ? "group-hover:opacity-100" : ""}
+                />
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{d.score}</span>
+              </Link>
             ))}
           </div>
         </div>
 
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-7">
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+        {/* 청음 캘린더 */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             청음 캘린더
           </p>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}>
             {monthData.map((m) => (
-              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{m.count > 0 ? m.count : ""}</span>
                 <div style={{
                   width: "100%",
-                  height: `${Math.max((m.count / maxMonthCount) * 60, m.count > 0 ? 4 : 2)}px`,
+                  height: `${Math.max((m.count / maxMonthCount) * 52, m.count > 0 ? 4 : 2)}px`,
                   backgroundColor: m.count > 0 ? "var(--accent)" : "var(--bg-elevated)",
                   borderRadius: "3px 3px 0 0",
-                  opacity: m.count === 0 ? 0.3 : 1,
+                  opacity: m.count === 0 ? 0.3 : 0.85,
                   transition: "height 0.3s ease",
                 }} />
                 <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
@@ -269,19 +291,11 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* 메인 컨텐츠: 2컬럼 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+      {/* ── 메인 컨텐츠: 2컬럼 ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
 
         {/* 왼쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-          {/* 명반전 */}
-          {hallOfFame.length > 0 && (
-            <HallOfFameSection
-              albums={hallOfFame.map((r) => ({ ...r.albums!, score: r.score }))}
-              count={hallOfFame.length}
-            />
-          )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 아티스트 TOP 5 */}
           {artistByCount.length > 0 && (
@@ -295,8 +309,8 @@ export default async function ProfilePage({
 
           {/* 최근 한줄 소감 */}
           {recentReviews.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
                 최근 한줄 소감
               </p>
               <RecentReviewsSection items={recentReviews.map((r) => ({
@@ -307,14 +321,9 @@ export default async function ProfilePage({
             </div>
           )}
 
-          {/* 최근 평가 */}
-          <div style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "24px 28px",
-          }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+          {/* 최근 청음 */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
               최근 청음
             </p>
             <RecentListSection items={recent.map((r) => ({
@@ -326,22 +335,19 @@ export default async function ProfilePage({
         </div>
 
         {/* 오른쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 장르 분포 */}
-          <div style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            padding: "24px 28px",
-          }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 4 }}>
-              청음 장르
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 16 }}>
-              최다 <span style={{ color: "var(--accent)" }}>{topGenre ? koGenre(topGenre) : ""}</span>
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                청음 장르
+              </p>
+              {topGenre && (
+                <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>
+              )}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {genreList.map(({ genre, count, avg: gAvg }) => (
                 <div key={genre}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -351,7 +357,7 @@ export default async function ProfilePage({
                       <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{count}장</span>
                     </div>
                   </div>
-                  <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: 3, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
                       height: "100%",
                       width: `${(count / maxGenreCount) * 100}%`,
@@ -365,10 +371,10 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* 나중에 들을 앨범 (본인만 보임) */}
+          {/* 나중에 들을 앨범 */}
           <WatchlistSection userId={userId} />
 
-          {/* 취향 궁합 + 멤버 비교 (lazy load) */}
+          {/* 취향 궁합 + 멤버 비교 */}
           <ComparisonSection userId={userId} />
         </div>
       </div>

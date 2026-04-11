@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AlbumCard from "./AlbumCard";
 import AlbumModal from "./AlbumModal";
 import AlbumAddModal from "./AlbumAddModal";
@@ -36,6 +37,12 @@ export default function AlbumList({
   genres,
 }: Props) {
   const { profile } = useAuth();
+  const searchParams = useSearchParams();
+
+  // URL params로 초기 점수 필터 지원 (프로필 페이지 점수분포 → 음반고 연동)
+  const urlScore = searchParams.get("score") ? Number(searchParams.get("score")) : null;
+  const urlScoreUserId = searchParams.get("scoreUserId") ?? null;
+
   const [albums, setAlbums] = useState<AlbumWithRatings[]>(initialAlbums);
   const [showAddModal, setShowAddModal] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -46,7 +53,8 @@ export default function AlbumList({
   const [genre, setGenre] = useState("");
   const [sort, setSort] = useState("newest");
   const [unrated, setUnrated] = useState(false);
-  const [myScore, setMyScore] = useState<number | null>(null);
+  const [myScore, setMyScore] = useState<number | null>(urlScore);
+  const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
 const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -56,7 +64,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     : BASE_SORT_OPTIONS;
 
   const fetchAlbums = useCallback(
-    async (params: { search: string; genre: string; sort: string; unrated: boolean; myScore: number | null; offset?: number }) => {
+    async (params: { search: string; genre: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number }) => {
       const q = new URLSearchParams();
       if (params.search) q.set("search", params.search);
       if (params.genre) q.set("genre", params.genre);
@@ -65,9 +73,13 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         q.set("unrated", "true");
         q.set("userId", profile.id);
       }
-      if (params.myScore && profile) {
-        q.set("myScore", String(params.myScore));
-        q.set("userId", profile.id);
+      if (params.myScore) {
+        // scoreUserId가 있으면 해당 유저 기준, 없으면 로그인 유저 기준
+        const uid = params.scoreUserId ?? (profile?.id ?? null);
+        if (uid) {
+          q.set("myScore", String(params.myScore));
+          q.set("userId", uid);
+        }
       }
       if ((params.sort === "my_desc" || params.sort === "my_asc") && profile) {
         q.set("userId", profile.id);
@@ -85,10 +97,10 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   );
 
   const handleFilter = useCallback(
-    async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null) => {
+    async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
       setLoading(true);
       try {
-        const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore });
+        const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId });
         setAlbums(data.items ?? []);
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
@@ -98,14 +110,14 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         setLoading(false);
       }
     },
-    [fetchAlbums]
+    [fetchAlbums, scoreUserId]
   );
 
   const handleLoadMore = useCallback(async () => {
     if (!hasMore || loading) return;
     setLoading(true);
     try {
-      const data = await fetchAlbums({ search, genre, sort, unrated, myScore, offset: nextOffset ?? 0 });
+      const data = await fetchAlbums({ search, genre, sort, unrated, myScore, scoreUserId, offset: nextOffset ?? 0 });
       if (!data.items) return;
       setAlbums((prev) => {
         const existingIds = new Set(prev.map((a) => a.id));
@@ -119,7 +131,15 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     } finally {
       setLoading(false);
     }
-  }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, nextOffset]);
+  }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, scoreUserId, nextOffset]);
+
+  // URL params에 score/scoreUserId가 있으면 초기 필터 적용
+  useEffect(() => {
+    if (urlScore && urlScoreUserId) {
+      handleFilter("", "", "newest", false, urlScore, urlScoreUserId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 무한 스크롤: sentinel이 뷰포트에 들어오면 자동 로드
   useEffect(() => {
@@ -161,8 +181,9 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   const handleScoreFilter = (score: number) => {
     const next = myScore === score ? null : score;
     setMyScore(next);
+    if (next === null) setScoreUserId(null); // 점수필터 해제 시 scoreUserId도 초기화
     setUnrated(false); // 점수필터 켜면 미평가 해제
-    handleFilter(search, genre, sort, false, next);
+    handleFilter(search, genre, sort, false, next, next === null ? null : scoreUserId);
   };
 
 return (

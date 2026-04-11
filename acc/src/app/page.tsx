@@ -122,11 +122,13 @@ export default async function HomePage() {
 
       <main>
       {/* 히어로 */}
-      <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 80px" }}>
-        {/* 상단 바: 오늘의 인연 — ticker — 로그아웃 */}
-        <div style={{ position: "absolute", top: 20, left: 20, right: 20, display: "flex", alignItems: "center", gap: 10 }}>
+      <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 60px" }}>
+        {/* 오늘의 인연 버튼 */}
+        <div style={{ position: "absolute", top: 20, left: 20 }}>
           <RandomButton />
-          <ReviewTicker items={tickerItems} inline />
+        </div>
+        {/* 로그아웃 버튼 */}
+        <div style={{ position: "absolute", top: 20, right: 20 }}>
           <HeroLogoutButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
@@ -143,10 +145,14 @@ export default async function HomePage() {
         >
           아차청음사
         </h1>
-        <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 32 }} className="text-4xl sm:text-[48px]">
+        <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 24 }} className="text-4xl sm:text-[48px]">
           <CountUp target={totalCount} />
         </p>
         <MobileLoginHint />
+        {/* 평 컨베이어벨트 */}
+        <div style={{ marginTop: 24 }}>
+          <ReviewTicker items={tickerItems} inline />
+        </div>
       </section>
 
       {/* 최근 아카이빙 */}
