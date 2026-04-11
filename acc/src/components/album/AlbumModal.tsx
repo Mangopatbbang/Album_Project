@@ -639,15 +639,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                         width: 36,
                         height: 36,
                         borderRadius: 6,
-                        border: selected ? `2px solid ${color}` : "1px solid var(--border)",
-                        backgroundColor: selected ? color : "var(--bg-elevated)",
-                        color: selected ? (n === 8 ? "#111" : "#fff") : "var(--text-muted)",
+                        border: selected ? `2px solid ${color}` : `1px solid ${color}44`,
+                        backgroundColor: selected ? color : `${color}18`,
+                        color: selected ? (n === 8 ? "#111" : "#fff") : color,
                         fontWeight: selected ? 800 : 500,
                         fontSize: 14,
                         cursor: "pointer",
                         transition: "all 0.12s",
                         transform: selected ? "scale(1.1)" : "scale(1)",
                         boxShadow: selected ? `0 0 10px ${color}55` : "none",
+                        opacity: selected ? 1 : 0.65,
                       }}
                     >
                       {n}
