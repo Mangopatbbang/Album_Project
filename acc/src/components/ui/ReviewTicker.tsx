@@ -21,7 +21,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default function ReviewTicker({ items }: { items: TickerItem[] }) {
+export default function ReviewTicker({ items, inline }: { items: TickerItem[]; inline?: boolean }) {
   // SSR은 원본 순서, 마운트 시 셔플 (hydration mismatch 방지)
   const [shuffled, setShuffled] = useState(items);
 
@@ -41,7 +41,18 @@ export default function ReviewTicker({ items }: { items: TickerItem[] }) {
 
   return (
     <div
-      style={{
+      style={inline ? {
+        backgroundColor: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+        overflow: "hidden",
+        height: 36,
+        display: "flex",
+        alignItems: "center",
+        position: "relative",
+        flex: 1,
+        minWidth: 0,
+      } : {
         borderBottom: "1px solid var(--border)",
         backgroundColor: "var(--bg-elevated)",
         overflow: "hidden",

@@ -119,15 +119,14 @@ export default async function HomePage() {
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <HomePopup />
       <Header />
-      <ReviewTicker items={tickerItems} />
 
       <main>
       {/* 히어로 */}
       <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 80px" }}>
-        <div style={{ position: "absolute", top: 20, left: 20 }}>
+        {/* 상단 바: 오늘의 인연 — ticker — 로그아웃 */}
+        <div style={{ position: "absolute", top: 20, left: 20, right: 20, display: "flex", alignItems: "center", gap: 10 }}>
           <RandomButton />
-        </div>
-        <div style={{ position: "absolute", top: 20, right: 20 }}>
+          <ReviewTicker items={tickerItems} inline />
           <HeroLogoutButton />
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
