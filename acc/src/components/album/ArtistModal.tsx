@@ -104,7 +104,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
         <div style={{ height: 1, backgroundColor: "var(--border)", marginBottom: 0 }} />
 
         {/* 앨범 그리드 */}
-        <div className="overflow-y-auto px-10 pt-5 pb-8">
+        <div className="overflow-y-auto px-10 pt-5 pb-10">
           {loading ? (
             <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>
@@ -118,7 +118,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>등록된 앨범이 없습니다</span>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-5">
               {albums.map((album) => (
                 <ArtistAlbumCard
                   key={album.id}
@@ -157,7 +157,7 @@ function ArtistAlbumCard({
         boxShadow: glowShadow(album.avg),
         cursor: onClick ? "pointer" : "default",
       }}
-      className="rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.97]"
+      className="rounded-lg overflow-hidden transition-opacity hover:opacity-80 active:opacity-60"
     >
       {/* 커버 */}
       <div
