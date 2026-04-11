@@ -7,6 +7,7 @@ import Link from "next/link";
 import { scoreColor } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
+import ArtistModal from "@/components/album/ArtistModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
@@ -62,6 +63,7 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
   const [savingLike, setSavingLike] = useState(false);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
+  const [artistModal, setArtistModal] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -384,10 +386,20 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
                   {data.title}
                 </p>
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
-                  {data.artist}
+                  <span
+                    className="hover:underline cursor-pointer"
+                    onClick={() => setArtistModal(data.artist)}
+                  >
+                    {data.artist}
+                  </span>
                   {data.extra_artists && (
                     <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                      {" · "}{data.extra_artists.split(";").map((a) => a.trim()).filter(Boolean).join(", ")}
+                      {" · "}{data.extra_artists.split(";").map((a) => a.trim()).filter(Boolean).map((a, i, arr) => (
+                        <span key={a}>
+                          <span className="hover:underline cursor-pointer" onClick={() => setArtistModal(a)}>{a}</span>
+                          {i < arr.length - 1 && ", "}
+                        </span>
+                      ))}
                     </span>
                   )}
                   {((full as FullAlbum)?.release_date || data.year) && (
@@ -770,6 +782,13 @@ export default function AlbumModal({ album, onClose, onSaved }: Props) {
       </div>
 
     </div>
+
+      {artistModal && (
+        <ArtistModal
+          artistName={artistModal}
+          onClose={() => setArtistModal(null)}
+        />
+      )}
 
       {editing && (
         <AlbumEditModal

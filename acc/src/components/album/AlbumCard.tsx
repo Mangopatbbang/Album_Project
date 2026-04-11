@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { AlbumWithRatings, USERS } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import ArtistModal from "@/components/album/ArtistModal";
 
 type Props = {
   album: AlbumWithRatings;
@@ -10,7 +12,9 @@ type Props = {
 };
 
 export default function AlbumCard({ album, onClick }: Props) {
+  const [artistModal, setArtistModal] = useState<string | null>(null);
   return (
+    <>
     <button
       onClick={() => onClick(album)}
       style={{
@@ -74,8 +78,16 @@ export default function AlbumCard({ album, onClick }: Props) {
             </span>
           )}
         </div>
-        <p style={{ color: "var(--text-sub)", fontSize: 12 }} className="truncate mt-0.5">
-          {album.artist}
+        <p
+          style={{ color: "var(--text-sub)", fontSize: 12 }}
+          className="truncate mt-0.5"
+        >
+          <span
+            className="hover:underline cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); setArtistModal(album.artist); }}
+          >
+            {album.artist}
+          </span>
         </p>
 
         {/* 유저별 평점 + Spotify attribution */}
@@ -98,5 +110,14 @@ export default function AlbumCard({ album, onClick }: Props) {
         </div>
       </div>
     </button>
+
+    {artistModal && (
+      <ArtistModal
+        artistName={artistModal}
+        onClose={() => setArtistModal(null)}
+        onAlbumClick={(a) => { setArtistModal(null); onClick(a); }}
+      />
+    )}
+    </>
   );
 }
