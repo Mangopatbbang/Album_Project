@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 
 // GET /api/admin/artist-aliases
-// - ?artist=xxx  → 특정 아티스트 alias 조회 { alias: { spotify_name, variant_name } | null }
-// - (no param)   → 전체 alias 목록 반환 { aliases: { spotify_name, variant_name }[] }
+// - ?artist=xxx      → 특정 아티스트 alias 조회 { alias: { spotify_name, variant_name } | null }
+// - ?unaliased=true  → alias 없는 아티스트 목록 반환 { artists: string[] }
+// - (no param)       → 전체 alias 목록 반환 { aliases: { spotify_name, variant_name }[] }
 export async function GET(req: NextRequest) {
-  const artist = new URL(req.url).searchParams.get("artist")?.trim();
+  const url = new URL(req.url);
+  const artist = url.searchParams.get("artist")?.trim();
+  const unaliased = url.searchParams.get("unaliased") === "true";
 
   if (artist) {
     const { data, error } = await supabaseServer
@@ -15,6 +18,26 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ alias: data ?? null });
+  }
+
+  if (unaliased) {
+    // 앨범 테이블에서 모든 고유 아티스트 가져오기
+    const { data: albumData, error: albumErr } = await supabaseServer
+      .from("albums")
+      .select("artist");
+    if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
+
+    // alias 목록 가져오기
+    const { data: aliasData, error: aliasErr } = await supabaseServer
+      .from("artist_aliases")
+      .select("spotify_name");
+    if (aliasErr) return NextResponse.json({ error: aliasErr.message }, { status: 500 });
+
+    const aliasedSet = new Set((aliasData ?? []).map((a: { spotify_name: string }) => a.spotify_name));
+    const allArtists = [...new Set((albumData ?? []).map((a: { artist: string }) => a.artist))].sort();
+    const unaliasedArtists = allArtists.filter((a) => !aliasedSet.has(a));
+
+    return NextResponse.json({ artists: unaliasedArtists });
   }
 
   const { data, error } = await supabaseServer

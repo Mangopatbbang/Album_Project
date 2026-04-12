@@ -76,6 +76,9 @@ export default function AdminPage() {
   // --- 아티스트 별칭 관리 ---
   const [aliases, setAliases] = useState<AliasRow[]>([]);
   const [aliasesLoading, setAliasesLoading] = useState(false);
+  const [unaliasedArtists, setUnaliasedArtists] = useState<string[]>([]);
+  const [unaliasedLoading, setUnaliasedLoading] = useState(false);
+  const [listMode, setListMode] = useState<"aliases" | "unaliased" | null>(null);
   const [newSpotifyName, setNewSpotifyName] = useState("");
   const [newVariantName, setNewVariantName] = useState("");
   const [aliasMsg, setAliasMsg] = useState("");
@@ -87,11 +90,25 @@ export default function AdminPage() {
   const [canonicalMsg, setCanonicalMsg] = useState("");
 
   async function loadAliases() {
+    if (listMode === "aliases") { setListMode(null); setAliases([]); return; }
     setAliasesLoading(true);
+    setListMode("aliases");
+    setUnaliasedArtists([]);
     const res = await fetch("/api/admin/artist-aliases");
     const data = await res.json();
     setAliases(data.aliases ?? []);
     setAliasesLoading(false);
+  }
+
+  async function loadUnaliased() {
+    if (listMode === "unaliased") { setListMode(null); setUnaliasedArtists([]); return; }
+    setUnaliasedLoading(true);
+    setListMode("unaliased");
+    setAliases([]);
+    const res = await fetch("/api/admin/artist-aliases?unaliased=true");
+    const data = await res.json();
+    setUnaliasedArtists(data.artists ?? []);
+    setUnaliasedLoading(false);
   }
 
   async function handleAddAlias() {
@@ -104,7 +121,8 @@ export default function AdminPage() {
     if (res.ok) {
       setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
       setNewSpotifyName(""); setNewVariantName("");
-      loadAliases();
+      if (listMode === "aliases") loadAliases();
+      else if (listMode === "unaliased") loadUnaliased();
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -121,7 +139,8 @@ export default function AdminPage() {
     if (res.ok) {
       setAliasMsg(`✅ ${editingAlias} 수정됨`);
       setEditingAlias(null); setEditVariant("");
-      loadAliases();
+      if (listMode === "aliases") loadAliases();
+      else if (listMode === "unaliased") loadUnaliased();
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -137,7 +156,8 @@ export default function AdminPage() {
     });
     if (res.ok) {
       setAliasMsg(`✅ ${spotify_name} 삭제됨`);
-      loadAliases();
+      if (listMode === "aliases") loadAliases();
+      else if (listMode === "unaliased") loadUnaliased();
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -1132,17 +1152,25 @@ export default function AdminPage() {
           <button
             onClick={loadAliases}
             disabled={aliasesLoading}
-            style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+            style={{ backgroundColor: listMode === "aliases" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "aliases" ? "var(--accent)" : "var(--border)"}`, color: listMode === "aliases" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
           >
-            {aliasesLoading ? "로딩..." : "전체 목록"}
+            {aliasesLoading ? "로딩..." : "alias 전체목록"}
+          </button>
+          <button
+            onClick={loadUnaliased}
+            disabled={unaliasedLoading}
+            style={{ backgroundColor: listMode === "unaliased" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "unaliased" ? "var(--accent)" : "var(--border)"}`, color: listMode === "unaliased" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+          >
+            {unaliasedLoading ? "로딩..." : "alias 없는 아티스트"}
           </button>
         </div>
 
         {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
 
-        {/* 별칭 목록 */}
-        {aliases.length > 0 && (
+        {/* alias 전체 목록 */}
+        {listMode === "aliases" && aliases.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>총 {aliases.length}개</p>
             {aliases.map((a) => (
               <div key={a.spotify_name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: "var(--bg-elevated)", borderRadius: 6 }}>
                 {editingAlias === a.spotify_name ? (
@@ -1167,6 +1195,32 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* alias 없는 아티스트 목록 */}
+        {listMode === "unaliased" && unaliasedArtists.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>총 {unaliasedArtists.length}명 — 클릭하면 Spotify 정식명 자동 입력</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {unaliasedArtists.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setNewSpotifyName(a)}
+                  style={{
+                    backgroundColor: newSpotifyName === a ? "var(--accent)" : "var(--bg-elevated)",
+                    border: `1px solid ${newSpotifyName === a ? "var(--accent)" : "var(--border)"}`,
+                    color: newSpotifyName === a ? "var(--bg)" : "var(--text-sub)",
+                    borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer",
+                  }}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {listMode === "unaliased" && !unaliasedLoading && unaliasedArtists.length === 0 && (
+          <p style={{ fontSize: 12, color: "var(--accent)", marginTop: 8 }}>✅ 모든 아티스트에 alias가 있습니다</p>
         )}
 
         {/* Spotify 정식명 변경 (admin 전용) */}
