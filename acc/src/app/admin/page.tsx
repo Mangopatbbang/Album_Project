@@ -117,6 +117,19 @@ export default function AdminPage() {
     setUnaliasedLoading(false);
   }
 
+  // 현재 열린 목록을 토글 없이 새로고침
+  async function refreshCurrentList(mode: "aliases" | "unaliased" | null) {
+    if (mode === "aliases") {
+      const res = await fetch("/api/admin/artist-aliases");
+      const data = await res.json();
+      setAliases(data.aliases ?? []);
+    } else if (mode === "unaliased") {
+      const res = await fetch("/api/admin/artist-aliases?unaliased=true");
+      const data = await res.json();
+      setUnaliasedArtists(data.artists ?? []);
+    }
+  }
+
   async function handleAddAlias() {
     if (!newSpotifyName.trim() || !newVariantName.trim()) return;
     const res = await fetch("/api/admin/artist-aliases", {
@@ -127,8 +140,7 @@ export default function AdminPage() {
     if (res.ok) {
       setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
       setNewSpotifyName(""); setNewVariantName("");
-      if (listMode === "aliases") loadAliases();
-      else if (listMode === "unaliased") loadUnaliased();
+      await refreshCurrentList(listMode);
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -145,8 +157,7 @@ export default function AdminPage() {
     if (res.ok) {
       setAliasMsg(`✅ ${editingAlias} 수정됨`);
       setEditingAlias(null); setEditVariant("");
-      if (listMode === "aliases") loadAliases();
-      else if (listMode === "unaliased") loadUnaliased();
+      await refreshCurrentList(listMode);
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -162,8 +173,7 @@ export default function AdminPage() {
     });
     if (res.ok) {
       setAliasMsg(`✅ ${spotify_name} 삭제됨`);
-      if (listMode === "aliases") loadAliases();
-      else if (listMode === "unaliased") loadUnaliased();
+      await refreshCurrentList(listMode);
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
@@ -1171,10 +1181,9 @@ export default function AdminPage() {
             </p>
           )}
         </div>
-      </div>
 
-      {/* ── 아티스트 별칭 관리 ── */}
-      <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginTop: 20 }}>
+        {/* ── 아티스트 별칭 관리 ── */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginTop: 24 }}>
         <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 20 }}>아티스트 별칭 관리</p>
 
         {/* 새 별칭 추가 */}
@@ -1384,5 +1393,6 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
