@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidatePath("/");
   revalidatePath("/best");
   revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
   return NextResponse.json({ ok: true, rating: data });
@@ -146,6 +147,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidatePath("/");
+  revalidatePath("/best");
   revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
   return NextResponse.json({ ok: true });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 // GET /api/admin/artist-use-variant
@@ -45,5 +46,7 @@ export async function PATCH(req: NextRequest) {
     .update({ use_artist_variant: use_variant })
     .eq("artist", spotify_name.trim());
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true });
 }

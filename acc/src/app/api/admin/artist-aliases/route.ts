@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 // GET /api/admin/artist-aliases
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
     .from("artist_aliases")
     .upsert({ spotify_name: spotify_name.trim(), variant_name: variant_name.trim() }, { onConflict: "spotify_name" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true });
 }
 
@@ -76,5 +79,7 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq("spotify_name", spotify_name.trim());
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true });
 }

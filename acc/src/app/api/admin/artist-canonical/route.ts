@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 // PATCH /api/admin/artist-canonical
@@ -13,5 +14,7 @@ export async function PATCH(req: NextRequest) {
     .update({ artist: artist.trim() })
     .eq("id", album_id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true });
 }

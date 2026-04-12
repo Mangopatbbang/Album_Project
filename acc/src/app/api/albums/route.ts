@@ -209,6 +209,7 @@ export async function POST(req: NextRequest) {
     .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, cover_url, tracklist, spotify_id: spotify_id || null, added_by: added_by || null })
     .select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
   revalidatePath("/best");
   return NextResponse.json(data, { status: 201 });
 }

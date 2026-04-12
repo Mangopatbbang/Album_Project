@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
@@ -54,6 +55,8 @@ export async function PATCH(
     .select("id, tracklist, spotify_id");
   if (error) return NextResponse.json({ error: error.message, id, update }, { status: 500 });
 
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true, tracklistSaved: !!update.tracklist, id, rowsUpdated: count, updatedRow: updateData });
 }
 
@@ -109,5 +112,7 @@ export async function DELETE(
   const { error } = await supabaseServer.from("albums").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  revalidatePath("/");
+  revalidatePath("/best");
   return NextResponse.json({ ok: true });
 }
