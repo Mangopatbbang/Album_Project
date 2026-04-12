@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import AlbumModal from "@/components/album/AlbumModal";
+import ArtistModal from "@/components/album/ArtistModal";
 import { AlbumWithRatings } from "@/types";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
@@ -10,6 +11,7 @@ type WatchlistAlbum = {
   id: string;
   title: string;
   artist: string;
+  artist_display?: string;
   year?: string | null;
   genre?: string | null;
   cover_url?: string | null;
@@ -32,6 +34,7 @@ export default function WatchlistSection({ userId }: Props) {
 
   const isOwner = profile?.id === userId;
   const [popupOpen, setPopupOpen] = useState(false);
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const INITIAL_LIMIT = 5;
 
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function WatchlistSection({ userId }: Props) {
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
                     <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                      {album.artist}{album.year ? ` · ${album.year}` : ""}
+                      <span onClick={(e) => { e.stopPropagation(); setArtistModal({ name: album.artist, display: album.artist_display ?? album.artist }); }} style={{ cursor: "pointer" }} className="hover:underline">{album.artist_display ?? album.artist}</span>{album.year ? ` · ${album.year}` : ""}
                     </p>
                     <SpotifyAttribution spotifyId={album.spotify_id} />
                   </div>
@@ -218,7 +221,7 @@ export default function WatchlistSection({ userId }: Props) {
                       <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 1 }}>
                         <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                          {album.artist}{album.year ? ` · ${album.year}` : ""}
+                          <span onClick={(e) => { e.stopPropagation(); setPopupOpen(false); setArtistModal({ name: album.artist, display: album.artist_display ?? album.artist }); }} style={{ cursor: "pointer" }} className="hover:underline">{album.artist_display ?? album.artist}</span>{album.year ? ` · ${album.year}` : ""}
                         </p>
                         <SpotifyAttribution spotifyId={album.spotify_id} />
                       </div>
@@ -241,12 +244,12 @@ export default function WatchlistSection({ userId }: Props) {
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
           onSaved={(albumId) => {
-            // 평점 저장 시 찜 목록에서 제거
             setItems((prev) => prev.filter((i) => i.album_id !== albumId));
             setSelectedAlbum(null);
           }}
         />
       )}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} />}
     </>
   );
 }

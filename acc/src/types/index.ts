@@ -9,7 +9,9 @@ export type User = {
 export type Album = {
   id: string;
   title: string;
-  artist: string;
+  artist: string;           // Spotify 기준 정식 명칭 (변경 불가 — admin 전용)
+  artist_display?: string;  // UI 표시 이름 (variant 선택 시 한글명, 아니면 artist와 동일)
+  use_artist_variant?: boolean;
   extra_artists?: string | null;
   year?: string;
   release_date?: string | null;

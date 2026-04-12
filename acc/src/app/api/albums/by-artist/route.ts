@@ -1,28 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
-// PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거
-function escapeSearch(s: string) {
-  return s.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
-}
+const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)";
 
 export async function GET(req: NextRequest) {
   const name = new URL(req.url).searchParams.get("name")?.trim();
   if (!name) return NextResponse.json({ albums: [], avg: null }, { status: 400 });
 
-  const safe = escapeSearch(name);
+  // 두 쿼리를 병렬 실행 — .eq() / .ilike()는 Supabase 클라이언트가 내부적으로
+  // 파라미터 바인딩하므로 콤마·괄호 등 특수문자 포함 아티스트명도 안전하게 처리됨
+  const [r1, r2] = await Promise.all([
+    supabaseServer
+      .from("albums")
+      .select(SELECT)
+      .eq("artist", name)
+      .order("release_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    supabaseServer
+      .from("albums")
+      .select(SELECT)
+      .ilike("extra_artists", `%${name}%`)
+      .order("release_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+  ]);
 
-  // 주 아티스트 정확 일치 + extra_artists 부분 일치 (콜라보 참여작 포함)
-  const { data, error } = await supabaseServer
-    .from("albums")
-    .select("id, title, artist, extra_artists, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
-    .or(`artist.eq.${safe},extra_artists.ilike.%${safe}%`)
-    .order("release_date", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  if (r1.error && r2.error) return NextResponse.json({ albums: [], avg: null }, { status: 500 });
 
+  // 병합 + id 기준 dedup + release_date 내림차순 재정렬 (null은 맨 뒤)
+  const seen = new Set<string>();
+  const merged = [...(r1.data ?? []), ...(r2.data ?? [])]
+    .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)))
+    .sort((a, b) => {
+      const da = a.release_date ?? "";
+      const db = b.release_date ?? "";
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return db.localeCompare(da);
+    });
+
+  const error = r1.error && r2.error ? r1.error : null;
   if (error) return NextResponse.json({ albums: [], avg: null }, { status: 500 });
 
-  const albums = (data ?? []).map((album) => {
+  const resolvedMerged = await resolveArtistDisplay(merged);
+  const albums = resolvedMerged.map((album) => {
     const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
     const scores = ratings.map((r) => r.score);
     const avg = scores.length > 0

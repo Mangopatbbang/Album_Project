@@ -9,6 +9,7 @@ type HallAlbum = {
   id: string;
   title: string;
   artist: string;
+  artist_display?: string;
   year: string | null;
   genre: string | null;
   cover_url: string | null;
@@ -22,7 +23,7 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
   const [showAll, setShowAll] = useState(false);
 
   const open = (a: HallAlbum) => {
-    setSelected({ id: a.id, title: a.title, artist: a.artist, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
+    setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
   };
 
   const visible = showAll ? albums : albums.slice(0, INITIAL_LIMIT);
@@ -37,7 +38,7 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
           <button
             key={a.id}
             onClick={() => open(a)}
-            title={`${a.title} — ${a.artist}`}
+            title={`${a.title} — ${a.artist_display ?? a.artist}`}
             style={{ padding: 0, background: "none", border: "none", cursor: "pointer" }}
             className="transition-transform active:scale-[0.92]"
           >

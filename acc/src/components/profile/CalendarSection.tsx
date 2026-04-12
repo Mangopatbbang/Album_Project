@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { scoreColor } from "@/lib/score";
 
 type MonthItem = { key: string; label: string; count: number };
-type DailyData = Record<string, number>; // "YYYY-MM-DD" → count
+type DayAlbum = { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number };
+type DailyAlbums = Record<string, DayAlbum[]>; // "YYYY-MM-DD" → albums
 
 // ── 월별 바차트 ──────────────────────────────────────────
 function MonthlyChart({ monthData, maxMonthCount }: { monthData: MonthItem[]; maxMonthCount: number }) {
@@ -33,16 +35,26 @@ function MonthlyChart({ monthData, maxMonthCount }: { monthData: MonthItem[]; ma
 // ── 일별 달력 그리드 ─────────────────────────────────────
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 
-function MonthCalendar({ year, month, dailyData }: { year: number; month: number; dailyData: DailyData }) {
+function MonthCalendar({
+  year,
+  month,
+  dailyAlbums,
+  onDayClick,
+}: {
+  year: number;
+  month: number;
+  dailyAlbums: DailyAlbums;
+  onDayClick: (key: string) => void;
+}) {
   const today = new Date();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthMax = Math.max(
-    ...Object.entries(dailyData)
+    ...Object.entries(dailyAlbums)
       .filter(([k]) => k.startsWith(monthPrefix))
-      .map(([, v]) => v),
+      .map(([, v]) => v.length),
     1
   );
 
@@ -71,7 +83,8 @@ function MonthCalendar({ year, month, dailyData }: { year: number; month: number
         {cells.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} style={{ aspectRatio: "1/1" }} />;
           const key = `${monthPrefix}-${String(day).padStart(2, "0")}`;
-          const count = dailyData[key] ?? 0;
+          const albums = dailyAlbums[key] ?? [];
+          const count = albums.length;
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const isFuture = new Date(year, month, day) > today;
           const intensity = count > 0 ? Math.max(0.3, count / monthMax) : 0;
@@ -81,6 +94,7 @@ function MonthCalendar({ year, month, dailyData }: { year: number; month: number
           return (
             <div
               key={key}
+              onClick={() => count > 0 && !isFuture && onDayClick(key)}
               title={count > 0 ? `${month + 1}월 ${day}일 — ${count}장 청음` : `${month + 1}월 ${day}일`}
               style={{
                 aspectRatio: "1/1",
@@ -97,6 +111,7 @@ function MonthCalendar({ year, month, dailyData }: { year: number; month: number
                   ? "1.5px solid var(--accent)"
                   : count > 0 ? "1px solid rgba(232,213,163,0.25)" : "1px solid transparent",
                 opacity: isFuture ? 0.25 : 1,
+                cursor: count > 0 && !isFuture ? "pointer" : "default",
               }}
             >
               <span style={{
@@ -125,29 +140,70 @@ function MonthCalendar({ year, month, dailyData }: { year: number; month: number
   );
 }
 
+// ── 날짜별 앨범 패널 ─────────────────────────────────────
+function DayAlbumPanel({ dateKey, albums, onClose }: { dateKey: string; albums: DayAlbum[]; onClose: () => void }) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return (
+    <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <span style={{ color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
+          {m}월 {d}일 청음 {albums.length}장
+        </span>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, lineHeight: 1, padding: "0 2px" }}>✕</button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {albums.map((a, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, flexShrink: 0, borderRadius: 4, overflow: "hidden",
+              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+            }}>
+              {a.cover_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>♪</span>
+                  </div>
+              }
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist_display ?? a.artist}</p>
+            </div>
+            <span style={{ color: scoreColor(a.score), fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{a.score}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── 팝업 모달 ────────────────────────────────────────────
-function CalendarPopup({ dailyData, onClose }: { dailyData: DailyData; onClose: () => void }) {
+function CalendarPopup({ dailyAlbums, onClose }: { dailyAlbums: DailyAlbums; onClose: () => void }) {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const isCurrentMonth = calYear === today.getFullYear() && calMonth === today.getMonth();
 
   const goPrev = () => {
+    setSelectedDay(null);
     if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
     else setCalMonth(m => m - 1);
   };
   const goNext = () => {
     if (isCurrentMonth) return;
+    setSelectedDay(null);
     if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
     else setCalMonth(m => m + 1);
   };
 
   // 이 달 총 청음 수
   const monthPrefix = `${calYear}-${String(calMonth + 1).padStart(2, "0")}`;
-  const monthTotal = Object.entries(dailyData)
+  const monthTotal = Object.entries(dailyAlbums)
     .filter(([k]) => k.startsWith(monthPrefix))
-    .reduce((s, [, v]) => s + v, 0);
+    .reduce((s, [, v]) => s + v.length, 0);
 
   return (
     <div
@@ -168,6 +224,8 @@ function CalendarPopup({ dailyData, onClose }: { dailyData: DailyData; onClose: 
           width: "min(380px, 100%)",
           padding: "24px 24px 28px",
           animation: "modalIn 0.18s ease-out",
+          maxHeight: "90dvh",
+          overflowY: "auto",
         }}
       >
         {/* 헤더 */}
@@ -202,7 +260,20 @@ function CalendarPopup({ dailyData, onClose }: { dailyData: DailyData; onClose: 
             ✕
           </button>
         </div>
-        <MonthCalendar year={calYear} month={calMonth} dailyData={dailyData} />
+        <MonthCalendar
+          year={calYear}
+          month={calMonth}
+          dailyAlbums={dailyAlbums}
+          onDayClick={(key) => setSelectedDay(prev => prev === key ? null : key)}
+        />
+        {/* 선택된 날의 앨범 */}
+        {selectedDay && dailyAlbums[selectedDay] && (
+          <DayAlbumPanel
+            dateKey={selectedDay}
+            albums={dailyAlbums[selectedDay]}
+            onClose={() => setSelectedDay(null)}
+          />
+        )}
         {/* 범례 */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16, justifyContent: "flex-end" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -228,7 +299,7 @@ export default function CalendarSection({
 }: {
   monthData: MonthItem[];
   maxMonthCount: number;
-  dailyData: DailyData;
+  dailyData: DailyAlbums;
 }) {
   const [popupOpen, setPopupOpen] = useState(false);
 
@@ -259,7 +330,7 @@ export default function CalendarSection({
       </div>
 
       {popupOpen && (
-        <CalendarPopup dailyData={dailyData} onClose={() => setPopupOpen(false)} />
+        <CalendarPopup dailyAlbums={dailyData} onClose={() => setPopupOpen(false)} />
       )}
     </>
   );

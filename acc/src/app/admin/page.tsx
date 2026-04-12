@@ -43,6 +43,8 @@ type ItunesMismatch = {
   fixed?: boolean;
 };
 
+type AliasRow = { spotify_name: string; variant_name: string };
+
 export default function AdminPage() {
   // --- 통계 ---
   const [stats, setStats] = useState<Stats | null>(null);
@@ -69,6 +71,93 @@ export default function AdminPage() {
     const data = await res.json();
     setStatsAlbums(data.albums ?? []);
     setStatsAlbumsLoading(false);
+  }
+
+  // --- 아티스트 별칭 관리 ---
+  const [aliases, setAliases] = useState<AliasRow[]>([]);
+  const [aliasesLoading, setAliasesLoading] = useState(false);
+  const [newSpotifyName, setNewSpotifyName] = useState("");
+  const [newVariantName, setNewVariantName] = useState("");
+  const [aliasMsg, setAliasMsg] = useState("");
+  const [editingAlias, setEditingAlias] = useState<string | null>(null); // spotify_name being edited
+  const [editVariant, setEditVariant] = useState("");
+  // canonical name change (admin only)
+  const [canonicalAlbumId, setCanonicalAlbumId] = useState("");
+  const [canonicalArtist, setCanonicalArtist] = useState("");
+  const [canonicalMsg, setCanonicalMsg] = useState("");
+
+  async function loadAliases() {
+    setAliasesLoading(true);
+    const res = await fetch("/api/admin/artist-aliases");
+    const data = await res.json();
+    setAliases(data.aliases ?? []);
+    setAliasesLoading(false);
+  }
+
+  async function handleAddAlias() {
+    if (!newSpotifyName.trim() || !newVariantName.trim()) return;
+    const res = await fetch("/api/admin/artist-aliases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spotify_name: newSpotifyName.trim(), variant_name: newVariantName.trim() }),
+    });
+    if (res.ok) {
+      setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
+      setNewSpotifyName(""); setNewVariantName("");
+      loadAliases();
+    } else {
+      const d = await res.json();
+      setAliasMsg(`❌ ${d.error}`);
+    }
+  }
+
+  async function handleSaveEditAlias() {
+    if (!editingAlias || !editVariant.trim()) return;
+    const res = await fetch("/api/admin/artist-aliases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spotify_name: editingAlias, variant_name: editVariant.trim() }),
+    });
+    if (res.ok) {
+      setAliasMsg(`✅ ${editingAlias} 수정됨`);
+      setEditingAlias(null); setEditVariant("");
+      loadAliases();
+    } else {
+      const d = await res.json();
+      setAliasMsg(`❌ ${d.error}`);
+    }
+  }
+
+  async function handleDeleteAlias(spotify_name: string) {
+    if (!confirm(`"${spotify_name}" 별칭을 삭제할까요?`)) return;
+    const res = await fetch("/api/admin/artist-aliases", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spotify_name }),
+    });
+    if (res.ok) {
+      setAliasMsg(`✅ ${spotify_name} 삭제됨`);
+      loadAliases();
+    } else {
+      const d = await res.json();
+      setAliasMsg(`❌ ${d.error}`);
+    }
+  }
+
+  async function handleCanonicalChange() {
+    if (!canonicalAlbumId.trim() || !canonicalArtist.trim()) return;
+    const res = await fetch("/api/admin/artist-canonical", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ album_id: canonicalAlbumId.trim(), artist: canonicalArtist.trim() }),
+    });
+    if (res.ok) {
+      setCanonicalMsg(`✅ 앨범 ${canonicalAlbumId} 아티스트 → "${canonicalArtist}" 변경됨`);
+      setCanonicalAlbumId(""); setCanonicalArtist("");
+    } else {
+      const d = await res.json();
+      setCanonicalMsg(`❌ ${d.error}`);
+    }
   }
 
   // --- 마이그레이션 (Spotify 전체) ---
@@ -1006,6 +1095,111 @@ export default function AdminPage() {
               {fixMsg}
             </p>
           )}
+        </div>
+      </div>
+
+      {/* ── 아티스트 별칭 관리 ── */}
+      <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginTop: 20 }}>
+        <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 20 }}>아티스트 별칭 관리</p>
+
+        {/* 새 별칭 추가 */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
+          <div>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Spotify 정식명</p>
+            <input
+              value={newSpotifyName}
+              onChange={(e) => setNewSpotifyName(e.target.value)}
+              placeholder="예: IU"
+              style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220 }}
+            />
+          </div>
+          <div>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>한글/별칭</p>
+            <input
+              value={newVariantName}
+              onChange={(e) => setNewVariantName(e.target.value)}
+              placeholder="예: 아이유"
+              style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 180 }}
+            />
+          </div>
+          <button
+            onClick={handleAddAlias}
+            disabled={!newSpotifyName.trim() || !newVariantName.trim()}
+            style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 6, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!newSpotifyName.trim() || !newVariantName.trim()) ? 0.4 : 1 }}
+          >
+            추가/저장
+          </button>
+          <button
+            onClick={loadAliases}
+            disabled={aliasesLoading}
+            style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
+          >
+            {aliasesLoading ? "로딩..." : "전체 목록"}
+          </button>
+        </div>
+
+        {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
+
+        {/* 별칭 목록 */}
+        {aliases.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
+            {aliases.map((a) => (
+              <div key={a.spotify_name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: "var(--bg-elevated)", borderRadius: 6 }}>
+                {editingAlias === a.spotify_name ? (
+                  <>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12, width: 220, flexShrink: 0 }}>{a.spotify_name}</span>
+                    <input
+                      value={editVariant}
+                      onChange={(e) => setEditVariant(e.target.value)}
+                      style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--accent)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, flex: 1 }}
+                    />
+                    <button onClick={handleSaveEditAlias} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>저장</button>
+                    <button onClick={() => { setEditingAlias(null); setEditVariant(""); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 11 }}>취소</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12, width: 220, flexShrink: 0 }}>{a.spotify_name}</span>
+                    <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1 }}>{a.variant_name}</span>
+                    <button onClick={() => { setEditingAlias(a.spotify_name); setEditVariant(a.variant_name); }} style={{ background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>수정</button>
+                    <button onClick={() => handleDeleteAlias(a.spotify_name)} style={{ background: "none", border: "none", color: "#e05050", cursor: "pointer", fontSize: 11 }}>삭제</button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Spotify 정식명 변경 (admin 전용) */}
+        <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 12, color: "var(--text-sub)" }}>앨범 아티스트 정식명 변경 (admin)</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>앨범 ID</p>
+              <input
+                value={canonicalAlbumId}
+                onChange={(e) => setCanonicalAlbumId(e.target.value)}
+                placeholder="album UUID"
+                style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 300 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>새 Spotify 정식명</p>
+              <input
+                value={canonicalArtist}
+                onChange={(e) => setCanonicalArtist(e.target.value)}
+                placeholder="정확한 Spotify 아티스트명"
+                style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 220 }}
+              />
+            </div>
+            <button
+              onClick={handleCanonicalChange}
+              disabled={!canonicalAlbumId.trim() || !canonicalArtist.trim()}
+              style={{ backgroundColor: "#c0392b", border: "none", color: "white", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!canonicalAlbumId.trim() || !canonicalArtist.trim()) ? 0.4 : 1 }}
+            >
+              변경
+            </button>
+          </div>
+          {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
         </div>
       </div>
     </div>

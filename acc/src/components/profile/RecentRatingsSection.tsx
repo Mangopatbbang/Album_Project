@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
+import ArtistModal from "@/components/album/ArtistModal";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 
@@ -9,6 +10,7 @@ type RatingItem = {
   id: string;
   title: string;
   artist: string;
+  artist_display?: string;
   year: string | null;
   genre: string | null;
   cover_url: string | null;
@@ -18,7 +20,7 @@ type RatingItem = {
 };
 
 function toModal(a: RatingItem): AlbumWithRatings {
-  return { id: a.id, title: a.title, artist: a.artist, year: a.year ?? undefined, genre: a.genre ?? undefined, cover_url: a.cover_url ?? undefined, ratings: [] };
+  return { id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year ?? undefined, genre: a.genre ?? undefined, cover_url: a.cover_url ?? undefined, ratings: [] };
 }
 
 const INITIAL_COUNT = 8;
@@ -26,6 +28,7 @@ const INITIAL_COUNT = 8;
 export function RecentListSection({ items }: { items: RatingItem[] }) {
   const [selected, setSelected] = useState<RatingItem | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const visible = showAll ? items : items.slice(0, INITIAL_COUNT);
 
   return (
@@ -62,7 +65,11 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
                 {r.title}
               </p>
               <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
-                {r.artist}
+                <span
+                  onClick={(e) => { e.stopPropagation(); setArtistModal({ name: r.artist, display: r.artist_display ?? r.artist }); }}
+                  style={{ cursor: "pointer" }}
+                  className="hover:underline"
+                >{r.artist_display ?? r.artist}</span>
                 {r.genre && <span style={{ marginLeft: 6, opacity: 0.7 }}>{r.genre}</span>}
               </p>
             </div>
@@ -92,6 +99,7 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
         </button>
       )}
       {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelected({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display, year: album.year ?? null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, score: 0, one_line_review: null, updated_at: "" }); }} />}
     </>
   );
 }

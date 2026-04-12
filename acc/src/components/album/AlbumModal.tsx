@@ -64,7 +64,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [savingLike, setSavingLike] = useState(false);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
-  const [artistModal, setArtistModal] = useState<string | null>(null);
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -407,15 +407,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
                   <span
                     className="hover:underline cursor-pointer"
-                    onClick={() => setArtistModal(data.artist)}
+                    onClick={() => setArtistModal({ name: data.artist, display: data.artist_display ?? data.artist })}
                   >
-                    {data.artist}
+                    {data.artist_display ?? data.artist}
                   </span>
                   {data.extra_artists && (
                     <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
                       {" · "}{data.extra_artists.split(";").map((a) => a.trim()).filter(Boolean).map((a, i, arr) => (
                         <span key={a}>
-                          <span className="hover:underline cursor-pointer" onClick={() => setArtistModal(a)}>{a}</span>
+                          <span className="hover:underline cursor-pointer" onClick={() => setArtistModal({ name: a, display: a })}>{a}</span>
                           {i < arr.length - 1 && ", "}
                         </span>
                       ))}
@@ -812,7 +812,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
       {artistModal && (
         <ArtistModal
-          artistName={artistModal}
+          artistName={artistModal.name}
+          displayName={artistModal.display}
           onClose={() => setArtistModal(null)}
           onAlbumClick={(a) => { setArtistModal(null); setNestedAlbum(a); }}
         />
@@ -833,6 +834,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             id: album.id,
             title: data.title,
             artist: data.artist,
+            use_artist_variant: data.use_artist_variant ?? false,
+            extra_artists: data.extra_artists ?? null,
             year: data.year ?? null,
             release_date: (full as FullAlbum)?.release_date ?? null,
             genre: data.genre ?? null,

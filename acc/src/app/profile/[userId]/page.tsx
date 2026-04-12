@@ -62,18 +62,23 @@ export default async function ProfilePage({
 
   // 아티스트 TOP 5 (extra_artists 포함 — 콜라보 앨범도 각 아티스트 집계에 반영)
   const artistMap = new Map<string, { count: number; total: number }>();
+  const artistDisplayMap = new Map<string, string>(); // spotify_name → artist_display
   for (const r of validRatings) {
     const primary = r.albums?.artist ?? "기타";
+    const primaryDisplay = r.albums?.artist_display ?? primary;
     const extras = r.albums?.extra_artists
       ? r.albums.extra_artists.split(";").map((s) => s.trim()).filter(Boolean)
       : [];
     for (const artist of [primary, ...extras]) {
       const prev = artistMap.get(artist) ?? { count: 0, total: 0 };
       artistMap.set(artist, { count: prev.count + 1, total: prev.total + r.score });
+      if (artist === primary && !artistDisplayMap.has(artist)) {
+        artistDisplayMap.set(artist, primaryDisplay);
+      }
     }
   }
   const allArtistEntries = [...artistMap.entries()]
-    .map(([artist, { count, total: t }]) => ({ artist, count, avg: (t / count).toFixed(1) }));
+    .map(([artist, { count, total: t }]) => ({ artist, artist_display: artistDisplayMap.get(artist), count, avg: (t / count).toFixed(1) }));
   const artistByCount = allArtistEntries
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -99,11 +104,18 @@ export default async function ProfilePage({
   }
   const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
 
-  // 일별 청음 (히트맵용 — 전체 기간)
-  const dailyData: Record<string, number> = {};
+  // 일별 청음 (캘린더용 — 전체 기간)
+  const dailyData: Record<string, { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number }[]> = {};
   for (const r of validRatings) {
     const key = r.updated_at.slice(0, 10); // "YYYY-MM-DD"
-    dailyData[key] = (dailyData[key] ?? 0) + 1;
+    if (!dailyData[key]) dailyData[key] = [];
+    dailyData[key].push({
+      title: r.albums!.title,
+      artist: r.albums!.artist,
+      artist_display: r.albums!.artist_display,
+      cover_url: r.albums!.cover_url ?? null,
+      score: r.score,
+    });
   }
 
   // 최근 한줄 소감
@@ -300,6 +312,7 @@ export default async function ProfilePage({
               </p>
               <RecentReviewsSection items={recentReviews.map((r) => ({
                 id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
+                artist_display: r.albums!.artist_display,
                 year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
                 score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
               }))} />
@@ -313,6 +326,7 @@ export default async function ProfilePage({
             </p>
             <RecentListSection items={recent.map((r) => ({
               id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
+              artist_display: r.albums!.artist_display,
               year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
               score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
             }))} />

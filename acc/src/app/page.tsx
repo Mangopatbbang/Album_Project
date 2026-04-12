@@ -13,6 +13,7 @@ import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import HomePopup from "@/components/ui/HomePopup";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 async function getRecentAlbums() {
   const { data } = await supabaseServer
@@ -63,26 +64,34 @@ async function getRecentPlaylists() {
 async function getTickerReviews(): Promise<TickerItem[]> {
   const { data } = await supabaseServer
     .from("ratings")
-    .select("user_id, score, one_line_review, albums(title, artist)")
+    .select("user_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)")
     .not("one_line_review", "is", null)
     .neq("one_line_review", "")
     .order("updated_at", { ascending: false })
     .limit(40);
   if (!data) return [];
-  return (data as unknown as {
+  const rows = (data as unknown as {
     user_id: string;
     score: number;
     one_line_review: string;
-    albums: { title: string; artist: string } | null;
-  }[])
-    .filter((r) => r.albums)
-    .map((r) => ({
-      user_id: r.user_id,
-      score: r.score,
-      one_line_review: r.one_line_review,
-      album_title: r.albums!.title,
-      album_artist: r.albums!.artist,
-    }));
+    albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
+  }[]).filter((r) => r.albums);
+
+  // artist_display 해상도 적용
+  const albumObjs = rows.map((r) => r.albums!);
+  const resolved = await resolveArtistDisplay(albumObjs);
+  const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+
+  return rows.map((r) => ({
+    user_id: r.user_id,
+    score: r.score,
+    one_line_review: r.one_line_review,
+    album_id: r.albums!.id,
+    album_title: r.albums!.title,
+    album_artist: r.albums!.artist,
+    album_artist_display: displayMap.get(r.albums!.id) ?? r.albums!.artist,
+    album_cover_url: r.albums!.cover_url,
+  }));
 }
 
 async function getTotalCount() {

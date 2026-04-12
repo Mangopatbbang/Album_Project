@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function AlbumCard({ album, onClick }: Props) {
-  const [artistModal, setArtistModal] = useState<string | null>(null);
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   return (
     <>
     <button
@@ -84,9 +84,9 @@ export default function AlbumCard({ album, onClick }: Props) {
         >
           <span
             className="hover:underline cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); setArtistModal(album.artist); }}
+            onClick={(e) => { e.stopPropagation(); setArtistModal({ name: album.artist, display: album.artist_display ?? album.artist }); }}
           >
-            {album.artist}
+            {album.artist_display ?? album.artist}
           </span>
         </p>
 
@@ -113,7 +113,8 @@ export default function AlbumCard({ album, onClick }: Props) {
 
     {artistModal && (
       <ArtistModal
-        artistName={artistModal}
+        artistName={artistModal.name}
+        displayName={artistModal.display}
         onClose={() => setArtistModal(null)}
         onAlbumClick={(a) => { setArtistModal(null); onClick(a); }}
       />

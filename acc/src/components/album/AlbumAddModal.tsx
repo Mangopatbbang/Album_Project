@@ -339,7 +339,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             )}
           </div>
           <div>
-            <label style={labelStyle}>ARTIST *</label>
+            <label style={labelStyle}>ARTIST * (Spotify 정식명)</label>
             <input
               style={inputStyle}
               value={artist}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
+import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
@@ -14,6 +15,7 @@ function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
     id: a.id,
     title: a.title,
     artist: a.artist,
+    artist_display: a.artist_display,
     year: a.year ?? undefined,
     genre: a.genre ?? undefined,
     cover_url: a.cover_url ?? undefined,
@@ -28,11 +30,13 @@ function SectionPopup({
   list,
   onClose,
   onAlbumClick,
+  onArtistClick,
 }: {
   label: string;
   list: AlbumStat[];
   onClose: () => void;
   onAlbumClick: (a: AlbumStat) => void;
+  onArtistClick: (artist: { name: string; display: string }) => void;
 }) {
   return (
     <div
@@ -118,7 +122,7 @@ function SectionPopup({
                   {album.title}
                 </p>
                 <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {album.artist}
+                  <span onClick={(e) => { e.stopPropagation(); onClose(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }} style={{ cursor: "pointer" }} className="hover:underline">{album.artist_display ?? album.artist}</span>
                 </p>
               </div>
               <div style={{ flexShrink: 0, textAlign: "right" }}>
@@ -140,11 +144,13 @@ function SectionGrid({
   list,
   onAlbumClick,
   onMoreClick,
+  onArtistClick,
 }: {
   label: string;
   list: AlbumStat[];
   onAlbumClick: (a: AlbumStat) => void;
   onMoreClick: () => void;
+  onArtistClick: (artist: { name: string; display: string }) => void;
 }) {
   const top = list.slice(0, TOP_N);
   return (
@@ -206,7 +212,7 @@ function SectionGrid({
             </p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                {album.artist}
+                <span onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }} style={{ cursor: "pointer" }} className="hover:underline">{album.artist_display ?? album.artist}</span>
               </p>
               <SpotifyAttribution spotifyId={album.spotify_id} />
             </div>
@@ -221,17 +227,23 @@ function ArtistSection({
   artist,
   list,
   onAlbumClick,
+  onArtistClick,
 }: {
   artist: string;
   list: AlbumStat[];
   onAlbumClick: (a: AlbumStat) => void;
+  onArtistClick: (artist: { name: string; display: string }) => void;
 }) {
   const artistAvg = (list.reduce((s, a) => s + a.avg, 0) / list.length);
   return (
     <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-        <h2 style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>
-          {artist}
+        <h2
+          onClick={() => onArtistClick({ name: artist, display: list[0]?.artist_display ?? artist })}
+          style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em", cursor: "pointer" }}
+          className="hover:underline"
+        >
+          {list[0]?.artist_display ?? artist}
         </h2>
         <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
         <span style={{ color: scoreColor(artistAvg), fontSize: 12, fontWeight: 600, marginLeft: "auto" }}>
@@ -289,6 +301,7 @@ export default function BestPageClient({
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [artistSort, setArtistSort] = useState<"count" | "avg">("count");
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
   const sortedArtistSections = artistSort === "avg"
     ? [...sections].sort((a, b) => {
@@ -330,6 +343,7 @@ export default function BestPageClient({
                 artist={artist}
                 list={list}
                 onAlbumClick={(a) => setSelectedAlbum(a)}
+                onArtistClick={(a) => setArtistModal(a)}
               />
             ))}
           </div>
@@ -343,6 +357,7 @@ export default function BestPageClient({
               list={list}
               onAlbumClick={(a) => setSelectedAlbum(a)}
               onMoreClick={() => setOpenSection(label)}
+              onArtistClick={(a) => setArtistModal(a)}
             />
           ))}
         </div>
@@ -361,6 +376,15 @@ export default function BestPageClient({
           list={openSectionData[1]}
           onClose={() => setOpenSection(null)}
           onAlbumClick={(a) => setSelectedAlbum(a)}
+          onArtistClick={(a) => setArtistModal(a)}
+        />
+      )}
+      {artistModal && (
+        <ArtistModal
+          artistName={artistModal.name}
+          displayName={artistModal.display}
+          onClose={() => setArtistModal(null)}
+          onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display ?? album.artist, year: album.year ?? null, release_date: null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, spotify_id: album.spotify_id ?? null, avg: parseFloat(album.avg ?? "0"), count: album.ratings.length, variance: 0 }); }}
         />
       )}
     </>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { scoreColor } from "@/lib/score";
+import ArtistModal from "@/components/album/ArtistModal";
 
-type ArtistEntry = { artist: string; count: number; avg: string };
+type ArtistEntry = { artist: string; artist_display?: string; count: number; avg: string };
 
 export default function ArtistSection({
   byCount,
@@ -17,10 +18,12 @@ export default function ArtistSection({
   maxAvg: number;
 }) {
   const [tab, setTab] = useState<"count" | "avg">("count");
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const list = tab === "count" ? byCount : byAvg;
   const maxVal = tab === "count" ? maxCount : maxAvg;
 
   return (
+    <>
     <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
@@ -49,12 +52,16 @@ export default function ArtistSection({
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {list.map(({ artist, count, avg }, i) => (
+        {list.map(({ artist, artist_display, count, avg }, i) => (
           <div key={artist}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 10, width: 12 }}>{i + 1}</span>
-                <span style={{ color: "var(--text-sub)", fontSize: 12 }}>{artist}</span>
+                <span
+                  onClick={() => setArtistModal({ name: artist, display: artist_display ?? artist })}
+                  style={{ color: "var(--text-sub)", fontSize: 12, cursor: "pointer" }}
+                  className="hover:underline"
+                >{artist_display ?? artist}</span>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ color: scoreColor(avg), fontSize: 11, fontWeight: 600 }}>{avg}</span>
@@ -73,5 +80,7 @@ export default function ArtistSection({
         ))}
       </div>
     </div>
+    {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} />}
+    </>
   );
 }

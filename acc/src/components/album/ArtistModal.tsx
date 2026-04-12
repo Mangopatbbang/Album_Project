@@ -6,12 +6,13 @@ import { scoreColor, glowBorder, glowShadow } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 type Props = {
-  artistName: string;
+  artistName: string;        // API 조회용 spotify 정식 이름
+  displayName?: string;      // 헤더 표시용 (variant 선택 시 한글명)
   onClose: () => void;
   onAlbumClick?: (album: AlbumWithRatings) => void;
 };
 
-export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props) {
+export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const [avgScore, setAvgScore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ export default function ArtistModal({ artistName, onClose, onAlbumClick }: Props
             {/* 아티스트 이름 + 통계 */}
             <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
               <h2 style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-                {artistName}
+                {displayName ?? artistName}
               </h2>
               {!loading && (
                 <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>

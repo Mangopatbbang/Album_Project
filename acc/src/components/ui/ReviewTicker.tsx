@@ -3,13 +3,18 @@
 import { useEffect, useState } from "react";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
+import AlbumModal from "@/components/album/AlbumModal";
+import { AlbumWithRatings } from "@/types";
 
 export type TickerItem = {
   user_id: string;
   score: number;
   one_line_review: string;
+  album_id: string;
   album_title: string;
   album_artist: string;
+  album_artist_display?: string;
+  album_cover_url?: string | null;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -22,8 +27,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function ReviewTicker({ items, inline }: { items: TickerItem[]; inline?: boolean }) {
-  // SSR은 원본 순서, 마운트 시 셔플 (hydration mismatch 방지)
   const [shuffled, setShuffled] = useState(items);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   useEffect(() => {
     setShuffled(shuffle(items));
@@ -31,105 +36,127 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
 
   if (items.length === 0) return null;
 
-  // 화면을 채울 수 있도록 최소한만 반복
   const repeat = Math.max(2, Math.ceil(12 / shuffled.length));
   const track = Array.from({ length: repeat }, () => shuffled).flat();
-
-  // 아이템 하나가 화면을 지나가는 시간 ≈ 3.5초 고정
-  // repeat은 시각적 패딩용이므로 duration은 고유 아이템 수 기준으로 계산
   const duration = Math.min(200, Math.max(30, shuffled.length * 5.5));
 
-  return (
-    <div
-      style={inline ? {
-        backgroundColor: "var(--bg-elevated)",
-        border: "1px solid var(--border)",
-        borderRadius: 8,
-        overflow: "hidden",
-        height: 36,
-        display: "flex",
-        alignItems: "center",
-        position: "relative",
-        flex: 1,
-        minWidth: 0,
-      } : {
-        borderBottom: "1px solid var(--border)",
-        backgroundColor: "var(--bg-elevated)",
-        overflow: "hidden",
-        height: 36,
-        display: "flex",
-        alignItems: "center",
-        position: "relative",
-        zIndex: 40,
-      }}
-    >
-      {/* 좌우 페이드 마스크 */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(to right, var(--bg-elevated) 0%, transparent 80px, transparent calc(100% - 80px), var(--bg-elevated) 100%)",
-          zIndex: 1,
-          pointerEvents: "none",
-        }}
-      />
+  const openAlbum = (item: TickerItem) => {
+    setSelectedAlbum({
+      id: item.album_id,
+      title: item.album_title,
+      artist: item.album_artist,
+      cover_url: item.album_cover_url ?? undefined,
+      ratings: [],
+    });
+  };
 
-      {/* 마퀴 트랙 — 두 벌 이어붙여서 seamless loop */}
+  return (
+    <>
       <div
-        style={{
+        style={inline ? {
+          backgroundColor: "var(--bg-elevated)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          overflow: "hidden",
+          height: 36,
           display: "flex",
           alignItems: "center",
-          whiteSpace: "nowrap",
-          willChange: "transform",
-          animation: `ticker-scroll ${duration}s linear infinite`,
+          position: "relative",
+          flex: 1,
+          minWidth: 0,
+        } : {
+          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--bg-elevated)",
+          overflow: "hidden",
+          height: 36,
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          zIndex: 40,
         }}
-        className="ticker-track"
       >
-        {[...track, ...track].map((item, i) => {
-          const user = USERS.find((u) => u.id === item.user_id);
-          return (
-            <span
-              key={i}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "0 28px",
-                fontSize: 12,
-                color: "var(--text-sub)",
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ color: "var(--border-light)", fontSize: 10, marginRight: -14 }}>◆</span>
+        {/* 좌우 페이드 마스크 */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to right, var(--bg-elevated) 0%, transparent 80px, transparent calc(100% - 80px), var(--bg-elevated) 100%)",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+        />
 
-              {user && (
-                <span style={{ flexShrink: 0 }}>
-                  <span>{user.emoji}</span>
-                  <span style={{ color: scoreColor(item.score), fontWeight: 700, marginLeft: 2 }}>
-                    {item.score}
+        {/* 마퀴 트랙 */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            whiteSpace: "nowrap",
+            willChange: "transform",
+            animation: `ticker-scroll ${duration}s linear infinite`,
+          }}
+          className="ticker-track"
+        >
+          {[...track, ...track].map((item, i) => {
+            const user = USERS.find((u) => u.id === item.user_id);
+            return (
+              <span
+                key={i}
+                onClick={() => openAlbum(item)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "0 28px",
+                  fontSize: 12,
+                  color: "var(--text-sub)",
+                  flexShrink: 0,
+                  cursor: "pointer",
+                  zIndex: 2,
+                  position: "relative",
+                }}
+                className="ticker-item"
+              >
+                <span style={{ color: "var(--border-light)", fontSize: 10, marginRight: -14 }}>◆</span>
+
+                {user && (
+                  <span style={{ flexShrink: 0 }}>
+                    <span>{user.emoji}</span>
+                    <span style={{ color: scoreColor(item.score), fontWeight: 700, marginLeft: 2 }}>
+                      {item.score}
+                    </span>
                   </span>
+                )}
+
+                <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>
+                  {item.album_title}
                 </span>
-              )}
 
-              <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>
-                {item.album_title}
-              </span>
+                <span style={{ color: "var(--text-muted)", opacity: 0.6, flexShrink: 0, fontSize: 11 }}>
+                  {item.album_artist_display ?? item.album_artist}
+                </span>
 
-              <span style={{ color: "var(--text-sub)", fontStyle: "italic", flexShrink: 0 }}>
-                &ldquo;{item.one_line_review}&rdquo;
+                <span style={{ color: "var(--text-sub)", fontStyle: "italic", flexShrink: 0 }}>
+                  &ldquo;{item.one_line_review}&rdquo;
+                </span>
               </span>
-            </span>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        <style>{`
+          .ticker-track:hover { animation-play-state: paused; }
+          .ticker-item:hover .ticker-item-title { text-decoration: underline; }
+          @keyframes ticker-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
       </div>
 
-      <style>{`
-        .ticker-track:hover { animation-play-state: paused; }
-        @keyframes ticker-scroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
-    </div>
+      {selectedAlbum && (
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+      )}
+    </>
   );
 }

@@ -29,6 +29,7 @@ type Props = {
     id: string;
     title: string;
     artist: string;
+    use_artist_variant?: boolean | null;
     extra_artists?: string | null;
     year?: string | null;
     release_date?: string | null;
@@ -72,7 +73,6 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
 export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
-  const [artist, setArtist] = useState(album.artist);
   const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
   const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
   const [genre, setGenre] = useState(album.genre ?? "");
@@ -80,6 +80,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [useVariant, setUseVariant] = useState(album.use_artist_variant ?? false);
+  const [variantName, setVariantName] = useState<string | null>(null);
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
 
   const [searching, setSearching] = useState(false);
@@ -93,6 +95,14 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
+
+  // 아티스트 별칭 조회
+  useEffect(() => {
+    fetch(`/api/admin/artist-aliases?artist=${encodeURIComponent(album.artist)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.alias) setVariantName(d.alias.variant_name); })
+      .catch(() => {});
+  }, [album.artist]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -112,7 +122,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   }, [onClose]);
 
   const handleSearch = async () => {
-    if (!title.trim() && !artist.trim()) return;
+    if (!title.trim() && !album.artist.trim()) return;
     setSearching(true);
     setSearchError("");
     setNotFound(false);
@@ -123,7 +133,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
 
     let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
     try {
-      const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
+      const q = new URLSearchParams({ title: title.trim(), artist: album.artist.trim() });
       const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
       data = await res.json();
     } catch {
@@ -141,8 +151,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
 
     if (!data.results?.length) {
       setNotFound(true);
-      if (artist.trim()) {
-        fetch(`/api/spotify/artist-hint?artist=${encodeURIComponent(artist.trim())}`)
+      if (album.artist.trim()) {
+        fetch(`/api/spotify/artist-hint?artist=${encodeURIComponent(album.artist.trim())}`)
           .then((r) => r.json())
           .then((d) => setArtistHints(d.hints ?? []))
           .catch(() => {});
@@ -155,7 +165,6 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const handleSelectCandidate = async (c: SpotifyCandidate) => {
     setSelectedCandidate(c);
     setTitle(c.name);
-    setArtist(c.artist);
     setExtraArtists(c.extra_artists ?? "");
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
@@ -173,8 +182,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !artist.trim()) {
-      setError("제목과 아티스트는 필수입니다.");
+    if (!title.trim()) {
+      setError("제목은 필수입니다.");
       return;
     }
     setSaving(true);
@@ -185,13 +194,13 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: title.trim(),
-        artist: artist.trim(),
         extra_artists: extraArtists.trim() || null,
         release_date: releaseDate || null,
         year: releaseDate ? releaseDate.slice(0, 4) : null,
         genre: genre || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
+        use_artist_variant: useVariant,
         ...(spotifyId ? { spotify_id: spotifyId } : {}),
       }),
     });
@@ -264,12 +273,35 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             />
           </div>
           <div>
-            <label style={labelStyle}>ARTIST *</label>
+            <label style={labelStyle}>ARTIST (Spotify 정식명 — 변경 불가)</label>
             <input
-              style={inputStyle} value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+              style={{ ...inputStyle, color: "var(--text-muted)", cursor: "default" }}
+              value={album.artist}
+              readOnly
             />
+            {/* 별칭(한글명) 토글 — alias가 DB에 있을 때만 표시 */}
+            {variantName && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setUseVariant(!useVariant)}
+                  style={{
+                    width: 36, height: 20, borderRadius: 10, border: "none",
+                    backgroundColor: useVariant ? "var(--accent)" : "var(--border-light)",
+                    position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.2s",
+                  }}
+                >
+                  <span style={{
+                    position: "absolute", top: 2, left: useVariant ? 18 : 2,
+                    width: 16, height: 16, borderRadius: "50%",
+                    backgroundColor: "white", transition: "left 0.2s",
+                  }} />
+                </button>
+                <span style={{ color: "var(--text-sub)", fontSize: 12 }}>
+                  한글명으로 표시: <span style={{ color: "var(--text)", fontWeight: 600 }}>{variantName}</span>
+                </span>
+              </div>
+            )}
           </div>
           <div>
             <label style={labelStyle}>FEAT. / 참여 아티스트</label>
@@ -281,12 +313,12 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
           </div>
           <button
             onClick={handleSearch}
-            disabled={searching || (!title.trim() && !artist.trim())}
+            disabled={searching || (!title.trim() && !album.artist.trim())}
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
               color: "var(--text-sub)", borderRadius: 6, padding: "8px 16px", fontSize: 13,
-              cursor: searching || (!title.trim() && !artist.trim()) ? "not-allowed" : "pointer",
-              opacity: searching || (!title.trim() && !artist.trim()) ? 0.5 : 1,
+              cursor: searching || (!title.trim() && !album.artist.trim()) ? "not-allowed" : "pointer",
+              opacity: searching || (!title.trim() && !album.artist.trim()) ? 0.5 : 1,
               alignSelf: "flex-start",
             }}
           >
@@ -313,7 +345,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
                     <button
                       key={h.name}
                       type="button"
-                      onClick={() => { setArtist(h.name); setArtistHints([]); setNotFound(false); }}
+                      onClick={() => { setArtistHints([]); setNotFound(false); }}
                       style={{
                         display: "flex", alignItems: "center", gap: 8,
                         background: "var(--bg-elevated)", border: "1px solid var(--border)",

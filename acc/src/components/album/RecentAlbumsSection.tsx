@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlbumWithRatings } from "@/types";
 import AlbumModal from "./AlbumModal";
+import ArtistModal from "./ArtistModal";
 import { glowShadow, glowBorder } from "@/lib/score";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export default function RecentAlbumsSection({ albums }: Props) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+  const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
   return (
     <>
@@ -46,7 +48,11 @@ export default function RecentAlbumsSection({ albums }: Props) {
                   {album.title}
                 </p>
                 <p style={{ color: "var(--text-sub)" }} className="text-xs truncate mt-0.5">
-                  {album.artist}
+                  <span
+                    onClick={(e) => { e.stopPropagation(); setArtistModal({ name: album.artist, display: album.artist_display ?? album.artist }); }}
+                    style={{ cursor: "pointer" }}
+                    className="hover:underline"
+                  >{album.artist_display ?? album.artist}</span>
                 </p>
                 {avg && (
                   <p style={{ color: "var(--accent)" }} className="text-xs mt-2 font-medium">
@@ -71,6 +77,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
           }}
         />
       )}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} />}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 export async function PATCH(
   req: NextRequest,
@@ -9,7 +10,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "extra_artists", "year", "release_date", "genre"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "extra_artists", "year", "release_date", "genre", "use_artist_variant"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
@@ -64,7 +65,7 @@ export async function GET(
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks)")
+    .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks)")
     .eq("id", id)
     .single();
 
@@ -72,13 +73,14 @@ export async function GET(
     return NextResponse.json({ error: "앨범을 찾을 수 없습니다" }, { status: 404 });
   }
 
+  const [resolved] = await resolveArtistDisplay([data]);
   const ratings = (data.ratings ?? []) as { user_id: string; score: number; one_line_review: string | null; liked_tracks: string | null }[];
   const scores = ratings.map((r) => r.score);
   const avg = scores.length > 0
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
     : null;
 
-  return NextResponse.json({ ...data, ratings, avg }, {
+  return NextResponse.json({ ...resolved, ratings, avg }, {
     headers: { "Cache-Control": "no-store" },
   });
 }

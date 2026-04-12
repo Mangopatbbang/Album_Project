@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 export type ProfileRatingRow = {
   score: number;
@@ -9,6 +10,8 @@ export type ProfileRatingRow = {
     id: string;
     title: string;
     artist: string;
+    artist_display?: string;
+    use_artist_variant?: boolean | null;
     extra_artists?: string | null;
     year: string | null;
     release_date: string | null;
@@ -23,7 +26,7 @@ const _fetchProfileRatings = unstable_cache(
     for (let page = 0; ; page++) {
       const { data } = await supabaseServer
         .from("ratings")
-        .select("score, one_line_review, updated_at, albums(id, title, artist, extra_artists, year, release_date, genre, cover_url)")
+        .select("score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
         .range(page * 1000, (page + 1) * 1000 - 1);
@@ -31,6 +34,19 @@ const _fetchProfileRatings = unstable_cache(
       all.push(...(data as unknown as ProfileRatingRow[]));
       if (data.length < 1000) break;
     }
+
+    // artist_display 해상도 적용
+    const albumObjects = all.map((r) => r.albums).filter((a): a is NonNullable<ProfileRatingRow["albums"]> => a != null);
+    if (albumObjects.length > 0) {
+      const resolved = await resolveArtistDisplay(albumObjects);
+      const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+      for (const row of all) {
+        if (row.albums) {
+          row.albums.artist_display = displayMap.get(row.albums.id) ?? row.albums.artist;
+        }
+      }
+    }
+
     return all;
   },
   ["profile-ratings"],
@@ -45,6 +61,7 @@ export type AlbumStat = {
   id: string;
   title: string;
   artist: string;
+  artist_display: string;
   year: string | null;
   release_date: string | null;
   genre: string | null;
@@ -59,6 +76,8 @@ type RawAlbum = {
   id: string;
   title: string;
   artist: string;
+  artist_display?: string;
+  use_artist_variant?: boolean | null;
   year?: string | null;
   release_date?: string | null;
   genre?: string | null;
@@ -72,13 +91,15 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("albums")
-      .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
+      .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
     result.push(...(data as RawAlbum[]));
     if (data.length < 1000) break;
   }
-  return result;
+  // artist_display 해상도 적용
+  const resolved = await resolveArtistDisplay(result);
+  return resolved;
 }
 
 // 1시간 캐시 — 앨범/평점이 추가되면 revalidatePath("/best")로 갱신
@@ -99,6 +120,7 @@ function toStat(album: RawAlbum): AlbumStat & { variance: number } {
     id: album.id,
     title: album.title,
     artist: album.artist,
+    artist_display: album.artist_display ?? album.artist,
     year: album.release_date ? album.release_date.slice(0, 4) : (album.year ? album.year.slice(0, 4) : null),
     release_date: album.release_date ?? null,
     genre: album.genre ?? null,
