@@ -12,6 +12,7 @@ import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import HomePopup from "@/components/ui/HomePopup";
+import HomeSearchBar from "@/components/ui/HomeSearchBar";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
@@ -162,6 +163,11 @@ export default async function HomePage() {
         <div style={{ marginTop: 24 }}>
           <ReviewTicker items={tickerItems} inline />
         </div>
+      </section>
+
+      {/* 검색바 */}
+      <section style={{ ...containerStyle, padding: "0 0 40px" }}>
+        <HomeSearchBar />
       </section>
 
       {/* 최근 아카이빙 */}

@@ -4,6 +4,8 @@ import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
+import InquiryFloatingButton from "@/components/ui/InquiryFloatingButton";
+import TutorialModal from "@/components/ui/TutorialModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -54,6 +56,8 @@ export default function RootLayout({
             <SplashScreen />
             {children}
             <BottomNav />
+            <InquiryFloatingButton />
+            <TutorialModal />
           </ToastProvider>
         </AuthProvider>
       </body>
