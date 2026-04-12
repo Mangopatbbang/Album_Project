@@ -84,6 +84,9 @@ export default function AdminPage() {
   const [aliasMsg, setAliasMsg] = useState("");
   const [editingAlias, setEditingAlias] = useState<string | null>(null); // spotify_name being edited
   const [editVariant, setEditVariant] = useState("");
+  // 표시 이름 variant 통계
+  const [variantStats, setVariantStats] = useState<Record<string, { total: number; using: number }>>({});
+
   // 검색 alias 확장 관리
   const [expandedAlias, setExpandedAlias] = useState<string | null>(null);
   const [searchAliasMap, setSearchAliasMap] = useState<Record<string, { id: number; alias: string }[]>>({});
@@ -100,9 +103,13 @@ export default function AdminPage() {
     setAliasesLoading(true);
     setListMode("aliases");
     setUnaliasedArtists([]);
-    const res = await fetch("/api/admin/artist-aliases");
-    const data = await res.json();
-    setAliases(data.aliases ?? []);
+    const [res1, res2] = await Promise.all([
+      fetch("/api/admin/artist-aliases"),
+      fetch("/api/admin/artist-use-variant"),
+    ]);
+    const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
+    setAliases(d1.aliases ?? []);
+    setVariantStats(d2.stats ?? {});
     setAliasesLoading(false);
   }
 
@@ -178,6 +185,17 @@ export default function AdminPage() {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);
     }
+  }
+
+  async function handleSetVariant(spotify_name: string, use_variant: boolean) {
+    await fetch("/api/admin/artist-use-variant", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spotify_name, use_variant }),
+    });
+    const res = await fetch("/api/admin/artist-use-variant");
+    const data = await res.json();
+    setVariantStats(data.stats ?? {});
   }
 
   async function toggleSearchAliases(spotify_name: string) {
@@ -1255,7 +1273,45 @@ export default function AdminPage() {
                   ) : (
                     <>
                       <span style={{ color: "var(--text-muted)", fontSize: 12, width: 200, flexShrink: 0 }}>{a.spotify_name}</span>
-                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1 }}>{a.variant_name}</span>
+                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, width: 160, flexShrink: 0 }}>{a.variant_name}</span>
+                      {/* 표시 이름 선택 */}
+                      {(() => {
+                        const st = variantStats[a.spotify_name];
+                        const total = st?.total ?? 0;
+                        const using = st?.using ?? 0;
+                        const allOn = total > 0 && using === total;
+                        const allOff = using === 0;
+                        return (
+                          <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                            <button
+                              onClick={() => handleSetVariant(a.spotify_name, true)}
+                              title={`전체 ${total}개 앨범에 별칭 표시`}
+                              style={{
+                                fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
+                                border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`,
+                                backgroundColor: allOn ? "var(--accent)" : "transparent",
+                                color: allOn ? "var(--bg)" : "var(--text-muted)",
+                                fontWeight: allOn ? 700 : 400,
+                              }}
+                            >
+                              {a.variant_name}{!allOff && !allOn ? ` ${using}/${total}` : ""}
+                            </button>
+                            <button
+                              onClick={() => handleSetVariant(a.spotify_name, false)}
+                              title={`전체 ${total}개 앨범에 원래 이름 표시`}
+                              style={{
+                                fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
+                                border: `1px solid ${allOff ? "var(--border)" : "var(--border)"}`,
+                                backgroundColor: allOff ? "var(--bg-elevated)" : "transparent",
+                                color: allOff ? "var(--text-sub)" : "var(--text-muted)",
+                                fontWeight: allOff ? 700 : 400,
+                              }}
+                            >
+                              {a.spotify_name}
+                            </button>
+                          </div>
+                        );
+                      })()}
                       <button
                         onClick={() => toggleSearchAliases(a.spotify_name)}
                         style={{
