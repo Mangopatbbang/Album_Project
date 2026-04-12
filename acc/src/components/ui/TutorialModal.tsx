@@ -136,20 +136,18 @@ export default function TutorialModal() {
       style={{
         position: "fixed", inset: 0, zIndex: 300,
         backgroundColor: "rgba(0,0,0,0.7)",
-        display: "flex", alignItems: "flex-end",
-        justifyContent: "center",
       }}
+      className="flex items-end sm:items-center justify-center"
       onClick={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div style={{
         width: "100%", maxWidth: 680,
         maxHeight: "92dvh",
         backgroundColor: "var(--bg-card)",
-        borderRadius: "16px 16px 0 0",
         display: "flex", flexDirection: "column",
         overflow: "hidden",
       }}
-        className="sm:rounded-2xl sm:mb-6"
+        className="rounded-t-2xl sm:rounded-2xl sm:mb-0 mb-0"
       >
         {/* 헤더 */}
         <div style={{

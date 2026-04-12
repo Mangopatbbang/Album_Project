@@ -160,6 +160,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     });
   };
 
+  // 즉시 초기값 세팅 — fetch 완료 전 점수 버튼 깜빡임 방지
+  useEffect(() => {
+    if (!profile) return;
+    const existing = (album.ratings ?? []).find((r) => r.user_id === profile.id);
+    if (existing) setMyScore(existing.score);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
   useEffect(() => {
     albumCache.delete(album.id);
