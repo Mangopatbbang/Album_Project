@@ -1184,6 +1184,7 @@ export default function AdminPage() {
             <input
               value={newSpotifyName}
               onChange={(e) => setNewSpotifyName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }}
               placeholder="예: IU"
               style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220 }}
             />
@@ -1193,6 +1194,7 @@ export default function AdminPage() {
             <input
               value={newVariantName}
               onChange={(e) => setNewVariantName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }}
               placeholder="예: 아이유"
               style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 180 }}
             />

@@ -16,7 +16,7 @@ function buildSearchOr(s: string, aliasMatches: string[]): string {
   const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, `extra_artists.ilike.%${s}%`];
   for (const a of aliasMatches) {
     const safe = escapeSearch(a);
-    if (safe) parts.push(`artist.ilike.%${safe}%`);
+    if (safe) parts.push(`artist.ilike.${safe}`);  // % 없이 exact match (대소문자 무시)
   }
   return parts.join(",");
 }
