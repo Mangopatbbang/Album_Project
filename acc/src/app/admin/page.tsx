@@ -1272,42 +1272,39 @@ export default function AdminPage() {
                     </>
                   ) : (
                     <>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12, width: 200, flexShrink: 0 }}>{a.spotify_name}</span>
-                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, width: 160, flexShrink: 0 }}>{a.variant_name}</span>
+                      <span style={{ color: "var(--text-muted)", fontSize: 12, width: 160, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.spotify_name}</span>
+                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.variant_name}</span>
                       {/* 표시 이름 선택 */}
                       {(() => {
                         const st = variantStats[a.spotify_name];
                         const total = st?.total ?? 0;
                         const using = st?.using ?? 0;
                         const allOn = total > 0 && using === total;
-                        const allOff = using === 0;
+                        const allOff = total === 0 || using === 0;
+                        const mixed = !allOn && !allOff;
                         return (
-                          <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                          <div style={{ display: "flex", gap: 3, flexShrink: 0 }} title={`앨범 ${total}개 중 ${using}개 별칭 사용 중`}>
                             <button
                               onClick={() => handleSetVariant(a.spotify_name, true)}
-                              title={`전체 ${total}개 앨범에 별칭 표시`}
                               style={{
                                 fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
                                 border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`,
                                 backgroundColor: allOn ? "var(--accent)" : "transparent",
                                 color: allOn ? "var(--bg)" : "var(--text-muted)",
-                                fontWeight: allOn ? 700 : 400,
                               }}
                             >
-                              {a.variant_name}{!allOff && !allOn ? ` ${using}/${total}` : ""}
+                              별칭{mixed ? ` ${using}/${total}` : ""}
                             </button>
                             <button
                               onClick={() => handleSetVariant(a.spotify_name, false)}
-                              title={`전체 ${total}개 앨범에 원래 이름 표시`}
                               style={{
                                 fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer",
-                                border: `1px solid ${allOff ? "var(--border)" : "var(--border)"}`,
-                                backgroundColor: allOff ? "var(--bg-elevated)" : "transparent",
-                                color: allOff ? "var(--text-sub)" : "var(--text-muted)",
-                                fontWeight: allOff ? 700 : 400,
+                                border: `1px solid ${allOff && total > 0 ? "var(--border)" : "var(--border)"}`,
+                                backgroundColor: allOff && total > 0 ? "var(--bg-elevated)" : "transparent",
+                                color: allOff && total > 0 ? "var(--text-sub)" : "var(--text-muted)",
                               }}
                             >
-                              {a.spotify_name}
+                              원래이름
                             </button>
                           </div>
                         );
