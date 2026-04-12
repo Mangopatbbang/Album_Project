@@ -44,14 +44,23 @@ export async function resolveArtistDisplay<T extends HasArtist>(
 }
 
 /**
- * 검색어(한글 포함)를 받아 alias 테이블을 참조해
+ * 검색어(한글 포함)를 받아 alias 테이블과 검색 alias 테이블을 동시 참조해
  * 일치하는 spotify_name 목록을 반환 (two-step 검색용)
  */
 export async function findArtistsByVariant(search: string): Promise<string[]> {
   if (!search.trim()) return [];
-  const { data } = await supabaseServer
-    .from("artist_aliases")
-    .select("spotify_name")
-    .ilike("variant_name", `%${search}%`);
-  return (data ?? []).map((r: { spotify_name: string }) => r.spotify_name);
+  const [{ data: displayData }, { data: searchData }] = await Promise.all([
+    supabaseServer
+      .from("artist_aliases")
+      .select("spotify_name")
+      .ilike("variant_name", `%${search}%`),
+    supabaseServer
+      .from("artist_search_aliases")
+      .select("spotify_name")
+      .ilike("alias", `%${search}%`),
+  ]);
+  const names = new Set<string>();
+  (displayData ?? []).forEach((r: { spotify_name: string }) => names.add(r.spotify_name));
+  (searchData ?? []).forEach((r: { spotify_name: string }) => names.add(r.spotify_name));
+  return [...names];
 }
