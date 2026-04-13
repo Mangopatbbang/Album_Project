@@ -6,6 +6,7 @@ import { scoreColor } from "@/lib/score";
 import { generateBadges } from "@/lib/bio";
 import Link from "next/link";
 import { ClickableAlbumRow } from "./MembersAlbumModal";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 export const metadata: Metadata = {
   title: "청음인",
@@ -118,10 +119,11 @@ export default async function MembersPage() {
 
   // 만장일치 앨범 커버/제목 가져오기
   const unanimousAlbumIds = unanimousIds.slice(0, 10).map((a) => a.id);
-  const { data: unanimousAlbums } = unanimousAlbumIds.length > 0
-    ? await supabaseServer.from("albums").select("id, title, artist, cover_url").in("id", unanimousAlbumIds)
+  const { data: unanimousAlbumsRaw } = unanimousAlbumIds.length > 0
+    ? await supabaseServer.from("albums").select("id, title, artist, use_artist_variant, cover_url").in("id", unanimousAlbumIds)
     : { data: [] };
-  const unanimousAlbumMap = new Map((unanimousAlbums ?? []).map((a) => [a.id, a]));
+  const unanimousAlbums = await resolveArtistDisplay(unanimousAlbumsRaw ?? []);
+  const unanimousAlbumMap = new Map(unanimousAlbums.map((a) => [a.id, a]));
 
   // 취향 충돌 (분산 높은 앨범, 전원 청음 중)
   const controversial = unanimousIds
@@ -303,7 +305,7 @@ export default async function MembersPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist_display ?? album.artist}</p>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       {USERS.map((u) => {
@@ -345,7 +347,7 @@ export default async function MembersPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist_display ?? album.artist}</p>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       {USERS.map((u) => {

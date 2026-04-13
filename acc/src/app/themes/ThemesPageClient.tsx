@@ -40,7 +40,7 @@ const THEME_LIMIT = 8;
 // ── 유틸 ──────────────────────────────────────────────
 function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
   return {
-    id: a.id, title: a.title, artist: a.artist,
+    id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display,
     year: a.year ?? undefined, genre: a.genre ?? undefined,
     cover_url: a.cover_url ?? undefined, ratings: [],
   };
@@ -162,7 +162,7 @@ function ThemeSection({
                   {album.title}
                 </p>
                 <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                  {album.artist}{album.year ? ` · ${album.year}` : ""}
+                  {album.artist_display ?? album.artist}{album.year ? ` · ${album.year}` : ""}
                 </p>
               </div>
               <div style={{ flexShrink: 0, textAlign: "right" }}>

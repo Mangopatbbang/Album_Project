@@ -6,6 +6,7 @@ import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,7 +17,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
       id, title, user_id, created_at,
       playlist_entries(
         id, sort_order, comment, recommended_tracks,
-        albums(id, title, artist, year, release_date, genre, cover_url, tracklist)
+        albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, tracklist)
       )
     `)
     .eq("id", id)
@@ -24,9 +25,19 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
 
   if (error || !data) notFound();
 
-  const entries = (data.playlist_entries ?? []).sort(
+  const entriesRaw = (data.playlist_entries ?? []).sort(
     (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
   );
+
+  // artist_display 해상도
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const albumObjs = (entriesRaw as any[]).map((e) => {
+    const a = Array.isArray(e.albums) ? e.albums[0] : e.albums;
+    return a ? { id: a.id, artist: a.artist, use_artist_variant: a.use_artist_variant ?? null } : null;
+  }).filter(Boolean) as { id: string; artist: string; use_artist_variant: boolean | null }[];
+  const resolved = await resolveArtistDisplay(albumObjs);
+  const artistDisplayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+  const entries = entriesRaw;
 
   const user = USERS.find((u) => u.id === data.user_id);
 
@@ -130,7 +141,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                       {album.title}
                     </p>
                     <p style={{ color: "var(--text-sub)", fontSize: 13, marginTop: 2 }}>
-                      {album.artist}
+                      {artistDisplayMap.get(album.id) ?? album.artist}
                       {(album.release_date || album.year) && (
                         <span style={{ color: "var(--text-muted)", marginLeft: 8 }}>
                           {album.release_date ? album.release_date.slice(0, 4) : album.year}

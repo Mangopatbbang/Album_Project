@@ -7,6 +7,7 @@ type Album = {
   id: string;
   title: string;
   artist: string;
+  artist_display?: string;
   cover_url: string | null;
 };
 
@@ -221,7 +222,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                       </div>
                       <div style={{ textAlign: "left", minWidth: 0 }}>
                         <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist}</p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist_display ?? album.artist}</p>
                       </div>
                       {already && <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: "auto" }}>추가됨</span>}
                     </button>
@@ -277,7 +278,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                   {/* 앨범 정보 */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.album.title}</p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{entry.album.artist}</p>
+                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{entry.album.artist_display ?? entry.album.artist}</p>
                   </div>
 
                   {/* 삭제 */}

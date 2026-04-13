@@ -231,6 +231,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       return;
     }
     if (!spotifyId && !confirm("Spotify 연결 없이 등록하면 커버/트랙리스트가 없을 수 있어요. 그래도 등록할까요?")) {
+      showToast("Spotify 검색 후 연결해주세요", "info");
       return;
     }
     setSaving(true);

@@ -108,7 +108,7 @@ export default function BottomNav() {
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                paddingBottom: 4,
+                padding: "12px 0",
               }}
               className="active:opacity-60"
             >

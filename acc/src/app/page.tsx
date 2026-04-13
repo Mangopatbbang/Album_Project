@@ -220,7 +220,7 @@ export default async function HomePage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{album.artist}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{album.artist_display ?? album.artist}</p>
                       <SpotifyAttribution spotifyId={album.spotify_id} />
                     </div>
                   </div>
