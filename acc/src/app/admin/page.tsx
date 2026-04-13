@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { openTutorial } from "@/components/ui/TutorialModal";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -596,9 +597,25 @@ export default function AdminPage() {
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "40px 24px" }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, marginBottom: 32, letterSpacing: "-0.03em" }}>
-          Admin
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>
+            Admin
+          </p>
+          <button
+            onClick={openTutorial}
+            style={{
+              padding: "6px 14px", borderRadius: 8,
+              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+              color: "var(--text-sub)", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            이용 안내
+          </button>
+        </div>
 
         {/* ── 통계 ── */}
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
