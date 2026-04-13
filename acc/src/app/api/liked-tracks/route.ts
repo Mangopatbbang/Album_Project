@@ -26,9 +26,10 @@ export async function GET(req: NextRequest) {
   if (error || !data) return NextResponse.json([], { status: 500 });
 
   // artist_display 해상도
+  type AlbumRow = { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null; tracklist: string | null };
   const albumObjects = data
-    .map((r) => r.albums as { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null; tracklist: string | null } | null)
-    .filter((a): a is NonNullable<typeof a> => a != null);
+    .map((r) => (r.albums as unknown) as AlbumRow | null)
+    .filter((a): a is AlbumRow => a != null);
   const resolved = await resolveArtistDisplay(albumObjects);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
 
