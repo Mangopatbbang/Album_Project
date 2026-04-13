@@ -95,6 +95,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [spotifyUrlInput, setSpotifyUrlInput] = useState("");
+  const [urlFetching, setUrlFetching] = useState(false);
+  const [urlError, setUrlError] = useState("");
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -183,6 +187,37 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     }
 
     setCandidates(data.results);
+  };
+
+  const handleSpotifyUrlConnect = async () => {
+    const raw = spotifyUrlInput.trim();
+    if (!raw) return;
+    setUrlFetching(true);
+    setUrlError("");
+    try {
+      const res = await fetch(`/api/spotify/album?id=${encodeURIComponent(raw)}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setUrlError(data.error === "not_found" ? "앨범을 찾을 수 없습니다." : "Spotify 연결 실패. URL을 확인해주세요.");
+        return;
+      }
+      // 폼 채우기
+      const c: SpotifyCandidate = {
+        spotify_id: data.spotify_id,
+        cover_url: data.cover_url,
+        name: data.name,
+        artist: data.artist,
+        extra_artists: data.extra_artists ?? "",
+        release_date: data.release_date ?? null,
+      };
+      await handleSelectCandidate(c);
+      setShowUrlInput(false);
+      setSpotifyUrlInput("");
+    } catch {
+      setUrlError("네트워크 오류. 다시 시도해주세요.");
+    } finally {
+      setUrlFetching(false);
+    }
   };
 
   const handleSelectCandidate = async (c: SpotifyCandidate) => {
@@ -350,19 +385,70 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             />
           </div>
 
-          <button
-            onClick={handleSpotifySearch}
-            disabled={searching || (!title.trim() && !artist.trim())}
-            style={{
-              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
-              color: "var(--text-sub)", borderRadius: 6, padding: "8px 16px", fontSize: 13,
-              cursor: searching || (!title.trim() && !artist.trim()) ? "not-allowed" : "pointer",
-              opacity: searching || (!title.trim() && !artist.trim()) ? 0.5 : 1,
-              alignSelf: "flex-start",
-            }}
-          >
-            {searching ? "검색 중..." : "Spotify에서 검색"}
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={handleSpotifySearch}
+              disabled={searching || (!title.trim() && !artist.trim())}
+              style={{
+                backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
+                color: "var(--text-sub)", borderRadius: 6, padding: "8px 16px", fontSize: 13,
+                cursor: searching || (!title.trim() && !artist.trim()) ? "not-allowed" : "pointer",
+                opacity: searching || (!title.trim() && !artist.trim()) ? 0.5 : 1,
+              }}
+            >
+              {searching ? "검색 중..." : "Spotify에서 검색"}
+            </button>
+            <button
+              onClick={() => { setShowUrlInput((v) => !v); setUrlError(""); }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", padding: 0,
+              }}
+            >
+              {showUrlInput ? "닫기" : "URL로 직접 연결"}
+            </button>
+          </div>
+
+          {/* Spotify URL 직접 입력 */}
+          {showUrlInput && (
+            <div style={{
+              padding: "12px 14px", borderRadius: 8,
+              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+              display: "flex", flexDirection: "column", gap: 8,
+            }}>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+                검색으로 못 찾은 경우 Spotify 앨범 URL 또는 ID를 붙여넣으세요.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={spotifyUrlInput}
+                  onChange={(e) => { setSpotifyUrlInput(e.target.value); setUrlError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSpotifyUrlConnect(); }}
+                  placeholder="https://open.spotify.com/album/..."
+                  style={{
+                    ...inputStyle,
+                    flex: 1,
+                    fontSize: 12,
+                    padding: "6px 10px",
+                  }}
+                />
+                <button
+                  onClick={handleSpotifyUrlConnect}
+                  disabled={urlFetching || !spotifyUrlInput.trim()}
+                  style={{
+                    backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
+                    borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 600,
+                    cursor: urlFetching || !spotifyUrlInput.trim() ? "not-allowed" : "pointer",
+                    opacity: urlFetching || !spotifyUrlInput.trim() ? 0.5 : 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {urlFetching ? "불러오는 중…" : "연결"}
+                </button>
+              </div>
+              {urlError && <p style={{ fontSize: 11, color: "#e05050", margin: 0 }}>{urlError}</p>}
+            </div>
+          )}
 
           {searchError && (
             <p style={{ color: "#e05050", fontSize: 12, marginTop: 4 }}>
