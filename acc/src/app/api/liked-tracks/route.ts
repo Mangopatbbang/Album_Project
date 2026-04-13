@@ -36,10 +36,7 @@ export async function GET(req: NextRequest) {
   const items: LikedTrackItem[] = [];
 
   for (const row of data) {
-    const album = row.albums as {
-      id: string; title: string; artist: string;
-      cover_url: string | null; tracklist: string | null;
-    } | null;
+    const album = (row.albums as unknown) as AlbumRow | null;
     if (!album || !row.liked_tracks) continue;
 
     const tracks = (album.tracklist ?? "")
