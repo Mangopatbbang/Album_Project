@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
   // artist_display 해상도
   const albumObjects = data
-    .map((r) => r.albums)
+    .map((r) => r.albums as { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null; tracklist: string | null } | null)
     .filter((a): a is NonNullable<typeof a> => a != null);
   const resolved = await resolveArtistDisplay(albumObjects);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
