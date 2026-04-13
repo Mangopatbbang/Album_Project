@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
 
 export const metadata: Metadata = {
   title: "음반고",
@@ -19,7 +20,7 @@ const containerStyle = {
 async function getInitialAlbums() {
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
+    .select("id, title, artist, use_artist_variant, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(0, 30);
@@ -28,7 +29,8 @@ async function getInitialAlbums() {
 
   const hasMore = data.length > 30;
   const page = hasMore ? data.slice(0, 30) : data;
-  const items = page.map((album) => {
+  const resolved = await resolveArtistDisplay(page);
+  const items = resolved.map((album) => {
     const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
     const scores = ratings.map((r) => r.score);
     const avg =

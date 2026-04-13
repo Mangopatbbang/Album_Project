@@ -19,10 +19,11 @@ import { resolveArtistDisplay } from "@/lib/artistDisplay";
 async function getRecentAlbums() {
   const { data } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, genre, cover_url, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+    .select("id, title, artist, use_artist_variant, year, genre, cover_url, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
     .order("created_at", { ascending: false })
     .limit(4);
-  return data ?? [];
+  if (!data) return [];
+  return resolveArtistDisplay(data);
 }
 
 async function getMemberStats() {
