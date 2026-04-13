@@ -17,6 +17,7 @@ import WatchlistSection from "@/components/profile/WatchlistSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
 import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import CalendarSection from "@/components/profile/CalendarSection";
+import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import { fetchProfileRatings, type ProfileRatingRow } from "@/lib/stats";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
@@ -201,6 +202,7 @@ export default async function ProfilePage({
                   소감 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{reviewCount}개</span>
                 </span>
               )}
+              <LikedTracksButton userId={userId} />
             </div>
             {/* 뱃지 */}
             {badges.length > 0 && (
