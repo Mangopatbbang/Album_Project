@@ -28,12 +28,14 @@ export async function GET(req: NextRequest) {
 
   const queries = t
     ? [
-        `album:${t}${a ? ` artist:${a}` : ""}`, // 필드 검색 (정확)
-        a ? `${a} ${t}` : t,                      // 아티스트 우선 일반 검색
-        `${t}${a ? ` ${a}` : ""}`,               // 제목 우선 일반 검색
-        t,                                         // 제목만
+        `album:${t}${a ? ` artist:${a}` : ""}`,
+        `${t}${a ? ` ${a}` : ""}`,
+        t,
       ]
-    : [`artist:${a}`, a];
+    : [
+        `artist:${a}`,
+        a,
+      ];
 
   const seen = new Set<string>();
   const results: {
@@ -45,42 +47,37 @@ export async function GET(req: NextRequest) {
     release_date: string;
   }[] = [];
 
-  // market=KR 먼저, 결과 부족 시 market 없이 재시도
-  for (const market of ["KR", ""]) {
+  for (const q of queries) {
     if (results.length >= 10) break;
-    // KR에서 5개 이상 찾았으면 글로벌 재시도 생략
-    if (market === "" && results.length >= 5) break;
-
-    for (const q of queries) {
-      if (results.length >= 10) break;
-      try {
-        const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=10${market ? `&market=${market}` : ""}`;
-        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.status === 429) {
-          return NextResponse.json({
-            results: [],
-            error: "rate_limit",
-            message: "Spotify API 요청 한도 초과. 잠시 후 다시 시도해주세요.",
-          });
-        }
-        if (!res.ok) continue;
-        const data = await res.json();
-        for (const item of data.albums?.items ?? []) {
-          if (seen.has(item.id)) continue;
-          seen.add(item.id);
-          const allArtists: { name: string }[] = item.artists ?? [];
-          results.push({
-            spotify_id: item.id,
-            name: item.name,
-            artist: allArtists[0]?.name ?? "",
-            extra_artists: allArtists.slice(1).map((ar) => ar.name).join("; "),
-            cover_url: item.images?.[0]?.url ?? "",
-            release_date: item.release_date ?? "",
-          });
-        }
-      } catch {
-        continue;
+    try {
+      const res = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=10&market=KR`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.status === 429) {
+        return NextResponse.json({
+          results: [],
+          error: "rate_limit",
+          message: "Spotify API 요청 한도 초과. 잠시 후 다시 시도해주세요.",
+        });
       }
+      if (!res.ok) continue;
+      const data = await res.json();
+      for (const item of data.albums?.items ?? []) {
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
+        const allArtists: { name: string }[] = item.artists ?? [];
+        results.push({
+          spotify_id: item.id,
+          name: item.name,
+          artist: allArtists[0]?.name ?? "",
+          extra_artists: allArtists.slice(1).map((ar) => ar.name).join("; "),
+          cover_url: item.images?.[0]?.url ?? "",
+          release_date: item.release_date ?? "",
+        });
+      }
+    } catch {
+      continue;
     }
   }
 
