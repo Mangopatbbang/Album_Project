@@ -39,7 +39,8 @@ export default function AlbumList({
   const { profile } = useAuth();
   const searchParams = useSearchParams();
 
-  // URL params로 초기 점수 필터 지원 (프로필 페이지 점수분포 → 음반고 연동)
+  // URL params로 초기 필터 지원
+  const urlSearch = searchParams.get("search") ?? "";
   const urlScore = searchParams.get("score") ? Number(searchParams.get("score")) : null;
   const urlScoreUserId = searchParams.get("scoreUserId") ?? null;
 
@@ -49,7 +50,7 @@ export default function AlbumList({
   const [nextOffset, setNextOffset] = useState<number | null>(initialNextOffset);
   const [loading, setLoading] = useState(false);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(urlSearch);
   const [genre, setGenre] = useState("");
   const [sort, setSort] = useState("newest");
   const [unrated, setUnrated] = useState(false);
@@ -133,9 +134,11 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     }
   }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, scoreUserId, nextOffset]);
 
-  // URL params에 score/scoreUserId가 있으면 초기 필터 적용
+  // URL params에 초기 필터 적용
   useEffect(() => {
-    if (urlScore && urlScoreUserId) {
+    if (urlSearch) {
+      handleFilter(urlSearch, "", "newest", false, null);
+    } else if (urlScore && urlScoreUserId) {
       handleFilter("", "", "newest", false, urlScore, urlScoreUserId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
