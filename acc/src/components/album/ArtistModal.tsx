@@ -128,7 +128,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4"
+      className="fixed inset-0 flex items-center justify-center p-3 sm:p-4"
       style={{ zIndex: 110, backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); }}
@@ -138,13 +138,13 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         style={{
           backgroundColor: "var(--bg-card)",
           border: "1px solid var(--border)",
-          width: "min(640px, 100%)",
-          maxHeight: "80vh",
+          width: "min(960px, 100%)",
+          maxHeight: "88dvh",
           animation: closing ? "modalOut 0.18s ease forwards" : "modalIn 0.22s ease",
         }}
       >
         {/* 닫기 버튼 */}
-        <div className="flex justify-end px-8 pt-6 shrink-0">
+        <div className="flex justify-end px-6 pt-5 shrink-0">
           <button
             onClick={handleClose}
             style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
@@ -155,7 +155,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         </div>
 
         {/* 아티스트 정보 영역 */}
-        <div className="px-10 pb-7 shrink-0">
+        <div className="px-6 pb-5 shrink-0">
           <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
             {/* 아티스트 사진 */}
             <div style={{
@@ -313,7 +313,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         <div style={{ height: 1, backgroundColor: "var(--border)" }} />
 
         {/* 앨범 그리드 */}
-        <div className="overflow-y-auto px-10 pt-5 pb-10">
+        <div className="overflow-y-auto px-6 pt-4 pb-8">
           {loading ? (
             <div className="flex justify-center py-16">
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>
@@ -327,7 +327,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
               <span style={{ color: "var(--text-muted)", fontSize: 14 }}>등록된 앨범이 없습니다</span>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
               {albums.map((album) => (
                 <ArtistAlbumCard
                   key={album.id}
@@ -368,7 +368,7 @@ function ArtistAlbumCard({
       }}
       className="rounded-lg overflow-hidden transition-opacity hover:opacity-80 active:opacity-60"
     >
-      {/* 커버 */}
+      {/* 커버 — 정사각형 */}
       <div
         style={{ backgroundColor: "var(--bg-card)", aspectRatio: "1/1" }}
         className="w-full flex items-center justify-center overflow-hidden"
@@ -377,19 +377,19 @@ function ArtistAlbumCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
         ) : (
-          <span style={{ color: "var(--text-muted)", fontSize: 24 }}>♪</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 20 }}>♪</span>
         )}
       </div>
 
       {/* 점수 바 */}
-      <div style={{ height: 3, backgroundColor: "var(--bg-card)" }}>
+      <div style={{ height: 2, backgroundColor: "var(--bg-card)" }}>
         {album.avg && (
           <div
             style={{
               height: "100%",
               width: `${(parseFloat(album.avg) / 10) * 100}%`,
               backgroundColor: scoreColor(album.avg),
-              boxShadow: parseFloat(album.avg) >= 7 ? `0 0 6px ${scoreColor(album.avg)}` : "none",
+              boxShadow: parseFloat(album.avg) >= 7 ? `0 0 4px ${scoreColor(album.avg)}` : "none",
               transition: "width 0.4s ease",
             }}
           />
@@ -397,38 +397,49 @@ function ArtistAlbumCard({
       </div>
 
       {/* 정보 */}
-      <div className="p-2.5">
+      <div style={{ padding: "7px 8px 8px" }}>
+        {/* 제목 + 평균점수 */}
         <div className="flex items-baseline justify-between gap-1">
           <p
-            style={{ color: "var(--text)", fontWeight: 500, fontSize: 12 }}
-            className="truncate leading-snug"
+            style={{ color: "var(--text)", fontWeight: 500, fontSize: 11, lineHeight: 1.3 }}
+            className="truncate"
           >
             {album.title}
           </p>
           {album.avg && (
-            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 11, flexShrink: 0 }}>
               {album.avg}
             </span>
           )}
         </div>
-        <p style={{ color: "var(--text-muted)", fontSize: 11 }} className="truncate mt-0.5">
-          {album.year ?? album.release_date?.slice(0, 4) ?? ""}
-        </p>
+
+        {/* 연도 + 장르 */}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+            {album.year ?? album.release_date?.slice(0, 4) ?? ""}
+          </span>
+          {album.genre && (
+            <span style={{
+              fontSize: 9, color: "var(--text-muted)", backgroundColor: "var(--bg-card)",
+              border: "1px solid var(--border)", borderRadius: 3, padding: "0px 4px",
+              lineHeight: 1.6, flexShrink: 0, maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {album.genre}
+            </span>
+          )}
+        </div>
 
         {/* 유저별 평점 */}
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-1 flex-wrap">
-            {USERS.map((user) => {
-              const r = album.ratings.find((rt) => rt.user_id === user.id);
-              if (!r) return null;
-              return (
-                <span key={user.id} style={{ fontSize: 10, color: scoreColor(r.score) }}>
-                  {user.emoji}{r.score}
-                </span>
-              );
-            })}
-          </div>
-          <SpotifyAttribution spotifyId={album.spotify_id} />
+        <div className="flex items-center gap-0.5 flex-wrap mt-1">
+          {USERS.map((user) => {
+            const r = album.ratings.find((rt) => rt.user_id === user.id);
+            if (!r) return null;
+            return (
+              <span key={user.id} style={{ fontSize: 9.5, color: scoreColor(r.score) }}>
+                {user.emoji}{r.score}
+              </span>
+            );
+          })}
         </div>
       </div>
     </button>
