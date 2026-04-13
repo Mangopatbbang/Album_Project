@@ -155,11 +155,11 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         </div>
 
         {/* 아티스트 정보 영역 */}
-        <div className="px-6 pb-5 shrink-0">
+        <div className="px-6 pt-1 pb-6 shrink-0">
           <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
             {/* 아티스트 사진 */}
             <div style={{
-              width: 72, height: 72, borderRadius: 10, flexShrink: 0,
+              width: 88, height: 88, borderRadius: 12, flexShrink: 0,
               backgroundColor: "var(--bg-elevated)",
               border: artistImage ? "none" : "1px dashed var(--border)",
               display: "flex", alignItems: "center", justifyContent: "center",
