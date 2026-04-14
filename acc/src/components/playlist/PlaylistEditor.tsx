@@ -37,7 +37,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
 
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-  const title = `${dateStr} 플레이리스트`;
+  const title = `${dateStr} 기록`;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
