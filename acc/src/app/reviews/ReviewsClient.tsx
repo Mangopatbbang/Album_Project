@@ -9,7 +9,7 @@ import AlbumModal from "@/components/album/AlbumModal";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display: string;
-  year: string | null; release_date: string | null; genre: string | null;
+  year?: string; release_date: string | null; genre: string | null;
   cover_url: string | null; spotify_id: string | null; avg: number; count: number; variance: number;
 };
 
@@ -94,7 +94,7 @@ export default function ReviewsClient() {
     const d = await res.json();
     setSelectedAlbum({
       id: albumId, title: albumTitle, artist, artist_display: artistDisplay,
-      year: d.year ?? null, release_date: d.release_date ?? null, genre: d.genre ?? null,
+      year: d.year ?? undefined, release_date: d.release_date ?? null, genre: d.genre ?? null,
       cover_url: coverUrl, spotify_id: d.spotify_id ?? null,
       avg: parseFloat(d.avg ?? "0"), count: d.ratings?.length ?? 0, variance: 0,
     });
