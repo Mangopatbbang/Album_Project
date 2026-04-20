@@ -94,10 +94,10 @@ export default function ReviewsClient() {
     if (!res.ok) return;
     const d = await res.json();
     setSelectedAlbum({
-      id: albumId, title: albumTitle, artist, artist_display: artistDisplay,
-      year: d.year ?? undefined, release_date: d.release_date ?? null, genre: d.genre ?? null,
-      cover_url: coverUrl, spotify_id: d.spotify_id ?? null,
-      avg: parseFloat(d.avg ?? "0"), count: d.ratings?.length ?? 0, variance: 0,
+      id: albumId, title: albumTitle, artist, artist_display: artistDisplay ?? undefined,
+      year: d.year ?? undefined, release_date: d.release_date ?? undefined, genre: d.genre ?? undefined,
+      cover_url: coverUrl ?? undefined, spotify_id: d.spotify_id ?? undefined,
+      ratings: d.ratings ?? [], avg: d.avg ?? undefined,
     });
   };
 
