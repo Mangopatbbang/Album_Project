@@ -126,6 +126,15 @@ export async function PATCH(req: NextRequest) {
       .eq("user_id", reviewerId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // 좋아요 추가 시 (취소가 아닐 때) + 자기 소감이 아닐 때 알림 생성
+    const isAdding = idx < 0; // splice 전 idx가 -1이면 새로 추가
+    if (isAdding && likerId !== reviewerId) {
+      await supabaseServer
+        .from("notifications")
+        .insert({ user_id: reviewerId, type: "like", from_user_id: likerId, album_id: albumId, reviewer_id: reviewerId });
+    }
+
     return NextResponse.json({ ok: true, liked_by: newVal });
   }
 

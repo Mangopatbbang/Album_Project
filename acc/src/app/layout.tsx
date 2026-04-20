@@ -6,7 +6,6 @@ import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
 import InquiryFloatingButton from "@/components/ui/InquiryFloatingButton";
 import TutorialModal from "@/components/ui/TutorialModal";
-import SwipeNav from "@/components/ui/SwipeNav";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -59,7 +58,6 @@ export default function RootLayout({
             <BottomNav />
             <InquiryFloatingButton />
             <TutorialModal />
-            <SwipeNav />
           </ToastProvider>
         </AuthProvider>
       </body>
