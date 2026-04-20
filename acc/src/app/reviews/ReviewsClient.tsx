@@ -8,9 +8,10 @@ import type { ReviewItem } from "@/app/api/reviews/route";
 import AlbumModal from "@/components/album/AlbumModal";
 
 type AlbumModalData = {
-  id: string; title: string; artist: string; artist_display: string;
-  year?: string; release_date: string | null; genre: string | null;
-  cover_url: string | null; spotify_id: string | null; avg: number; count: number; variance: number;
+  id: string; title: string; artist: string; artist_display?: string;
+  year?: string; release_date?: string; genre?: string;
+  cover_url?: string; spotify_id?: string;
+  ratings: []; avg?: string;
 };
 
 const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
