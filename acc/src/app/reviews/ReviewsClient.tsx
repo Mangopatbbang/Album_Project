@@ -119,14 +119,7 @@ export default function ReviewsClient() {
   };
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 80px" }}>
-      {/* 헤더 */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>REVIEWS</p>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.03em" }}>소감첩</h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>청음사 멤버들의 한줄 소감 모음</p>
-      </div>
-
+    <div>
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
