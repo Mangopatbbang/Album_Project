@@ -35,6 +35,8 @@ export default function ReviewsClient() {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumModalData | null>(null);
   const [liking, setLiking] = useState<string | null>(null);
 
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommentItem[]>>({});
   const [commentInput, setCommentInput] = useState("");
@@ -66,6 +68,22 @@ export default function ReviewsClient() {
     fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset }, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingMore, loading, offset, filterUser, filterAlbumId, minScore, maxScore, sort]);
 
   const handleFilter = (u: string, aid: string, mn: number, mx: number, s: string) => {
     setFilterUser(u); setFilterAlbumId(aid); setMinScore(mn); setMaxScore(mx); setSort(s);
@@ -237,20 +255,10 @@ export default function ReviewsClient() {
         </div>
       )}
 
-      {hasMore && (
-        <div style={{ textAlign: "center", marginTop: 24 }}>
-          <button
-            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset }, true)}
-            disabled={loadingMore}
-            style={{
-              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-              color: "var(--text-muted)", borderRadius: 8, padding: "10px 24px", fontSize: 13,
-              cursor: loadingMore ? "not-allowed" : "pointer", opacity: loadingMore ? 0.6 : 1,
-            }}
-          >
-            {loadingMore ? "불러오는 중…" : "더 보기"}
-          </button>
-        </div>
+      {/* 인피니티 스크롤 센티넬 */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {loadingMore && (
+        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>불러오는 중…</div>
       )}
 
       {selectedAlbum && (
