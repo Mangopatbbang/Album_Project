@@ -34,6 +34,12 @@ const ThemesIcon = () => (
   </svg>
 );
 
+const ReviewsIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
 const ProfileIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="8" r="4"/>
@@ -53,6 +59,7 @@ export default function BottomNav() {
 
   const rightItems = [
     { href: "/best", label: "도감", Icon: BestIcon },
+    { href: "/reviews", label: "소감첩", Icon: ReviewsIcon },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
       label: profile ? "청음록" : "입장",

@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // 평점 이력 기록 (실패해도 메인 저장에는 영향 없음)
+  await supabaseServer
+    .from("rating_history")
+    .insert({ user_id: userId, album_id: albumId, score });
+
   revalidatePath("/");
   revalidatePath("/best");
   revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료

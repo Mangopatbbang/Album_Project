@@ -66,6 +66,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [deletingAlbum, setDeletingAlbum] = useState(false);
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
+  const [myHistory, setMyHistory] = useState<{ score: number; createdAt: string }[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -200,6 +201,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
       .catch(() => {});
   }, [album.id, profile]);
 
+  // 평점 이력 fetch
+  useEffect(() => {
+    if (!profile) return;
+    fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: { score: number; createdAt: string }[]) => setMyHistory(data))
+      .catch(() => {});
+  }, [album.id, profile]);
+
   // 찜 여부 fetch
   useEffect(() => {
     if (!profile) return;
@@ -312,6 +322,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     showToast("평점을 저장했어요");
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
+    // 이력 갱신
+    fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d: { score: number; createdAt: string }[]) => setMyHistory(d))
+      .catch(() => {});
   };
 
   const data = full ?? album;
@@ -725,6 +740,28 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   </button>
                 </div>
               </div>
+              {/* 평점 이력 타임라인 */}
+              {myHistory.length > 1 && (
+                <div style={{ marginTop: 12, padding: "10px 12px", backgroundColor: "var(--bg-elevated)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                  <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 8 }}>평점 이력</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+                    {myHistory.map((h, i) => {
+                      const d = new Date(h.createdAt);
+                      const label = `${d.getFullYear().toString().slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+                      const isLast = i === myHistory.length - 1;
+                      return (
+                        <span key={h.createdAt + i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                          <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: scoreColor(String(h.score)) }}>{h.score}</span>
+                            <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{label}</span>
+                          </span>
+                          {!isLast && <span style={{ color: "var(--text-muted)", fontSize: 11, margin: "0 6px", marginBottom: 10 }}>→</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
