@@ -168,8 +168,8 @@ export default function ReviewsClient() {
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>소감이 없습니다</div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {items.map((item) => (
+        <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
+          {items.map((item, idx) => (
             <ReviewCard
               key={`${item.albumId}-${item.userId}`}
               item={item}
@@ -178,6 +178,7 @@ export default function ReviewsClient() {
               onLike={() => handleLike(item)}
               onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
               onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
+              isLast={idx === items.length - 1}
             />
           ))}
         </div>
@@ -210,7 +211,7 @@ export default function ReviewsClient() {
 }
 
 function ReviewCard({
-  item, myId, liking, onLike, onAlbumClick, onFilterByAlbum,
+  item, myId, liking, onLike, onAlbumClick, onFilterByAlbum, isLast,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -218,119 +219,109 @@ function ReviewCard({
   onLike: () => void;
   onAlbumClick: () => void;
   onFilterByAlbum: () => void;
+  isLast: boolean;
 }) {
   const user = USERS.find((u) => u.id === item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
-  const likedUsers = USERS.filter((u) => item.likedBy.includes(u.id));
   const isMyReview = myId === item.userId;
 
   const date = new Date(item.updatedAt);
-  const dateStr = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+  const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 
   return (
-    <div style={{
-      backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-      borderRadius: 12, padding: 16, display: "flex", gap: 14,
-    }}>
-      {/* 앨범 커버 */}
+    <div
+      style={{
+        borderBottom: isLast ? "none" : "1px solid var(--border)",
+        padding: "11px 14px",
+        display: "flex", alignItems: "center", gap: 10,
+        transition: "background 0.12s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      {/* 커버 */}
       <button
         onClick={onAlbumClick}
-        style={{ flexShrink: 0, width: 64, height: 64, borderRadius: 8, overflow: "hidden", background: "var(--bg-elevated)", border: "none", cursor: "pointer", padding: 0 }}
-        className="hover:opacity-80 transition-opacity"
+        style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 5, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
+        className="hover:opacity-75 transition-opacity"
       >
         {item.coverUrl
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 20, color: "var(--text-muted)" }}>♪</span>
+          : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
         }
       </button>
 
-      {/* 내용 */}
+      {/* 점수 */}
+      <span style={{ fontSize: 13, fontWeight: 800, color: scoreColor(String(item.score)), flexShrink: 0, width: 16, textAlign: "center" }}>
+        {item.score}
+      </span>
+
+      {/* 앨범 + 소감 */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* 앨범 정보 */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-          <div style={{ minWidth: 0 }}>
-            <button onClick={onAlbumClick} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
-              className="hover:opacity-70 transition-opacity">
-              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 280 }}>
-                {item.albumTitle}
-              </p>
-            </button>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{item.artistDisplay}</p>
-          </div>
-          <span style={{ fontSize: 16, fontWeight: 800, color: scoreColor(String(item.score)), flexShrink: 0 }}>
-            {item.score}
+        {/* 윗줄: 앨범명 · 아티스트 */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 2 }}>
+          <button
+            onClick={onAlbumClick}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}
+            className="hover:opacity-70 transition-opacity"
+          >
+            {item.albumTitle}
+          </button>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+            {item.artistDisplay}
           </span>
         </div>
-
-        {/* 소감 */}
-        <p style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.5, marginBottom: 8 }}>
-          &ldquo;{item.review}&rdquo;
+        {/* 아랫줄: 소감 */}
+        <p style={{ fontSize: 12, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>
+          {item.review}
         </p>
+      </div>
 
-        {/* 하단: 작성자 + 날짜 + 액션 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* 작성자 */}
-            <a href={`/profile/${item.userId}`} style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}
-              className="hover:opacity-70 transition-opacity">
-              <span style={{ fontSize: 12 }}>{user?.emoji ?? "👤"}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{user?.display_name ?? item.userId}</span>
-            </a>
-            <span style={{ fontSize: 11, color: "var(--border-light)" }}>·</span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{dateStr}</span>
-          </div>
+      {/* 우측: 작성자 · 날짜 · 공감 */}
+      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
+        <a
+          href={`/profile/${item.userId}`}
+          style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}
+          className="hover:opacity-70 transition-opacity"
+        >
+          <span style={{ fontSize: 11 }}>{user?.emoji ?? "👤"}</span>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="hidden sm:inline">{user?.display_name ?? item.userId}</span>
+        </a>
+        <span style={{ fontSize: 10, color: "var(--text-muted)" }} className="hidden sm:inline">{dateStr}</span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* 이 앨범 다른 소감들 */}
-            <button
-              onClick={onFilterByAlbum}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", padding: 0 }}
-              className="hover:opacity-70 transition-opacity"
-              title="이 앨범의 다른 소감 보기"
-            >
-              앨범 소감 모두 보기
-            </button>
+        {/* 앨범 소감 필터 */}
+        <button
+          onClick={onFilterByAlbum}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "var(--text-muted)", padding: 0 }}
+          className="hover:opacity-70 transition-opacity hidden sm:inline"
+          title="이 앨범의 소감 모두 보기"
+        >
+          모두보기
+        </button>
 
-            {/* 공감 */}
-            {!isMyReview && myId && (
-              <button
-                onClick={onLike}
-                disabled={liking}
-                style={{
-                  display: "flex", alignItems: "center", gap: 4,
-                  background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",
-                  color: iLiked ? "var(--accent)" : "var(--text-muted)",
-                  fontSize: 11, padding: "3px 8px",
-                  borderRadius: 20, transition: "all 0.15s",
-                  backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
-                }}
-                title={iLiked ? "공감 취소" : "공감하기"}
-              >
-                <span style={{ fontSize: 13 }}>{iLiked ? "♥" : "♡"}</span>
-                {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
-              </button>
-            )}
-            {(isMyReview || !myId) && item.likedBy.length > 0 && (
-              <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-                <span>♥</span>
-                <span>{item.likedBy.length}</span>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* 공감한 사람들 */}
-        {likedUsers.length > 0 && (
-          <div style={{ marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {likedUsers.map((u) => (
-              <span key={u.id} style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 10, padding: "1px 6px" }}>
-                {u.emoji} {u.display_name}
-              </span>
-            ))}
-            <span style={{ fontSize: 10, color: "var(--text-muted)" }}>이 공감했어요</span>
-          </div>
-        )}
+        {/* 공감 */}
+        {!isMyReview && myId ? (
+          <button
+            onClick={onLike}
+            disabled={liking}
+            style={{
+              display: "flex", alignItems: "center", gap: 3,
+              background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",
+              color: iLiked ? "var(--accent)" : "var(--text-muted)",
+              fontSize: 10, padding: "2px 6px", borderRadius: 20,
+              backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
+              transition: "all 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 11 }}>{iLiked ? "♥" : "♡"}</span>
+            {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
+          </button>
+        ) : item.likedBy.length > 0 ? (
+          <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}>
+            <span>♥</span><span>{item.likedBy.length}</span>
+          </span>
+        ) : null}
       </div>
     </div>
   );
