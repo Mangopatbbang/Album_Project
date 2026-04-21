@@ -18,7 +18,7 @@ export default function Header() {
     { href: "/albums", label: "음반고" },
     { href: "/best", label: "도감" },
     { href: "/themes", label: "청음집" },
-    { href: "/reviews", label: "소감첩" },
+    { href: "/reviews", label: "청음평" },
     { href: "/members", label: "청음인" },
     ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록" }] : []),
   ];

@@ -59,7 +59,7 @@ export default function BottomNav() {
 
   const rightItems = [
     { href: "/best", label: "도감", Icon: BestIcon },
-    { href: "/reviews", label: "소감첩", Icon: ReviewsIcon },
+    { href: "/reviews", label: "청음평", Icon: ReviewsIcon },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
       label: profile ? "청음록" : "입장",
