@@ -61,7 +61,7 @@ export default function Header() {
       style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}
       className="sticky top-0 z-50 hidden sm:block"
     >
-      <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", height: 52, gap: 8 }}>
+      <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr minmax(max-content, auto)", alignItems: "center", height: 52, gap: 8 }}>
 
         {/* 로고 */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }}>
