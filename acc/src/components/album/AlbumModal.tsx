@@ -29,6 +29,7 @@ type RatingWithLikes = {
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
   release_date?: string | null;
+  region?: string | null;
   added_by?: string | null;
   ratings: RatingWithLikes[];
 };
@@ -884,6 +885,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             year: data.year ?? null,
             release_date: (full as FullAlbum)?.release_date ?? null,
             genre: data.genre ?? null,
+            region: (full as FullAlbum)?.region ?? null,
             cover_url: data.cover_url ?? null,
             tracklist: full?.tracklist ?? null,
           }}

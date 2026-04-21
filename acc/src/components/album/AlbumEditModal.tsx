@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 
 const GENRES = [
-  "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
-  "Ballad", "Electronica", "컴필레이션", "Folk", "Alternative",
-  "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
+  "힙합", "알앤비", "K-pop", "록", "팝", "발라드", "인디",
+  "일렉트로니카", "포크", "얼터너티브", "재즈", "컨트리", "OST", "컴필레이션", "기타",
 ];
+
+const REGIONS = ["국내", "해외"] as const;
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -34,6 +35,7 @@ type Props = {
     year?: string | null;
     release_date?: string | null;
     genre?: string | null;
+    region?: string | null;
     cover_url?: string | null;
     tracklist?: string | null;
   };
@@ -76,6 +78,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
   const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
   const [genre, setGenre] = useState(album.genre ?? "");
+  const [region, setRegion] = useState(album.region ?? "");
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");
   const [saving, setSaving] = useState(false);
@@ -198,6 +201,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         release_date: releaseDate || null,
         year: releaseDate ? releaseDate.slice(0, 4) : null,
         genre: genre || null,
+        region: region || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
         use_artist_variant: useVariant,
@@ -441,8 +445,8 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
           </div>
         </div>
 
-        {/* 발매일 + 장르 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* 발매일 + 장르 + 국내외 */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label style={labelStyle}>RELEASE DATE</label>
             <input style={inputStyle} value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} placeholder="YYYY-MM-DD" />
@@ -453,6 +457,28 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
               <option value="">선택 안함</option>
               {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
+          </div>
+          <div>
+            <label style={labelStyle}>국내 / 해외</label>
+            <div style={{ display: "flex", gap: 6, height: 36 }}>
+              {REGIONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRegion(region === r ? "" : r)}
+                  style={{
+                    flex: 1, borderRadius: 6, border: "1px solid",
+                    borderColor: region === r ? "var(--accent)" : "var(--border)",
+                    backgroundColor: region === r ? "rgba(var(--accent-rgb), 0.12)" : "var(--bg-elevated)",
+                    color: region === r ? "var(--accent)" : "var(--text-muted)",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
