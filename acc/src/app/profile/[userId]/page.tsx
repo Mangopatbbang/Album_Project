@@ -343,35 +343,40 @@ export default async function ProfilePage({
 
           {/* 장르 분포 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-                청음 장르
+                GENRE
               </p>
               {topGenre && (
                 <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>
               )}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {genreList.map(({ genre, count, avg: gAvg }) => (
-                <div key={genre}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 12 }}>{koGenre(genre)}</span>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 600 }}>{gAvg}</span>
-                      <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{count}장</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {genreList.map(({ genre, count, avg: gAvg }) => {
+                const pct = Math.round((count / total) * 100);
+                const barPct = (count / maxGenreCount) * 100;
+                return (
+                  <div key={genre}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500 }}>{koGenre(genre)}</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 700 }}>{gAvg}점</span>
+                        <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{count}장 · {pct}%</span>
+                      </div>
+                    </div>
+                    <div style={{ height: 7, backgroundColor: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{
+                        height: "100%",
+                        width: `${barPct}%`,
+                        backgroundColor: scoreColor(gAvg),
+                        borderRadius: 4,
+                        opacity: 0.75,
+                        transition: "width 0.5s ease",
+                      }} />
                     </div>
                   </div>
-                  <div style={{ height: 3, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${(count / maxGenreCount) * 100}%`,
-                      backgroundColor: "var(--accent)",
-                      borderRadius: 2,
-                      transition: "width 0.4s ease",
-                    }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
