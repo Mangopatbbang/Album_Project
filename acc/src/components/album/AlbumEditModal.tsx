@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 
 const GENRES = [
-  "힙합", "알앤비", "K-pop", "록", "팝", "발라드", "인디",
-  "일렉트로니카", "포크", "얼터너티브", "재즈", "컨트리", "OST", "컴필레이션", "기타",
+  "힙합", "알앤비", "팝", "발라드", "인디", "락",
+  "일렉트로니카", "포크", "얼터너티브", "재즈", "컨트리", "OST", "컴필레이션", "기타 (영화, 드라마, 예능 등)",
 ];
 
 const REGIONS = ["국내", "해외"] as const;
