@@ -258,7 +258,7 @@ export default async function ProfilePage({
         {/* 점수 분포 — 클릭하면 음반고로 이동 */}
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-            SCORE DISTRIBUTION
+            점수 분포
           </p>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 72 }}>
             {scoreDist.map((d) => (
@@ -345,7 +345,7 @@ export default async function ProfilePage({
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-                GENRE
+                장르
               </p>
               {topGenre && (
                 <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>

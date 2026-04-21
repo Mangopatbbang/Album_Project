@@ -269,7 +269,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         {/* 제목 + 아티스트 + 검색 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <label style={labelStyle}>TITLE *</label>
+            <label style={labelStyle}>제목 *</label>
             <input
               style={inputStyle} value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -277,7 +277,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             />
           </div>
           <div>
-            <label style={labelStyle}>ARTIST (Spotify 정식명 — 변경 불가)</label>
+            <label style={labelStyle}>아티스트 (Spotify 정식명 — 변경 불가)</label>
             <input
               style={{ ...inputStyle, color: "var(--text-muted)", cursor: "default" }}
               value={album.artist}
@@ -308,7 +308,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             )}
           </div>
           <div>
-            <label style={labelStyle}>FEAT. / 참여 아티스트</label>
+            <label style={labelStyle}>참여 아티스트</label>
             <input
               style={inputStyle} value={extraArtists}
               onChange={(e) => setExtraArtists(e.target.value)}
@@ -326,11 +326,11 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
               alignSelf: "flex-start",
             }}
           >
-            {searching ? "검색 중..." : "Spotify에서 검색"}
+            {searching ? "검색 중…" : "Spotify에서 검색"}
           </button>
 
           {searchError && (
-            <p style={{ color: "#e05050", fontSize: 12, marginTop: 4 }}>
+            <p style={{ color: "var(--error)", fontSize: 12, marginTop: 4 }}>
               ⚠ {searchError}
             </p>
           )}
@@ -393,7 +393,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
                   <CandidateItem key={c.spotify_id} c={c} selected={selectedCandidate} onSelect={handleSelectCandidate} />
                 ))}
               </div>
-              {loadingTracklist && <p style={{ color: "var(--text-muted)", fontSize: 11 }}>수록곡 불러오는 중...</p>}
+              {loadingTracklist && <p style={{ color: "var(--text-muted)", fontSize: 11 }}>수록곡 불러오는 중…</p>}
             </div>
           )}
 
@@ -440,7 +440,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             }
           </div>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>COVER URL</label>
+            <label style={labelStyle}>커버 URL</label>
             <input style={inputStyle} value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
           </div>
         </div>
@@ -448,11 +448,11 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
         {/* 발매일 + 장르 + 국내외 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label style={labelStyle}>RELEASE DATE</label>
+            <label style={labelStyle}>발매일</label>
             <input style={inputStyle} value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} placeholder="YYYY-MM-DD" />
           </div>
           <div>
-            <label style={labelStyle}>GENRE</label>
+            <label style={labelStyle}>장르</label>
             <select style={{ ...inputStyle, cursor: "pointer" }} value={genre} onChange={(e) => setGenre(e.target.value)}>
               <option value="">선택 안함</option>
               {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -493,7 +493,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
           />
         </div>
 
-        {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+        {error && <p style={{ color: "var(--error)", fontSize: 12 }}>{error}</p>}
 
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{
@@ -505,7 +505,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 600,
             cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1,
           }}>
-            {saving ? "저장 중..." : "저장"}
+            {saving ? "저장 중…" : "저장"}
           </button>
         </div>
       </div>

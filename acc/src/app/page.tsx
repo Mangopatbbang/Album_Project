@@ -241,7 +241,7 @@ export default async function HomePage() {
               </Link>
             </div>
             {recentPlaylists.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>아직 선곡집이 없습니다</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>아직 선곡집이 없어요</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {recentPlaylists.map((pl) => {

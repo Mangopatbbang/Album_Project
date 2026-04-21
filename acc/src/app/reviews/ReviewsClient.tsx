@@ -138,6 +138,12 @@ export default function ReviewsClient() {
     handleFilter(filterUser, "", minScore, maxScore, sort);
   };
 
+  const handleReset = () => {
+    setFilterAlbumId("");
+    setFilterAlbumTitle("");
+    handleFilter("", "", 1, 8, "latest");
+  };
+
   const fetchComments = async (albumId: string, reviewerId: string) => {
     const key = `${albumId}-${reviewerId}`;
     const res = await fetch(`/api/comments?albumId=${albumId}&reviewerId=${reviewerId}`);
@@ -183,20 +189,29 @@ export default function ReviewsClient() {
     }
   };
 
-  const selectStyle: React.CSSProperties = {
-    backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-    color: "var(--text)", borderRadius: 6, padding: "6px 10px", fontSize: 12, cursor: "pointer",
+  const isFiltered = filterUser !== "" || filterAlbumId !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
+  const scoreActive = minScore !== 1 || maxScore !== 8;
+
+  const baseSelect: React.CSSProperties = {
+    background: "none", border: "none", color: "var(--text)",
+    fontSize: 12, cursor: "pointer", outline: "none", padding: "6px 8px",
   };
+
+  const filterPill = (active: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", borderRadius: 6, overflow: "hidden",
+    border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
+    backgroundColor: active ? "rgba(var(--accent-rgb), 0.07)" : "var(--bg-elevated)",
+    transition: "border-color 0.15s, background-color 0.15s",
+  });
 
   return (
     <div>
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>앨범 필터:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
           <span style={{
-            fontSize: 12, color: "var(--accent)", backgroundColor: "var(--bg-elevated)",
-            border: "1px solid var(--accent)", borderRadius: 20, padding: "3px 10px",
+            fontSize: 12, color: "var(--accent)", backgroundColor: "rgba(var(--accent-rgb), 0.08)",
+            border: "1px solid rgba(var(--accent-rgb), 0.3)", borderRadius: 20, padding: "3px 10px",
             display: "flex", alignItems: "center", gap: 6,
           }}>
             {filterAlbumTitle}
@@ -206,28 +221,57 @@ export default function ReviewsClient() {
       )}
 
       {/* 필터 바 */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        <select style={selectStyle} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
-          <option value="">전체 멤버</option>
-          {USERS.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
-        </select>
-        <select style={selectStyle} value={minScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, Number(e.target.value), maxScore, sort)}>
-          {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이상</option>)}
-        </select>
-        <select style={selectStyle} value={maxScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, Number(e.target.value), sort)}>
-          {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이하</option>)}
-        </select>
-        <select style={selectStyle} value={sort} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, e.target.value)}>
-          <option value="latest">최신순</option>
-          <option value="most_liked">공감 많은순</option>
-        </select>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
+        {/* 멤버 */}
+        <div style={filterPill(filterUser !== "")}>
+          <select style={baseSelect} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
+            <option value="">전체 멤버</option>
+            {USERS.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
+          </select>
+        </div>
+
+        {/* 점수 범위 */}
+        <div style={filterPill(scoreActive)}>
+          <select style={{ ...baseSelect, paddingRight: 4 }} value={minScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, Number(e.target.value), maxScore, sort)}>
+            {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이상</option>)}
+          </select>
+          <span style={{ color: "var(--text-muted)", fontSize: 11, userSelect: "none", flexShrink: 0 }}>–</span>
+          <select style={{ ...baseSelect, paddingLeft: 4 }} value={maxScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, Number(e.target.value), sort)}>
+            {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이하</option>)}
+          </select>
+        </div>
+
+        {/* 정렬 */}
+        <div style={filterPill(sort !== "latest")}>
+          <select style={baseSelect} value={sort} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, e.target.value)}>
+            <option value="latest">최신순</option>
+            <option value="most_liked">공감 많은순</option>
+          </select>
+        </div>
+
+        {/* 초기화 */}
+        {isFiltered && (
+          <button
+            onClick={handleReset}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: 11,
+              padding: "5px 8px", borderRadius: 6,
+              display: "flex", alignItems: "center", gap: 3,
+              transition: "color 0.15s",
+            }}
+            className="hover:text-[var(--text)]"
+          >
+            ✕ 초기화
+          </button>
+        )}
       </div>
 
       {/* 피드 */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</div>
       ) : items.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>소감이 없습니다</div>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
       ) : (
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
           {items.map((item, idx) => {
@@ -259,6 +303,9 @@ export default function ReviewsClient() {
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loadingMore && (
         <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>불러오는 중…</div>
+      )}
+      {!hasMore && items.length > 0 && !loading && !loadingMore && (
+        <div style={{ textAlign: "center", padding: "16px 0", color: "var(--text-muted)", fontSize: 12 }}>모두 불러왔어요</div>
       )}
 
       {selectedAlbum && (
@@ -342,9 +389,11 @@ function ReviewRow({
             >
               {item.albumTitle}
             </button>
-            <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
-              {item.artistDisplay}
-            </span>
+            {item.artistDisplay && (
+              <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+                {item.artistDisplay}
+              </span>
+            )}
           </div>
         </div>
 

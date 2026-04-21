@@ -476,7 +476,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {isWatchlisted ? "✓ 나중에" : "+ 나중에"}
+                    {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
                   </button>
                 )}
                 {profile?.role === "admin" && (
@@ -498,13 +498,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                     disabled={deletingAlbum}
                     style={{
                       background: "none", cursor: deletingAlbum ? "default" : "pointer",
-                      color: "#e05050", fontSize: 12, lineHeight: 1,
+                      color: "var(--error)", fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
-                      border: "1px solid rgba(224,80,80,0.4)",
+                      border: "1px solid rgba(var(--error-rgb), 0.4)",
                       opacity: deletingAlbum ? 0.5 : 1,
                     }}
                   >
-                    {deletingAlbum ? "삭제 중..." : "삭제"}
+                    {deletingAlbum ? "삭제 중…" : "삭제"}
                   </button>
                 )}
                 <button
@@ -542,12 +542,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             )}
 
             {/* 평균 점수 */}
-            {data.avg && (
-              <p style={{ color: scoreColor(data.avg), fontWeight: 700, fontSize: 22, marginTop: 10 }}>
-                {data.avg}
-                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
-              </p>
-            )}
+            <p style={{ fontWeight: 700, fontSize: 22, marginTop: 10, color: data.avg ? scoreColor(data.avg) : "var(--text-muted)" }}>
+              {data.avg ?? "–"}
+              <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
+            </p>
           </div>
           </div>{/* end 정보 row */}
         </div>{/* end 블러 wrapper */}
@@ -618,7 +616,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                           disabled={savingLike}
                           style={{
                             background: "none", border: "none", cursor: "pointer",
-                            color: iLikedReview ? "#e05050" : "var(--text-muted)",
+                            color: iLikedReview ? "var(--error)" : "var(--text-muted)",
                             fontSize: 13, flexShrink: 0,
                             transition: "opacity 0.15s, color 0.15s",
                           }}
@@ -718,7 +716,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                         transition: "all 0.15s",
                       }}
                     >
-                      {deleting ? "삭제 중..." : "삭제"}
+                      {deleting ? "삭제 중…" : "삭제"}
                     </button>
                   )}
                   <button
@@ -737,7 +735,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                       border: "none",
                     }}
                   >
-                    {saved ? "저장됨 ✓" : saving ? "저장 중..." : "저장"}
+                    {saved ? "저장됨" : saving ? "저장 중…" : "저장"}
                   </button>
                 </div>
               </div>
@@ -773,6 +771,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
         </div>
 
         {/* 트랙리스트 */}
+        {full !== null && tracklist.length === 0 && (
+          <>
+            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
+            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 0 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 8 }}>수록곡</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 12 }}>트랙리스트 정보가 없어요</p>
+            </div>
+          </>
+        )}
         {tracklist.length > 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
@@ -810,7 +817,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                             disabled={savingLike}
                             style={{
                               background: "none", border: "none", cursor: "pointer",
-                              color: iLiked ? "#e05050" : "var(--text-muted)",
+                              color: iLiked ? "var(--error)" : "var(--text-muted)",
                               fontSize: 13, flexShrink: 0, lineHeight: 1,
                               transition: "opacity 0.15s, color 0.15s",
                             }}
@@ -829,7 +836,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                       {(() => {
                         const total = othersWhoLiked.length + (iLiked ? 1 : 0);
                         return total > 0 ? (
-                          <span style={{ color: "#e05050", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
+                          <span style={{ color: "var(--error)", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
                             {total}
                           </span>
                         ) : null;

@@ -15,6 +15,9 @@
 
   --border:       #363028;
   --border-light: #4a4038;
+
+  --error:        #e05050;
+  --error-rgb:    224, 80, 80;
 }
 
 @theme inline {
@@ -129,6 +132,14 @@ main {
 .touch-target {
   padding: 10px;
   margin: -10px;
+}
+
+/* 인풋 포커스 상태 */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.22);
 }
 
 /* 스크롤바 */

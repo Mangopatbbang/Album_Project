@@ -140,10 +140,11 @@ export default function Header() {
                     </div>
                     <div style={{ maxHeight: 320, overflowY: "auto" }}>
                       {notifications.length === 0 ? (
-                        <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>알림이 없습니다</p>
+                        <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
                         notifications.map((n) => {
                           const fromUser = USERS.find((u) => u.id === n.fromUserId);
+                          const typeIcon = n.type === "comment" ? "💬" : "♥";
                           const label = n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요";
                           const nd = new Date(n.createdAt);
                           const ndStr = `${String(nd.getMonth() + 1).padStart(2, "0")}.${String(nd.getDate()).padStart(2, "0")}`;
@@ -154,12 +155,14 @@ export default function Header() {
                                 padding: "10px 16px",
                                 borderBottom: "1px solid var(--border)",
                                 backgroundColor: n.read ? "transparent" : "rgba(var(--accent-rgb), 0.05)",
+                                borderLeft: n.read ? "2px solid transparent" : "2px solid var(--accent)",
                                 display: "flex", alignItems: "flex-start", gap: 8,
                               }}
                             >
                               <span style={{ fontSize: 14, flexShrink: 0 }}>{fromUser?.emoji ?? "👤"}</span>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{ fontSize: 11, color: "var(--text)", lineHeight: 1.5 }}>
+                                  <span style={{ marginRight: 4 }}>{typeIcon}</span>
                                   <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
                                   {" "}님이 {label}
                                 </p>
