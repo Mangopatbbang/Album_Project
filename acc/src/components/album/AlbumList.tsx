@@ -7,6 +7,7 @@ import AlbumModal from "./AlbumModal";
 import AlbumAddModal from "./AlbumAddModal";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { koGenre } from "@/lib/bio";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -254,7 +255,7 @@ return (
         >
           <option value="">전체 장르</option>
           {genres.map((g) => (
-            <option key={g} value={g}>{g}</option>
+            <option key={g} value={g}>{koGenre(g)}</option>
           ))}
         </select>
 

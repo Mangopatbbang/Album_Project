@@ -5,9 +5,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 
 const GENRES = [
-  "Rap & Hiphop", "R&B", "K-pop", "Rock", "외힙", "Pop", "인디",
-  "Ballad", "Electronica", "컴필레이션", "Folk", "Alternative",
-  "Alternative Rock", "Country", "국외영화", "국내드라마", "국내예능", "기타",
+  "힙합", "알앤비", "팝", "발라드", "인디", "락",
+  "일렉트로니카", "포크", "얼터너티브", "재즈", "컨트리", "OST", "컴필레이션", "기타 (영화, 드라마, 예능 등)",
 ];
 
 type SpotifyCandidate = {
@@ -229,7 +228,6 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     const itunesData = await itunesRes.json();
     const itunesMatch = itunesData.candidates?.[0];
     if (itunesMatch) {
-      if (itunesMatch.genre && GENRES.includes(itunesMatch.genre)) setGenre(itunesMatch.genre);
       if (c.release_date && itunesMatch.release_date &&
           c.release_date.slice(0, 4) !== itunesMatch.release_date.slice(0, 4)) {
         setDateConflict({ itunesDate: itunesMatch.release_date, spotifyDate: c.release_date });
@@ -562,7 +560,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             )}
           </div>
           <div>
-            <label style={labelStyle}>GENRE</label>
+            <label style={labelStyle}>장르</label>
             <select style={{ ...inputStyle, cursor: "pointer" }} value={genre} onChange={(e) => setGenre(e.target.value)}>
               <option value="">선택 안함</option>
               {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
