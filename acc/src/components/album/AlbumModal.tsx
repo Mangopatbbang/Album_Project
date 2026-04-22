@@ -528,18 +528,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
             {(data.genre || (full as FullAlbum)?.region) && (
               <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                {data.genre && (
-                  <span style={{
-                    backgroundColor: "var(--bg-elevated)",
-                    color: "var(--text-muted)",
-                    fontSize: 11,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    border: "1px solid var(--border)",
-                  }}>
-                    {data.genre}
-                  </span>
-                )}
                 {(full as FullAlbum)?.region && (
                   <span style={{
                     backgroundColor: "rgba(var(--accent-rgb), 0.08)",
@@ -550,6 +538,18 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                     border: "1px solid rgba(var(--accent-rgb), 0.25)",
                   }}>
                     {(full as FullAlbum).region}
+                  </span>
+                )}
+                {data.genre && (
+                  <span style={{
+                    backgroundColor: "var(--bg-elevated)",
+                    color: "var(--text-muted)",
+                    fontSize: 11,
+                    padding: "3px 8px",
+                    borderRadius: 4,
+                    border: "1px solid var(--border)",
+                  }}>
+                    {data.genre}
                   </span>
                 )}
               </div>
