@@ -3,8 +3,9 @@ import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS, AlbumWithRatings } from "@/types";
 import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
-import { fetchAllAlbumsWithRatings, getBestByYear, fetchAllUserGenreEmojis } from "@/lib/stats";
+import { fetchAllAlbumsWithRatings, getBestByYear, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls } from "@/lib/stats";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
+import UserAvatar from "@/components/ui/UserAvatar";
 import RandomButton from "@/components/album/RandomButton";
 import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
 import CountUp from "@/components/ui/CountUp";
@@ -117,7 +118,7 @@ async function getYearPreview() {
 }
 
 export default async function HomePage() {
-  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists, tickerItems, genreEmojiMap] = await Promise.all([
+  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists, tickerItemsRaw, genreEmojiMap, avatarMap] = await Promise.all([
     getRecentAlbums(),
     getMemberStats(),
     getTotalCount(),
@@ -125,7 +126,12 @@ export default async function HomePage() {
     getRecentPlaylists(),
     getTickerReviews(),
     fetchAllUserGenreEmojis(),
+    fetchAllUserAvatarUrls(),
   ]);
+  const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
+    ...item,
+    avatar_url: avatarMap[item.user_id] ?? null,
+  }));
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -296,7 +302,9 @@ export default async function HomePage() {
               style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
               className="rounded-lg p-4 transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.97]"
             >
-              <p className="text-2xl mb-2">{member.emoji}</p>
+              <div className="mb-2">
+                <UserAvatar avatarUrl={avatarMap[member.id]} size={40} />
+              </div>
               <p style={{ color: "var(--text)", fontWeight: 500 }} className="text-sm">
                 {member.display_name}
               </p>

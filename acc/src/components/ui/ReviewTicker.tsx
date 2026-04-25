@@ -5,6 +5,7 @@ import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export type TickerItem = {
   user_id: string;
@@ -15,6 +16,7 @@ export type TickerItem = {
   album_artist: string;
   album_artist_display?: string;
   album_cover_url?: string | null;
+  avatar_url?: string | null;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -120,9 +122,9 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
                 <span style={{ color: "var(--border-light)", fontSize: 10, marginRight: -14 }}>◆</span>
 
                 {user && (
-                  <span style={{ flexShrink: 0 }}>
-                    <span>{user.emoji}</span>
-                    <span style={{ color: scoreColor(item.score), fontWeight: 700, marginLeft: 2 }}>
+                  <span style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                    <UserAvatar avatarUrl={item.avatar_url} size={16} />
+                    <span style={{ color: scoreColor(item.score), fontWeight: 700 }}>
                       {item.score}
                     </span>
                   </span>

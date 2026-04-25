@@ -7,6 +7,8 @@ import { generateBadges, koGenre, GENRE_EMOJI } from "@/lib/bio";
 import Link from "next/link";
 import { ClickableAlbumRow } from "./MembersAlbumModal";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { fetchAllUserAvatarUrls } from "@/lib/stats";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export const metadata: Metadata = {
   title: "청음인",
@@ -16,6 +18,8 @@ export const metadata: Metadata = {
 type RatingRow = { user_id: string; album_id: string; score: number; one_line_review: string | null; albums: { id: string; genre: string | null; artist: string | null } | null };
 
 export default async function MembersPage() {
+  const avatarMap = await fetchAllUserAvatarUrls();
+
   // Supabase 1000행 제한 우회 — 페이지네이션으로 전체 수집
   const allRaw: RatingRow[] = [];
   for (let page = 0; ; page++) {
@@ -162,7 +166,7 @@ export default async function MembersPage() {
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontSize: 28 }}>{user.emoji}</span>
+                      <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>{user.display_name}</p>
@@ -235,7 +239,7 @@ export default async function MembersPage() {
               {memberStats.map(({ user, total, genreEmojis }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span style={{ marginLeft: 4 }}>{genreEmojis.join("")}</span>}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span>{genreEmojis.join("")}</span>}</span>
                     <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>{total}장</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
@@ -253,7 +257,7 @@ export default async function MembersPage() {
               {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg, genreEmojis }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13 }}>{i + 1}. {user.emoji} <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span style={{ marginLeft: 4 }}>{genreEmojis.join("")}</span>}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span>{genreEmojis.join("")}</span>}</span>
                     <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600 }}>{avg!.toFixed(2)}</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
@@ -274,10 +278,12 @@ export default async function MembersPage() {
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "12px 16px", backgroundColor: "var(--bg-elevated)", borderRadius: 8,
               }}>
-                <span style={{ color: "var(--text-sub)", fontSize: 13 }}>
-                  {a.emoji} <Link href={`/profile/${a.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{a.display_name}</Link>
-                  {" × "}
-                  {b.emoji} <Link href={`/profile/${b.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{b.display_name}</Link>
+                <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <UserAvatar avatarUrl={avatarMap[a.id]} size={18} />
+                  <Link href={`/profile/${a.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{a.display_name}</Link>
+                  <span style={{ opacity: 0.4 }}>×</span>
+                  <UserAvatar avatarUrl={avatarMap[b.id]} size={18} />
+                  <Link href={`/profile/${b.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{b.display_name}</Link>
                 </span>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>

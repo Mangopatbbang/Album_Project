@@ -59,6 +59,20 @@ export function fetchProfileRatings(userId: string) {
   return _fetchProfileRatings(userId);
 }
 
+// 모든 유저의 avatar_url — userId → url | null
+export const fetchAllUserAvatarUrls = unstable_cache(
+  async (): Promise<Record<string, string | null>> => {
+    const { data } = await supabaseServer.from("users").select("id, avatar_url");
+    const result: Record<string, string | null> = {};
+    for (const row of (data ?? []) as { id: string; avatar_url: string | null }[]) {
+      result[row.id] = row.avatar_url ?? null;
+    }
+    return result;
+  },
+  ["user-avatar-urls"],
+  { tags: ["user-avatars"], revalidate: 3600 }
+);
+
 // 모든 유저의 top2 장르 이모지 — userId → [emoji1, emoji2]
 export const fetchAllUserGenreEmojis = unstable_cache(
   async (): Promise<Record<string, string[]>> => {

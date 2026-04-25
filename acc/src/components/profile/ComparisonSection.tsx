@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { USERS } from "@/types";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type ComparisonItem = {
   user: (typeof USERS)[number];
@@ -13,9 +14,10 @@ type ComparisonItem = {
 type Props = {
   userId: string;
   genreEmojiMap?: Record<string, string[]>;
+  avatarMap?: Record<string, string | null>;
 };
 
-export default function ComparisonSection({ userId, genreEmojiMap }: Props) {
+export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
   const loadedRef = useRef(false);
@@ -71,7 +73,9 @@ export default function ComparisonSection({ userId, genreEmojiMap }: Props) {
             취향 궁합
           </p>
           <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: 28, marginBottom: 8 }}>{bestMatch.user.emoji}</p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+              <UserAvatar avatarUrl={avatarMap?.[bestMatch.user.id]} size={40} />
+            </div>
             <Link
               href={`/profile/${bestMatch.user.id}`}
               style={{
@@ -159,12 +163,16 @@ export default function ComparisonSection({ userId, genreEmojiMap }: Props) {
                     color: "var(--text-sub)",
                     fontSize: 13,
                     textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                   className="hover:text-[var(--accent)] transition-colors"
                 >
-                  {other.emoji} {other.display_name}
+                  <UserAvatar avatarUrl={avatarMap?.[other.id]} size={18} />
+                  {other.display_name}
                   {emojisFor(other.id) && (
-                    <span style={{ marginLeft: 5, fontSize: 12 }}>{emojisFor(other.id)}</span>
+                    <span style={{ fontSize: 12 }}>{emojisFor(other.id)}</span>
                   )}
                 </Link>
                 <div style={{ textAlign: "right" }}>
