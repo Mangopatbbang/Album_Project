@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
@@ -346,25 +347,43 @@ export default function BestPageClient({
             </button>
           ))}
         </div>
-        {view === "artist" && (
-          <div style={{ display: "flex", gap: 6 }}>
-            {(["avg", "count"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setArtistSort(s)}
-                style={{
-                  padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  backgroundColor: artistSort === s ? "var(--accent)" : "var(--bg-elevated)",
-                  color: artistSort === s ? "var(--bg)" : "var(--text-sub)",
-                  border: `1px solid ${artistSort === s ? "var(--accent)" : "var(--border)"}`,
-                  cursor: "pointer",
-                }}
-              >
-                {s === "count" ? "음반 수" : "평균 평점"}
-              </button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {view === "artist" && (
+            <>
+              {(["avg", "count"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setArtistSort(s)}
+                  style={{
+                    padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                    backgroundColor: artistSort === s ? "var(--accent)" : "var(--bg-elevated)",
+                    color: artistSort === s ? "var(--bg)" : "var(--text-sub)",
+                    border: `1px solid ${artistSort === s ? "var(--accent)" : "var(--border)"}`,
+                    cursor: "pointer",
+                  }}
+                >
+                  {s === "count" ? "음반 수" : "평균 평점"}
+                </button>
+              ))}
+              <span style={{ color: "var(--border)", fontSize: 14, margin: "0 2px" }}>|</span>
+            </>
+          )}
+          {(["year", "genre", "artist"] as const).map((v) => (
+            <Link
+              key={v}
+              href={`/best?view=${v}`}
+              style={{
+                padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                textDecoration: "none",
+                backgroundColor: view === v ? "var(--accent)" : "var(--bg-elevated)",
+                color: view === v ? "var(--bg)" : "var(--text-sub)",
+                border: `1px solid ${view === v ? "var(--accent)" : "var(--border)"}`,
+              }}
+            >
+              {v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {view === "artist" ? (

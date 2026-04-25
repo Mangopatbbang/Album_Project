@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, AlbumStat } from "@/lib/stats";
 import BestPageClient from "./BestPageClient";
@@ -31,26 +30,7 @@ export default async function BestPage({
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>도감</p>
-          <div style={{ display: "flex", gap: 6 }}>
-            {(["year", "genre", "artist"] as const).map((v) => (
-              <Link
-                key={v}
-                href={`/best?view=${v}`}
-                style={{
-                  padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                  textDecoration: "none",
-                  backgroundColor: view === v ? "var(--accent)" : "var(--bg-elevated)",
-                  color: view === v ? "var(--bg)" : "var(--text-sub)",
-                  border: `1px solid ${view === v ? "var(--accent)" : "var(--border)"}`,
-                }}
-              >
-                {v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 20 }}>도감</p>
 
         <BestPageClient
           allSections={sections}
