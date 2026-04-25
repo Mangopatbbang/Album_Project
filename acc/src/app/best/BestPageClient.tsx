@@ -327,28 +327,27 @@ export default function BestPageClient({
 
   return (
     <>
-      {/* 지역 필터 */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-        {(["전체", "국내", "해외"] as const).map((r) => (
-          <button
-            key={r}
-            onClick={() => setRegionFilter(r)}
-            style={{
-              padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-              backgroundColor: regionFilter === r ? "var(--accent)" : "var(--bg-elevated)",
-              color: regionFilter === r ? "var(--bg)" : "var(--text-sub)",
-              border: `1px solid ${regionFilter === r ? "var(--accent)" : "var(--border)"}`,
-              cursor: "pointer",
-            }}
-          >
-            {r === "전체" ? "전체 도감" : r === "국내" ? "국내 도감" : "해외 도감"}
-          </button>
-        ))}
-      </div>
-
-      {view === "artist" ? (
-        <>
-          <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+      {/* 필터 행: 지역(좌) + 정렬(우, artist view만) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {(["전체", "국내", "해외"] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRegionFilter(r)}
+              style={{
+                padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                backgroundColor: regionFilter === r ? "var(--accent)" : "var(--bg-elevated)",
+                color: regionFilter === r ? "var(--bg)" : "var(--text-sub)",
+                border: `1px solid ${regionFilter === r ? "var(--accent)" : "var(--border)"}`,
+                cursor: "pointer",
+              }}
+            >
+              {r === "전체" ? "전체 도감" : r === "국내" ? "국내 도감" : "해외 도감"}
+            </button>
+          ))}
+        </div>
+        {view === "artist" && (
+          <div style={{ display: "flex", gap: 6 }}>
             {(["avg", "count"] as const).map((s) => (
               <button
                 key={s}
@@ -365,18 +364,21 @@ export default function BestPageClient({
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {sortedArtistSections.map(([artist, list]) => (
-              <ArtistSection
-                key={artist}
-                artist={artist}
-                list={list}
-                onAlbumClick={(a) => setSelectedAlbum(a)}
-                onArtistClick={(a) => setArtistModal(a)}
-              />
-            ))}
-          </div>
-        </>
+        )}
+      </div>
+
+      {view === "artist" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {sortedArtistSections.map(([artist, list]) => (
+            <ArtistSection
+              key={artist}
+              artist={artist}
+              list={list}
+              onAlbumClick={(a) => setSelectedAlbum(a)}
+              onArtistClick={(a) => setArtistModal(a)}
+            />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ minWidth: 0 }}>
           {sections.map(([label, list]) => (

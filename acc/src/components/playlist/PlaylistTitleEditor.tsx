@@ -21,7 +21,7 @@ export default function PlaylistTitleEditor({
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const canEdit = profile && (profile.id === ownerId || profile.role === "admin");
+  const canEdit = profile && profile.id === ownerId;
 
   async function save() {
     const trimmed = draft.trim();
