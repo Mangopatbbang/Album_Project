@@ -14,7 +14,7 @@ export default function SplashScreen() {
       // 1.6초 후 문 열기 시작
       setTimeout(() => setOpening(true), 1600);
       // 애니메이션 끝나면 DOM에서 제거
-      setTimeout(() => setShow(false), 2500);
+      setTimeout(() => setShow(false), 3400);
     }
   }, []);
 
@@ -30,7 +30,7 @@ export default function SplashScreen() {
             backgroundColor: "var(--bg)",
             borderRight: "1px solid var(--border)",
             transformOrigin: "left center",
-            animation: opening ? "doorLeftOpen 1s cubic-bezier(0.4,0,1,1) forwards" : undefined,
+            animation: opening ? "doorLeftOpen 1.6s cubic-bezier(0.3,0,0.7,1) forwards" : undefined,
           }}
         />
       </div>
@@ -42,7 +42,7 @@ export default function SplashScreen() {
             backgroundColor: "var(--bg)",
             borderLeft: "1px solid var(--border)",
             transformOrigin: "right center",
-            animation: opening ? "doorRightOpen 1s cubic-bezier(0.4,0,1,1) forwards" : undefined,
+            animation: opening ? "doorRightOpen 1.6s cubic-bezier(0.3,0,0.7,1) forwards" : undefined,
           }}
         />
       </div>

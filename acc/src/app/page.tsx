@@ -97,14 +97,14 @@ export default async function HomePage() {
 
       <main>
         {/* 히어로 */}
-        <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "80px 24px 60px" }}>
-          <div style={{ position: "absolute", top: 20, left: 20 }}>
+        <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "40px 24px 28px" }}>
+          <div style={{ position: "absolute", top: 16, left: 20 }}>
             <RandomButton />
           </div>
-          <div style={{ position: "absolute", top: 20, right: 20 }}>
+          <div style={{ position: "absolute", top: 16, right: 20 }}>
             <HeroLogoutButton />
           </div>
-          <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
             청음의 기록
           </p>
           <h1
@@ -114,26 +114,26 @@ export default async function HomePage() {
               lineHeight: 1.1,
               letterSpacing: "-0.04em",
             }}
-            className="text-4xl sm:text-6xl mb-6"
+            className="text-4xl sm:text-6xl mb-4"
           >
             아차청음사
           </h1>
-          <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 24 }} className="text-4xl sm:text-[48px]">
+          <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 16 }} className="text-4xl sm:text-[48px]">
             <CountUp target={totalCount} />
           </p>
           <MobileLoginHint />
-          <div style={{ marginTop: 24 }}>
+          <div style={{ marginTop: 16 }}>
             <ReviewTicker items={tickerItems} inline />
           </div>
         </section>
 
         {/* 검색바 */}
-        <section style={{ ...containerStyle, padding: "0 0 40px" }}>
+        <section style={{ ...containerStyle, padding: "0 0 24px" }}>
           <HomeSearchBar />
         </section>
 
         {/* 최근 청음 */}
-        <section style={{ ...containerStyle, padding: "0 24px 100px" }}>
+        <section style={{ ...containerStyle, padding: "0 24px 32px" }}>
           <div className="flex items-center justify-between mb-6">
             <h2
               style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }}
