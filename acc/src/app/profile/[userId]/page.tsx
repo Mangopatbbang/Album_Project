@@ -18,7 +18,7 @@ import ComparisonSection from "@/components/profile/ComparisonSection";
 import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
-import { fetchProfileRatings, type ProfileRatingRow } from "@/lib/stats";
+import { fetchProfileRatings, fetchAllUserGenreEmojis, type ProfileRatingRow } from "@/lib/stats";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -53,7 +53,10 @@ export default async function ProfilePage({
   const avatarUrl = (dbUser as { avatar_url?: string | null } | null)?.avatar_url ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const allRawRatings: RatingRow[] = await fetchProfileRatings(userId);
+  const [allRawRatings, allUserGenreEmojis]: [RatingRow[], Record<string, string[]>] = await Promise.all([
+    fetchProfileRatings(userId),
+    fetchAllUserGenreEmojis(),
+  ]);
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
@@ -455,7 +458,7 @@ export default async function ProfilePage({
           </div>
 
           {/* 취향 궁합 + 멤버 비교 */}
-          <ComparisonSection userId={userId} />
+          <ComparisonSection userId={userId} genreEmojiMap={allUserGenreEmojis} />
         </div>
       </div>
       </div>

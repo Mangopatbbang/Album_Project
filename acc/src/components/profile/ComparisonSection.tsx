@@ -12,9 +12,10 @@ type ComparisonItem = {
 
 type Props = {
   userId: string;
+  genreEmojiMap?: Record<string, string[]>;
 };
 
-export default function ComparisonSection({ userId }: Props) {
+export default function ComparisonSection({ userId, genreEmojiMap }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
   const loadedRef = useRef(false);
@@ -42,6 +43,8 @@ export default function ComparisonSection({ userId }: Props) {
     observer.observe(el);
     return () => observer.disconnect();
   }, [userId]);
+
+  const emojisFor = (id: string) => (genreEmojiMap?.[id] ?? []).join("");
 
   return (
     <div ref={sectionRef}>
@@ -81,6 +84,11 @@ export default function ComparisonSection({ userId }: Props) {
             >
               {bestMatch.user.display_name}
             </Link>
+            {emojisFor(bestMatch.user.id) && (
+              <p style={{ fontSize: 14, marginTop: 4, letterSpacing: "0.05em" }}>
+                {emojisFor(bestMatch.user.id)}
+              </p>
+            )}
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
               공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
               <span
@@ -155,6 +163,9 @@ export default function ComparisonSection({ userId }: Props) {
                   className="hover:text-[var(--accent)] transition-colors"
                 >
                   {other.emoji} {other.display_name}
+                  {emojisFor(other.id) && (
+                    <span style={{ marginLeft: 5, fontSize: 12 }}>{emojisFor(other.id)}</span>
+                  )}
                 </Link>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ color: "var(--text-muted)", fontSize: 11 }}>

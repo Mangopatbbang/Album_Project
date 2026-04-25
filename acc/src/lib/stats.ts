@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { koGenre, GENRE_EMOJI } from "@/lib/bio";
 
 export type ProfileRatingRow = {
   score: number;
@@ -57,6 +58,39 @@ const _fetchProfileRatings = unstable_cache(
 export function fetchProfileRatings(userId: string) {
   return _fetchProfileRatings(userId);
 }
+
+// 모든 유저의 top2 장르 이모지 — userId → [emoji1, emoji2]
+export const fetchAllUserGenreEmojis = unstable_cache(
+  async (): Promise<Record<string, string[]>> => {
+    const all: { user_id: string; albums: { genre: string | null } | null }[] = [];
+    for (let page = 0; ; page++) {
+      const { data } = await supabaseServer
+        .from("ratings")
+        .select("user_id, albums(genre)")
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!data || data.length === 0) break;
+      all.push(...(data as unknown as typeof all));
+      if (data.length < 1000) break;
+    }
+    const byUser = new Map<string, Map<string, number>>();
+    for (const r of all) {
+      const g = r.albums?.genre ?? "기타";
+      if (!byUser.has(r.user_id)) byUser.set(r.user_id, new Map());
+      const gm = byUser.get(r.user_id)!;
+      gm.set(g, (gm.get(g) ?? 0) + 1);
+    }
+    const result: Record<string, string[]> = {};
+    for (const [userId, gm] of byUser) {
+      result[userId] = [...gm.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([g]) => GENRE_EMOJI[koGenre(g)] ?? "🎵");
+    }
+    return result;
+  },
+  ["user-genre-emojis"],
+  { tags: ["profile-ratings"], revalidate: 3600 }
+);
 
 export type AlbumStat = {
   id: string;

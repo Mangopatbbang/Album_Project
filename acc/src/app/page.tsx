@@ -3,7 +3,7 @@ import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS, AlbumWithRatings } from "@/types";
 import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
-import { fetchAllAlbumsWithRatings, getBestByYear } from "@/lib/stats";
+import { fetchAllAlbumsWithRatings, getBestByYear, fetchAllUserGenreEmojis } from "@/lib/stats";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import RandomButton from "@/components/album/RandomButton";
 import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
@@ -117,13 +117,14 @@ async function getYearPreview() {
 }
 
 export default async function HomePage() {
-  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists, tickerItems] = await Promise.all([
+  const [recentAlbums, memberStats, totalCount, yearPreview, recentPlaylists, tickerItems, genreEmojiMap] = await Promise.all([
     getRecentAlbums(),
     getMemberStats(),
     getTotalCount(),
     getYearPreview(),
     getRecentPlaylists(),
     getTickerReviews(),
+    fetchAllUserGenreEmojis(),
   ]);
 
   return (
@@ -299,6 +300,11 @@ export default async function HomePage() {
               <p style={{ color: "var(--text)", fontWeight: 500 }} className="text-sm">
                 {member.display_name}
               </p>
+              {(genreEmojiMap[member.id] ?? []).length > 0 && (
+                <p className="text-sm mt-0.5" style={{ letterSpacing: "0.05em" }}>
+                  {(genreEmojiMap[member.id] ?? []).join("")}
+                </p>
+              )}
               <div className="mt-3 flex items-end justify-between">
                 <div>
                   <p style={{ color: "var(--text-muted)" }} className="text-xs">청음</p>
