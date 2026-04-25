@@ -1523,14 +1523,14 @@ export default function AdminPage() {
             <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
               <div style={{ maxHeight: 480, overflowY: "auto" }}>
                 {logs.map((log) => {
-                  const actionLabels: Record<string, { label: string; color: string }> = {
-                    album_add: { label: "앨범 등록", color: "#4caf50" },
-                    album_edit: { label: "앨범 수정", color: "#2196f3" },
-                    album_delete: { label: "앨범 삭제", color: "var(--error)" },
-                    rating_set: { label: "평점 저장", color: "var(--accent)" },
-                    rating_delete: { label: "평점 삭제", color: "#e07070" },
+                  const actionLabels: Record<string, { label: string; fg: string; bg: string }> = {
+                    album_add:    { label: "앨범 등록", fg: "#4caf50", bg: "rgba(76,175,80,0.12)" },
+                    album_edit:   { label: "앨범 수정", fg: "#2196f3", bg: "rgba(33,150,243,0.12)" },
+                    album_delete: { label: "앨범 삭제", fg: "#e05050", bg: "rgba(224,80,80,0.12)" },
+                    rating_set:   { label: "평점 저장", fg: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+                    rating_delete:{ label: "평점 삭제", fg: "#e07070", bg: "rgba(224,112,112,0.12)" },
                   };
-                  const actionInfo = actionLabels[log.action] ?? { label: log.action, color: "var(--text-muted)" };
+                  const actionInfo = actionLabels[log.action] ?? { label: log.action, fg: "#888", bg: "rgba(128,128,128,0.1)" };
                   const ts = new Date(log.created_at);
                   const now = Date.now();
                   const diffMs = now - ts.getTime();
@@ -1542,7 +1542,7 @@ export default function AdminPage() {
                       <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", width: 72, paddingTop: 2 }}>{timeStr}</span>
                       <span style={{
                         flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
-                        backgroundColor: `${actionInfo.color}18`, color: actionInfo.color, width: 72, textAlign: "center",
+                        backgroundColor: actionInfo.bg, color: actionInfo.fg, width: 72, textAlign: "center",
                       }}>
                         {actionInfo.label}
                       </span>
@@ -1561,7 +1561,7 @@ export default function AdminPage() {
                       </div>
                       <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {log.user_id ?? "–"}
-      </span>
+                      </span>
                     </div>
                   );
                 })}
