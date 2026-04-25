@@ -9,6 +9,7 @@ import { ClickableAlbumRow } from "./MembersAlbumModal";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 export const metadata: Metadata = {
   title: "청음인",
@@ -129,7 +130,7 @@ export default async function MembersPage() {
   // 만장일치 앨범 커버/제목 가져오기
   const unanimousAlbumIds = unanimousIds.slice(0, 10).map((a) => a.id);
   const { data: unanimousAlbumsRaw } = unanimousAlbumIds.length > 0
-    ? await supabaseServer.from("albums").select("id, title, artist, use_artist_variant, cover_url").in("id", unanimousAlbumIds)
+    ? await supabaseServer.from("albums").select("id, title, artist, use_artist_variant, cover_url, spotify_id").in("id", unanimousAlbumIds)
     : { data: [] };
   const unanimousAlbums = await resolveArtistDisplay(unanimousAlbumsRaw ?? []);
   const unanimousAlbumMap = new Map(unanimousAlbums.map((a) => [a.id, a]));
@@ -331,9 +332,12 @@ export default async function MembersPage() {
                         ) : null;
                       })}
                     </div>
-                    <span style={{ color: scoreColor(avg), fontWeight: 700, fontSize: 14, width: 32, textAlign: "right", flexShrink: 0 }}>
-                      {avg.toFixed(1)}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <SpotifyAttribution spotifyId={(album as { spotify_id?: string | null }).spotify_id} />
+                      <span style={{ color: scoreColor(avg), fontWeight: 700, fontSize: 14, width: 32, textAlign: "right" }}>
+                        {avg.toFixed(1)}
+                      </span>
+                    </div>
                   </div>
                   </ClickableAlbumRow>
                 );
@@ -373,9 +377,12 @@ export default async function MembersPage() {
                         ) : null;
                       })}
                     </div>
-                    <span style={{ color: "var(--text-muted)", fontSize: 11, width: 40, textAlign: "right", flexShrink: 0 }}>
-                      σ {Math.sqrt(variance).toFixed(1)}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <SpotifyAttribution spotifyId={(album as { spotify_id?: string | null }).spotify_id} />
+                      <span style={{ color: "var(--text-muted)", fontSize: 11, width: 40, textAlign: "right" }}>
+                        σ {Math.sqrt(variance).toFixed(1)}
+                      </span>
+                    </div>
                   </div>
                   </ClickableAlbumRow>
                 );

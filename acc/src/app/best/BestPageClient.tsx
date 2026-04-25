@@ -292,16 +292,26 @@ function ArtistSection({
 }
 
 export default function BestPageClient({
-  sections,
+  allSections,
+  domesticSections,
+  foreignSections,
   view,
 }: {
-  sections: [string, AlbumStat[]][];
+  allSections: [string, AlbumStat[]][];
+  domesticSections: [string, AlbumStat[]][];
+  foreignSections: [string, AlbumStat[]][];
   view: string;
 }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const [artistSort, setArtistSort] = useState<"count" | "avg">("count");
+  const [artistSort, setArtistSort] = useState<"count" | "avg">("avg");
+  const [regionFilter, setRegionFilter] = useState<"전체" | "국내" | "해외">("전체");
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
+
+  const sections =
+    regionFilter === "국내" ? domesticSections :
+    regionFilter === "해외" ? foreignSections :
+    allSections;
 
   const sortedArtistSections = artistSort === "avg"
     ? [...sections].sort((a, b) => {
@@ -317,6 +327,25 @@ export default function BestPageClient({
 
   return (
     <>
+      {/* 지역 필터 */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        {(["전체", "국내", "해외"] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRegionFilter(r)}
+            style={{
+              padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+              backgroundColor: regionFilter === r ? "var(--accent)" : "var(--bg-elevated)",
+              color: regionFilter === r ? "var(--bg)" : "var(--text-sub)",
+              border: `1px solid ${regionFilter === r ? "var(--accent)" : "var(--border)"}`,
+              cursor: "pointer",
+            }}
+          >
+            {r === "전체" ? "전체 도감" : r === "국내" ? "국내 도감" : "해외 도감"}
+          </button>
+        ))}
+      </div>
+
       {view === "artist" ? (
         <>
           <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>

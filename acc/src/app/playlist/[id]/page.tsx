@@ -9,6 +9,8 @@ import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
+import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import PlaylistTitleEditor from "@/components/playlist/PlaylistTitleEditor";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +21,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
       id, title, user_id, created_at,
       playlist_entries(
         id, sort_order, comment, recommended_tracks,
-        albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, tracklist)
+        albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, tracklist)
       )
     `)
     .eq("id", id)
@@ -75,9 +77,11 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 8 }}>
             PLAYLIST
           </p>
-          <h1 style={{ color: "var(--text)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.03em", marginBottom: 12 }}>
-            {data.title}
-          </h1>
+          <PlaylistTitleEditor
+            playlistId={data.id}
+            initialTitle={data.title}
+            ownerId={data.user_id}
+          />
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {user && (
               <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
@@ -99,7 +103,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {(entries as any[]).map((entry: {
             id: string; sort_order: number; comment: string; recommended_tracks: string | null;
-            albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string; tracklist?: string | null } | null;
+            albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string; spotify_id?: string | null; tracklist?: string | null } | null;
           }, idx: number) => {
             if (Array.isArray(entry.albums)) entry = { ...entry, albums: entry.albums[0] ?? null };
             const album = entry.albums;
@@ -144,7 +148,8 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                     <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em", marginTop: 2 }}>
                       {album.title}
                     </p>
-                    <p style={{ color: "var(--text-sub)", fontSize: 13, marginTop: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
+                    <p style={{ color: "var(--text-sub)", fontSize: 13 }}>
                       {artistDisplayMap.get(album.id) ?? album.artist}
                       {(album.release_date || album.year) && (
                         <span style={{ color: "var(--text-muted)", marginLeft: 8 }}>
@@ -161,6 +166,8 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                         </span>
                       )}
                     </p>
+                    <SpotifyAttribution spotifyId={album.spotify_id} />
+                  </div>
                   </div>
                   {/* 평점 뱃지 */}
                   {ratingMap.has(album.id) && (
