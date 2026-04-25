@@ -22,28 +22,30 @@ export default function SplashScreen() {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: opening ? "none" : "all" }}>
-      {/* 왼쪽 문 */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0, top: 0,
-          width: "50%", height: "100%",
-          backgroundColor: "var(--bg)",
-          borderRight: "1px solid var(--border)",
-          animation: opening ? "doorLeft 0.85s cubic-bezier(0.4,0,0.8,1) forwards" : undefined,
-        }}
-      />
-      {/* 오른쪽 문 */}
-      <div
-        style={{
-          position: "absolute",
-          right: 0, top: 0,
-          width: "50%", height: "100%",
-          backgroundColor: "var(--bg)",
-          borderLeft: "1px solid var(--border)",
-          animation: opening ? "doorRight 0.85s cubic-bezier(0.4,0,0.8,1) forwards" : undefined,
-        }}
-      />
+      {/* 왼쪽 문 — 왼쪽 경첩으로 안으로 열림 */}
+      <div style={{ position: "absolute", left: 0, top: 0, width: "50%", height: "100%", perspective: "900px", overflow: "hidden" }}>
+        <div
+          style={{
+            width: "100%", height: "100%",
+            backgroundColor: "var(--bg)",
+            borderRight: "1px solid var(--border)",
+            transformOrigin: "left center",
+            animation: opening ? "doorLeftOpen 1s cubic-bezier(0.4,0,1,1) forwards" : undefined,
+          }}
+        />
+      </div>
+      {/* 오른쪽 문 — 오른쪽 경첩으로 안으로 열림 */}
+      <div style={{ position: "absolute", right: 0, top: 0, width: "50%", height: "100%", perspective: "900px", overflow: "hidden" }}>
+        <div
+          style={{
+            width: "100%", height: "100%",
+            backgroundColor: "var(--bg)",
+            borderLeft: "1px solid var(--border)",
+            transformOrigin: "right center",
+            animation: opening ? "doorRightOpen 1s cubic-bezier(0.4,0,1,1) forwards" : undefined,
+          }}
+        />
+      </div>
       {/* 로고 — 문 위에 겹쳐서 표시, 문 열릴 때 페이드아웃 */}
       <div
         style={{
