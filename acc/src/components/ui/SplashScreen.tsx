@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 
-// 절 문 패널 (좌/우 공통)
+const FRAME = 14;
+const V_LINES = [20, 40, 60, 80];
+const H_LINES = Array.from({ length: 13 }, (_, i) =>
+  parseFloat(((i + 1) * (100 / 14)).toFixed(2))
+);
+
 function TempleDoor({
   side,
   opening,
@@ -11,6 +16,7 @@ function TempleDoor({
   opening: boolean;
 }) {
   const isLeft = side === "left";
+
   return (
     <div
       style={{
@@ -23,94 +29,91 @@ function TempleDoor({
         animation: opening
           ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 1.6s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
-        // 절 문 배경
-        background: "linear-gradient(180deg, #0e0a05 0%, #0b0804 50%, #0e0a05 100%)",
-        // 나뭇결 — 수평 미세선
+        // backgroundColor 와 backgroundImage 분리해야 background 단축속성이 덮어쓰지 않음
+        backgroundColor: "#100c08",
         backgroundImage:
-          "repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 48px)",
-        borderRight: isLeft ? "1px solid rgba(160,105,35,0.45)" : undefined,
-        borderLeft: !isLeft ? "1px solid rgba(160,105,35,0.45)" : undefined,
+          "repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 64px)",
+        borderRight: isLeft ? "2px solid rgba(175,112,38,0.6)" : undefined,
+        borderLeft: !isLeft ? "2px solid rgba(175,112,38,0.6)" : undefined,
       }}
     >
-      {/* ── 상인방 (위 테두리) ── */}
-      <div style={{
-        position: "absolute", top: 12, left: 12, right: 12, height: 1,
-        backgroundColor: "rgba(160,105,35,0.3)",
-      }} />
+      {/* ── 프레임 테두리 4면 ── */}
+      <div style={{ position: "absolute", top: FRAME, left: FRAME, right: FRAME, height: 2, backgroundColor: "rgba(175,112,38,0.72)" }} />
+      <div style={{ position: "absolute", bottom: FRAME, left: FRAME, right: FRAME, height: 2, backgroundColor: "rgba(175,112,38,0.72)" }} />
+      <div style={{ position: "absolute", top: FRAME, left: FRAME, bottom: FRAME, width: 2, backgroundColor: "rgba(175,112,38,0.72)" }} />
+      <div style={{ position: "absolute", top: FRAME, right: FRAME, bottom: FRAME, width: 2, backgroundColor: "rgba(175,112,38,0.72)" }} />
 
-      {/* ── 살창 영역 (상단 45%) ── */}
-      <div style={{
-        position: "absolute", top: 12, left: 12, right: 12, height: "44%",
-        border: "1px solid rgba(160,105,35,0.3)",
-        overflow: "hidden",
-      }}>
-        {/* 격자살 — 가로 */}
-        {[20, 40, 60, 80].map((pct) => (
-          <div key={pct} style={{
-            position: "absolute", left: 0, right: 0, top: `${pct}%`,
-            height: 1, backgroundColor: "rgba(160,105,35,0.22)",
-          }} />
+      {/* ── 살창 전체 격자 ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: FRAME + 2,
+          left: FRAME + 2,
+          right: FRAME + 2,
+          bottom: FRAME + 2,
+          overflow: "hidden",
+        }}
+      >
+        {/* 가로살 */}
+        {H_LINES.map((pct, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: `${pct}%`,
+              height: 2,
+              backgroundColor: "rgba(175,112,38,0.44)",
+            }}
+          />
         ))}
-        {/* 격자살 — 세로 */}
-        {[25, 50, 75].map((pct) => (
-          <div key={pct} style={{
-            position: "absolute", top: 0, bottom: 0, left: `${pct}%`,
-            width: 1, backgroundColor: "rgba(160,105,35,0.22)",
-          }} />
-        ))}
-      </div>
-
-      {/* ── 중방 ── */}
-      <div style={{
-        position: "absolute", left: 12, right: 12, top: "calc(44% + 14px)",
-        height: 2, backgroundColor: "rgba(160,105,35,0.35)",
-      }} />
-
-      {/* ── 판벽 영역 (하단) ── */}
-      <div style={{
-        position: "absolute", top: "calc(44% + 20px)", left: 12, right: 12, bottom: 12,
-        border: "1px solid rgba(160,105,35,0.25)",
-        overflow: "hidden",
-      }}>
-        {/* 널 이음새 */}
-        {[33, 66].map((pct) => (
-          <div key={pct} style={{
-            position: "absolute", left: 0, right: 0, top: `${pct}%`,
-            height: 1, backgroundColor: "rgba(160,105,35,0.15)",
-          }} />
+        {/* 세로살 */}
+        {V_LINES.map((pct) => (
+          <div
+            key={pct}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: `${pct}%`,
+              width: 2,
+              backgroundColor: "rgba(175,112,38,0.44)",
+            }}
+          />
         ))}
       </div>
 
-      {/* ── 하인방 (아래 테두리) ── */}
-      <div style={{
-        position: "absolute", bottom: 12, left: 12, right: 12, height: 1,
-        backgroundColor: "rgba(160,105,35,0.3)",
-      }} />
-
-      {/* ── 손잡이 (고리) — 안쪽 가장자리 ── */}
-      <div style={{
-        position: "absolute",
-        ...(isLeft ? { right: 18 } : { left: 18 }),
-        top: "63%",
-        transform: "translateY(-50%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 3,
-      }}>
-        {/* 고리 */}
-        <div style={{
-          width: 14, height: 14,
-          borderRadius: "50%",
-          border: "2px solid rgba(200,145,50,0.75)",
-          boxShadow: "0 0 8px rgba(200,145,50,0.2)",
-        }} />
-        {/* 고리 받침 */}
-        <div style={{
-          width: 6, height: 10,
-          borderRadius: 2,
-          backgroundColor: "rgba(180,125,40,0.5)",
-        }} />
+      {/* ── 손잡이 (고리 + 받침) ── */}
+      <div
+        style={{
+          position: "absolute",
+          ...(isLeft ? { right: 22 } : { left: 22 }),
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        <div
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            border: "2.5px solid rgba(200,138,48,0.88)",
+            boxShadow: "0 0 10px rgba(200,138,48,0.22)",
+          }}
+        />
+        <div
+          style={{
+            width: 8,
+            height: 12,
+            borderRadius: 3,
+            backgroundColor: "rgba(175,112,38,0.62)",
+          }}
+        />
       </div>
     </div>
   );
@@ -133,30 +136,64 @@ export default function SplashScreen() {
   if (!show) return null;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
-      pointerEvents: opening ? "none" : "all",
-    }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        pointerEvents: opening ? "none" : "all",
+      }}
+    >
       <TempleDoor side="left" opening={opening} />
       <TempleDoor side="right" opening={opening} />
 
       {/* 로고 */}
-      <div style={{
-        position: "absolute", inset: 0,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        gap: 14,
-        opacity: opening ? 0 : 1,
-        transition: "opacity 0.25s ease-out",
-        pointerEvents: "none",
-      }}>
-        <span style={{ color: "var(--accent)", fontSize: 36, animation: "splashIn 0.9s ease-out forwards", opacity: 0 }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 14,
+          opacity: opening ? 0 : 1,
+          transition: "opacity 0.25s ease-out",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            color: "var(--accent)",
+            fontSize: 36,
+            animation: "splashIn 0.9s ease-out forwards",
+            opacity: 0,
+          }}
+        >
           ♪
         </span>
-        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.04em", animation: "splashIn 0.9s ease-out 0.3s forwards", opacity: 0 }}>
+        <p
+          style={{
+            color: "var(--text)",
+            fontWeight: 700,
+            fontSize: 28,
+            letterSpacing: "-0.04em",
+            animation: "splashIn 0.9s ease-out 0.3s forwards",
+            opacity: 0,
+          }}
+        >
           아차청음사
         </p>
-        <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", animation: "splashIn 0.9s ease-out 0.65s forwards", opacity: 0 }}>
+        <p
+          style={{
+            color: "var(--text-muted)",
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            animation: "splashIn 0.9s ease-out 0.65s forwards",
+            opacity: 0,
+          }}
+        >
           청음의 기록
         </p>
       </div>
