@@ -58,7 +58,7 @@ export default function BottomNav() {
   ];
 
   const rightItems = [
-    { href: "/best", label: "도감", Icon: BestIcon },
+    { href: "/best", label: "청음감", Icon: BestIcon },
     { href: "/reviews", label: "청음평", Icon: ReviewsIcon },
     {
       href: profile ? `/profile/${profile.id}` : "/login",

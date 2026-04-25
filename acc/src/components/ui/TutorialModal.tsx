@@ -161,8 +161,8 @@ export default function TutorialModal() {
             ]} />
           </Section>
 
-          {/* 도감 */}
-          <Section title="📖 도감">
+          {/* 청음감 */}
+          <Section title="📖 청음감">
             <FeatureList items={[
               "청음사에 등록된 앨범들의 명반 모음을 볼 수 있는 아카이브입니다.",
               "연도별 — 각 연도 멤버 평균 점수 1위 앨범을 확인합니다.",
@@ -171,7 +171,7 @@ export default function TutorialModal() {
               "상단 탭으로 연도별·장르별·아티스트별 보기를 전환할 수 있습니다.",
             ]} />
             <Cautions items={[
-              "도감은 개인 컬렉션이 아니라 청음사 전체 평가 기반의 통계 아카이브입니다.",
+              "청음감은 개인 컬렉션이 아니라 청음사 전체 평가 기반의 통계 아카이브입니다.",
               "평가 인원이 적은 앨범이 1위가 될 수 있습니다.",
             ]} />
           </Section>

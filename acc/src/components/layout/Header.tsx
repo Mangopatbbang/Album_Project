@@ -19,7 +19,7 @@ export default function Header() {
 
   const navItems = [
     { href: "/albums", label: "음반고" },
-    { href: "/best", label: "도감" },
+    { href: "/best", label: "청음감" },
     { href: "/themes", label: "청음집" },
     { href: "/reviews", label: "청음평" },
     { href: "/members", label: "청음인" },

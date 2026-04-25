@@ -4,8 +4,8 @@ import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArti
 import BestPageClient from "./BestPageClient";
 
 export const metadata: Metadata = {
-  title: "도감",
-  description: "아차청음사 음반 도감 — 연도별·장르별·아티스트별",
+  title: "청음감",
+  description: "아차청음사 청음감 — 연도별·장르별·아티스트별",
 };
 
 export default async function BestPage({
@@ -30,7 +30,7 @@ export default async function BestPage({
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
-        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 20 }}>도감</p>
+        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 20 }}>청음감</p>
 
         <BestPageClient
           allSections={sections}

@@ -343,7 +343,7 @@ export default function BestPageClient({
                 cursor: "pointer",
               }}
             >
-              {r === "전체" ? "전체 도감" : r === "국내" ? "국내 도감" : "해외 도감"}
+              {r === "전체" ? "전체" : r === "국내" ? "국내" : "해외"}
             </button>
           ))}
         </div>

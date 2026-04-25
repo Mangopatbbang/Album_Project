@@ -429,7 +429,7 @@ export default function BoardClient() {
                       <option value="">탭 선택</option>
                       <option value="홈">홈</option>
                       <option value="음반고">음반고</option>
-                      <option value="도감">도감</option>
+                      <option value="도감">청음감</option>
                       <option value="청음집">청음집</option>
                       <option value="청음인">청음인</option>
                       <option value="청음록">청음록</option>
