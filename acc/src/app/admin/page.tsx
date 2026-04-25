@@ -46,7 +46,33 @@ type ItunesMismatch = {
 
 type AliasRow = { spotify_name: string; variant_name: string };
 
+type LogRow = {
+  id: number;
+  created_at: string;
+  user_id: string | null;
+  action: string;
+  album_id: string | null;
+  album_title: string | null;
+  album_artist: string | null;
+  details: Record<string, unknown> | null;
+};
+
 export default function AdminPage() {
+  // --- 활동 로그 ---
+  const [logs, setLogs] = useState<LogRow[] | null>(null);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsAction, setLogsAction] = useState<string>("");
+
+  async function loadLogs(action?: string) {
+    setLogsLoading(true);
+    const params = new URLSearchParams({ limit: "80" });
+    if (action) params.set("action", action);
+    const res = await fetch(`/api/admin/logs?${params}`);
+    const data = await res.json();
+    setLogs(data.logs ?? []);
+    setLogsLoading(false);
+  }
+
   // --- 통계 ---
   const [stats, setStats] = useState<Stats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -1461,6 +1487,88 @@ export default function AdminPage() {
           {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
         </div>
       </div>
+
+        {/* ── 활동 로그 ── */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>활동 로그</p>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <select
+                value={logsAction}
+                onChange={(e) => setLogsAction(e.target.value)}
+                style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
+              >
+                <option value="">전체</option>
+                <option value="album_add">앨범 등록</option>
+                <option value="album_edit">앨범 수정</option>
+                <option value="album_delete">앨범 삭제</option>
+                <option value="rating_set">평점 저장</option>
+                <option value="rating_delete">평점 삭제</option>
+              </select>
+              <button
+                onClick={() => loadLogs(logsAction || undefined)}
+                disabled={logsLoading}
+                style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}
+              >
+                {logsLoading ? "로딩 중..." : logs === null ? "불러오기" : "새로고침"}
+              </button>
+            </div>
+          </div>
+
+          {logs === null ? (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오기를 눌러 확인하세요</p>
+          ) : logs.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>로그 없음</p>
+          ) : (
+            <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ maxHeight: 480, overflowY: "auto" }}>
+                {logs.map((log) => {
+                  const actionLabels: Record<string, { label: string; color: string }> = {
+                    album_add: { label: "앨범 등록", color: "#4caf50" },
+                    album_edit: { label: "앨범 수정", color: "#2196f3" },
+                    album_delete: { label: "앨범 삭제", color: "var(--error)" },
+                    rating_set: { label: "평점 저장", color: "var(--accent)" },
+                    rating_delete: { label: "평점 삭제", color: "#e07070" },
+                  };
+                  const actionInfo = actionLabels[log.action] ?? { label: log.action, color: "var(--text-muted)" };
+                  const ts = new Date(log.created_at);
+                  const now = Date.now();
+                  const diffMs = now - ts.getTime();
+                  const diffMin = Math.floor(diffMs / 60000);
+                  const timeStr = diffMin < 1 ? "방금" : diffMin < 60 ? `${diffMin}분 전` : diffMin < 1440 ? `${Math.floor(diffMin / 60)}시간 전` : ts.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+                  return (
+                    <div key={log.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
+                      <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", width: 72, paddingTop: 2 }}>{timeStr}</span>
+                      <span style={{
+                        flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                        backgroundColor: `${actionInfo.color}18`, color: actionInfo.color, width: 72, textAlign: "center",
+                      }}>
+                        {actionInfo.label}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {log.album_title && (
+                          <p style={{ fontSize: 12, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {log.album_title}
+                            {log.album_artist && <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>· {log.album_artist}</span>}
+                          </p>
+                        )}
+                        {log.details && Object.keys(log.details).length > 0 && (
+                          <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {JSON.stringify(log.details)}
+                          </p>
+                        )}
+                      </div>
+                      <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {log.user_id ?? "–"}
+      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
     </div>
   </div>
   );

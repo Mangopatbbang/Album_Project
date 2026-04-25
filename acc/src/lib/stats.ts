@@ -102,11 +102,11 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   return resolved;
 }
 
-// 1시간 캐시 — 앨범/평점이 추가되면 revalidatePath("/best")로 갱신
+// 1시간 캐시 — 앨범/평점이 추가되면 revalidateTag("all-albums-with-ratings")로 갱신
 export const fetchAllAlbumsWithRatings = unstable_cache(
   _fetchAllAlbumsWithRatings,
   ["all-albums-with-ratings"],
-  { revalidate: 3600 }
+  { tags: ["all-albums-with-ratings"], revalidate: 3600 }
 );
 
 function toStat(album: RawAlbum): AlbumStat & { variance: number } {

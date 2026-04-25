@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { logActivity } from "@/lib/activityLog";
 
 export async function PATCH(
   req: NextRequest,
@@ -10,6 +11,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
+  const logUserId = (body.userId as string | undefined) ?? null;
 
   const allowed = ["spotify_id", "cover_url", "tracklist", "title", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
@@ -52,11 +54,20 @@ export async function PATCH(
     .from("albums")
     .update(update)
     .eq("id", id)
-    .select("id, tracklist, spotify_id");
+    .select("id, title, artist, tracklist, spotify_id");
   if (error) return NextResponse.json({ error: error.message, id, update }, { status: 500 });
+
+  const updatedRow = updateData?.[0];
+  logActivity({
+    userId: logUserId, action: "album_edit",
+    albumId: id, albumTitle: updatedRow?.title, albumArtist: updatedRow?.artist,
+    details: { updated_fields: Object.keys(update) },
+  });
 
   revalidatePath("/");
   revalidatePath("/best");
+  revalidatePath("/albums");
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
   return NextResponse.json({ ok: true, tracklistSaved: !!update.tracklist, id, rowsUpdated: count, updatedRow: updateData });
 }
 
@@ -97,22 +108,23 @@ export async function DELETE(
 
   if (!userId) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  // 권한 체크: admin은 모두 삭제 가능, user는 본인이 추가한 것만
-  if (role !== "admin") {
-    const { data: album } = await supabaseServer
-      .from("albums")
-      .select("added_by")
-      .eq("id", id)
-      .single();
+  const { data: album } = await supabaseServer
+    .from("albums").select("added_by, title, artist").eq("id", id).single();
 
-    if (!album) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
-    if (album.added_by !== userId) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
-  }
+  if (!album) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
+  if (role !== "admin" && album.added_by !== userId) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
 
   const { error } = await supabaseServer.from("albums").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  logActivity({
+    userId, action: "album_delete",
+    albumId: id, albumTitle: album.title, albumArtist: album.artist,
+  });
+
   revalidatePath("/");
   revalidatePath("/best");
+  revalidatePath("/albums");
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });
 }

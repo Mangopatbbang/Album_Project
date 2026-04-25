@@ -897,6 +897,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
       {editing && (
         <AlbumEditModal
+          userId={profile?.id}
           album={{
             id: album.id,
             title: data.title,

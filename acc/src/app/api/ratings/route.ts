@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { UserId } from "@/types";
+import { logActivity } from "@/lib/activityLog";
 
 // GET /api/ratings?albumId=123
 // GET /api/ratings?userId=arkyteccc
@@ -54,6 +55,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "한줄평은 100자 이하여야 합니다" }, { status: 400 });
   }
 
+  const [{ data: existing }, { data: albumData }] = await Promise.all([
+    supabaseServer.from("ratings").select("score").eq("album_id", albumId).eq("user_id", userId).single(),
+    supabaseServer.from("albums").select("title, artist").eq("id", albumId).single(),
+  ]);
+  const prevScore = existing?.score ?? null;
+
   const { data, error } = await supabaseServer
     .from("ratings")
     .upsert(
@@ -67,14 +74,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // 평점 이력 기록 (실패해도 메인 저장에는 영향 없음)
-  await supabaseServer
-    .from("rating_history")
-    .insert({ user_id: userId, album_id: albumId, score });
+  if (prevScore !== score) {
+    await supabaseServer
+      .from("rating_history")
+      .insert({ user_id: userId, album_id: albumId, score });
+  }
+
+  logActivity({
+    userId, action: "rating_set",
+    albumId, albumTitle: albumData?.title, albumArtist: albumData?.artist,
+    details: { score, prev_score: prevScore },
+  });
 
   revalidatePath("/");
   revalidatePath("/best");
-  revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
+  revalidateTag("profile-ratings", { expire: 0 });
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
   return NextResponse.json({ ok: true, rating: data });
 }
 
@@ -151,18 +166,23 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });
   }
 
-  const { error } = await supabaseServer
-    .from("ratings")
-    .delete()
-    .eq("album_id", albumId)
-    .eq("user_id", userId);
+  const [{ error }, { data: albumData }] = await Promise.all([
+    supabaseServer.from("ratings").delete().eq("album_id", albumId).eq("user_id", userId),
+    supabaseServer.from("albums").select("title, artist").eq("id", albumId).single(),
+  ]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  logActivity({
+    userId, action: "rating_delete",
+    albumId, albumTitle: albumData?.title, albumArtist: albumData?.artist,
+  });
+
   revalidatePath("/");
   revalidatePath("/best");
-  revalidateTag("profile-ratings", { expire: 0 }); // 프로필 통계 캐시 즉시 만료
+  revalidateTag("profile-ratings", { expire: 0 });
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });
 }
