@@ -64,14 +64,22 @@ async function getRecentPlaylists() {
   }));
 }
 
+function serverShuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 async function getTickerReviews(): Promise<TickerItem[]> {
   const { data } = await supabaseServer
     .from("ratings")
     .select("user_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)")
     .not("one_line_review", "is", null)
     .neq("one_line_review", "")
-    .order("updated_at", { ascending: false })
-    .limit(40);
+    .limit(80);
   if (!data) return [];
   const rows = (data as unknown as {
     user_id: string;
@@ -80,12 +88,14 @@ async function getTickerReviews(): Promise<TickerItem[]> {
     albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
   }[]).filter((r) => r.albums);
 
+  const shuffled = serverShuffle(rows).slice(0, 40);
+
   // artist_display 해상도 적용
-  const albumObjs = rows.map((r) => r.albums!);
+  const albumObjs = shuffled.map((r) => r.albums!);
   const resolved = await resolveArtistDisplay(albumObjs);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
 
-  return rows.map((r) => ({
+  return shuffled.map((r) => ({
     user_id: r.user_id,
     score: r.score,
     one_line_review: r.one_line_review,

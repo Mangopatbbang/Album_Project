@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import AlbumModal from "@/components/album/AlbumModal";
@@ -19,28 +19,14 @@ export type TickerItem = {
   avatar_url?: string | null;
 };
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 export default function ReviewTicker({ items, inline }: { items: TickerItem[]; inline?: boolean }) {
-  const [shuffled, setShuffled] = useState(items);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
-
-  useEffect(() => {
-    setShuffled(shuffle(items));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (items.length === 0) return null;
 
-  const repeat = Math.max(2, Math.ceil(12 / shuffled.length));
-  const track = Array.from({ length: repeat }, () => shuffled).flat();
-  const duration = Math.min(200, Math.max(30, shuffled.length * 5.5));
+  const repeat = Math.max(2, Math.ceil(12 / items.length));
+  const track = Array.from({ length: repeat }, () => items).flat();
+  const duration = Math.min(200, Math.max(30, items.length * 5.5));
 
   const openAlbum = (item: TickerItem) => {
     setSelectedAlbum({
