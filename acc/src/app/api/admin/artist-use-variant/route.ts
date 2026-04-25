@@ -48,5 +48,6 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   revalidatePath("/");
   revalidatePath("/best");
+  revalidatePath("/albums");
   return NextResponse.json({ ok: true });
 }
