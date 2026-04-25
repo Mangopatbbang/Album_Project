@@ -7,6 +7,8 @@ import { scoreColor } from "@/lib/score";
 import type { ReviewItem } from "@/app/api/reviews/route";
 import type { CommentItem } from "@/app/api/comments/route";
 import AlbumModal from "@/components/album/AlbumModal";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
@@ -334,6 +336,7 @@ function ReviewRow({
   onCommentSubmit: () => void;
   isLast: boolean;
 }) {
+  const avatarMap = useUserAvatars();
   const user = USERS.find((u) => u.id === item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
   const isMyReview = myId === item.userId;
@@ -404,7 +407,7 @@ function ReviewRow({
             style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}
             className="hover:opacity-70 transition-opacity"
           >
-            <span style={{ fontSize: 12 }}>{user?.emoji ?? "👤"}</span>
+            <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={16} />
             <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="hidden sm:inline">
               {user?.display_name ?? item.userId}
             </span>
@@ -471,7 +474,7 @@ function ReviewRow({
                 const cdStr = `${String(cd.getMonth() + 1).padStart(2, "0")}.${String(cd.getDate()).padStart(2, "0")}`;
                 return (
                   <div key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>{cu?.emoji ?? "👤"}</span>
+                    <UserAvatar avatarUrl={cu ? avatarMap[cu.id] : null} size={14} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginRight: 6 }}>
                         {cu?.display_name ?? c.commenterId}
