@@ -125,6 +125,13 @@ export default function AdminPage() {
   const [canonicalArtist, setCanonicalArtist] = useState("");
   const [canonicalMsg, setCanonicalMsg] = useState("");
 
+  // bulk rename
+  const [renameFrom, setRenameFrom] = useState("");
+  const [renameTo, setRenameTo] = useState("");
+  const [renameCount, setRenameCount] = useState<number | null>(null);
+  const [renameMsg, setRenameMsg] = useState("");
+  const [renameLoading, setRenameLoading] = useState(false);
+
   async function loadAliases() {
     if (listMode === "aliases") { setListMode(null); setAliases([]); return; }
     setAliasesLoading(true);
@@ -272,6 +279,33 @@ export default function AdminPage() {
       ...prev,
       [spotify_name]: (prev[spotify_name] ?? []).filter((a) => a.id !== id),
     }));
+  }
+
+  async function handleRenamePreview() {
+    if (!renameFrom.trim()) return;
+    const res = await fetch(`/api/admin/artist-bulk-rename?from=${encodeURIComponent(renameFrom.trim())}`);
+    const data = await res.json();
+    setRenameCount(data.count ?? 0);
+    setRenameMsg("");
+  }
+
+  async function handleBulkRename() {
+    if (!renameFrom.trim() || !renameTo.trim()) return;
+    if (!confirm(`"${renameFrom}" → "${renameTo}" 로 앨범 ${renameCount ?? "?"}개를 일괄 변경할까요?`)) return;
+    setRenameLoading(true);
+    const res = await fetch("/api/admin/artist-bulk-rename", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from: renameFrom.trim(), to: renameTo.trim() }),
+    });
+    const data = await res.json();
+    setRenameLoading(false);
+    if (res.ok) {
+      setRenameMsg(`✅ ${data.renamed}개 앨범 변경 완료`);
+      setRenameFrom(""); setRenameTo(""); setRenameCount(null);
+    } else {
+      setRenameMsg(`❌ ${data.error}`);
+    }
   }
 
   async function handleCanonicalChange() {
@@ -1456,6 +1490,45 @@ export default function AdminPage() {
 
         {/* Spotify 정식명 변경 (admin 전용) */}
         <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+          {/* ── 아티스트명 일괄 변경 ── */}
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 12, color: "var(--text-sub)" }}>아티스트명 일괄 변경</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>변경 전</p>
+                <input
+                  value={renameFrom}
+                  onChange={(e) => { setRenameFrom(e.target.value); setRenameCount(null); setRenameMsg(""); }}
+                  onBlur={() => { if (renameFrom.trim()) handleRenamePreview(); }}
+                  placeholder="현재 아티스트명 (정확히)"
+                  style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 220 }}
+                />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>변경 후</p>
+                <input
+                  value={renameTo}
+                  onChange={(e) => { setRenameTo(e.target.value); setRenameMsg(""); }}
+                  placeholder="새 아티스트명"
+                  style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 220 }}
+                />
+              </div>
+              <button
+                onClick={handleBulkRename}
+                disabled={!renameFrom.trim() || !renameTo.trim() || renameLoading}
+                style={{ backgroundColor: "#c0392b", border: "none", color: "white", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!renameFrom.trim() || !renameTo.trim() || renameLoading) ? 0.4 : 1 }}
+              >
+                {renameLoading ? "처리 중…" : "일괄 변경"}
+              </button>
+            </div>
+            {renameCount !== null && !renameMsg && (
+              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+                "{renameFrom}" 앨범 <span style={{ color: "var(--accent)", fontWeight: 700 }}>{renameCount}개</span> 발견
+              </p>
+            )}
+            {renameMsg && <p style={{ color: renameMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{renameMsg}</p>}
+          </div>
+
           <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 12, color: "var(--text-sub)" }}>앨범 아티스트 정식명 변경 (admin)</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div>

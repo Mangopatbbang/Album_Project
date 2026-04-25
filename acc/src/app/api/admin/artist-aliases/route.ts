@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 // GET /api/admin/artist-aliases
@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
+  revalidateTag("profile-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });
 }
 
@@ -83,5 +85,7 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
+  revalidateTag("all-albums-with-ratings", { expire: 0 });
+  revalidateTag("profile-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });
 }
