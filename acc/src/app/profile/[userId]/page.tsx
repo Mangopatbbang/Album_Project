@@ -8,7 +8,7 @@ import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
-import { generateBadges, koGenre } from "@/lib/bio";
+import { generateBadges, koGenre, GENRE_EMOJI } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
@@ -132,18 +132,37 @@ export default async function ProfilePage({
   const maxDistCount = Math.max(...scoreDist.map((d) => d.count), 1);
 
   // 장르 분포
-  const genreMap = new Map<string, { count: number; total: number }>();
+  const genreMap = new Map<string, { count: number; total: number; domestic: number; foreign: number }>();
   for (const r of validRatings) {
     const g = r.albums?.genre ?? "기타";
-    const prev = genreMap.get(g) ?? { count: 0, total: 0 };
-    genreMap.set(g, { count: prev.count + 1, total: prev.total + r.score });
+    const region = r.albums?.region ?? null;
+    const prev = genreMap.get(g) ?? { count: 0, total: 0, domestic: 0, foreign: 0 };
+    genreMap.set(g, {
+      count: prev.count + 1,
+      total: prev.total + r.score,
+      domestic: prev.domestic + (region === "국내" ? 1 : 0),
+      foreign: prev.foreign + (region === "해외" ? 1 : 0),
+    });
   }
   const genreList = [...genreMap.entries()]
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 8)
-    .map(([genre, { count, total }]) => ({ genre, count, avg: (total / count).toFixed(1) }));
+    .map(([genre, { count, total, domestic, foreign }]) => ({
+      genre,
+      count,
+      avg: (total / count).toFixed(1),
+      domestic,
+      foreign,
+    }));
   const maxGenreCount = genreList[0]?.count ?? 1;
   const topGenre = genreList[0]?.genre ?? null;
+
+  // 전체 국내/해외 비율
+  const totalDomestic = validRatings.filter((r) => r.albums?.region === "국내").length;
+  const totalForeign = validRatings.filter((r) => r.albums?.region === "해외").length;
+
+  // 상위 2 장르 이모지
+  const genreEmojis = genreList.slice(0, 2).map(({ genre }) => GENRE_EMOJI[koGenre(genre)] ?? "🎵");
 
   // 명예의 전당 (8점)
   const hallOfFame = validRatings.filter((r) => r.score === 8);
@@ -205,9 +224,25 @@ export default async function ProfilePage({
               <LikedTracksButton userId={userId} />
             </div>
             {/* 뱃지 */}
-            {badges.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <BadgesWithTooltip badges={badges} />
+            {(genreEmojis.length > 0 || badges.length > 0) && (
+              <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+                {genreEmojis.map((emoji, i) => (
+                  <span
+                    key={i}
+                    title={koGenre(genreList[i]?.genre ?? "")}
+                    style={{
+                      fontSize: 14,
+                      backgroundColor: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 20,
+                      padding: "2px 8px",
+                      cursor: "default",
+                    }}
+                  >
+                    {emoji}
+                  </span>
+                ))}
+                {badges.length > 0 && <BadgesWithTooltip badges={badges} />}
               </div>
             )}
           </div>
@@ -343,36 +378,75 @@ export default async function ProfilePage({
 
           {/* 장르 분포 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-                장르
-              </p>
-              {topGenre && (
-                <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>
-              )}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>장르</p>
+                  {topGenre && (
+                    <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>
+                  )}
+                </div>
+                {(totalDomestic > 0 || totalForeign > 0) && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ color: "var(--accent)", fontSize: 10 }}>● 국내</span>
+                    <span style={{ color: "#6b9ef0", fontSize: 10 }}>● 해외</span>
+                  </div>
+                )}
+              </div>
+              {/* 전체 국내/해외 비율 바 */}
+              {(totalDomestic > 0 || totalForeign > 0) && (() => {
+                const regionTotal = totalDomestic + totalForeign;
+                const domPct = (totalDomestic / regionTotal) * 100;
+                const forPct = (totalForeign / regionTotal) * 100;
+                return (
+                  <div>
+                    <div style={{ height: 5, backgroundColor: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden", display: "flex" }}>
+                      {totalDomestic > 0 && (
+                        <div style={{ width: `${domPct}%`, backgroundColor: "var(--accent)", opacity: 0.7 }} />
+                      )}
+                      {totalForeign > 0 && (
+                        <div style={{ width: `${forPct}%`, backgroundColor: "#6b9ef0", opacity: 0.7 }} />
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                        국내 {Math.round(domPct)}% · 해외 {Math.round(forPct)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {genreList.map(({ genre, count, avg: gAvg }) => {
+              {genreList.map(({ genre, count, avg: gAvg, domestic, foreign }) => {
                 const pct = Math.round((count / total) * 100);
                 const barPct = (count / maxGenreCount) * 100;
+                const noRegion = count - domestic - foreign;
+                const emoji = GENRE_EMOJI[koGenre(genre)];
                 return (
                   <div key={genre}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500 }}>{koGenre(genre)}</span>
+                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500 }}>
+                        {emoji && <span style={{ marginRight: 5 }}>{emoji}</span>}
+                        {koGenre(genre)}
+                      </span>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 700 }}>{gAvg}점</span>
                         <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{count}장 · {pct}%</span>
                       </div>
                     </div>
                     <div style={{ height: 7, backgroundColor: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%",
-                        width: `${barPct}%`,
-                        backgroundColor: scoreColor(gAvg),
-                        borderRadius: 4,
-                        opacity: 0.75,
-                        transition: "width 0.5s ease",
-                      }} />
+                      <div style={{ display: "flex", height: "100%", width: `${barPct}%` }}>
+                        {domestic > 0 && (
+                          <div style={{ flex: domestic, backgroundColor: "var(--accent)", opacity: 0.8 }} />
+                        )}
+                        {foreign > 0 && (
+                          <div style={{ flex: foreign, backgroundColor: "#6b9ef0", opacity: 0.8 }} />
+                        )}
+                        {noRegion > 0 && (
+                          <div style={{ flex: noRegion, backgroundColor: "var(--text-muted)", opacity: 0.25 }} />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

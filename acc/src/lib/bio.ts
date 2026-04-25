@@ -25,6 +25,23 @@ export function koGenre(genre: string): string {
   return GENRE_KO[genre] ?? genre;
 }
 
+export const GENRE_EMOJI: Record<string, string> = {
+  "힙합": "📼",
+  "알앤비": "🎷",
+  "팝": "🫧",
+  "발라드": "🎤",
+  "인디": "🪴",
+  "락": "🎸",
+  "일렉트로니카": "🎛️",
+  "포크": "🌿",
+  "얼터너티브": "🌊",
+  "재즈": "🎹",
+  "컨트리": "🪕",
+  "OST": "🎬",
+  "컴필레이션": "💽",
+  "기타 (영화, 드라마, 예능 등)": "📺",
+};
+
 type BioParams = {
   avg: string | null;
   topGenre: string | null;
