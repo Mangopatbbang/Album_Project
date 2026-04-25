@@ -7,6 +7,8 @@ import { scoreColor } from "@/lib/score";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { fetchAllUserAvatarUrls } from "@/lib/stats";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +26,8 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
     .single();
 
   if (error || !data) notFound();
+
+  const avatarMap = await fetchAllUserAvatarUrls();
 
   const entriesRaw = (data.playlist_entries ?? []).sort(
     (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
@@ -76,9 +80,9 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {user && (
-              <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none" }}
+              <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
                 className="hover:text-[var(--accent)] transition-colors">
-                {user.emoji} {user.display_name}
+                <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> {user.display_name}
               </Link>
             )}
             <span style={{ color: "var(--border-light)" }}>·</span>

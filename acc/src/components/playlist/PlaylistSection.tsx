@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
 import PlaylistEditor from "./PlaylistEditor";
 import { USERS } from "@/types";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type PlaylistEntry = {
   id: string;
@@ -27,6 +29,7 @@ type Props = {
 
 export default function PlaylistSection({ initialPlaylists }: Props) {
   const { profile } = useAuth();
+  const avatarMap = useUserAvatars();
   const [playlists, setPlaylists] = useState(initialPlaylists);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -112,7 +115,7 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
                     {pl.title}
                   </p>
                   <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                    {user ? `${user.emoji} ${user.display_name}` : pl.user_id} · 음반 {pl.playlist_entries.length}장
+                    {user && <><UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{" "}</>}{user ? user.display_name : pl.user_id} · 음반 {pl.playlist_entries.length}장
                   </p>
                 </div>
 

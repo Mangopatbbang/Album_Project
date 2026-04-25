@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AlbumWithRatings, USERS } from "@/types";
 import { scoreColor, glowBorder, glowShadow } from "@/lib/score";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type Props = {
   artistName: string;
@@ -13,6 +15,7 @@ type Props = {
 
 export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
+  const avatarMap = useUserAvatars();
   const [avgScore, setAvgScore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -202,6 +205,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
 }
 
 function ArtistAlbumCard({ album, onClick }: { album: AlbumWithRatings; onClick?: (album: AlbumWithRatings) => void }) {
+  const avatarMap = useUserAvatars();
   return (
     <button
       onClick={() => onClick?.(album)}
@@ -268,8 +272,8 @@ function ArtistAlbumCard({ album, onClick }: { album: AlbumWithRatings; onClick?
             const r = album.ratings.find((rt) => rt.user_id === user.id);
             if (!r) return null;
             return (
-              <span key={user.id} style={{ fontSize: 9.5, color: scoreColor(r.score) }}>
-                {user.emoji}{r.score}
+              <span key={user.id} style={{ fontSize: 9.5, color: scoreColor(r.score), display: "inline-flex", alignItems: "center", gap: 1 }}>
+                <UserAvatar avatarUrl={avatarMap[user.id]} size={11} />{r.score}
               </span>
             );
           })}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
+import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
 import InquiryFloatingButton from "@/components/ui/InquiryFloatingButton";
@@ -52,6 +53,7 @@ export default function RootLayout({
     >
       <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
         <AuthProvider>
+          <UserAvatarsProvider>
           <ToastProvider>
             <SplashScreen />
             {children}
@@ -59,6 +61,7 @@ export default function RootLayout({
             <InquiryFloatingButton />
             <TutorialModal />
           </ToastProvider>
+          </UserAvatarsProvider>
         </AuthProvider>
       </body>
     </html>

@@ -272,7 +272,9 @@ export default async function HomePage() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pl.title}</p>
-                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{user ? `${user.emoji} ${user.display_name}` : pl.user_id} · {pl.playlist_entries.length}장</p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                          {user && <><UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{" "}</>}{user ? user.display_name : pl.user_id} · {pl.playlist_entries.length}장
+                        </p>
                       </div>
                     </Link>
                   );

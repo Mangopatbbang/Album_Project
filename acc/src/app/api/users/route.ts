@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
 // POST /api/users — 회원가입 시 users 프로필 생성
@@ -84,6 +85,7 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (avatar_url !== undefined) revalidateTag("user-avatars", { expire: 0 });
   return NextResponse.json({ ok: true, user: data });
 }
 

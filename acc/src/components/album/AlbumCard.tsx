@@ -5,6 +5,8 @@ import { AlbumWithRatings, USERS } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import ArtistModal from "@/components/album/ArtistModal";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type Props = {
   album: AlbumWithRatings;
@@ -13,6 +15,7 @@ type Props = {
 
 export default function AlbumCard({ album, onClick }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
+  const avatarMap = useUserAvatars();
   return (
     <>
     <button
@@ -99,9 +102,9 @@ export default function AlbumCard({ album, onClick }: Props) {
               return (
                 <span
                   key={user.id}
-                  style={{ fontSize: 11, color: scoreColor(r.score) }}
+                  style={{ fontSize: 11, color: scoreColor(r.score), display: "inline-flex", alignItems: "center", gap: 2 }}
                 >
-                  {user.emoji}{r.score}
+                  <UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{r.score}
                 </span>
               );
             })}

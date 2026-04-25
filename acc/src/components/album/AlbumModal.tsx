@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AlbumWithRatings, USERS } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
+import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
@@ -46,6 +48,7 @@ const albumCache = new Map<string, FullAlbum>();
 
 export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Props) {
   const { profile } = useAuth();
+  const avatarMap = useUserAvatars();
   const { showToast } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -589,7 +592,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   onMouseEnter={() => setHoveredReview(user.id)}
                   onMouseLeave={() => setHoveredReview(null)}
                 >
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>{user.emoji}</span>
+                  <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={avatarMap[user.id]} size={18} /></span>
                   <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, flexShrink: 0, textDecoration: "none" }} className="w-[72px] sm:w-[110px] hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
 
                   {r ? (
@@ -661,7 +664,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           {profile ? (
             <>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-                {profile.emoji} 나의 청음 점수
+                <UserAvatar avatarUrl={profile.avatar_url} size={14} /> 나의 청음 점수
               </p>
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
                 {[1,2,3,4,5,6,7,8].map((n) => {

@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { USERS } from "@/types";
 import type { NotificationItem } from "@/app/api/notifications/route";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Header() {
   const { profile, loading, signOut } = useAuth();
+  const avatarMap = useUserAvatars();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -159,7 +162,7 @@ export default function Header() {
                                 display: "flex", alignItems: "flex-start", gap: 8,
                               }}
                             >
-                              <span style={{ fontSize: 14, flexShrink: 0 }}>{fromUser?.emoji ?? "👤"}</span>
+                              <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} /></span>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{ fontSize: 11, color: "var(--text)", lineHeight: 1.5 }}>
                                   <span style={{ marginRight: 4 }}>{typeIcon}</span>
@@ -179,7 +182,7 @@ export default function Header() {
 
               <Link href={`/profile/${profile.id}`} style={{ color: "var(--text-muted)", fontSize: 12, textDecoration: "none" }}
                 className="hover:text-[var(--text)] transition-colors hidden sm:block">
-                {profile.emoji} {profile.display_name}
+                <UserAvatar avatarUrl={profile.avatar_url} size={18} /> {profile.display_name}
               </Link>
               <button
                 onClick={signOut}
