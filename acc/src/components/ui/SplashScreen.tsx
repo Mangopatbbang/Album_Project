@@ -22,7 +22,7 @@ export default function SplashScreen() {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: opening ? "none" : "all" }}>
-      {/* 왼쪽 문 — 왼쪽 경첩으로 안으로 열림 */}
+      {/* 왼쪽 문 — 왼쪽 경첩, 바깥쪽(뷰어 방향)으로 열림 */}
       <div style={{ position: "absolute", left: 0, top: 0, width: "50%", height: "100%", perspective: "900px", overflow: "hidden" }}>
         <div
           style={{
@@ -30,11 +30,22 @@ export default function SplashScreen() {
             backgroundColor: "var(--bg)",
             borderRight: "1px solid var(--border)",
             transformOrigin: "left center",
+            position: "relative",
             animation: opening ? "doorLeftOpen 1.6s cubic-bezier(0.3,0,0.7,1) forwards" : undefined,
           }}
-        />
+        >
+          {/* 손잡이 */}
+          <div style={{
+            position: "absolute", right: 24, top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "var(--accent)", opacity: 0.5 }} />
+            <div style={{ width: 4, height: 36, borderRadius: 2, backgroundColor: "var(--accent)", opacity: 0.35 }} />
+          </div>
+        </div>
       </div>
-      {/* 오른쪽 문 — 오른쪽 경첩으로 안으로 열림 */}
+      {/* 오른쪽 문 — 오른쪽 경첩, 바깥쪽(뷰어 방향)으로 열림 */}
       <div style={{ position: "absolute", right: 0, top: 0, width: "50%", height: "100%", perspective: "900px", overflow: "hidden" }}>
         <div
           style={{
@@ -42,9 +53,20 @@ export default function SplashScreen() {
             backgroundColor: "var(--bg)",
             borderLeft: "1px solid var(--border)",
             transformOrigin: "right center",
+            position: "relative",
             animation: opening ? "doorRightOpen 1.6s cubic-bezier(0.3,0,0.7,1) forwards" : undefined,
           }}
-        />
+        >
+          {/* 손잡이 */}
+          <div style={{
+            position: "absolute", left: 24, top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "var(--accent)", opacity: 0.5 }} />
+            <div style={{ width: 4, height: 36, borderRadius: 2, backgroundColor: "var(--accent)", opacity: 0.35 }} />
+          </div>
+        </div>
       </div>
       {/* 로고 — 문 위에 겹쳐서 표시, 문 열릴 때 페이드아웃 */}
       <div
