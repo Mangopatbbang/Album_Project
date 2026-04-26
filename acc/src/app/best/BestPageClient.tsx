@@ -291,6 +291,83 @@ function ArtistSection({
   );
 }
 
+function RankedTile({
+  album,
+  rank,
+  size,
+  onAlbumClick,
+  onArtistClick,
+}: {
+  album: AlbumStat;
+  rank: number;
+  size: "lg" | "md" | "sm";
+  onAlbumClick: (a: AlbumStat) => void;
+  onArtistClick: (a: { name: string; display: string }) => void;
+}) {
+  const isMedal = rank <= 3;
+  const coverClass =
+    size === "lg" ? "w-[88px] h-[88px] sm:w-[110px] sm:h-[110px]" :
+    size === "md" ? "w-[76px] h-[76px] sm:w-[94px] sm:h-[94px]" :
+                   "w-[64px] h-[64px] sm:w-[80px] sm:h-[80px]";
+  const wrapClass =
+    size === "lg" ? "w-[88px] sm:w-[110px]" :
+    size === "md" ? "w-[76px] sm:w-[94px]" :
+                   "w-[64px] sm:w-[80px]";
+  const titleSize = size === "lg" ? 12 : size === "md" ? 11 : 10;
+
+  return (
+    <div
+      style={{ flexShrink: 0, cursor: "pointer" }}
+      className={`${wrapClass} transition-transform active:scale-[0.93]`}
+      onClick={() => onAlbumClick(album)}
+    >
+      <div
+        style={{
+          borderRadius: 6, overflow: "hidden",
+          backgroundColor: "var(--bg-elevated)",
+          border: `1px solid ${glowBorder(album.avg)}`,
+          boxShadow: glowShadow(album.avg),
+          transition: "opacity 0.15s",
+        }}
+        className={coverClass}
+        onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+      >
+        {album.cover_url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
+            </div>
+        }
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
+        <span style={{ fontSize: isMedal ? 14 : 10, fontWeight: 700, flexShrink: 0, lineHeight: 1 }}>
+          {isMedal
+            ? MEDAL[rank - 1]
+            : <span style={{ color: "var(--text-muted)" }}>{rank}</span>
+          }
+        </span>
+        <span style={{ color: scoreColor(album.avg), fontSize: size === "lg" ? 12 : 11, fontWeight: 700, flexShrink: 0 }}>
+          {album.avg.toFixed(1)}
+        </span>
+      </div>
+      <p style={{ color: "var(--text)", fontSize: titleSize, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {album.title}
+      </p>
+      <p style={{ color: "var(--text-muted)", fontSize: titleSize - 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span
+          onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }}
+          style={{ cursor: "pointer" }}
+          className="hover:underline"
+        >
+          {album.artist_display ?? album.artist}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function RankedGrid({
   list,
   onAlbumClick,
@@ -300,59 +377,46 @@ function RankedGrid({
   onAlbumClick: (a: AlbumStat) => void;
   onArtistClick: (a: { name: string; display: string }) => void;
 }) {
+  const top10 = list.slice(0, 10);
+  const rest = list.slice(10);
   return (
-    <div className="flex flex-wrap gap-2 sm:gap-2.5">
-      {list.map((album, idx) => {
-        const rank = idx + 1;
-        const isMedal = rank <= 3;
-        return (
-          <div
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* 1~10위 */}
+      <div className="flex flex-wrap gap-2 sm:gap-3">
+        {top10.map((album, idx) => (
+          <RankedTile
             key={album.id}
-            style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[72px] sm:w-[90px] transition-transform active:scale-[0.93]"
-            onClick={() => onAlbumClick(album)}
-          >
-            <div style={{
-              borderRadius: 6,
-              overflow: "hidden",
-              backgroundColor: "var(--bg-elevated)",
-              border: `1px solid ${glowBorder(album.avg)}`,
-              boxShadow: glowShadow(album.avg),
-              transition: "opacity 0.15s",
-            }}
-            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px]"
-            onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
-            >
-              {album.cover_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
-                  </div>
-              }
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
-              <span style={{ fontSize: isMedal ? 13 : 10, fontWeight: 700, flexShrink: 0, lineHeight: 1 }}>
-                {isMedal ? MEDAL[rank - 1] : <span style={{ color: "var(--text-muted)" }}>{rank}</span>}
-              </span>
-              <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
-            </div>
-            <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {album.title}
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              <span
-                onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }}
-                style={{ cursor: "pointer" }}
-                className="hover:underline"
-              >
-                {album.artist_display ?? album.artist}
-              </span>
-            </p>
+            album={album}
+            rank={idx + 1}
+            size={idx < 3 ? "lg" : "md"}
+            onAlbumClick={onAlbumClick}
+            onArtistClick={onArtistClick}
+          />
+        ))}
+      </div>
+
+      {/* 구분선 */}
+      {rest.length > 0 && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
+            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>11 — {list.length}</span>
+            <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
           </div>
-        );
-      })}
+          <div className="flex flex-wrap gap-2 sm:gap-2.5">
+            {rest.map((album, idx) => (
+              <RankedTile
+                key={album.id}
+                album={album}
+                rank={idx + 11}
+                size="sm"
+                onAlbumClick={onAlbumClick}
+                onArtistClick={onArtistClick}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
