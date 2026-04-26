@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
-import ThemesPageClient from "./ThemesPageClient";
+import ThemesPageClient, { type Playlist } from "./ThemesPageClient";
 
 export const metadata: Metadata = {
   title: "청음집",
@@ -35,7 +35,7 @@ export default async function ThemesPage() {
         <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 32 }}>
           청음집
         </p>
-        <ThemesPageClient initialPlaylists={playlists as any} />
+        <ThemesPageClient initialPlaylists={playlists as unknown as Playlist[]} />
       </main>
     </div>
   );

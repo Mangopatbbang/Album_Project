@@ -8,14 +8,14 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { USERS } from "@/types";
 import UserAvatar from "@/components/ui/UserAvatar";
 
-type PlaylistEntry = {
+export type PlaylistEntry = {
   id: string;
   sort_order: number;
   comment: string;
   albums: { id: string; title: string; artist: string; cover_url: string | null } | null;
 };
 
-type Playlist = {
+export type Playlist = {
   id: string;
   title: string;
   user_id: string;

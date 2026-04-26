@@ -91,7 +91,8 @@ export default function BoardClient() {
 
   useEffect(() => {
     Promise.all([fetchAnnouncements(), fetchInquiries()]).finally(() => setLoadingData(false));
-  }, [fetchAnnouncements, fetchInquiries]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const handlePostNotice = async () => {
     if (!noticeContent.trim() || !profile) return;
