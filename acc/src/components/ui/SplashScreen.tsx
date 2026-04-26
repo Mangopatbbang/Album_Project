@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from "react";
 
-const SEAM_C = "rgba(185,152,72,0.55)";
+const SEAM_C = "rgba(185,152,72,0.6)";
 
-/** 로고 콘텐츠 — 문 안에 삽입돼 반쪽씩 찢어짐 */
 function LogoInDoor({ side }: { side: "left" | "right" }) {
   return (
     <div
       style={{
         position: "absolute",
         top: "50%",
-        // 왼쪽 문: logo 왼쪽 끝 = 0 (스크린 0), 오른쪽은 door 밖으로 넘쳐 overflow:hidden에 잘림
-        // 오른쪽 문: 스크린 왼쪽(0)에서 시작하려면 left = -(door width) = -50vw
         left: side === "left" ? 0 : "-50vw",
         width: "100vw",
         transform: "translateY(-50%)",
@@ -74,7 +71,6 @@ function TempleDoor({
   opening: boolean;
 }) {
   const isLeft = side === "left";
-
   return (
     <div
       style={{
@@ -83,18 +79,15 @@ function TempleDoor({
         top: 0,
         width: "50%",
         height: "100%",
-        // overflow:hidden → 로고 반쪽 클리핑 + perspective는 부모에서 받으므로 door 자체 rotateY는 정상 작동
         overflow: "hidden",
         transformOrigin: isLeft ? "left center" : "right center",
         animation: opening
           ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 1.6s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
         backgroundColor: "#0f0b07",
-        borderRight: isLeft ? `1px solid ${SEAM_C}` : undefined,
-        borderLeft: !isLeft ? `1px solid ${SEAM_C}` : undefined,
       }}
     >
-      {/* ── 손잡이 (안쪽 가장자리 중앙) ── */}
+      {/* 손잡이 */}
       <div
         style={{
           position: "absolute",
@@ -105,7 +98,6 @@ function TempleDoor({
           flexDirection: "column",
           alignItems: "center",
           gap: 4,
-          zIndex: 2,
         }}
       >
         <div
@@ -127,7 +119,6 @@ function TempleDoor({
         />
       </div>
 
-      {/* ── 로고 반쪽 — 문에 인쇄된 것처럼, 열릴 때 함께 찢어짐 ── */}
       <LogoInDoor side={isLeft ? "left" : "right"} />
     </div>
   );
@@ -135,6 +126,7 @@ function TempleDoor({
 
 export default function SplashScreen() {
   const [show, setShow] = useState(false);
+  const [lineVisible, setLineVisible] = useState(false);
   const [opening, setOpening] = useState(false);
 
   useEffect(() => {
@@ -142,15 +134,15 @@ export default function SplashScreen() {
     if (!seen) {
       sessionStorage.setItem("acc_splash", "1");
       setShow(true);
-      setTimeout(() => setOpening(true), 1600);
-      setTimeout(() => setShow(false), 3400);
+      setTimeout(() => setLineVisible(true), 1200); // 선 그어지기 시작
+      setTimeout(() => setOpening(true), 1700);      // 선 다 그어진 후 갈라짐
+      setTimeout(() => setShow(false), 3500);
     }
   }, []);
 
   if (!show) return null;
 
   return (
-    // perspective를 부모에 설정 → door 자식의 rotateY가 올바른 원근 투영 적용
     <div
       style={{
         position: "fixed",
@@ -163,6 +155,26 @@ export default function SplashScreen() {
     >
       <TempleDoor side="left"  opening={opening} />
       <TempleDoor side="right" opening={opening} />
+
+      {/* 중앙 선: 위→아래로 그어지다가 문이 열리면 페이드아웃 */}
+      {lineVisible && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: "calc(50% - 0.5px)",
+            width: 1,
+            height: "100%",
+            backgroundColor: SEAM_C,
+            transformOrigin: "top center",
+            animation: "lineGrow 0.45s cubic-bezier(0.4,0,0.6,1) forwards",
+            opacity: opening ? 0 : 1,
+            transition: opening ? "opacity 0.15s ease-out" : "none",
+            pointerEvents: "none",
+            zIndex: 10,
+          }}
+        />
+      )}
     </div>
   );
 }
