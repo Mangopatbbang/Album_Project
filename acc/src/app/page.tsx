@@ -8,7 +8,6 @@ import RandomButton from "@/components/album/RandomButton";
 import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
 import CountUp from "@/components/ui/CountUp";
 import MobileLoginHint from "@/components/ui/MobileLoginHint";
-import HomePopup from "@/components/ui/HomePopup";
 import HomeSearchBar from "@/components/ui/HomeSearchBar";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
@@ -92,7 +91,6 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <HomePopup />
       <Header />
 
       <main>

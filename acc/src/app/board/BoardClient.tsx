@@ -256,16 +256,7 @@ export default function BoardClient() {
               placeholder="공지 내용을 입력하세요"
               style={{ ...inputStyle, resize: "vertical", marginBottom: 12 }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={noticePopup}
-                  onChange={(e) => setNoticePopup(e.target.checked)}
-                  style={{ accentColor: "var(--accent)", width: 14, height: 14 }}
-                />
-                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>홈 팝업으로 띄우기</span>
-              </label>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
               <button
                 onClick={handlePostNotice}
                 disabled={savingNotice || !noticeContent.trim()}
@@ -304,11 +295,11 @@ export default function BoardClient() {
                     <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{formatDate(a.created_at)}</span>
                     {a.show_popup && (
                       <span style={{
-                        color: "var(--accent)", fontSize: 10, fontWeight: 600,
-                        backgroundColor: "rgba(232,213,163,0.1)", border: "1px solid rgba(232,213,163,0.3)",
-                        borderRadius: 4, padding: "1px 6px", letterSpacing: "0.04em",
+                        fontSize: 9, fontWeight: 700, color: "var(--bg)",
+                        backgroundColor: "var(--accent)", borderRadius: 3,
+                        padding: "2px 5px", letterSpacing: "0.06em",
                       }}>
-                        팝업
+                        NEW
                       </span>
                     )}
                   </div>
@@ -322,7 +313,7 @@ export default function BoardClient() {
                           fontSize: 11, padding: "2px 8px", cursor: "pointer",
                         }}
                       >
-                        {a.show_popup ? "팝업 해제" : "팝업 설정"}
+                        {a.show_popup ? "NEW 해제" : "NEW 설정"}
                       </button>
                       <button
                         onClick={() => handleDeleteNotice(a.id)}

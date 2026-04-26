@@ -5,7 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
-import InquiryFloatingButton from "@/components/ui/InquiryFloatingButton";
+import FloatingActions from "@/components/ui/FloatingActions";
 import TutorialModal from "@/components/ui/TutorialModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
@@ -58,7 +58,7 @@ export default function RootLayout({
             <SplashScreen />
             {children}
             <BottomNav />
-            <InquiryFloatingButton />
+            <FloatingActions />
             <TutorialModal />
           </ToastProvider>
           </UserAvatarsProvider>
