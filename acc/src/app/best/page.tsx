@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
-import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, AlbumStat } from "@/lib/stats";
+import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, getRankedAll, AlbumStat } from "@/lib/stats";
 import BestPageClient from "./BestPageClient";
 
 export const metadata: Metadata = {
   title: "청음감",
-  description: "아차청음사 청음감 — 연도별·장르별·아티스트별",
+  description: "아차청음사 청음감 — 통합·연도별·장르별·아티스트별",
 };
 
 export default async function BestPage({
@@ -13,7 +13,7 @@ export default async function BestPage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
-  const { view = "year" } = await searchParams;
+  const { view = "all" } = await searchParams;
   const albums = await fetchAllAlbumsWithRatings();
 
   function computeSections(albs: typeof albums): [string, AlbumStat[]][] {
@@ -26,6 +26,10 @@ export default async function BestPage({
   const domesticSections = computeSections(albums.filter((a) => a.region === "국내"));
   const foreignSections = computeSections(albums.filter((a) => a.region === "해외"));
 
+  const allRanked = getRankedAll(albums);
+  const domesticRanked = getRankedAll(albums.filter((a) => a.region === "국내"));
+  const foreignRanked = getRankedAll(albums.filter((a) => a.region === "해외"));
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
@@ -36,6 +40,9 @@ export default async function BestPage({
           allSections={sections}
           domesticSections={domesticSections}
           foreignSections={foreignSections}
+          allRanked={allRanked}
+          domesticRanked={domesticRanked}
+          foreignRanked={foreignRanked}
           view={view}
         />
       </main>

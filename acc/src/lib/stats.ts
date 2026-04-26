@@ -286,3 +286,8 @@ export const THEMES = [
   { id: "hidden_gems", name: "숨겨진 명반", emoji: "💎", description: "한 명만 들었는데 7점 이상" },
   { id: "controversial", name: "의견 충돌", emoji: "⚡", description: "멤버 간 점수 편차가 가장 큰 앨범들" },
 ] as const;
+
+// 통합 랭킹: 평균 점수 내림차순 상위 50개 (평점 2명 이상)
+export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
+  return validAlbums(albums).sort((a, b) => b.avg - a.avg).slice(0, 50);
+}

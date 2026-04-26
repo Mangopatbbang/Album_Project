@@ -10,6 +10,7 @@ import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 const TOP_N = 5;
+const MEDAL = ["🥇", "🥈", "🥉"];
 
 function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
   return {
@@ -62,7 +63,6 @@ function SectionPopup({
           animation: "modalIn 0.18s ease-out",
         }}
       >
-        {/* 헤더 */}
         <div style={{
           padding: "18px 24px 14px",
           borderBottom: "1px solid var(--border)",
@@ -86,7 +86,6 @@ function SectionPopup({
           </button>
         </div>
 
-        {/* 목록 */}
         <div style={{ overflowY: "auto", padding: "8px 0" }}>
           {list.map((album, idx) => (
             <div
@@ -252,7 +251,7 @@ function ArtistSection({
         </span>
       </div>
       <div className="flex flex-wrap gap-2 sm:gap-2.5">
-        {list.map((album, idx) => (
+        {list.map((album) => (
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
@@ -292,15 +291,117 @@ function ArtistSection({
   );
 }
 
+function RankedList({
+  list,
+  onAlbumClick,
+  onArtistClick,
+}: {
+  list: AlbumStat[];
+  onAlbumClick: (a: AlbumStat) => void;
+  onArtistClick: (a: { name: string; display: string }) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {list.map((album, idx) => {
+        const rank = idx + 1;
+        const isMedal = rank <= 3;
+        return (
+          <div
+            key={album.id}
+            onClick={() => onAlbumClick(album)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: isMedal ? "14px 0" : "10px 0",
+              borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none",
+              cursor: "pointer",
+              transition: "opacity 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            {/* 순위 */}
+            <div style={{ width: 32, textAlign: "center", flexShrink: 0 }}>
+              {isMedal ? (
+                <span style={{ fontSize: 20, lineHeight: 1 }}>{MEDAL[rank - 1]}</span>
+              ) : (
+                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 700 }}>{rank}</span>
+              )}
+            </div>
+
+            {/* 커버 */}
+            <div style={{
+              width: isMedal ? 54 : 40,
+              height: isMedal ? 54 : 40,
+              borderRadius: 6,
+              overflow: "hidden",
+              flexShrink: 0,
+              backgroundColor: "var(--bg-elevated)",
+              border: `1px solid ${glowBorder(album.avg)}`,
+              boxShadow: glowShadow(album.avg),
+            }}>
+              {album.cover_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span>
+                  </div>
+              }
+            </div>
+
+            {/* 텍스트 */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{
+                color: "var(--text)",
+                fontSize: isMedal ? 14 : 13,
+                fontWeight: isMedal ? 600 : 500,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                marginBottom: 2,
+              }}>
+                {album.title}
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span
+                  onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }}
+                  style={{ cursor: "pointer" }}
+                  className="hover:underline"
+                >
+                  {album.artist_display ?? album.artist}
+                </span>
+                {album.year ? ` · ${album.year}` : ""}
+              </p>
+            </div>
+
+            {/* 점수 */}
+            <div style={{ flexShrink: 0, textAlign: "right" }}>
+              <p style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: isMedal ? 15 : 13 }}>
+                {album.avg.toFixed(1)}
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: 10 }}>{album.count}명</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function BestPageClient({
   allSections,
   domesticSections,
   foreignSections,
+  allRanked,
+  domesticRanked,
+  foreignRanked,
   view,
 }: {
   allSections: [string, AlbumStat[]][];
   domesticSections: [string, AlbumStat[]][];
   foreignSections: [string, AlbumStat[]][];
+  allRanked: AlbumStat[];
+  domesticRanked: AlbumStat[];
+  foreignRanked: AlbumStat[];
   view: string;
 }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
@@ -313,6 +414,11 @@ export default function BestPageClient({
     regionFilter === "국내" ? domesticSections :
     regionFilter === "해외" ? foreignSections :
     allSections;
+
+  const rankedList =
+    regionFilter === "국내" ? domesticRanked :
+    regionFilter === "해외" ? foreignRanked :
+    allRanked;
 
   const sortedArtistSections = artistSort === "avg"
     ? [...sections].sort((a, b) => {
@@ -328,8 +434,8 @@ export default function BestPageClient({
 
   return (
     <>
-      {/* 필터 행: 지역(좌) + 정렬(우, artist view만) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      {/* 필터 행: 지역(좌) + 탭/정렬(우) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {(["전체", "국내", "해외"] as const).map((r) => (
             <button
@@ -343,7 +449,7 @@ export default function BestPageClient({
                 cursor: "pointer",
               }}
             >
-              {r === "전체" ? "전체" : r === "국내" ? "국내" : "해외"}
+              {r}
             </button>
           ))}
         </div>
@@ -368,7 +474,7 @@ export default function BestPageClient({
               <span style={{ color: "var(--border)", fontSize: 14, margin: "0 2px" }}>|</span>
             </>
           )}
-          {(["year", "genre", "artist"] as const).map((v) => (
+          {(["all", "year", "genre", "artist"] as const).map((v) => (
             <Link
               key={v}
               href={`/best?view=${v}`}
@@ -380,13 +486,19 @@ export default function BestPageClient({
                 border: `1px solid ${view === v ? "var(--accent)" : "var(--border)"}`,
               }}
             >
-              {v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
+              {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
             </Link>
           ))}
         </div>
       </div>
 
-      {view === "artist" ? (
+      {view === "all" ? (
+        <RankedList
+          list={rankedList}
+          onAlbumClick={(a) => setSelectedAlbum(a)}
+          onArtistClick={(a) => setArtistModal(a)}
+        />
+      ) : view === "artist" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {sortedArtistSections.map(([artist, list]) => (
             <ArtistSection

@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
-import {
-  fetchAllAlbumsWithRatings,
-  getEightClub,
-  getUnanimous,
-  getControversial,
-  getHiddenGems,
-  getArtistBest,
-  AlbumStat,
-} from "@/lib/stats";
 import { supabaseServer } from "@/lib/supabase";
 import ThemesPageClient from "./ThemesPageClient";
 
 export const metadata: Metadata = {
   title: "청음집",
-  description: "선곡집과 테마별 음반 모음",
+  description: "선곡집 모음",
 };
 
 async function getPlaylists() {
@@ -35,18 +26,7 @@ async function getPlaylists() {
 }
 
 export default async function ThemesPage() {
-  const [albums, playlists] = await Promise.all([
-    fetchAllAlbumsWithRatings(),
-    getPlaylists(),
-  ]);
-
-  const themeData: Record<string, AlbumStat[]> = {
-    eight_club: getEightClub(albums),
-    unanimous: getUnanimous(albums),
-    artist_best: getArtistBest(albums),
-    hidden_gems: getHiddenGems(albums),
-    controversial: getControversial(albums).slice(0, 30),
-  };
+  const playlists = await getPlaylists();
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -55,7 +35,7 @@ export default async function ThemesPage() {
         <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 32 }}>
           청음집
         </p>
-        <ThemesPageClient themeData={themeData} initialPlaylists={playlists as any} />
+        <ThemesPageClient initialPlaylists={playlists as any} />
       </main>
     </div>
   );
