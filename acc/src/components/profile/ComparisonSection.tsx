@@ -26,7 +26,7 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    loadedRef.current = false; // userId 변경 시 재fetch 허용
+    loadedRef.current = false;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadedRef.current) {
@@ -47,11 +47,28 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
   }, [userId]);
 
   const emojisFor = (id: string) => (genreEmojiMap?.[id] ?? []).join("");
+  const isLoading = comparisons === null;
 
   return (
     <div ref={sectionRef}>
+      {/* 로딩 중 */}
+      {isLoading && (
+        <div style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: "24px 28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 80,
+        }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>불러오는 중…</p>
+        </div>
+      )}
+
       {/* 취향 궁합 */}
-      {bestMatch && (
+      {!isLoading && bestMatch && (
         <div
           style={{
             backgroundColor: "var(--bg-card)",
@@ -61,15 +78,7 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
             marginBottom: 16,
           }}
         >
-          <p
-            style={{
-              color: "var(--text-muted)",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              marginBottom: 16,
-            }}
-          >
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             취향 궁합
           </p>
           <div style={{ textAlign: "center" }}>
@@ -78,74 +87,35 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
             </div>
             <Link
               href={`/profile/${bestMatch.user.id}`}
-              style={{
-                color: "var(--text)",
-                fontWeight: 600,
-                fontSize: 14,
-                textDecoration: "none",
-              }}
+              style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, textDecoration: "none" }}
               className="hover:text-[var(--accent)] transition-colors"
             >
               {bestMatch.user.display_name}
             </Link>
             {emojisFor(bestMatch.user.id) && (
-              <p style={{ fontSize: 14, marginTop: 4, letterSpacing: "0.05em" }}>
-                {emojisFor(bestMatch.user.id)}
-              </p>
+              <p style={{ fontSize: 14, marginTop: 4, letterSpacing: "0.05em" }}>{emojisFor(bestMatch.user.id)}</p>
             )}
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
               공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
-              <span
-                style={{
-                  color:
-                    bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)",
-                  fontWeight: 600,
-                }}
-              >
+              <span style={{ color: bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
                 {bestMatch.diff!.toFixed(2)}점 차이
               </span>
             </p>
-            <p
-              style={{
-                color: "var(--accent)",
-                fontSize: 12,
-                marginTop: 8,
-                fontWeight: 500,
-              }}
-            >
-              {bestMatch.diff! < 0.8
-                ? "취향이 가장 비슷한 청음인"
-                : "그나마 가장 비슷한 청음인"}
+            <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
+              {bestMatch.diff! < 0.8 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
             </p>
           </div>
         </div>
       )}
 
       {/* 멤버 비교 */}
-      <div
-        style={{
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-          padding: "24px 28px",
-        }}
-      >
-        <p
-          style={{
-            color: "var(--text-muted)",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            marginBottom: 16,
-          }}
-        >
-          멤버 비교
-        </p>
-        {comparisons === null ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>불러오는 중…</p>
-        ) : (
+      {!isLoading && (
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+            멤버 비교
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {comparisons.map(({ user: other, commonCount, diff }) => (
+            {comparisons!.map(({ user: other, commonCount, diff }) => (
               <div
                 key={other.id}
                 style={{
@@ -159,40 +129,20 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
               >
                 <Link
                   href={`/profile/${other.id}`}
-                  style={{
-                    color: "var(--text-sub)",
-                    fontSize: 13,
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
+                  style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
                   className="hover:text-[var(--accent)] transition-colors"
                 >
                   <UserAvatar avatarUrl={avatarMap?.[other.id]} size={18} />
                   {other.display_name}
-                  {emojisFor(other.id) && (
-                    <span style={{ fontSize: 12 }}>{emojisFor(other.id)}</span>
-                  )}
+                  {emojisFor(other.id) && <span style={{ fontSize: 12 }}>{emojisFor(other.id)}</span>}
                 </Link>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                    공통 {commonCount}장
-                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
                   {diff !== null && (
-                    <p
-                      style={{
-                        color:
-                          diff < 0.8
-                            ? "var(--accent)"
-                            : diff > 1.5
-                            ? "var(--text-muted)"
-                            : "var(--text-sub)",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        marginTop: 2,
-                      }}
-                    >
+                    <p style={{
+                      color: diff < 0.8 ? "var(--accent)" : diff > 1.5 ? "var(--text-muted)" : "var(--text-sub)",
+                      fontSize: 12, fontWeight: 600, marginTop: 2,
+                    }}>
                       {diff < 0.8 ? "취향 비슷" : `앨범당 ${diff}점 차이`}
                     </p>
                   )}
@@ -200,8 +150,8 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

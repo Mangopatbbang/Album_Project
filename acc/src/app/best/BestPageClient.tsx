@@ -377,6 +377,13 @@ function RankedGrid({
   onAlbumClick: (a: AlbumStat) => void;
   onArtistClick: (a: { name: string; display: string }) => void;
 }) {
+  if (list.length === 0) {
+    return (
+      <p style={{ color: "var(--text-muted)", fontSize: 13, padding: "60px 0", textAlign: "center" }}>
+        해당 지역 청음 기록이 없습니다
+      </p>
+    );
+  }
   const top10 = list.slice(0, 10);
   const rest = list.slice(10);
   return (
