@@ -119,31 +119,43 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // 리뷰 좋아요 토글 (서버사이드 read-modify-write)
+  // 리뷰 좋아요 토글 (optimistic locking — 동시 요청 충돌 방지)
   if (reviewerId && likerId) {
-    const { data: current } = await supabaseServer
-      .from("ratings")
-      .select("liked_by")
-      .eq("album_id", albumId)
-      .eq("user_id", reviewerId)
-      .single();
+    let newVal: string | null = null;
+    let isAdding = false;
 
-    const likers = (current?.liked_by ?? "").split(",").filter(Boolean);
-    const idx = likers.indexOf(likerId);
-    if (idx >= 0) likers.splice(idx, 1);
-    else likers.push(likerId);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data: current } = await supabaseServer
+        .from("ratings")
+        .select("liked_by")
+        .eq("album_id", albumId)
+        .eq("user_id", reviewerId)
+        .single();
 
-    const newVal = likers.length > 0 ? likers.join(",") : null;
-    const { error } = await supabaseServer
-      .from("ratings")
-      .update({ liked_by: newVal })
-      .eq("album_id", albumId)
-      .eq("user_id", reviewerId);
+      const oldVal = current?.liked_by ?? null;
+      const likers = (oldVal ?? "").split(",").filter(Boolean);
+      const idx = likers.indexOf(likerId);
+      if (idx >= 0) likers.splice(idx, 1);
+      else likers.push(likerId);
+      newVal = likers.length > 0 ? likers.join(",") : null;
+      isAdding = idx < 0;
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      const base = supabaseServer
+        .from("ratings")
+        .update({ liked_by: newVal })
+        .eq("album_id", albumId)
+        .eq("user_id", reviewerId);
+
+      const { data: updated, error } = await (
+        oldVal !== null ? base.eq("liked_by", oldVal) : base.is("liked_by", null)
+      ).select("id");
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (updated && updated.length > 0) break;
+      // 동시 수정 감지 → 재시도
+    }
 
     // 좋아요 추가 시 (취소가 아닐 때) + 자기 소감이 아닐 때 알림 생성
-    const isAdding = idx < 0; // splice 전 idx가 -1이면 새로 추가
     if (isAdding && likerId !== reviewerId) {
       await supabaseServer
         .from("notifications")

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 // GET /api/admin/artist-search-aliases?artist=xxx
 // → { aliases: { id: number; alias: string }[] }
 export async function GET(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const artist = req.nextUrl.searchParams.get("artist")?.trim();
   if (!artist) {
     return NextResponse.json({ error: "artist 파라미터 필수" }, { status: 400 });
@@ -20,6 +23,8 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/artist-search-aliases
 // body: { spotify_name, alias }
 export async function POST(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name, alias } = await req.json();
   if (!spotify_name?.trim() || !alias?.trim()) {
     return NextResponse.json({ error: "spotify_name과 alias 필수" }, { status: 400 });
@@ -39,6 +44,8 @@ export async function POST(req: NextRequest) {
 // DELETE /api/admin/artist-search-aliases
 // body: { id }
 export async function DELETE(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { id } = await req.json();
   if (!id) {
     return NextResponse.json({ error: "id 필수" }, { status: 400 });

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 // GET /api/admin/artist-use-variant
 // → { stats: Record<spotify_name, { total: number; using: number }> }
 // (alias 등록된 아티스트 전체의 variant 사용 현황)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   // 1) alias 등록된 아티스트 목록
   const { data: aliasData, error: aliasErr } = await supabaseServer
     .from("artist_aliases")
@@ -37,6 +40,8 @@ export async function GET() {
 // body: { spotify_name, use_variant: boolean }
 // → 해당 아티스트 전체 앨범 use_artist_variant 일괄 변경
 export async function PATCH(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name, use_variant } = await req.json();
   if (!spotify_name?.trim() || use_variant === undefined) {
     return NextResponse.json({ error: "spotify_name과 use_variant 필수" }, { status: 400 });

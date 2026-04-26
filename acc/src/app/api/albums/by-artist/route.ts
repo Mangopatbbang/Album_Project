@@ -6,7 +6,7 @@ const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, rele
 
 export async function GET(req: NextRequest) {
   const name = new URL(req.url).searchParams.get("name")?.trim();
-  if (!name) return NextResponse.json({ albums: [], avg: null }, { status: 400 });
+  if (!name) return NextResponse.json({ error: "name 파라미터 필수", albums: [], avg: null }, { status: 400 });
 
   // 두 쿼리를 병렬 실행 — .eq() / .ilike()는 Supabase 클라이언트가 내부적으로
   // 파라미터 바인딩하므로 콤마·괄호 등 특수문자 포함 아티스트명도 안전하게 처리됨
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false }),
   ]);
 
-  if (r1.error && r2.error) return NextResponse.json({ albums: [], avg: null }, { status: 500 });
+  if (r1.error && r2.error) return NextResponse.json({ error: r1.error.message, albums: [], avg: null }, { status: 500 });
 
   // 병합 + id 기준 dedup + release_date 내림차순 재정렬 (null은 맨 뒤)
   const seen = new Set<string>();
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     });
 
   const error = r1.error && r2.error ? r1.error : null;
-  if (error) return NextResponse.json({ albums: [], avg: null }, { status: 500 });
+  if (error) return NextResponse.json({ error: error.message, albums: [], avg: null }, { status: 500 });
 
   const resolvedMerged = await resolveArtistDisplay(merged);
   const albums = resolvedMerged.map((album) => {

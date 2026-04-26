@@ -2,26 +2,21 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 
 export async function GET() {
-  // Fetch all IDs first (lightweight) to avoid gap issues with offset-based random
-  const allIds: string[] = [];
-  for (let page = 0; ; page++) {
-    const { data } = await supabaseServer
-      .from("albums")
-      .select("id")
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!data || data.length === 0) break;
-    allIds.push(...data.map((r: { id: string }) => r.id));
-    if (data.length < 1000) break;
+  const { count, error: countError } = await supabaseServer
+    .from("albums")
+    .select("*", { count: "exact", head: true });
+
+  if (countError || !count || count === 0) {
+    return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
   }
 
-  if (allIds.length === 0) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
-
-  const randomId = allIds[Math.floor(Math.random() * allIds.length)];
+  const offset = Math.floor(Math.random() * count);
 
   const { data, error } = await supabaseServer
     .from("albums")
     .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
-    .eq("id", randomId)
+    .order("id")
+    .range(offset, offset)
     .single();
 
   if (error || !data) return NextResponse.json({ error: "조회 실패" }, { status: 500 });

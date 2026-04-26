@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 // PATCH /api/admin/artist-canonical
 // body: { album_id, artist }  — 앨범의 spotify 정식 아티스트명 변경 (admin 전용)
 export async function PATCH(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { album_id, artist } = await req.json();
   if (!album_id || !artist?.trim()) {
     return NextResponse.json({ error: "album_id와 artist 필수" }, { status: 400 });

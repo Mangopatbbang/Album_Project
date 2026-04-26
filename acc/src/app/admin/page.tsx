@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { openTutorial } from "@/components/ui/TutorialModal";
+import { useAuth } from "@/context/AuthContext";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -58,6 +59,8 @@ type LogRow = {
 };
 
 export default function AdminPage() {
+  const { profile, loading: authLoading } = useAuth();
+
   // --- 활동 로그 ---
   const [logs, setLogs] = useState<LogRow[] | null>(null);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -67,7 +70,7 @@ export default function AdminPage() {
     setLogsLoading(true);
     const params = new URLSearchParams({ limit: "80" });
     if (action) params.set("action", action);
-    const res = await fetch(`/api/admin/logs?${params}`);
+    const res = await adminFetch(`/api/admin/logs?${params}`);
     const data = await res.json();
     setLogs(data.logs ?? []);
     setLogsLoading(false);
@@ -82,7 +85,7 @@ export default function AdminPage() {
 
   async function loadStats() {
     setStatsLoading(true);
-    const res = await fetch("/api/admin/stats");
+    const res = await adminFetch("/api/admin/stats");
     const data = await res.json();
     setStats(data);
     setStatsLoading(false);
@@ -94,7 +97,7 @@ export default function AdminPage() {
     if (statsFilter === filter) { setStatsFilter(null); setStatsAlbums([]); return; }
     setStatsFilter(filter);
     setStatsAlbumsLoading(true);
-    const res = await fetch(`/api/admin/albums?filter=${filter}&limit=500`);
+    const res = await adminFetch(`/api/admin/albums?filter=${filter}&limit=500`);
     const data = await res.json();
     setStatsAlbums(data.albums ?? []);
     setStatsAlbumsLoading(false);
@@ -132,8 +135,8 @@ export default function AdminPage() {
     setListMode("aliases");
     setUnaliasedArtists([]);
     const [res1, res2] = await Promise.all([
-      fetch("/api/admin/artist-aliases"),
-      fetch("/api/admin/artist-use-variant"),
+      adminFetch("/api/admin/artist-aliases"),
+      adminFetch("/api/admin/artist-use-variant"),
     ]);
     const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
     setAliases(d1.aliases ?? []);
@@ -146,7 +149,7 @@ export default function AdminPage() {
     setUnaliasedLoading(true);
     setListMode("unaliased");
     setAliases([]);
-    const res = await fetch("/api/admin/artist-aliases?unaliased=true");
+    const res = await adminFetch("/api/admin/artist-aliases?unaliased=true");
     const data = await res.json();
     setUnaliasedArtists(data.artists ?? []);
     setUnaliasedLoading(false);
@@ -155,11 +158,11 @@ export default function AdminPage() {
   // 현재 열린 목록을 토글 없이 새로고침
   async function refreshCurrentList(mode: "aliases" | "unaliased" | null) {
     if (mode === "aliases") {
-      const res = await fetch("/api/admin/artist-aliases");
+      const res = await adminFetch("/api/admin/artist-aliases");
       const data = await res.json();
       setAliases(data.aliases ?? []);
     } else if (mode === "unaliased") {
-      const res = await fetch("/api/admin/artist-aliases?unaliased=true");
+      const res = await adminFetch("/api/admin/artist-aliases?unaliased=true");
       const data = await res.json();
       setUnaliasedArtists(data.artists ?? []);
     }
@@ -167,7 +170,7 @@ export default function AdminPage() {
 
   async function handleAddAlias() {
     if (!newSpotifyName.trim() || !newVariantName.trim()) return;
-    const res = await fetch("/api/admin/artist-aliases", {
+    const res = await adminFetch("/api/admin/artist-aliases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name: newSpotifyName.trim(), variant_name: newVariantName.trim() }),
@@ -184,7 +187,7 @@ export default function AdminPage() {
 
   async function handleSaveEditAlias() {
     if (!editingAlias || !editVariant.trim()) return;
-    const res = await fetch("/api/admin/artist-aliases", {
+    const res = await adminFetch("/api/admin/artist-aliases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name: editingAlias, variant_name: editVariant.trim() }),
@@ -201,7 +204,7 @@ export default function AdminPage() {
 
   async function handleDeleteAlias(spotify_name: string) {
     if (!confirm(`"${spotify_name}" 별칭을 삭제할까요?`)) return;
-    const res = await fetch("/api/admin/artist-aliases", {
+    const res = await adminFetch("/api/admin/artist-aliases", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name }),
@@ -216,12 +219,12 @@ export default function AdminPage() {
   }
 
   async function handleSetVariant(spotify_name: string, use_variant: boolean) {
-    await fetch("/api/admin/artist-use-variant", {
+    await adminFetch("/api/admin/artist-use-variant", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name, use_variant }),
     });
-    const res = await fetch("/api/admin/artist-use-variant");
+    const res = await adminFetch("/api/admin/artist-use-variant");
     const data = await res.json();
     setVariantStats(data.stats ?? {});
   }
@@ -236,7 +239,7 @@ export default function AdminPage() {
     setSearchAliasInput("");
     if (!searchAliasMap[spotify_name]) {
       setSearchAliasLoading(true);
-      const res = await fetch(`/api/admin/artist-search-aliases?artist=${encodeURIComponent(spotify_name)}`);
+      const res = await adminFetch(`/api/admin/artist-search-aliases?artist=${encodeURIComponent(spotify_name)}`);
       const data = await res.json();
       setSearchAliasMap((prev) => ({ ...prev, [spotify_name]: data.aliases ?? [] }));
       setSearchAliasLoading(false);
@@ -245,7 +248,7 @@ export default function AdminPage() {
 
   async function handleAddSearchAlias(spotify_name: string) {
     if (!searchAliasInput.trim()) return;
-    const res = await fetch("/api/admin/artist-search-aliases", {
+    const res = await adminFetch("/api/admin/artist-search-aliases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name, alias: searchAliasInput.trim() }),
@@ -253,7 +256,7 @@ export default function AdminPage() {
     if (res.ok) {
       setSearchAliasInput("");
       // 목록 갱신
-      const r2 = await fetch(`/api/admin/artist-search-aliases?artist=${encodeURIComponent(spotify_name)}`);
+      const r2 = await adminFetch(`/api/admin/artist-search-aliases?artist=${encodeURIComponent(spotify_name)}`);
       const d2 = await r2.json();
       setSearchAliasMap((prev) => ({ ...prev, [spotify_name]: d2.aliases ?? [] }));
       setSearchAliasMsg((prev) => ({ ...prev, [spotify_name]: "" }));
@@ -264,7 +267,7 @@ export default function AdminPage() {
   }
 
   async function handleDeleteSearchAlias(spotify_name: string, id: number) {
-    await fetch("/api/admin/artist-search-aliases", {
+    await adminFetch("/api/admin/artist-search-aliases", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -277,7 +280,7 @@ export default function AdminPage() {
 
   async function handleCanonicalChange() {
     if (!canonicalAlbumId.trim() || !canonicalArtist.trim()) return;
-    const res = await fetch("/api/admin/artist-canonical", {
+    const res = await adminFetch("/api/admin/artist-canonical", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ album_id: canonicalAlbumId.trim(), artist: canonicalArtist.trim() }),
@@ -414,7 +417,7 @@ export default function AdminPage() {
       batchNum++;
       setDateLog((prev) => [...prev, `배치 ${batchNum} 처리 중...`]);
       try {
-        const res = await fetch("/api/admin/backfill-release-dates", {
+        const res = await adminFetch("/api/admin/backfill-release-dates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset, force }),
@@ -454,7 +457,7 @@ export default function AdminPage() {
     setItunesProgress({ current: 0, total: 0 });
 
     // 1) 전용 엔드포인트로 DB 앨범 직접 조회 (release_date 포함)
-    const res0 = await fetch(`/api/admin/albums-dates?scope=${itunesScope}`);
+    const res0 = await adminFetch(`/api/admin/albums-dates?scope=${itunesScope}`);
     const albums: { id: string; title: string; artist: string; release_date: string }[] = await res0.json();
 
     if (!albums.length) { setItunesRunning(false); return; }
@@ -526,7 +529,7 @@ export default function AdminPage() {
 
   async function loadAlbums() {
     setAlbumsLoaded(false);
-    const res = await fetch(`/api/admin/albums?filter=${albumFilter}&limit=300`);
+    const res = await adminFetch(`/api/admin/albums?filter=${albumFilter}&limit=300`);
     const data = await res.json();
     setAlbums(data.albums ?? []);
     setAlbumsLoaded(true);
@@ -556,7 +559,7 @@ export default function AdminPage() {
 
     const [spotifyRes, dbRes] = await Promise.all([
       fetch(`/api/migrate/spotify/search?${spotifyParams}`),
-      fetch(`/api/admin/albums?${dbParams}`),
+      adminFetch(`/api/admin/albums?${dbParams}`),
     ]);
 
     const spotifyData = await spotifyRes.json();
@@ -620,6 +623,25 @@ export default function AdminPage() {
       setFixMsg(`❌ 업데이트 실패: ${JSON.stringify(errData)}`);
     }
   }
+
+  function adminFetch(url: string, init?: RequestInit) {
+    const headers: Record<string, string> = {
+      ...(init?.headers as Record<string, string> ?? {}),
+      "x-user-id": profile?.id ?? "",
+    };
+    return fetch(url, { ...init, headers });
+  }
+
+  if (authLoading) return (
+    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <p style={{ color: "var(--text-muted)", fontSize: 14 }}>로딩 중...</p>
+    </div>
+  );
+  if (!profile || profile.role !== "admin") return (
+    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <p style={{ color: "var(--text-muted)", fontSize: 14 }}>접근 권한이 없습니다</p>
+    </div>
+  );
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "40px 24px" }}>

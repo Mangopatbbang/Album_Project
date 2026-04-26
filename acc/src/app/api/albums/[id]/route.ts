@@ -104,14 +104,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { userId, role } = await req.json();
+  const { userId } = await req.json();
 
   if (!userId) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  const { data: album } = await supabaseServer
-    .from("albums").select("added_by, title, artist").eq("id", id).single();
+  const [{ data: album }, { data: userProfile }] = await Promise.all([
+    supabaseServer.from("albums").select("added_by, title, artist").eq("id", id).single(),
+    supabaseServer.from("users").select("role").eq("id", userId).single(),
+  ]);
 
   if (!album) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
+  const role = userProfile?.role ?? "user";
   if (role !== "admin" && album.added_by !== userId) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
 
   const { error } = await supabaseServer.from("albums").delete().eq("id", id);
