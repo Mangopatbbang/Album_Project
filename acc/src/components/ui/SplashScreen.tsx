@@ -82,7 +82,7 @@ function TempleDoor({
         overflow: "hidden",
         transformOrigin: isLeft ? "left center" : "right center",
         animation: opening
-          ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 1.6s cubic-bezier(0.3,0,0.6,1) forwards`
+          ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 2.0s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
         backgroundColor: "#0f0b07",
       }}
@@ -134,9 +134,9 @@ export default function SplashScreen() {
     if (!seen) {
       sessionStorage.setItem("acc_splash", "1");
       setShow(true);
-      setTimeout(() => setLineVisible(true), 1200); // 선 그어지기 시작
-      setTimeout(() => setOpening(true), 1700);      // 선 다 그어진 후 갈라짐
-      setTimeout(() => setShow(false), 3500);
+      setTimeout(() => setLineVisible(true), 1400); // 선 그어지기 시작
+      setTimeout(() => setOpening(true), 2300);      // 선 다 그어진 후 갈라짐
+      setTimeout(() => setShow(false), 4500);
     }
   }, []);
 
@@ -167,7 +167,7 @@ export default function SplashScreen() {
             height: "100%",
             backgroundColor: SEAM_C,
             transformOrigin: "top center",
-            animation: "lineGrow 0.45s cubic-bezier(0.4,0,0.6,1) forwards",
+            animation: "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) forwards",
             opacity: opening ? 0 : 1,
             transition: opening ? "opacity 0.15s ease-out" : "none",
             pointerEvents: "none",
