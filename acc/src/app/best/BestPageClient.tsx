@@ -291,7 +291,7 @@ function ArtistSection({
   );
 }
 
-function RankedList({
+function RankedGrid({
   list,
   onAlbumClick,
   onArtistClick,
@@ -301,85 +301,55 @@ function RankedList({
   onArtistClick: (a: { name: string; display: string }) => void;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div className="flex flex-wrap gap-2 sm:gap-2.5">
       {list.map((album, idx) => {
         const rank = idx + 1;
         const isMedal = rank <= 3;
         return (
           <div
             key={album.id}
+            style={{ flexShrink: 0, cursor: "pointer" }}
+            className="w-[72px] sm:w-[90px] transition-transform active:scale-[0.93]"
             onClick={() => onAlbumClick(album)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: isMedal ? "14px 0" : "10px 0",
-              borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none",
-              cursor: "pointer",
-              transition: "opacity 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
           >
-            {/* 순위 */}
-            <div style={{ width: 32, textAlign: "center", flexShrink: 0 }}>
-              {isMedal ? (
-                <span style={{ fontSize: 20, lineHeight: 1 }}>{MEDAL[rank - 1]}</span>
-              ) : (
-                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 700 }}>{rank}</span>
-              )}
-            </div>
-
-            {/* 커버 */}
             <div style={{
-              width: isMedal ? 54 : 40,
-              height: isMedal ? 54 : 40,
               borderRadius: 6,
               overflow: "hidden",
-              flexShrink: 0,
               backgroundColor: "var(--bg-elevated)",
               border: `1px solid ${glowBorder(album.avg)}`,
               boxShadow: glowShadow(album.avg),
-            }}>
+              transition: "opacity 0.15s",
+            }}
+            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px]"
+            onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+            >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span>
+                    <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
                   </div>
               }
             </div>
-
-            {/* 텍스트 */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{
-                color: "var(--text)",
-                fontSize: isMedal ? 14 : 13,
-                fontWeight: isMedal ? 600 : 500,
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                marginBottom: 2,
-              }}>
-                {album.title}
-              </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                <span
-                  onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }}
-                  style={{ cursor: "pointer" }}
-                  className="hover:underline"
-                >
-                  {album.artist_display ?? album.artist}
-                </span>
-                {album.year ? ` · ${album.year}` : ""}
-              </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
+              <span style={{ fontSize: isMedal ? 13 : 10, fontWeight: 700, flexShrink: 0, lineHeight: 1 }}>
+                {isMedal ? MEDAL[rank - 1] : <span style={{ color: "var(--text-muted)" }}>{rank}</span>}
+              </span>
+              <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
             </div>
-
-            {/* 점수 */}
-            <div style={{ flexShrink: 0, textAlign: "right" }}>
-              <p style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: isMedal ? 15 : 13 }}>
-                {album.avg.toFixed(1)}
-              </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 10 }}>{album.count}명</p>
-            </div>
+            <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {album.title}
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span
+                onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }}
+                style={{ cursor: "pointer" }}
+                className="hover:underline"
+              >
+                {album.artist_display ?? album.artist}
+              </span>
+            </p>
           </div>
         );
       })}
@@ -493,7 +463,7 @@ export default function BestPageClient({
       </div>
 
       {view === "all" ? (
-        <RankedList
+        <RankedGrid
           list={rankedList}
           onAlbumClick={(a) => setSelectedAlbum(a)}
           onArtistClick={(a) => setArtistModal(a)}
