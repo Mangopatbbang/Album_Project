@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const FRAME = 12;
-const V_LINES = [20, 40, 60, 80];
-const H_LINES = Array.from({ length: 13 }, (_, i) =>
-  parseFloat(((i + 1) * (100 / 14)).toFixed(2))
-);
-// 황금색 amber (R:G 비율 줄여 빨간느낌 제거)
-const BAR_C = "rgba(185,152,72,0.46)";
-const FRM_C = "rgba(185,152,72,0.68)";
+const SEAM_C = "rgba(185,152,72,0.55)";
 
 /** 로고 콘텐츠 — 문 안에 삽입돼 반쪽씩 찢어짐 */
 function LogoInDoor({ side }: { side: "left" | "right" }) {
@@ -97,53 +90,10 @@ function TempleDoor({
           ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 1.6s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
         backgroundColor: "#0f0b07",
-        borderRight: isLeft ? `1px solid ${FRM_C}` : undefined,
-        borderLeft: !isLeft ? `1px solid ${FRM_C}` : undefined,
+        borderRight: isLeft ? `1px solid ${SEAM_C}` : undefined,
+        borderLeft: !isLeft ? `1px solid ${SEAM_C}` : undefined,
       }}
     >
-      {/* ── 프레임 4면 ── */}
-      <div style={{ position: "absolute", top: FRAME,    left: FRAME,  right: FRAME,  height: 2,  backgroundColor: FRM_C }} />
-      <div style={{ position: "absolute", bottom: FRAME, left: FRAME,  right: FRAME,  height: 2,  backgroundColor: FRM_C }} />
-      <div style={{ position: "absolute", top: FRAME,    left: FRAME,  bottom: FRAME, width: 2,   backgroundColor: FRM_C }} />
-      <div style={{ position: "absolute", top: FRAME,    right: FRAME, bottom: FRAME, width: 2,   backgroundColor: FRM_C }} />
-
-      {/* ── 전체 살창 격자 ── */}
-      <div
-        style={{
-          position: "absolute",
-          top: FRAME + 2,
-          left: FRAME + 2,
-          right: FRAME + 2,
-          bottom: FRAME + 2,
-          overflow: "hidden",
-        }}
-      >
-        {H_LINES.map((pct, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: 0, right: 0,
-              top: `${pct}%`,
-              height: 1.5,
-              backgroundColor: BAR_C,
-            }}
-          />
-        ))}
-        {V_LINES.map((pct) => (
-          <div
-            key={pct}
-            style={{
-              position: "absolute",
-              top: 0, bottom: 0,
-              left: `${pct}%`,
-              width: 1.5,
-              backgroundColor: BAR_C,
-            }}
-          />
-        ))}
-      </div>
-
       {/* ── 손잡이 (안쪽 가장자리 중앙) ── */}
       <div
         style={{
