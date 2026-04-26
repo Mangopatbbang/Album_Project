@@ -13,7 +13,7 @@ export default async function BestPage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
-  const { view = "all" } = await searchParams;
+  const { view = "year" } = await searchParams;
   const albums = await fetchAllAlbumsWithRatings();
 
   function computeSections(albs: typeof albums): [string, AlbumStat[]][] {
