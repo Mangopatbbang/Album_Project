@@ -5,8 +5,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 
 const GENRES = [
-  "힙합", "알앤비", "팝", "발라드", "인디", "락",
-  "일렉트로니카", "포크", "얼터너티브", "재즈", "컨트리", "OST", "컴필레이션", "기타 (영화, 드라마, 예능 등)",
+  "Hip-Hop", "R&B", "Pop", "Rock",
+  "Electronic", "Folk", "Alternative", "Jazz", "Country", "OST", "Compilation", "Other",
 ];
 
 type SpotifyCandidate = {
