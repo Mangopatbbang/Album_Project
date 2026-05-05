@@ -516,14 +516,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                 {profile?.role === "admin" && (
                   <button
                     onClick={() => setEditing(true)}
+                    disabled={!full}
                     style={{
-                      background: "none", cursor: "pointer",
-                      color: "var(--text)", fontSize: 12, lineHeight: 1,
+                      background: "none", cursor: full ? "pointer" : "not-allowed",
+                      color: full ? "var(--text)" : "var(--text-muted)", fontSize: 12, lineHeight: 1,
                       padding: "2px 6px", borderRadius: 4,
                       border: "1px solid var(--border)",
+                      opacity: full ? 1 : 0.4,
                     }}
                   >
-                    수정
+                    {full ? "수정" : "로딩 중…"}
                   </button>
                 )}
                 {profile && (profile.role === "admin" || (full as FullAlbum)?.added_by === profile.id) && (
