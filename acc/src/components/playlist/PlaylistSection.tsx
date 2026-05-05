@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import PlaylistEditor from "./PlaylistEditor";
-import { USERS } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 type PlaylistEntry = {
@@ -30,6 +30,7 @@ type Props = {
 export default function PlaylistSection({ initialPlaylists }: Props) {
   const { profile } = useAuth();
   const avatarMap = useUserAvatars();
+  const { getUserById } = useUsers();
   const [playlists, setPlaylists] = useState(initialPlaylists);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -73,7 +74,7 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {playlists.map((pl) => {
-            const user = USERS.find((u) => u.id === pl.user_id);
+            const user = getUserById(pl.user_id);
             const covers = pl.playlist_entries.slice(0, 4).map((e) => e.albums?.cover_url ?? null);
 
             return (

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
-import { UserId } from "@/types";
 import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
 
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { albumId, userId, score, one_line_review } = body as {
     albumId: string;
-    userId: UserId;
+    userId: string;
     score: number;
     one_line_review?: string;
   };
@@ -102,7 +101,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json();
   const { albumId, userId, liked_tracks, reviewerId, likerId } = body as {
     albumId: string;
-    userId?: UserId;
+    userId?: string;
     liked_tracks?: string | null;
     reviewerId?: string;
     likerId?: string;
@@ -176,7 +175,7 @@ export async function PATCH(req: NextRequest) {
 // body: { albumId, userId }
 export async function DELETE(req: NextRequest) {
   const body = await req.json();
-  const { albumId, userId } = body as { albumId: string; userId: UserId };
+  const { albumId, userId } = body as { albumId: string; userId: string };
 
   if (!albumId || !userId) {
     return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });

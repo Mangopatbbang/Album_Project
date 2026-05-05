@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
-import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
 import { ClickableAlbumRow } from "./MembersAlbumModal";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
-import { fetchAllUserAvatarUrls } from "@/lib/stats";
+import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 type RatingRow = { user_id: string; album_id: string; score: number; one_line_review: string | null; albums: { id: string; genre: string | null; artist: string | null } | null };
 
 export default async function MembersPage() {
-  const avatarMap = await fetchAllUserAvatarUrls();
+  const [avatarMap, USERS] = await Promise.all([fetchAllUserAvatarUrls(), fetchAllUsers()]);
 
   // Supabase 1000행 제한 우회 — 페이지네이션으로 전체 수집
   const allRaw: RatingRow[] = [];

@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
+import { UsersProvider } from "@/context/UsersContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
 import FloatingActions from "@/components/ui/FloatingActions";
@@ -53,6 +54,7 @@ export default function RootLayout({
     >
       <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
         <AuthProvider>
+          <UsersProvider>
           <UserAvatarsProvider>
           <ToastProvider>
             <SplashScreen />
@@ -62,6 +64,7 @@ export default function RootLayout({
             <TutorialModal />
           </ToastProvider>
           </UserAvatarsProvider>
+          </UsersProvider>
         </AuthProvider>
       </body>
     </html>

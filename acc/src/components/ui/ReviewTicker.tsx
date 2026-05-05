@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { USERS } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
@@ -21,6 +21,7 @@ export type TickerItem = {
 
 export default function ReviewTicker({ items, inline }: { items: TickerItem[]; inline?: boolean }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+  const { getUserById } = useUsers();
 
   if (items.length === 0) return null;
 
@@ -86,7 +87,7 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
           className="ticker-track"
         >
           {[...track, ...track].map((item, i) => {
-            const user = USERS.find((u) => u.id === item.user_id);
+            const user = getUserById(item.user_id);
             return (
               <span
                 key={i}

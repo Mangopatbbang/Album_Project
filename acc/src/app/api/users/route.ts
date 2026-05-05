@@ -89,10 +89,19 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true, user: data });
 }
 
-// GET /api/users?authId=xxx — 프로필 조회
+// GET /api/users — 전체 유저 목록 반환 (authId 없을 때)
+// GET /api/users?authId=xxx — 특정 유저 프로필 조회
 export async function GET(req: NextRequest) {
   const authId = new URL(req.url).searchParams.get("authId");
-  if (!authId) return NextResponse.json({ error: "authId 필수" }, { status: 400 });
+
+  if (!authId) {
+    const { data, error } = await supabaseServer
+      .from("users")
+      .select("id, display_name, emoji")
+      .order("id");
+    if (error) return NextResponse.json({ users: [] });
+    return NextResponse.json({ users: data ?? [] });
+  }
 
   const { data, error } = await supabaseServer
     .from("users")

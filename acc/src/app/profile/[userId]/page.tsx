@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
-import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
@@ -22,11 +21,15 @@ import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, t
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
-  const user = USERS.find((u) => u.id === userId);
-  if (!user) return {};
+  const { data: dbUser } = await supabaseServer
+    .from("users")
+    .select("display_name")
+    .eq("id", userId)
+    .single();
+  if (!dbUser) return {};
   return {
-    title: `${user.display_name}의 청음 기록`,
-    description: `${user.display_name}의 아차청음사 청음 기록`,
+    title: `${dbUser.display_name}의 청음 기록`,
+    description: `${dbUser.display_name}의 아차청음사 청음 기록`,
   };
 }
 
@@ -38,8 +41,6 @@ export default async function ProfilePage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
-  const user = USERS.find((u) => u.id === userId);
-  if (!user) notFound();
 
   // DB에서 최신 프로필 정보 가져오기 (avatar_url, display_name, emoji 반영)
   const { data: dbUser } = await supabaseServer
@@ -48,9 +49,11 @@ export default async function ProfilePage({
     .eq("id", userId)
     .single();
 
-  const displayName = (dbUser as { display_name?: string } | null)?.display_name ?? user.display_name;
-  const displayEmoji = (dbUser as { emoji?: string } | null)?.emoji ?? user.emoji;
-  const avatarUrl = (dbUser as { avatar_url?: string | null } | null)?.avatar_url ?? null;
+  if (!dbUser) notFound();
+
+  const displayName = (dbUser as { display_name?: string })?.display_name ?? userId;
+  const displayEmoji = (dbUser as { emoji?: string })?.emoji ?? "🎵";
+  const avatarUrl = (dbUser as { avatar_url?: string | null })?.avatar_url ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
   const [allRawRatings, allUserTopGenres, allUserAvatarUrls]: [RatingRow[], Record<string, string[]>, Record<string, string | null>] = await Promise.all([

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
-import { USERS } from "@/types";
 
 export async function GET(
   _req: NextRequest,
@@ -8,8 +7,20 @@ export async function GET(
 ) {
   const { userId } = await params;
 
-  const user = USERS.find((u) => u.id === userId);
+  // userId 존재 확인
+  const { data: user } = await supabaseServer
+    .from("users")
+    .select("id, display_name, emoji")
+    .eq("id", userId)
+    .single();
   if (!user) return NextResponse.json({ error: "user not found" }, { status: 404 });
+
+  // 다른 유저 목록 DB에서 조회
+  const { data: otherUsersData } = await supabaseServer
+    .from("users")
+    .select("id, display_name, emoji")
+    .neq("id", userId);
+  const otherUsers = otherUsersData ?? [];
 
   // 본인 평점 fetch
   const { data: myRatingsData } = await supabaseServer
@@ -22,17 +33,18 @@ export async function GET(
   );
 
   // 다른 멤버 평점 fetch (페이지 루프)
-  const otherUsers = USERS.filter((u) => u.id !== userId);
   const otherRatings: { user_id: string; album_id: string; score: number }[] = [];
-  for (let page = 0; ; page++) {
-    const { data: pageData } = await supabaseServer
-      .from("ratings")
-      .select("user_id, album_id, score")
-      .in("user_id", otherUsers.map((u) => u.id))
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!pageData || pageData.length === 0) break;
-    otherRatings.push(...pageData);
-    if (pageData.length < 1000) break;
+  if (otherUsers.length > 0) {
+    for (let page = 0; ; page++) {
+      const { data: pageData } = await supabaseServer
+        .from("ratings")
+        .select("user_id, album_id, score")
+        .in("user_id", otherUsers.map((u) => u.id))
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!pageData || pageData.length === 0) break;
+      otherRatings.push(...pageData);
+      if (pageData.length < 1000) break;
+    }
   }
 
   const comparisons = otherUsers.map((other) => {

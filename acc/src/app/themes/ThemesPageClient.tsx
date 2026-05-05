@@ -5,7 +5,7 @@ import Link from "next/link";
 import PlaylistEditor from "@/components/playlist/PlaylistEditor";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
-import { USERS } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export type PlaylistEntry = {
@@ -25,7 +25,8 @@ export type Playlist = {
 
 function PlaylistCard({ pl }: { pl: Playlist }) {
   const avatarMap = useUserAvatars();
-  const user = USERS.find((u) => u.id === pl.user_id);
+  const { getUserById } = useUsers();
+  const user = getUserById(pl.user_id);
   const covers = pl.playlist_entries.slice(0, 4).map((e) => e.albums?.cover_url ?? null);
 
   return (

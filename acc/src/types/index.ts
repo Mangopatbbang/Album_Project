@@ -1,7 +1,7 @@
-export type UserId = "arkyteccc" | "mangopatbbang" | "SJH" | "wugibugi";
+export type UserId = string;
 
 export type User = {
-  id: UserId;
+  id: string;
   display_name: string;
   emoji: string;
 };
@@ -24,7 +24,7 @@ export type Album = {
 export type Rating = {
   id: number;
   album_id: string;
-  user_id: UserId;
+  user_id: string;
   score: number;
   one_line_review?: string;
   created_at: string;
@@ -35,10 +35,3 @@ export type AlbumWithRatings = Album & {
   ratings: Rating[];
   avg?: string;
 };
-
-export const USERS: User[] = [
-  { id: "arkyteccc", display_name: "arkyteccc", emoji: "🎧" },
-  { id: "mangopatbbang", display_name: "mangopatbbang", emoji: "🥭" },
-  { id: "SJH", display_name: "SJH", emoji: "🧊" },
-  { id: "wugibugi", display_name: "wugibugi", emoji: "🐰" },
-];

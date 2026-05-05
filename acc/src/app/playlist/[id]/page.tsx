@@ -2,12 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
-import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
-import { fetchAllUserAvatarUrls } from "@/lib/stats";
+import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import PlaylistTitleEditor from "@/components/playlist/PlaylistTitleEditor";
@@ -29,7 +28,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
 
   if (error || !data) notFound();
 
-  const avatarMap = await fetchAllUserAvatarUrls();
+  const [avatarMap, allUsers] = await Promise.all([fetchAllUserAvatarUrls(), fetchAllUsers()]);
 
   const entriesRaw = (data.playlist_entries ?? []).sort(
     (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
@@ -45,7 +44,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
   const artistDisplayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
   const entries = entriesRaw;
 
-  const user = USERS.find((u) => u.id === data.user_id);
+  const user = allUsers.find((u) => u.id === data.user_id);
 
   // 작성자의 평점 가져오기
   const albumIds = entries.map((e: { albums: { id: string } | { id: string }[] | null }) => Array.isArray(e.albums) ? e.albums[0]?.id : e.albums?.id).filter(Boolean);

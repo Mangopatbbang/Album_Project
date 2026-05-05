@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { USERS } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
 import type { ReviewItem } from "@/app/api/reviews/route";
 import type { CommentItem } from "@/app/api/comments/route";
@@ -21,6 +21,7 @@ const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function ReviewsClient() {
   const { profile } = useAuth();
+  const { users, getUserById } = useUsers();
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -228,7 +229,7 @@ export default function ReviewsClient() {
         <div style={filterPill(filterUser !== "")}>
           <select style={baseSelect} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
             <option value="">전체 멤버</option>
-            {USERS.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
+            {users.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
           </select>
         </div>
 
@@ -337,7 +338,8 @@ function ReviewRow({
   isLast: boolean;
 }) {
   const avatarMap = useUserAvatars();
-  const user = USERS.find((u) => u.id === item.userId);
+  const { getUserById } = useUsers();
+  const user = getUserById(item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
   const isMyReview = myId === item.userId;
   const commentCount = item.commentCount ?? 0;
@@ -469,7 +471,7 @@ function ReviewRow({
           ) : (
             <>
               {rowComments.map((c) => {
-                const cu = USERS.find((u) => u.id === c.commenterId);
+                const cu = getUserById(c.commenterId);
                 const cd = new Date(c.createdAt);
                 const cdStr = `${String(cd.getMonth() + 1).padStart(2, "0")}.${String(cd.getDate()).padStart(2, "0")}`;
                 return (

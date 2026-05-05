@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlbumWithRatings, USERS } from "@/types";
+import { AlbumWithRatings } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -16,6 +17,7 @@ type Props = {
 export default function AlbumCard({ album, onClick }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const avatarMap = useUserAvatars();
+  const { users } = useUsers();
   return (
     <>
     <button
@@ -94,7 +96,7 @@ export default function AlbumCard({ album, onClick }: Props) {
         {/* 유저별 평점 + Spotify attribution */}
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {USERS.map((user) => {
+            {users.map((user) => {
               const r = album.ratings.find((rt) => rt.user_id === user.id);
               if (!r) return null;
               return (

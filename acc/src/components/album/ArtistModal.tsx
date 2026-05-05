@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlbumWithRatings, USERS } from "@/types";
+import { AlbumWithRatings } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import { scoreColor, glowBorder, glowShadow } from "@/lib/score";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -16,6 +17,7 @@ type Props = {
 export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const avatarMap = useUserAvatars();
+  const { users } = useUsers();
   const [avgScore, setAvgScore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -208,6 +210,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
 function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatings; artistName: string; onClick?: (album: AlbumWithRatings) => void }) {
   const isFeat = album.artist.toLowerCase() !== artistName.toLowerCase();
   const avatarMap = useUserAvatars();
+  const { users } = useUsers();
   return (
     <button
       onClick={() => onClick?.(album)}
@@ -282,7 +285,7 @@ function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatin
         </div>
 
         <div className="flex items-center gap-0.5 flex-wrap mt-1">
-          {USERS.map((user) => {
+          {users.map((user) => {
             const r = album.ratings.find((rt) => rt.user_id === user.id);
             if (!r) return null;
             return (

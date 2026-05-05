@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
-import { USERS } from "@/types";
+import { useUsers } from "@/context/UsersContext";
 import type { NotificationItem } from "@/app/api/notifications/route";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Header() {
   const { profile, loading, signOut } = useAuth();
   const avatarMap = useUserAvatars();
+  const { getUserById } = useUsers();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -146,7 +147,7 @@ export default function Header() {
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
                         notifications.map((n) => {
-                          const fromUser = USERS.find((u) => u.id === n.fromUserId);
+                          const fromUser = getUserById(n.fromUserId);
                           const typeIcon = n.type === "comment" ? "💬" : "♥";
                           const label = n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요";
                           const nd = new Date(n.createdAt);

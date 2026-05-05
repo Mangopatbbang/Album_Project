@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { USERS } from "@/types";
+import type { User } from "@/types";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { GENRE_COLOR } from "@/lib/bio";
 
 type ComparisonItem = {
-  user: (typeof USERS)[number];
+  user: User;
   commonCount: number;
   diff: number | null;
 };

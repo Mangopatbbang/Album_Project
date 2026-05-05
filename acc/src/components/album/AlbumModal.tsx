@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlbumWithRatings, USERS } from "@/types";
+import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { useUsers } from "@/context/UsersContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
@@ -64,6 +65,7 @@ const albumCache = new Map<string, FullAlbum>();
 
 export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Props) {
   const { profile } = useAuth();
+  const { users } = useUsers();
   const avatarMap = useUserAvatars();
   const { showToast } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
@@ -357,7 +359,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const ratings = (data as FullAlbum).ratings ?? album.ratings ?? [];
 
   const VISIBLE_COUNT = 4;
-  const sortedUsers = [...USERS].sort((a, b) => {
+  const sortedUsers = [...users].sort((a, b) => {
     if (profile) {
       if (a.id === profile.id) return -1;
       if (b.id === profile.id) return 1;
@@ -650,7 +652,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               const isLong = review.length > LIMIT;
               const isExpanded = expandedReviews.has(user.id);
               const iLikedReview = myLikedReviews.has(user.id);
-              const likedByUsers = USERS.filter((u) => r?.liked_by?.split(",").includes(u.id));
+              const likedByUsers = users.filter((u) => r?.liked_by?.split(",").includes(u.id));
               const canLikeReview = !!profile && !!ratings.find((rt) => rt.user_id === profile.id) && user.id !== profile.id && !!review;
               const showReviewHeart = canLikeReview && (hoveredReview === user.id || iLikedReview);
               return (
@@ -966,7 +968,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               </p>
               <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 {tracklist.map((track, i) => {
-                  const othersWhoLiked = USERS.filter((u) => {
+                  const othersWhoLiked = users.filter((u) => {
                     if (u.id === profile?.id) return false;
                     const r = ratings.find((rt) => rt.user_id === u.id);
                     return r?.liked_tracks?.split(",").map(Number).includes(i);

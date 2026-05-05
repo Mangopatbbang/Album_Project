@@ -291,3 +291,16 @@ export const THEMES = [
 export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
   return validAlbums(albums).sort((a, b) => b.avg - a.avg).slice(0, 50);
 }
+
+// 서버사이드: DB에서 전체 유저 목록 조회
+export const fetchAllUsers = unstable_cache(
+  async (): Promise<Array<{ id: string; display_name: string; emoji: string }>> => {
+    const { data } = await supabaseServer
+      .from("users")
+      .select("id, display_name, emoji")
+      .order("id");
+    return data ?? [];
+  },
+  ["all-users"],
+  { tags: ["all-users"], revalidate: 300 }
+);
