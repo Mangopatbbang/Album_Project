@@ -28,6 +28,7 @@ const RATING_GUIDE = [
   { score: 5, name: "오", desc: ["아티스트 팬들의 기다림을 해소", "장르적 문법에 충실하면서 새로움을 제공", "추천할 만한 좋은 완성도와 짜임새"] },
   { score: 6, name: "워", desc: ["완성도 이상의 아이디어, 사운드, 표현력"] },
   { score: 7, name: "ㅠㅠ", desc: ["분기 최고의 앨범들, 탁월한 완성도", '"오직 그 앨범만의" 고유한 아이디어 & 사운드 or 서사', "아티스트와 장르 모두에게 기념비적인 앨범"] },
+  { score: 8, name: "이게 뭐야", desc: ["이 점수를 줄 자격이 있는지 되묻게 되는 앨범", "인생을 통틀어 손에 꼽을 만큼만 허용해야 한다"] },
 ] as const;
 
 function formatReleaseDate(raw: string): string {
