@@ -60,7 +60,7 @@ export async function PATCH(
   if (error) return NextResponse.json({ error: error.message, id, update }, { status: 500 });
 
   const updatedRow = updateData?.[0];
-  logActivity({
+  await logActivity({
     userId: logUserId, action: "album_edit",
     albumId: id, albumTitle: updatedRow?.title, albumArtist: updatedRow?.artist,
     details: { updated_fields: Object.keys(update) },
@@ -122,7 +122,7 @@ export async function DELETE(
   const { error } = await supabaseServer.from("albums").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  logActivity({
+  await logActivity({
     userId, action: "album_delete",
     albumId: id, albumTitle: album.title, albumArtist: album.artist,
   });

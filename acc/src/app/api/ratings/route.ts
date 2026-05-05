@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       .insert({ user_id: userId, album_id: albumId, score });
   }
 
-  logActivity({
+  await logActivity({
     userId, action: "rating_set",
     albumId, albumTitle: albumData?.title, albumArtist: albumData?.artist,
     details: { score, prev_score: prevScore },
@@ -192,7 +192,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  logActivity({
+  await logActivity({
     userId, action: "rating_delete",
     albumId, albumTitle: albumData?.title, albumArtist: albumData?.artist,
   });

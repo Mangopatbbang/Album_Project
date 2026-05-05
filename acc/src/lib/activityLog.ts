@@ -2,15 +2,15 @@ import { supabaseServer } from "@/lib/supabase";
 
 type LogAction = "album_add" | "album_edit" | "album_delete" | "rating_set" | "rating_delete";
 
-export function logActivity(params: {
+export async function logActivity(params: {
   userId: string | null;
   action: LogAction;
   albumId?: string;
   albumTitle?: string;
   albumArtist?: string;
   details?: Record<string, unknown>;
-}): void {
-  void supabaseServer.from("activity_logs").insert({
+}): Promise<void> {
+  await supabaseServer.from("activity_logs").insert({
     user_id: params.userId ?? null,
     action: params.action,
     album_id: params.albumId ?? null,
