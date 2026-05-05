@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { UserId } from "@/types";
 import { logActivity } from "@/lib/activityLog";
+import { validateUser } from "@/lib/validateUser";
 
 // GET /api/ratings?albumId=123
 // GET /api/ratings?userId=arkyteccc
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
   if (!albumId || !userId || score == null) {
     return NextResponse.json({ error: "albumId, userId, score 필수" }, { status: 400 });
   }
+  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   if (score < 1 || score > 8) {
     return NextResponse.json({ error: "score는 1~8 사이여야 합니다" }, { status: 400 });
@@ -107,6 +109,8 @@ export async function PATCH(req: NextRequest) {
   };
 
   if (!albumId) return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
+  const actorId = userId ?? likerId;
+  if (!(await validateUser(actorId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   // liked_tracks 업데이트
   if (userId && liked_tracks !== undefined) {
@@ -177,6 +181,7 @@ export async function DELETE(req: NextRequest) {
   if (!albumId || !userId) {
     return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });
   }
+  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const [{ error }, { data: albumData }] = await Promise.all([
     supabaseServer.from("ratings").delete().eq("album_id", albumId).eq("user_id", userId),

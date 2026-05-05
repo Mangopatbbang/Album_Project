@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
 
 export async function GET() {
   const { data, error } = await supabaseServer
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
   if (!user_id || !title || !entries?.length) {
     return NextResponse.json({ error: "user_id, title, entries required" }, { status: 400 });
   }
+  if (!(await validateUser(user_id))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const { data: playlist, error: plErr } = await supabaseServer
     .from("playlists")

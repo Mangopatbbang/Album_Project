@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
 
 export type CommentItem = {
   id: string;
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
   if (!albumId || !reviewerId || !commenterId || !content?.trim()) {
     return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
   }
+  if (!(await validateUser(commenterId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   if (content.length > 200) {
     return NextResponse.json({ error: "댓글은 200자 이하여야 합니다" }, { status: 400 });

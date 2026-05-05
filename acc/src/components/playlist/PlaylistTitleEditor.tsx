@@ -30,7 +30,7 @@ export default function PlaylistTitleEditor({
     const res = await fetch(`/api/playlists/${playlistId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: trimmed }),
+      body: JSON.stringify({ title: trimmed, userId: profile?.id }),
     });
     setSaving(false);
     if (res.ok) {

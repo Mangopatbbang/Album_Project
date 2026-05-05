@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
 
 export type NotificationItem = {
   id: string;
@@ -59,6 +60,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (userId) {
+    if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
     const { error } = await supabaseServer
       .from("notifications")
       .update({ read: true })

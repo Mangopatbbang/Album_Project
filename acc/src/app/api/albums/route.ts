@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay, findArtistsByVariant } from "@/lib/artistDisplay";
 import { logActivity } from "@/lib/activityLog";
+import { validateUser } from "@/lib/validateUser";
 
 const LIMIT = 30;
 const SELECT = "id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)";
@@ -192,6 +193,7 @@ async function handleAvgSort(params: {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { title, artist, extra_artists, year, release_date, genre, cover_url, tracklist, spotify_id, added_by } = body;
+  if (!(await validateUser(added_by))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
   if (!title?.trim() || !artist?.trim()) return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   if (tracklist) {
     const trackCount = tracklist.split(";").map((t: string) => t.trim()).filter(Boolean).length;

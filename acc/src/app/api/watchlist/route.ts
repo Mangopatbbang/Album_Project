@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { validateUser } from "@/lib/validateUser";
 
 export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { userId, albumId } = await req.json();
   if (!userId || !albumId) return NextResponse.json({ error: "userId and albumId required" }, { status: 400 });
+  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("watchlist")
@@ -45,6 +47,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { userId, albumId } = await req.json();
   if (!userId || !albumId) return NextResponse.json({ error: "userId and albumId required" }, { status: 400 });
+  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const { error } = await supabaseServer
     .from("watchlist")

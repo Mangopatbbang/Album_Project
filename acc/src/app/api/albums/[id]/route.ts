@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { logActivity } from "@/lib/activityLog";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 export async function PATCH(
   req: NextRequest,
@@ -12,6 +13,7 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
   const logUserId = (body.userId as string | undefined) ?? null;
+  if (!(await validateAdmin(logUserId))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
   const allowed = ["spotify_id", "cover_url", "tracklist", "title", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
