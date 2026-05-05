@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
-import { koGenre, GENRE_EMOJI } from "@/lib/bio";
+import { koGenre } from "@/lib/bio";
 
 export type ProfileRatingRow = {
   score: number;
@@ -73,7 +73,7 @@ export const fetchAllUserAvatarUrls = unstable_cache(
   { tags: ["user-avatars"], revalidate: 3600 }
 );
 
-// 모든 유저의 top2 장르 이모지 — userId → [emoji1, emoji2]
+// 모든 유저의 top2 장르명 — userId → [genre1, genre2]
 export const fetchAllUserGenreEmojis = unstable_cache(
   async (): Promise<Record<string, string[]>> => {
     const all: { user_id: string; albums: { genre: string | null } | null }[] = [];
@@ -98,7 +98,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
       result[userId] = [...gm.entries()]
         .sort((a, b) => b[1] - a[1])
         .slice(0, 2)
-        .map(([g]) => GENRE_EMOJI[koGenre(g)] ?? "🎵");
+        .map(([g]) => koGenre(g));
     }
     return result;
   },

@@ -8,7 +8,7 @@ import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
-import { generateBadges, koGenre, GENRE_EMOJI } from "@/lib/bio";
+import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
@@ -53,7 +53,7 @@ export default async function ProfilePage({
   const avatarUrl = (dbUser as { avatar_url?: string | null } | null)?.avatar_url ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const [allRawRatings, allUserGenreEmojis, allUserAvatarUrls]: [RatingRow[], Record<string, string[]>, Record<string, string | null>] = await Promise.all([
+  const [allRawRatings, allUserTopGenres, allUserAvatarUrls]: [RatingRow[], Record<string, string[]>, Record<string, string | null>] = await Promise.all([
     fetchProfileRatings(userId),
     fetchAllUserGenreEmojis(),
     fetchAllUserAvatarUrls(),
@@ -165,8 +165,8 @@ export default async function ProfilePage({
   const totalDomestic = validRatings.filter((r) => r.albums?.region === "국내").length;
   const totalForeign = validRatings.filter((r) => r.albums?.region === "해외").length;
 
-  // 상위 2 장르 이모지
-  const genreEmojis = genreList.slice(0, 2).map(({ genre }) => GENRE_EMOJI[koGenre(genre)] ?? "🎵");
+  // 상위 2 장르명
+  const topGenres = genreList.slice(0, 2).map(({ genre }) => koGenre(genre));
 
   // 명예의 전당 (8점)
   const hallOfFame = validRatings.filter((r) => r.score === 8);
@@ -228,24 +228,19 @@ export default async function ProfilePage({
               <LikedTracksButton userId={userId} />
             </div>
             {/* 뱃지 */}
-            {(genreEmojis.length > 0 || badges.length > 0) && (
+            {(topGenres.length > 0 || badges.length > 0) && (
               <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-                {genreEmojis.map((emoji, i) => (
-                  <span
-                    key={i}
-                    title={koGenre(genreList[i]?.genre ?? "")}
-                    style={{
-                      fontSize: 14,
-                      backgroundColor: "var(--bg-elevated)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 20,
-                      padding: "2px 8px",
-                      cursor: "default",
-                    }}
-                  >
-                    {emoji}
-                  </span>
-                ))}
+                {topGenres.map((g) => {
+                  const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                  return (
+                    <span key={g} style={{
+                      fontSize: 11, fontWeight: 600,
+                      backgroundColor: `${gColor}1a`, color: gColor,
+                      border: `1px solid ${gColor}40`,
+                      borderRadius: 4, padding: "2px 7px",
+                    }}>{g}</span>
+                  );
+                })}
                 {badges.length > 0 && <BadgesWithTooltip badges={badges} />}
               </div>
             )}
@@ -426,14 +421,12 @@ export default async function ProfilePage({
                 const pct = Math.round((count / total) * 100);
                 const barPct = (count / maxGenreCount) * 100;
                 const noRegion = count - domestic - foreign;
-                const emoji = GENRE_EMOJI[koGenre(genre)];
+                const gDisplay = koGenre(genre);
+                const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                 return (
                   <div key={genre}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500 }}>
-                        {emoji && <span style={{ marginRight: 5 }}>{emoji}</span>}
-                        {koGenre(genre)}
-                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: gColor }}>{gDisplay}</span>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ color: scoreColor(gAvg), fontSize: 11, fontWeight: 700 }}>{gAvg}점</span>
                         <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{count}장 · {pct}%</span>
@@ -459,7 +452,7 @@ export default async function ProfilePage({
           </div>
 
           {/* 취향 궁합 + 멤버 비교 */}
-          <ComparisonSection userId={userId} genreEmojiMap={allUserGenreEmojis} avatarMap={allUserAvatarUrls} />
+          <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />
         </div>
       </div>
       </div>

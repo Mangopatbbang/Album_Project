@@ -3,7 +3,7 @@ import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { USERS } from "@/types";
 import { scoreColor } from "@/lib/score";
-import { generateBadges, koGenre, GENRE_EMOJI } from "@/lib/bio";
+import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
 import { ClickableAlbumRow } from "./MembersAlbumModal";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
@@ -78,12 +78,12 @@ export default async function MembersPage() {
       reviewCount,
     });
 
-    const genreEmojis = [...genreMap.entries()]
+    const topGenres = [...genreMap.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 2)
-      .map(([g]) => GENRE_EMOJI[koGenre(g)] ?? "🎵");
+      .map(([g]) => koGenre(g));
 
-    return { user, total, avg: total > 0 ? avg : null, reviewCount, eightCount, scoreDist, badges, genreEmojis };
+    return { user, total, avg: total > 0 ? avg : null, reviewCount, eightCount, scoreDist, badges, topGenres };
   }).sort((a, b) => b.total - a.total);
 
   const maxTotal = memberStats[0]?.total ?? 1;
@@ -155,7 +155,7 @@ export default async function MembersPage() {
 
         {/* ── 멤버 카드 ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
-          {memberStats.map(({ user, total, avg, reviewCount, eightCount, scoreDist, badges, genreEmojis }) => {
+          {memberStats.map(({ user, total, avg, reviewCount, eightCount, scoreDist, badges, topGenres }) => {
             const maxDist = Math.max(...scoreDist.map((d) => d.count), 1);
             return (
               <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
@@ -171,9 +171,17 @@ export default async function MembersPage() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>{user.display_name}</p>
-                          {genreEmojis.length > 0 && (
-                            <span style={{ fontSize: 13, letterSpacing: "0.05em" }}>{genreEmojis.join("")}</span>
-                          )}
+                          {topGenres.map((g) => {
+                            const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                            return (
+                              <span key={g} style={{
+                                fontSize: 10, fontWeight: 600,
+                                backgroundColor: `${gColor}1a`, color: gColor,
+                                border: `1px solid ${gColor}40`,
+                                borderRadius: 4, padding: "1px 5px",
+                              }}>{g}</span>
+                            );
+                          })}
                         </div>
                         <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>{total}장 청음</p>
                       </div>
@@ -237,10 +245,10 @@ export default async function MembersPage() {
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
             <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>청음 수 랭킹</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {memberStats.map(({ user, total, genreEmojis }, i) => (
+              {memberStats.map(({ user, total, topGenres }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span>{genreEmojis.join("")}</span>}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px" }}>{g}</span>; })}</span>
                     <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>{total}장</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
@@ -255,10 +263,10 @@ export default async function MembersPage() {
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
             <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>평균 점수 랭킹</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg, genreEmojis }, i) => (
+              {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg, topGenres }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{genreEmojis.length > 0 && <span>{genreEmojis.join("")}</span>}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px" }}>{g}</span>; })}</span>
                     <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600 }}>{avg!.toFixed(2)}</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>

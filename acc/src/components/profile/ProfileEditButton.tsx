@@ -16,7 +16,6 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState(initialDisplayName);
-  const [emoji, setEmoji] = useState(initialEmoji);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,7 +72,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
       body: JSON.stringify({
         auth_id: authUser.id,
         display_name: displayName.trim() || initialDisplayName,
-        emoji: emoji.trim() || initialEmoji,
+        emoji: initialEmoji,
         avatar_url: avatarUrl,
       }),
     });
@@ -164,7 +163,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 {avatarPreview
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ lineHeight: 1 }}>{emoji || initialEmoji}</span>
+                  : <span style={{ lineHeight: 1 }}>{initialEmoji}</span>
                 }
                 <div
                   style={{
@@ -192,18 +191,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
               />
             </div>
 
-            {/* 이모지 */}
-            <div>
-              <label style={labelStyle}>EMOJI</label>
-              <input
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-                maxLength={4}
-                style={{ ...inputStyle, width: 72, textAlign: "center", fontSize: 22, padding: "6px 8px" }}
-              />
-            </div>
-
-            {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+            {error &&<p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { USERS } from "@/types";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { GENRE_COLOR } from "@/lib/bio";
 
 type ComparisonItem = {
   user: (typeof USERS)[number];
@@ -13,11 +14,11 @@ type ComparisonItem = {
 
 type Props = {
   userId: string;
-  genreEmojiMap?: Record<string, string[]>;
+  topGenreMap?: Record<string, string[]>;
   avatarMap?: Record<string, string | null>;
 };
 
-export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: Props) {
+export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
   const loadedRef = useRef(false);
@@ -46,7 +47,17 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
     return () => observer.disconnect();
   }, [userId]);
 
-  const emojisFor = (id: string) => (genreEmojiMap?.[id] ?? []).join("");
+  const genreBadges = (id: string) => (topGenreMap?.[id] ?? []).map((g) => {
+    const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+    return (
+      <span key={g} style={{
+        fontSize: 10, fontWeight: 600,
+        backgroundColor: `${gColor}1a`, color: gColor,
+        border: `1px solid ${gColor}40`,
+        borderRadius: 4, padding: "1px 5px",
+      }}>{g}</span>
+    );
+  });
   const isLoading = comparisons === null;
 
   return (
@@ -92,8 +103,10 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
             >
               {bestMatch.user.display_name}
             </Link>
-            {emojisFor(bestMatch.user.id) && (
-              <p style={{ fontSize: 14, marginTop: 4, letterSpacing: "0.05em" }}>{emojisFor(bestMatch.user.id)}</p>
+            {(topGenreMap?.[bestMatch.user.id]?.length ?? 0) > 0 && (
+              <div style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 6 }}>
+                {genreBadges(bestMatch.user.id)}
+              </div>
             )}
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
               공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
@@ -134,7 +147,7 @@ export default function ComparisonSection({ userId, genreEmojiMap, avatarMap }: 
                 >
                   <UserAvatar avatarUrl={avatarMap?.[other.id]} size={18} />
                   {other.display_name}
-                  {emojisFor(other.id) && <span style={{ fontSize: 12 }}>{emojisFor(other.id)}</span>}
+                  {genreBadges(other.id)}
                 </Link>
                 <div style={{ textAlign: "right" }}>
                   <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
