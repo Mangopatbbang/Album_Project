@@ -192,28 +192,6 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 
 return (
     <>
-      {/* 입고 버튼 */}
-      {profile && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              backgroundColor: "var(--accent)",
-              border: "none",
-              color: "var(--bg)",
-              borderRadius: 6,
-              padding: "6px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            입고
-          </button>
-        </div>
-      )}
-
       {/* 필터 바 */}
       <div style={{ borderBottom: "1px solid var(--border)", marginBottom: 32 }} className="py-4 flex flex-col gap-3">
 
@@ -233,7 +211,7 @@ return (
             padding: "6px 12px",
             fontSize: 13,
             outline: "none",
-            flex: "0 1 320px",
+            flex: "1 1 200px",
           }}
         />
 
@@ -302,6 +280,26 @@ return (
         <span style={{ color: "var(--text-sub)", fontSize: 12, marginLeft: "auto" }}>
           {albums.length}장{hasMore ? "+" : ""}
         </span>
+
+        {/* 입고 버튼 */}
+        {profile && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{
+              backgroundColor: "var(--accent)",
+              border: "none",
+              color: "var(--bg)",
+              borderRadius: 6,
+              padding: "6px 14px",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            입고
+          </button>
+        )}
       </div>
 
       {/* 내 점수 필터 (로그인 시) */}
