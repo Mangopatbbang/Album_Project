@@ -126,7 +126,7 @@ export default async function HomePage() {
         </section>
 
         {/* 검색바 */}
-        <section style={{ ...containerStyle, padding: "0 0 12px" }}>
+        <section style={{ ...containerStyle, padding: "0 24px 12px" }}>
           <HomeSearchBar />
         </section>
 

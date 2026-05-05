@@ -75,11 +75,9 @@ export default function AlbumCard({ album, onClick }: Props) {
           >
             {album.title}
           </p>
-          {album.avg && (
-            <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-              {album.avg}
-            </span>
-          )}
+          <span style={{ color: scoreColor(album.avg), fontWeight: 700, fontSize: 13, flexShrink: 0, visibility: album.avg ? "visible" : "hidden" }}>
+            {album.avg}
+          </span>
         </div>
         <p
           style={{ color: "var(--text-sub)", fontSize: 12 }}

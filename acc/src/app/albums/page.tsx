@@ -81,7 +81,7 @@ export default async function AlbumsPage() {
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <main style={{ ...containerStyle, padding: "40px 24px 80px" }}>
+      <main style={{ ...containerStyle, padding: "40px 24px 40px" }}>
         <div style={{ marginBottom: 32 }}>
           <h1
             style={{
@@ -98,7 +98,7 @@ export default async function AlbumsPage() {
           </p>
         </div>
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<div style={{ color: "var(--text-muted)", textAlign: "center", padding: "80px 0", fontSize: 13 }}>불러오는 중...</div>}>
           <AlbumList
             initialAlbums={items}
             initialHasMore={hasMore}

@@ -22,3 +22,19 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ logs: data ?? [] });
 }
+
+export async function DELETE(req: NextRequest) {
+  const uid = req.headers.get("x-user-id");
+  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 15);
+
+  const { error, count } = await supabaseServer
+    .from("activity_logs")
+    .delete({ count: "exact" })
+    .lt("created_at", cutoff.toISOString());
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ deleted: count ?? 0 });
+}

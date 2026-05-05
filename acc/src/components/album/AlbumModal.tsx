@@ -7,7 +7,8 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
-import { captureElement } from "@/lib/capture";
+import { captureElement, captureToBlob, downloadBlob } from "@/lib/capture";
+import StoryCard from "@/components/album/StoryCard";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
@@ -60,6 +61,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [closing, setClosing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [captured, setCaptured] = useState(false);
+  const [cardCapturing, setCardCapturing] = useState(false);
+  const [storyBlob, setStoryBlob] = useState<Blob | null>(null);
+  const [storyBlobName, setStoryBlobName] = useState("");
+  const storyCardRef = useRef<HTMLDivElement | null>(null);
   const [editing, setEditing] = useState(false);
   const [myLikedTracks, setMyLikedTracks] = useState<Set<number>>(new Set());
   const [myLikedReviews, setMyLikedReviews] = useState<Set<string>>(new Set());
@@ -71,6 +76,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
   const [myHistory, setMyHistory] = useState<{ score: number; createdAt: string }[]>([]);
+  const [showAllRatings, setShowAllRatings] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -102,6 +108,50 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     setCaptured(true);
     showToast("이미지로 저장했어요", "info");
     setTimeout(() => setCaptured(false), 2000);
+  };
+
+  const handleCardCapture = async () => {
+    if (!storyCardRef.current || cardCapturing) return;
+    setCardCapturing(true);
+    // 프록시 이미지 로딩 대기
+    await new Promise<void>((resolve) => {
+      const imgs = storyCardRef.current!.querySelectorAll("img");
+      const pending = Array.from(imgs).filter((img) => !img.complete);
+      if (pending.length === 0) { resolve(); return; }
+      let loaded = 0;
+      const onLoad = () => { if (++loaded >= pending.length) resolve(); };
+      pending.forEach((img) => {
+        img.addEventListener("load", onLoad, { once: true });
+        img.addEventListener("error", onLoad, { once: true });
+      });
+      setTimeout(resolve, 3000);
+    });
+    const blob = await captureToBlob(storyCardRef.current);
+    if (!blob) { setCardCapturing(false); return; }
+    const filename = `${data.title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
+    const testFile = new File([blob], filename, { type: "image/png" });
+    if (navigator.canShare?.({ files: [testFile] })) {
+      // 모바일: blob 보관 후 공유 버튼 표시
+      setStoryBlob(blob);
+      setStoryBlobName(filename);
+      showToast("카드를 만들었어요", "info");
+    } else {
+      // 데스크탑: 바로 다운로드
+      downloadBlob(blob, filename);
+      showToast("카드를 저장했어요", "info");
+    }
+    setCardCapturing(false);
+  };
+
+  const handleShareStory = async () => {
+    if (!storyBlob) return;
+    const file = new File([storyBlob], storyBlobName, { type: "image/png" });
+    try {
+      await navigator.share({ files: [file] });
+    } catch {
+      // 사용자 취소 또는 실패 — 무시
+    }
+    setStoryBlob(null);
   };
 
   const handleClose = () => {
@@ -335,6 +385,25 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
   const data = full ?? album;
   const ratings = (data as FullAlbum).ratings ?? album.ratings ?? [];
+
+  const VISIBLE_COUNT = 4;
+  const sortedUsers = [...USERS].sort((a, b) => {
+    if (profile) {
+      if (a.id === profile.id) return -1;
+      if (b.id === profile.id) return 1;
+    }
+    const ra = ratings.find((r) => r.user_id === a.id);
+    const rb = ratings.find((r) => r.user_id === b.id);
+    const aLikes = ra?.liked_by ? ra.liked_by.split(",").filter(Boolean).length : 0;
+    const bLikes = rb?.liked_by ? rb.liked_by.split(",").filter(Boolean).length : 0;
+    if (aLikes !== bLikes) return bLikes - aLikes;
+    if (ra && !rb) return -1;
+    if (!ra && rb) return 1;
+    return 0;
+  });
+  const visibleUsers = showAllRatings ? sortedUsers : sortedUsers.slice(0, VISIBLE_COUNT);
+  const hiddenCount = Math.max(0, sortedUsers.length - VISIBLE_COUNT);
+
   const tracklist = full?.tracklist
     ? full.tracklist.split(";").map((t) => t.trim()).filter(Boolean)
     : [];
@@ -510,6 +579,52 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                     {deletingAlbum ? "삭제 중…" : "삭제"}
                   </button>
                 )}
+                {profile && myScore !== null && (
+                  storyBlob ? (
+                    <>
+                      <button
+                        onClick={handleShareStory}
+                        style={{
+                          background: "none", border: "1px solid var(--accent)",
+                          cursor: "pointer", color: "var(--accent)",
+                          fontSize: 11, lineHeight: 1,
+                          padding: "2px 7px", borderRadius: 4,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        공유하기
+                      </button>
+                      <button
+                        onClick={() => { downloadBlob(storyBlob, storyBlobName); setStoryBlob(null); }}
+                        style={{
+                          background: "none", border: "1px solid var(--border)",
+                          cursor: "pointer", color: "var(--text)",
+                          fontSize: 11, lineHeight: 1,
+                          padding: "2px 7px", borderRadius: 4,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        저장
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleCardCapture}
+                      disabled={cardCapturing}
+                      title="평가카드 저장"
+                      style={{
+                        background: "none", border: "1px solid var(--border)",
+                        cursor: cardCapturing ? "default" : "pointer",
+                        color: "var(--text)", fontSize: 11, lineHeight: 1,
+                        padding: "2px 7px", borderRadius: 4,
+                        opacity: cardCapturing ? 0.5 : 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cardCapturing ? "…" : "카드"}
+                    </button>
+                  )
+                )}
                 <button
                   onClick={handleCapture}
                   disabled={capturing}
@@ -575,7 +690,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             청음단 평점
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {USERS.map((user) => {
+            {visibleUsers.map((user) => {
               const r = ratings.find((rt) => rt.user_id === user.id);
               const review = r?.one_line_review ?? "";
               const LIMIT = 36;
@@ -655,6 +770,23 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               );
             })}
           </div>
+
+          {!showAllRatings && hiddenCount > 0 && (
+            <button
+              onClick={() => setShowAllRatings(true)}
+              style={{
+                marginTop: 8, background: "none",
+                border: "1px solid var(--border)", borderRadius: 6,
+                color: "var(--text-muted)", fontSize: 12,
+                cursor: "pointer", padding: "4px 10px",
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-sub)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; }}
+            >
+              + {hiddenCount}명 더보기
+            </button>
+          )}
         </div>
 
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
@@ -896,6 +1028,29 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           onSaved={onSaved}
           zIndex={120}
         />
+      )}
+
+      {/* 스토리카드 — 화면 밖에 렌더링, html2canvas 캡처용 */}
+      {profile && myScore !== null && (
+        <div
+          style={{
+            position: "fixed",
+            top: -10000,
+            left: -10000,
+            pointerEvents: "none",
+            zIndex: -1,
+          }}
+        >
+          <StoryCard
+            containerRef={storyCardRef}
+            title={data.title}
+            artist={data.artist_display ?? data.artist}
+            coverUrl={data.cover_url}
+            score={myScore}
+            review={myReview || null}
+            spotifyId={data.spotify_id}
+          />
+        </div>
       )}
 
       {editing && (

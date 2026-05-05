@@ -1,5 +1,33 @@
 import html2canvas from "html2canvas";
 
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function captureToBlob(el: HTMLElement, bg = "#1a1817"): Promise<Blob | null> {
+  const canvas = await html2canvas(el, {
+    backgroundColor: bg,
+    useCORS: true,
+    allowTaint: false,
+    scale: 3,
+    logging: false,
+  });
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/png");
+  });
+}
+
+export async function captureStoryCard(el: HTMLElement, albumTitle: string): Promise<void> {
+  const blob = await captureToBlob(el);
+  if (!blob) return;
+  downloadBlob(blob, `${albumTitle.replace(/[<>:"/\\|?*]/g, "")}_card.png`);
+}
+
 export async function captureElement(el: HTMLElement): Promise<void> {
   const canvas = await html2canvas(el, {
     backgroundColor: "#242220", // --bg-card

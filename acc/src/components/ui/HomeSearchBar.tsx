@@ -17,13 +17,13 @@ export default function HomeSearchBar() {
     <div style={{
       display: "flex",
       justifyContent: "center",
-      padding: "28px 24px 0",
+      padding: "28px 0 0",
     }}>
       <div style={{
         display: "flex",
         alignItems: "center",
         width: "100%",
-        maxWidth: 420,
+        maxWidth: 560,
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         borderRadius: 999,

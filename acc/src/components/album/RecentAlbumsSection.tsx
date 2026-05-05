@@ -30,7 +30,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
               key={album.id}
               onClick={() => setSelectedAlbum(album)}
               style={{ backgroundColor: "var(--bg-card)", border: `1px solid ${glowBorder(avg)}`, textAlign: "left", boxShadow: glowShadow(avg) }}
-              className="rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer w-full"
+              className="rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:scale-[1.02] active:scale-[0.97] cursor-pointer w-full"
             >
               <div
                 style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
@@ -54,11 +54,9 @@ export default function RecentAlbumsSection({ albums }: Props) {
                     className="hover:underline"
                   >{album.artist_display ?? album.artist}</span>
                 </p>
-                {avg && (
-                  <p style={{ color: "var(--accent)" }} className="text-xs mt-2 font-medium">
-                    ★ {avg}
-                  </p>
-                )}
+                <p style={{ color: "var(--accent)", visibility: avg ? "visible" : "hidden" }} className="text-xs mt-2 font-medium">
+                  ★ {avg}
+                </p>
               </div>
             </button>
           );

@@ -65,6 +65,7 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<LogRow[] | null>(null);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsAction, setLogsAction] = useState<string>("");
+  const [logsClearLoading, setLogsClearLoading] = useState(false);
 
   async function loadLogs(action?: string) {
     setLogsLoading(true);
@@ -74,6 +75,18 @@ export default function AdminPage() {
     const data = await res.json();
     setLogs(data.logs ?? []);
     setLogsLoading(false);
+  }
+
+  async function handleClearLogs() {
+    if (!confirm("15일 이전 로그를 모두 삭제할까요?")) return;
+    setLogsClearLoading(true);
+    const res = await adminFetch("/api/admin/logs", { method: "DELETE" });
+    const data = await res.json();
+    setLogsClearLoading(false);
+    if (res.ok) {
+      alert(`${data.deleted ?? 0}건 삭제됨`);
+      if (logs !== null) loadLogs(logsAction || undefined);
+    }
   }
 
   // --- 통계 ---
@@ -1350,17 +1363,6 @@ export default function AdminPage() {
                       {/* 표시 이름 선택 */}
                       <div style={{ display: "flex", gap: 3, flexShrink: 0 }} title={`앨범 ${total}개 중 ${using}개 별칭 표시 중`}>
                         <button
-                          onClick={() => handleSetVariant(a.spotify_name, true)}
-                          style={{
-                            flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap",
-                            border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`,
-                            backgroundColor: allOn ? "var(--accent)" : "transparent",
-                            color: allOn ? "var(--bg)" : "var(--text-muted)",
-                          }}
-                        >
-                          별칭{mixed ? ` ${using}/${total}` : ""}
-                        </button>
-                        <button
                           onClick={() => handleSetVariant(a.spotify_name, false)}
                           style={{
                             flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap",
@@ -1371,6 +1373,17 @@ export default function AdminPage() {
                           }}
                         >
                           원래이름
+                        </button>
+                        <button
+                          onClick={() => handleSetVariant(a.spotify_name, true)}
+                          style={{
+                            flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap",
+                            border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`,
+                            backgroundColor: allOn ? "var(--accent)" : "transparent",
+                            color: allOn ? "var(--bg)" : "var(--text-muted)",
+                          }}
+                        >
+                          별칭{mixed ? ` ${using}/${total}` : ""}
                         </button>
                       </div>
                       <button
@@ -1534,6 +1547,13 @@ export default function AdminPage() {
                 style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}
               >
                 {logsLoading ? "로딩 중..." : logs === null ? "불러오기" : "새로고침"}
+              </button>
+              <button
+                onClick={handleClearLogs}
+                disabled={logsClearLoading}
+                style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsClearLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "#e05050", fontSize: 12, fontWeight: 600 }}
+              >
+                {logsClearLoading ? "삭제 중..." : "15일 이전 삭제"}
               </button>
             </div>
           </div>
