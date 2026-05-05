@@ -16,6 +16,7 @@ import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
+import { koGenre, GENRE_COLOR } from "@/lib/bio";
 
 function formatReleaseDate(raw: string): string {
   // "2023-04-07" → "2023.04.07", "2023-04" → "2023.04", "2023" → "2023"
@@ -591,18 +592,23 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                     {(full as FullAlbum).region}
                   </span>
                 )}
-                {data.genre && (
-                  <span style={{
-                    backgroundColor: "var(--bg-elevated)",
-                    color: "var(--text-muted)",
-                    fontSize: 11,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    border: "1px solid var(--border)",
-                  }}>
-                    {data.genre}
-                  </span>
-                )}
+                {data.genre && (() => {
+                  const gDisplay = koGenre(data.genre);
+                  const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
+                  return (
+                    <span style={{
+                      backgroundColor: `${gColor}1a`,
+                      color: gColor,
+                      fontSize: 11,
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      border: `1px solid ${gColor}40`,
+                      fontWeight: 500,
+                    }}>
+                      {gDisplay}
+                    </span>
+                  );
+                })()}
               </div>
             )}
 
