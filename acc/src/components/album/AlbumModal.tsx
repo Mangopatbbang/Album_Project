@@ -7,8 +7,8 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
-import { captureElement, captureToBlob, downloadBlob } from "@/lib/capture";
-import StoryCard from "@/components/album/StoryCard";
+import { captureElement } from "@/lib/capture";
+import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
@@ -61,10 +61,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [closing, setClosing] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [captured, setCaptured] = useState(false);
-  const [cardCapturing, setCardCapturing] = useState(false);
-  const [storyBlob, setStoryBlob] = useState<Blob | null>(null);
-  const [storyBlobName, setStoryBlobName] = useState("");
-  const storyCardRef = useRef<HTMLDivElement | null>(null);
+  const [showCardPreview, setShowCardPreview] = useState(false);
   const [editing, setEditing] = useState(false);
   const [myLikedTracks, setMyLikedTracks] = useState<Set<number>>(new Set());
   const [myLikedReviews, setMyLikedReviews] = useState<Set<string>>(new Set());
@@ -110,49 +107,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     setTimeout(() => setCaptured(false), 2000);
   };
 
-  const handleCardCapture = async () => {
-    if (!storyCardRef.current || cardCapturing) return;
-    setCardCapturing(true);
-    // 프록시 이미지 로딩 대기
-    await new Promise<void>((resolve) => {
-      const imgs = storyCardRef.current!.querySelectorAll("img");
-      const pending = Array.from(imgs).filter((img) => !img.complete);
-      if (pending.length === 0) { resolve(); return; }
-      let loaded = 0;
-      const onLoad = () => { if (++loaded >= pending.length) resolve(); };
-      pending.forEach((img) => {
-        img.addEventListener("load", onLoad, { once: true });
-        img.addEventListener("error", onLoad, { once: true });
-      });
-      setTimeout(resolve, 3000);
-    });
-    const blob = await captureToBlob(storyCardRef.current);
-    if (!blob) { setCardCapturing(false); return; }
-    const filename = `${data.title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
-    const testFile = new File([blob], filename, { type: "image/png" });
-    if (navigator.canShare?.({ files: [testFile] })) {
-      // 모바일: blob 보관 후 공유 버튼 표시
-      setStoryBlob(blob);
-      setStoryBlobName(filename);
-      showToast("카드를 만들었어요", "info");
-    } else {
-      // 데스크탑: 바로 다운로드
-      downloadBlob(blob, filename);
-      showToast("카드를 저장했어요", "info");
-    }
-    setCardCapturing(false);
-  };
-
-  const handleShareStory = async () => {
-    if (!storyBlob) return;
-    const file = new File([storyBlob], storyBlobName, { type: "image/png" });
-    try {
-      await navigator.share({ files: [file] });
-    } catch {
-      // 사용자 취소 또는 실패 — 무시
-    }
-    setStoryBlob(null);
-  };
 
   const handleClose = () => {
     setClosing(true);
@@ -580,50 +534,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   </button>
                 )}
                 {profile && myScore !== null && (
-                  storyBlob ? (
-                    <>
-                      <button
-                        onClick={handleShareStory}
-                        style={{
-                          background: "none", border: "1px solid var(--accent)",
-                          cursor: "pointer", color: "var(--accent)",
-                          fontSize: 11, lineHeight: 1,
-                          padding: "2px 7px", borderRadius: 4,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        공유하기
-                      </button>
-                      <button
-                        onClick={() => { downloadBlob(storyBlob, storyBlobName); setStoryBlob(null); }}
-                        style={{
-                          background: "none", border: "1px solid var(--border)",
-                          cursor: "pointer", color: "var(--text)",
-                          fontSize: 11, lineHeight: 1,
-                          padding: "2px 7px", borderRadius: 4,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        저장
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={handleCardCapture}
-                      disabled={cardCapturing}
-                      title="평가카드 저장"
-                      style={{
-                        background: "none", border: "1px solid var(--border)",
-                        cursor: cardCapturing ? "default" : "pointer",
-                        color: "var(--text)", fontSize: 11, lineHeight: 1,
-                        padding: "2px 7px", borderRadius: 4,
-                        opacity: cardCapturing ? 0.5 : 1,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {cardCapturing ? "…" : "카드"}
-                    </button>
-                  )
+                  <button
+                    onClick={() => setShowCardPreview(true)}
+                    title="평가카드 만들기"
+                    style={{
+                      background: "none", border: "1px solid var(--border)",
+                      cursor: "pointer", color: "var(--text)",
+                      fontSize: 11, lineHeight: 1,
+                      padding: "2px 7px", borderRadius: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    카드
+                  </button>
                 )}
                 <button
                   onClick={handleCapture}
@@ -1030,27 +953,18 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
         />
       )}
 
-      {/* 스토리카드 — 화면 밖에 렌더링, html2canvas 캡처용 */}
-      {profile && myScore !== null && (
-        <div
-          style={{
-            position: "fixed",
-            top: -10000,
-            left: -10000,
-            pointerEvents: "none",
-            zIndex: -1,
-          }}
-        >
-          <StoryCard
-            containerRef={storyCardRef}
-            title={data.title}
-            artist={data.artist_display ?? data.artist}
-            coverUrl={data.cover_url}
-            score={myScore}
-            review={myReview || null}
-            spotifyId={data.spotify_id}
-          />
-        </div>
+      {showCardPreview && myScore !== null && (
+        <StoryCardPreviewModal
+          title={data.title}
+          artist={data.artist_display ?? data.artist}
+          coverUrl={data.cover_url}
+          score={myScore}
+          review={myReview || null}
+          genre={data.genre ?? null}
+          userName={profile?.display_name ?? profile?.id}
+          spotifyId={data.spotify_id}
+          onClose={() => setShowCardPreview(false)}
+        />
       )}
 
       {editing && (
