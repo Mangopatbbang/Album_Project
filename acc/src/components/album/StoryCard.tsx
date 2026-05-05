@@ -6,7 +6,6 @@ type Props = {
   title: string;
   artist: string;
   coverUrl: string | null | undefined;
-  artistImageUrl?: string | null;
   score: number;
   review: string | null | undefined;
   genre?: string | null;
@@ -19,7 +18,6 @@ export default function StoryCard({
   title,
   artist,
   coverUrl,
-  artistImageUrl,
   score,
   review,
   genre,
@@ -31,10 +29,6 @@ export default function StoryCard({
     ? `/api/image-proxy?url=${encodeURIComponent(coverUrl)}`
     : null;
 
-  const proxiedArtist = artistImageUrl
-    ? `/api/image-proxy?url=${encodeURIComponent(artistImageUrl)}`
-    : null;
-
   const color = scoreColor(score);
 
   return (
@@ -44,7 +38,6 @@ export default function StoryCard({
         width: 360,
         height: 640,
         position: "relative",
-        // overflow + borderRadius here so preview and capture match exactly
         overflow: "hidden",
         borderRadius: 12,
         backgroundColor: "#1a1817",
@@ -87,65 +80,36 @@ export default function StoryCard({
           zIndex: 2,
           display: "flex",
           flexDirection: "column",
+          alignItems: "center",
           padding: "56px 32px 68px",
         }}
       >
-        {/* 상단: 점수(좌) + 아티스트 사진(우) */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          {/* 점수 */}
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <span
-              style={{
-                fontSize: 72,
-                fontWeight: 900,
-                lineHeight: 1,
-                color,
-                letterSpacing: "-0.05em",
-                textShadow:
-                  score >= 7 ? `0 0 28px ${color}99, 0 0 10px ${color}55` : "none",
-              }}
-            >
-              {score}
-            </span>
-            <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
-              /8
-            </span>
-          </div>
-
-          {/* 아티스트 사진 */}
-          {proxiedArtist ? (
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                overflow: "hidden",
-                flexShrink: 0,
-                border: "2px solid rgba(255,255,255,0.18)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.45)",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={proxiedArtist}
-                alt={artist}
-                crossOrigin="anonymous"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-            </div>
-          ) : (
-            /* 로딩 중이거나 없을 때 자리 확보 */
-            <div style={{ width: 80, height: 80, flexShrink: 0 }} />
-          )}
+        {/* 점수 — 좌측 정렬 */}
+        <div style={{ width: "100%", display: "flex", alignItems: "baseline", gap: 5 }}>
+          <span
+            style={{
+              fontSize: 72,
+              fontWeight: 900,
+              lineHeight: 1,
+              color,
+              letterSpacing: "-0.05em",
+              textShadow:
+                score >= 7 ? `0 0 28px ${color}99, 0 0 10px ${color}55` : "none",
+            }}
+          >
+            {score}
+          </span>
+          <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
+            /8
+          </span>
         </div>
 
         {/* 앨범 커버 — 중앙, 크게 */}
         <div
           style={{
-            marginTop: 16,
-            alignSelf: "center",
-            width: 188,
-            height: 188,
+            marginTop: 20,
+            width: 192,
+            height: 192,
             flexShrink: 0,
             borderRadius: 10,
             overflow: "hidden",
@@ -178,7 +142,7 @@ export default function StoryCard({
         </div>
 
         {/* 제목 + 아티스트 · 장르 */}
-        <div style={{ marginTop: 16, textAlign: "center" }}>
+        <div style={{ marginTop: 18, textAlign: "center" }}>
           <p
             style={{
               fontSize: 19,
@@ -226,7 +190,7 @@ export default function StoryCard({
         )}
 
         {/* 하단 워터마크 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span
             style={{
               fontSize: 11,
@@ -237,7 +201,6 @@ export default function StoryCard({
           >
             아차청음사
           </span>
-
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {userName && (
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", letterSpacing: "0.02em" }}>

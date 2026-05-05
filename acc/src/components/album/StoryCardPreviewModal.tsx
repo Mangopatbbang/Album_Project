@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import StoryCard from "@/components/album/StoryCard";
 import { captureToBlob, downloadBlob } from "@/lib/capture";
 
@@ -29,16 +29,7 @@ export default function StoryCardPreviewModal({
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const [artistImageUrl, setArtistImageUrl] = useState<string | null>(null);
-
-  // 아티스트 사진 fetch
-  useEffect(() => {
-    if (!artist) return;
-    fetch(`/api/spotify/artist?name=${encodeURIComponent(artist)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data?.image_url) setArtistImageUrl(data.image_url); })
-      .catch(() => {});
-  }, [artist]);
+  const [includeReview, setIncludeReview] = useState(true);
 
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
@@ -99,7 +90,7 @@ export default function StoryCardPreviewModal({
         alignItems: "center",
         justifyContent: "center",
         padding: "20px 16px",
-        gap: 20,
+        gap: 16,
         overflowY: "auto",
       }}
       onClick={onClose}
@@ -124,7 +115,7 @@ export default function StoryCardPreviewModal({
         ✕
       </button>
 
-      {/* 카드 미리보기 — wrapper에 overflow/clipping 없음. 카드 자체가 borderRadius+overflow 처리 */}
+      {/* 카드 미리보기 */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.85)", borderRadius: 12, flexShrink: 0 }}
@@ -134,29 +125,71 @@ export default function StoryCardPreviewModal({
           title={title}
           artist={artist}
           coverUrl={coverUrl}
-          artistImageUrl={artistImageUrl}
           score={score}
-          review={review}
+          review={includeReview ? (review ?? null) : null}
           genre={genre}
           userName={userName}
           spotifyId={spotifyId}
         />
       </div>
 
-      {/* 버튼 */}
+      {/* 옵션 + 버튼 */}
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ display: "flex", gap: 10, flexShrink: 0 }}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, flexShrink: 0 }}
       >
-        {canShare && (
+        {/* 한줄 평 토글 — 리뷰가 있을 때만 표시 */}
+        {review && (
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              color: "rgba(255,255,255,0.55)",
+              fontSize: 13,
+              userSelect: "none",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={includeReview}
+              onChange={(e) => setIncludeReview(e.target.checked)}
+              style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }}
+            />
+            한줄 평 포함
+          </label>
+        )}
+
+        {/* 저장/공유 버튼 */}
+        <div style={{ display: "flex", gap: 10 }}>
+          {canShare && (
+            <button
+              onClick={handleShare}
+              disabled={capturing}
+              style={{
+                padding: "10px 28px",
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.35)",
+                background: "none",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: capturing ? "default" : "pointer",
+                opacity: capturing ? 0.5 : 1,
+              }}
+            >
+              공유하기
+            </button>
+          )}
           <button
-            onClick={handleShare}
+            onClick={handleSave}
             disabled={capturing}
             style={{
               padding: "10px 28px",
               borderRadius: 8,
-              border: "1px solid rgba(255,255,255,0.35)",
-              background: "none",
+              border: "none",
+              background: "rgba(255,255,255,0.14)",
               color: "#fff",
               fontSize: 14,
               fontWeight: 600,
@@ -164,26 +197,9 @@ export default function StoryCardPreviewModal({
               opacity: capturing ? 0.5 : 1,
             }}
           >
-            공유하기
+            {capturing ? "처리 중…" : "저장"}
           </button>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={capturing}
-          style={{
-            padding: "10px 28px",
-            borderRadius: 8,
-            border: "none",
-            background: "rgba(255,255,255,0.14)",
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: capturing ? "default" : "pointer",
-            opacity: capturing ? 0.5 : 1,
-          }}
-        >
-          {capturing ? "처리 중…" : "저장"}
-        </button>
+        </div>
       </div>
     </div>
   );
