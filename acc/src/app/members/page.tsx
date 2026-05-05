@@ -4,11 +4,10 @@ import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
 import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
-import { ClickableAlbumRow } from "./MembersAlbumModal";
+import { PairsSection, UnanimousSection, ControversialSection, type PairData, type AlbumSectionData } from "./MembersSections";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
-import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 
 export const metadata: Metadata = {
   title: "청음인",
@@ -144,6 +143,32 @@ export default async function MembersPage() {
     .sort((a, b) => b.variance - a.variance)
     .slice(0, 8);
 
+  // 클라이언트 컴포넌트용 직렬화 데이터
+  const pairsData: PairData[] = pairs.sort((a, b) => (a.diff ?? 99) - (b.diff ?? 99));
+
+  const toAlbumSectionData = (items: typeof unanimousIds, withVariance = false): AlbumSectionData[] =>
+    items.map(({ id, avg, scores, ...rest }) => {
+      const album = unanimousAlbumMap.get(id);
+      if (!album) return null;
+      const userScores = USERS
+        .map((u) => { const s = albumScoreMaps.get(u.id)?.get(id); return s !== undefined ? { userId: u.id, score: s } : null; })
+        .filter(Boolean) as { userId: string; score: number }[];
+      return {
+        id,
+        title: album.title,
+        artist: album.artist,
+        artist_display: album.artist_display ?? album.artist,
+        cover_url: album.cover_url ?? null,
+        spotify_id: (album as { spotify_id?: string | null }).spotify_id ?? null,
+        avg,
+        ...(withVariance ? { variance: (rest as { variance?: number }).variance } : {}),
+        userScores,
+      };
+    }).filter(Boolean) as AlbumSectionData[];
+
+  const unanimousData = toAlbumSectionData(unanimousIds.slice(0, 10));
+  const controversialData = toAlbumSectionData(controversial as typeof unanimousIds, true);
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
@@ -168,20 +193,7 @@ export default async function MembersPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>{user.display_name}</p>
-                          {topGenres.map((g) => {
-                            const gColor = GENRE_COLOR[g] ?? "#94a3b8";
-                            return (
-                              <span key={g} style={{
-                                fontSize: 10, fontWeight: 600,
-                                backgroundColor: `${gColor}1a`, color: gColor,
-                                border: `1px solid ${gColor}40`,
-                                borderRadius: 4, padding: "1px 5px",
-                              }}>{g}</span>
-                            );
-                          })}
-                        </div>
+                        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>{user.display_name}</p>
                         <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>{total}장 청음</p>
                       </div>
                     </div>
@@ -277,126 +289,9 @@ export default async function MembersPage() {
           </div>
         </div>
 
-        {/* ── 공통 청음 매트릭스 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>취향 궁합</p>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${pairs.length > 3 ? 2 : 1}, 1fr)`, gap: 12 }}>
-            {pairs.sort((a, b) => (a.diff ?? 99) - (b.diff ?? 99)).map(({ a, b, commonCount, diff }) => (
-              <div key={`${a.id}-${b.id}`} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 16px", backgroundColor: "var(--bg-elevated)", borderRadius: 8,
-              }}>
-                <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <UserAvatar avatarUrl={avatarMap[a.id]} size={18} />
-                  <Link href={`/profile/${a.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{a.display_name}</Link>
-                  <span style={{ opacity: 0.4 }}>×</span>
-                  <UserAvatar avatarUrl={avatarMap[b.id]} size={18} />
-                  <Link href={`/profile/${b.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{b.display_name}</Link>
-                </span>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
-                  {diff !== null && (
-                    <p style={{ color: diff < 1.0 ? "var(--accent)" : "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
-                      앨범당 {diff.toFixed(2)}점 차이
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── 만장일치 명반 ── */}
-        {unanimousIds.length > 0 && (
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 4 }}>
-              만장일치 명반
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 16 }}>전원이 청음한 앨범 · 평균 높은 순</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {unanimousIds.slice(0, 10).map(({ id, avg, scores }) => {
-                const album = unanimousAlbumMap.get(id);
-                if (!album) return null;
-                return (
-                  <ClickableAlbumRow key={id} album={album}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-                      {album.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14 }}>♪</span></div>
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist_display ?? album.artist}</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {USERS.map((u) => {
-                        const s = albumScoreMaps.get(u.id)?.get(id);
-                        return s !== undefined ? (
-                          <span key={u.id} style={{ color: scoreColor(s), fontSize: 12, fontWeight: 700 }}>{s}</span>
-                        ) : null;
-                      })}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <SpotifyAttribution spotifyId={(album as { spotify_id?: string | null }).spotify_id} />
-                      <span style={{ color: scoreColor(avg), fontWeight: 700, fontSize: 14, width: 32, textAlign: "right" }}>
-                        {avg.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                  </ClickableAlbumRow>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── 취향 충돌 ── */}
-        {controversial.length > 0 && (
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 4 }}>취향 충돌</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 16 }}>전원이 청음했지만 점수 차이가 큰 앨범</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {controversial.map(({ id, avg, variance }) => {
-                const album = unanimousAlbumMap.get(id);
-                if (!album) return null;
-                return (
-                  <ClickableAlbumRow key={id} album={album}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-                      {album.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14 }}>♪</span></div>
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{album.title}</p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{album.artist_display ?? album.artist}</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {USERS.map((u) => {
-                        const s = albumScoreMaps.get(u.id)?.get(id);
-                        return s !== undefined ? (
-                          <span key={u.id} style={{ color: scoreColor(s), fontSize: 12, fontWeight: 700 }}>{s}</span>
-                        ) : null;
-                      })}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <SpotifyAttribution spotifyId={(album as { spotify_id?: string | null }).spotify_id} />
-                      <span style={{ color: "var(--text-muted)", fontSize: 11, width: 40, textAlign: "right" }}>
-                        σ {Math.sqrt(variance).toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                  </ClickableAlbumRow>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <PairsSection pairs={pairsData} avatarMap={avatarMap} />
+        <UnanimousSection albums={unanimousData} />
+        <ControversialSection albums={controversialData} />
       </main>
     </div>
   );
