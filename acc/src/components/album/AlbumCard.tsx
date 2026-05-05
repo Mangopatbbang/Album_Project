@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
@@ -21,13 +21,19 @@ export default function AlbumCard({ album, onClick }: Props) {
   const { users } = useUsers();
   const { profile } = useAuth();
 
-  const ratedEntries = users
-    .map((u) => ({ user: u, rating: album.ratings.find((r) => r.user_id === u.id) }))
-    .filter((e): e is { user: typeof e.user; rating: NonNullable<typeof e.rating> } => e.rating != null);
-  const displayEntries = [
-    ...ratedEntries.filter((e) => e.user.id === profile?.id),
-    ...ratedEntries.filter((e) => e.user.id !== profile?.id),
-  ].slice(0, 5);
+  const displayEntries = useMemo(() => {
+    const ratedEntries = users
+      .map((u) => ({ user: u, rating: album.ratings.find((r) => r.user_id === u.id) }))
+      .filter((e): e is { user: typeof e.user; rating: NonNullable<typeof e.rating> } => e.rating != null);
+    const mine = ratedEntries.filter((e) => e.user.id === profile?.id);
+    const others = ratedEntries.filter((e) => e.user.id !== profile?.id);
+    for (let i = others.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [others[i], others[j]] = [others[j], others[i]];
+    }
+    return [...mine, ...others].slice(0, 5);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [album.id, profile?.id]);
 
   return (
     <>
