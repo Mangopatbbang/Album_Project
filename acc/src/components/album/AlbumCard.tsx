@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
+import { useAuth } from "@/context/AuthContext";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -18,6 +19,16 @@ export default function AlbumCard({ album, onClick }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
+  const { profile } = useAuth();
+
+  const ratedEntries = users
+    .map((u) => ({ user: u, rating: album.ratings.find((r) => r.user_id === u.id) }))
+    .filter((e): e is { user: typeof e.user; rating: NonNullable<typeof e.rating> } => e.rating != null);
+  const displayEntries = [
+    ...ratedEntries.filter((e) => e.user.id === profile?.id),
+    ...ratedEntries.filter((e) => e.user.id !== profile?.id),
+  ].slice(0, 5);
+
   return (
     <>
     <button
@@ -96,18 +107,14 @@ export default function AlbumCard({ album, onClick }: Props) {
         {/* 유저별 평점 + Spotify attribution */}
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {users.map((user) => {
-              const r = album.ratings.find((rt) => rt.user_id === user.id);
-              if (!r) return null;
-              return (
-                <span
-                  key={user.id}
-                  style={{ fontSize: 11, color: scoreColor(r.score), display: "inline-flex", alignItems: "center", gap: 2 }}
-                >
-                  <UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{r.score}
-                </span>
-              );
-            })}
+            {displayEntries.map(({ user, rating }) => (
+              <span
+                key={user.id}
+                style={{ fontSize: 11, color: scoreColor(rating.score), display: "inline-flex", alignItems: "center", gap: 2 }}
+              >
+                <UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{rating.score}
+              </span>
+            ))}
           </div>
           <SpotifyAttribution spotifyId={album.spotify_id} />
         </div>
