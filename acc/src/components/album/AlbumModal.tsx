@@ -18,6 +18,18 @@ import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
 import { koGenre, GENRE_COLOR } from "@/lib/bio";
 
+const RATING_GUIDE_INTRO = "본인이 만든 창작물을 지인에게 들려준 경험이 있는가? '괜찮네' '좋네' 등의 반응으로는 그 작품의 완성도를 판단할 수 없다. 그러한 반응은 오히려 평작의 반응에 가까우며, 만든 사람의 기분을 생각해 예의를 차려준 표현에 가깝다. 각 티어의 이름은 그 앨범을 들었을 때 직관적으로 생기는 '리액션'에서 유래했다.";
+
+const RATING_GUIDE = [
+  { score: 1, name: "이건 좀", desc: ["모호한 기획의도와 방향성, 앨범의 완성도가 심하게 떨어짐", "청자에 대한 기만 수준의 무책임한 망작"] },
+  { score: 2, name: "음", desc: ["독창성과 완성도가 부족하여 좋은 반응을 하기 어려운 앨범", "창작자를 직접 만난다면 표정관리가 다소 필요할 앨범"] },
+  { score: 3, name: "괜찮네", desc: ["적은 부분 좋은 포인트를 발견할 수 있는 앨범", "창작자를 직접 만났을 때 예의를 차릴 수 있는 정도의 앨범"] },
+  { score: 4, name: "좋네", desc: ['"GOOD" 앨범 / 긍정적 반응을 할 수 있는 앨범', "일정 수준의 완성도와 개성이 담긴 앨범"] },
+  { score: 5, name: "오", desc: ["아티스트 팬들의 기다림을 해소", "장르적 문법에 충실하면서 새로움을 제공", "추천할 만한 좋은 완성도와 짜임새"] },
+  { score: 6, name: "워", desc: ["완성도 이상의 아이디어, 사운드, 표현력"] },
+  { score: 7, name: "ㅠㅠ", desc: ["분기 최고의 앨범들, 탁월한 완성도", '"오직 그 앨범만의" 고유한 아이디어 & 사운드 or 서사', "아티스트와 장르 모두에게 기념비적인 앨범"] },
+] as const;
+
 function formatReleaseDate(raw: string): string {
   // "2023-04-07" → "2023.04.07", "2023-04" → "2023.04", "2023" → "2023"
   return raw.replace(/-/g, ".");
@@ -76,6 +88,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
   const [myHistory, setMyHistory] = useState<{ score: number; createdAt: string }[]>([]);
   const [showAllRatings, setShowAllRatings] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -734,9 +747,84 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
         <div style={{ paddingLeft: 32, paddingRight: 32 }}>
           {profile ? (
             <>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-                <UserAvatar avatarUrl={profile.avatar_url} size={14} /> 나의 청음 점수
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: showGuide ? 10 : 12 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                  <UserAvatar avatarUrl={profile.avatar_url} size={14} /> 나의 청음 점수
+                </p>
+                <button
+                  onClick={() => setShowGuide(v => !v)}
+                  style={{
+                    background: showGuide ? "var(--bg-elevated)" : "none",
+                    border: "1px solid var(--border)",
+                    borderRadius: 4,
+                    padding: "1px 6px",
+                    cursor: "pointer",
+                    color: showGuide ? "var(--text-sub)" : "var(--text-muted)",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    lineHeight: 1.6,
+                    transition: "background 0.12s, color 0.12s",
+                  }}
+                >
+                  기준 참고
+                </button>
+              </div>
+
+              {showGuide && (
+                <div style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  marginBottom: 12,
+                }}>
+                  <p style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+                    color: "var(--text-muted)",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 4,
+                    display: "inline-block",
+                    padding: "2px 7px",
+                    marginBottom: 10,
+                  }}>
+                    참고용 — 이 기준은 강제되지 않습니다
+                  </p>
+                  <p style={{ fontSize: 11.5, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 14, fontStyle: "italic" }}>
+                    {RATING_GUIDE_INTRO}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {RATING_GUIDE.map(({ score, name, desc }) => {
+                      const color = SCORE_COLORS[score];
+                      return (
+                        <div key={score} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <span style={{
+                            flexShrink: 0,
+                            width: 24, height: 24, borderRadius: 6,
+                            backgroundColor: `${color}20`,
+                            border: `1px solid ${color}50`,
+                            color, fontSize: 11, fontWeight: 800,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {score}
+                          </span>
+                          <div>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", display: "block", marginBottom: 2 }}>
+                              {name}
+                            </span>
+                            {desc.map((line, i) => (
+                              <span key={i} style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6, display: "block" }}>
+                                {line}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
                 {[1,2,3,4,5,6,7,8].map((n) => {
                   const color = SCORE_COLORS[n];
