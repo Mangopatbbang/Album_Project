@@ -18,7 +18,10 @@ function buildSearchOr(s: string, aliasMatches: string[]): string {
   const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, `extra_artists.ilike.%${s}%`];
   for (const a of aliasMatches) {
     const safe = escapeSearch(a);
-    if (safe) parts.push(`artist.ilike.${safe}`);  // % 없이 exact match (대소문자 무시)
+    if (safe) {
+      parts.push(`artist.ilike.${safe}`);           // 주 아티스트 exact match
+      parts.push(`extra_artists.ilike.%${safe}%`);  // 참여 아티스트 포함 검색
+    }
   }
   return parts.join(",");
 }
