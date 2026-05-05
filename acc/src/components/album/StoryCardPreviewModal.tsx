@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StoryCard from "@/components/album/StoryCard";
 import { captureToBlob, downloadBlob } from "@/lib/capture";
 
@@ -29,6 +29,16 @@ export default function StoryCardPreviewModal({
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [artistImageUrl, setArtistImageUrl] = useState<string | null>(null);
+
+  // 아티스트 사진 fetch
+  useEffect(() => {
+    if (!artist) return;
+    fetch(`/api/spotify/artist?name=${encodeURIComponent(artist)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.image_url) setArtistImageUrl(data.image_url); })
+      .catch(() => {});
+  }, [artist]);
 
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
@@ -90,6 +100,7 @@ export default function StoryCardPreviewModal({
         justifyContent: "center",
         padding: "20px 16px",
         gap: 20,
+        overflowY: "auto",
       }}
       onClick={onClose}
     >
@@ -97,7 +108,7 @@ export default function StoryCardPreviewModal({
       <button
         onClick={onClose}
         style={{
-          position: "absolute",
+          position: "fixed",
           top: 16,
           right: 18,
           color: "rgba(255,255,255,0.55)",
@@ -107,26 +118,23 @@ export default function StoryCardPreviewModal({
           cursor: "pointer",
           lineHeight: 1,
           padding: "4px 6px",
+          zIndex: 201,
         }}
       >
         ✕
       </button>
 
-      {/* 카드 미리보기 */}
+      {/* 카드 미리보기 — wrapper에 overflow/clipping 없음. 카드 자체가 borderRadius+overflow 처리 */}
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          borderRadius: 12,
-          overflow: "hidden",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.85)",
-          flexShrink: 1,
-        }}
+        style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.85)", borderRadius: 12, flexShrink: 0 }}
       >
         <StoryCard
           containerRef={cardRef}
           title={title}
           artist={artist}
           coverUrl={coverUrl}
+          artistImageUrl={artistImageUrl}
           score={score}
           review={review}
           genre={genre}
@@ -138,7 +146,7 @@ export default function StoryCardPreviewModal({
       {/* 버튼 */}
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ display: "flex", gap: 10 }}
+        style={{ display: "flex", gap: 10, flexShrink: 0 }}
       >
         {canShare && (
           <button
@@ -154,7 +162,6 @@ export default function StoryCardPreviewModal({
               fontWeight: 600,
               cursor: capturing ? "default" : "pointer",
               opacity: capturing ? 0.5 : 1,
-              transition: "opacity 0.15s",
             }}
           >
             공유하기
@@ -173,7 +180,6 @@ export default function StoryCardPreviewModal({
             fontWeight: 600,
             cursor: capturing ? "default" : "pointer",
             opacity: capturing ? 0.5 : 1,
-            transition: "opacity 0.15s",
           }}
         >
           {capturing ? "처리 중…" : "저장"}
