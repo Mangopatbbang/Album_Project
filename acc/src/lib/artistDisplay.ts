@@ -11,6 +11,7 @@ export async function fetchAliasMap(): Promise<Map<string, string>> {
 type HasArtist = {
   artist: string;
   use_artist_variant?: boolean | null;
+  extra_artists?: string | null;
 };
 
 /** 앨범 배열에 artist_display 필드를 추가해 반환 */
@@ -18,13 +19,18 @@ export function applyArtistDisplay<T extends HasArtist>(
   albums: T[],
   aliasMap: Map<string, string>
 ): (T & { artist_display: string })[] {
-  return albums.map((a) => ({
-    ...a,
-    artist_display:
-      a.use_artist_variant && aliasMap.get(a.artist)
-        ? aliasMap.get(a.artist)!
-        : a.artist,
-  }));
+  return albums.map((a) => {
+    if (a.use_artist_variant) {
+      const alias = aliasMap.get(a.artist);
+      if (alias) return { ...a, artist_display: alias };
+      // alias 없고 extra_artists 있으면 개별 이름으로 분리 표시
+      if (a.extra_artists) {
+        const individuals = a.extra_artists.split(";").map((s) => s.trim()).filter(Boolean).join(", ");
+        if (individuals) return { ...a, artist_display: individuals };
+      }
+    }
+    return { ...a, artist_display: a.artist };
+  });
 }
 
 /** 앨범 배열에 대해 alias DB 조회 + artist_display 적용을 한 번에 처리 */

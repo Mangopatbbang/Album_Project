@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
 
 const LIMIT = 30;
-const SELECT = "id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)";
+const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)";
 
 // PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거
 function escapeSearch(s: string) {

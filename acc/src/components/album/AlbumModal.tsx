@@ -15,6 +15,7 @@ import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
+import { parseExtraArtistNames } from "@/lib/extraArtists";
 
 function formatReleaseDate(raw: string): string {
   // "2023-04-07" → "2023.04.07", "2023-04" → "2023.04", "2023" → "2023"
@@ -461,16 +462,23 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   >
                     {data.artist_display ?? data.artist}
                   </span>
-                  {data.extra_artists && (
-                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                      {" · "}{data.extra_artists.split(";").map((a) => a.trim()).filter(Boolean).map((a, i, arr) => (
-                        <span key={a}>
-                          <span className="hover:underline cursor-pointer" onClick={() => setArtistModal({ name: a, display: a })}>{a}</span>
-                          {i < arr.length - 1 && ", "}
-                        </span>
-                      ))}
-                    </span>
-                  )}
+                  {data.extra_artists && (() => {
+                    const names = parseExtraArtistNames(data.extra_artists);
+                    if (!names.length) return null;
+                    // use_artist_variant ON + alias 없이 개별 이름 표시 중이면 중복 숨김
+                    const individualDisplay = names.join(", ");
+                    if (data.use_artist_variant && data.artist_display === individualDisplay) return null;
+                    return (
+                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                        {" · "}{names.map((name, i) => (
+                          <span key={name}>
+                            <span className="hover:underline cursor-pointer" onClick={() => setArtistModal({ name, display: name })}>{name}</span>
+                            {i < names.length - 1 && ", "}
+                          </span>
+                        ))}
+                      </span>
+                    );
+                  })()}
                   {((full as FullAlbum)?.release_date || data.year) && (
                     <span style={{ color: "var(--text-muted)" }}>
                       {" · "}

@@ -188,6 +188,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
                 <ArtistAlbumCard
                   key={album.id}
                   album={album}
+                  artistName={artistName}
                   onClick={onAlbumClick}
                 />
               ))}
@@ -204,7 +205,8 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
   );
 }
 
-function ArtistAlbumCard({ album, onClick }: { album: AlbumWithRatings; onClick?: (album: AlbumWithRatings) => void }) {
+function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatings; artistName: string; onClick?: (album: AlbumWithRatings) => void }) {
+  const isFeat = album.artist.toLowerCase() !== artistName.toLowerCase();
   const avatarMap = useUserAvatars();
   return (
     <button
@@ -251,6 +253,18 @@ function ArtistAlbumCard({ album, onClick }: { album: AlbumWithRatings; onClick?
             </span>
           )}
         </div>
+
+        {isFeat && (
+          <p style={{ color: "var(--text-muted)", fontSize: 9.5, marginTop: 2, lineHeight: 1.3 }} className="truncate">
+            <span style={{
+              fontSize: 8, fontWeight: 700, letterSpacing: "0.04em",
+              backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: 3, padding: "1px 4px", marginRight: 4,
+              color: "var(--accent)", verticalAlign: "middle",
+            }}>feat.</span>
+            {album.artist_display ?? album.artist}
+          </p>
+        )}
 
         <div className="flex items-center gap-1.5 mt-0.5">
           <span style={{ color: "var(--text-muted)", fontSize: 10 }}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { parseExtraArtistNames } from "@/lib/extraArtists";
 
 const GENRES = [
   "힙합", "알앤비", "팝", "발라드", "인디", "락",
@@ -285,8 +286,8 @@ export default function AlbumEditModal({ userId, album, onClose, onSaved }: Prop
               value={album.artist}
               readOnly
             />
-            {/* 별칭(한글명) 토글 — alias가 DB에 있을 때만 표시 */}
-            {variantName && (
+            {/* 별칭(한글명) 또는 개별 아티스트명 토글 */}
+            {(variantName || extraArtists.trim()) && (
               <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   type="button"
@@ -303,9 +304,18 @@ export default function AlbumEditModal({ userId, album, onClose, onSaved }: Prop
                     backgroundColor: "white", transition: "left 0.2s",
                   }} />
                 </button>
-                <span style={{ color: "var(--text-sub)", fontSize: 12 }}>
-                  한글명으로 표시: <span style={{ color: "var(--text)", fontWeight: 600 }}>{variantName}</span>
-                </span>
+                {variantName ? (
+                  <span style={{ color: "var(--text-sub)", fontSize: 12 }}>
+                    한글명으로 표시: <span style={{ color: "var(--text)", fontWeight: 600 }}>{variantName}</span>
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--text-sub)", fontSize: 12 }}>
+                    개별 이름으로 표시:{" "}
+                    <span style={{ color: "var(--text)", fontWeight: 600 }}>
+                      {extraArtists.split(";").map((s) => s.trim()).filter(Boolean).join(", ")}
+                    </span>
+                  </span>
+                )}
               </div>
             )}
           </div>
