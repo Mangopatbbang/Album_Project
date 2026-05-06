@@ -420,8 +420,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             style={{
               color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
               cursor: "pointer", background: "none", border: "none",
-              padding: "4px 8px",
+              padding: "4px 8px", transition: "color 0.15s",
             }}
+            className="touch-target hover:text-[var(--text)]"
           >
             ✕
           </button>

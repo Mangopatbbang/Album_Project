@@ -349,9 +349,9 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             {duplicates.length > 0 && (
               <div style={{
                 marginTop: 8, padding: "10px 12px", borderRadius: 6,
-                backgroundColor: "rgba(224,80,80,0.08)", border: "1px solid rgba(224,80,80,0.3)",
+                backgroundColor: "rgba(var(--error-rgb),0.08)", border: "1px solid rgba(var(--error-rgb),0.3)",
               }}>
-                <p style={{ color: "#e05050", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
+                <p style={{ color: "var(--error)", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
                   이미 입고된 음반입니다
                 </p>
                 {duplicates.map((d) => (
@@ -389,7 +389,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           </button>
 
           {searchError && (
-            <p style={{ color: "#e05050", fontSize: 12, marginTop: 4 }}>
+            <p style={{ color: "var(--error)", fontSize: 12, marginTop: 4 }}>
               ⚠ {searchError}
             </p>
           )}
@@ -585,9 +585,9 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         {isSingle && (
           <div style={{
             padding: "10px 12px", borderRadius: 6,
-            backgroundColor: "rgba(224,80,80,0.08)", border: "1px solid rgba(224,80,80,0.3)",
+            backgroundColor: "rgba(var(--error-rgb),0.08)", border: "1px solid rgba(var(--error-rgb),0.3)",
           }}>
-            <p style={{ color: "#e05050", fontSize: 12, fontWeight: 600 }}>
+            <p style={{ color: "var(--error)", fontSize: 12, fontWeight: 600 }}>
               싱글은 등록할 수 없어요
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
@@ -596,7 +596,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           </div>
         )}
 
-        {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+        {error && <p style={{ color: "var(--error)", fontSize: 12 }}>{error}</p>}
 
         {/* 버튼 */}
         <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center" }}>

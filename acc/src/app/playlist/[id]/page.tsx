@@ -204,13 +204,13 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                 {/* 하트 트랙 */}
                 {likedTracks.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                    <span style={{ color: "#e05050", fontSize: 11, opacity: 0.7, marginRight: 4 }}>♥</span>
+                    <span style={{ color: "var(--error)", fontSize: 11, opacity: 0.7, marginRight: 4 }}>♥</span>
                     {likedTracks.map(({ idx, name }) => (
                       <span key={idx} style={{
                         fontSize: 12, padding: "3px 10px", borderRadius: 12,
-                        border: "1px solid rgba(224,80,80,0.35)",
-                        color: "#e05050",
-                        backgroundColor: "rgba(224,80,80,0.06)",
+                        border: "1px solid rgba(var(--error-rgb),0.35)",
+                        color: "var(--error)",
+                        backgroundColor: "rgba(var(--error-rgb),0.06)",
                       }}>
                         {idx + 1}. {name}
                       </span>

@@ -78,6 +78,8 @@ export default function BottomNav() {
     return (
       <Link
         href={href}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
         style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
         className="flex-1 flex flex-col items-center justify-center gap-1 py-3 active:opacity-60"
       >

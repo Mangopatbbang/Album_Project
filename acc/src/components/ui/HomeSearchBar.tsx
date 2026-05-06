@@ -61,7 +61,7 @@ export default function HomeSearchBar() {
             alignItems: "center",
             justifyContent: "center",
           }}
-          className="active:opacity-70"
+          className="active:opacity-70 hover:opacity-85 transition-opacity"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/>

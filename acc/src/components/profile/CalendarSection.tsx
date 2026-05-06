@@ -71,7 +71,7 @@ function MonthCalendar({
         {DOW.map((d, i) => (
           <div key={d} style={{
             textAlign: "center",
-            color: i === 0 ? "#e05050" : i === 6 ? "#7799cc" : "var(--text-muted)",
+            color: i === 0 ? "var(--color-sunday)" : i === 6 ? "var(--color-saturday)" : "var(--text-muted)",
             fontSize: 11, fontWeight: 600,
           }}>
             {d}
@@ -89,7 +89,7 @@ function MonthCalendar({
           const isFuture = new Date(year, month, day) > today;
           const intensity = count > 0 ? Math.max(0.3, count / monthMax) : 0;
           const col = (firstDay + day - 1) % 7;
-          const dayColor = col === 0 ? "#e05050" : col === 6 ? "#7799cc" : "var(--text-sub)";
+          const dayColor = col === 0 ? "var(--color-sunday)" : col === 6 ? "var(--color-saturday)" : "var(--text-sub)";
 
           return (
             <div

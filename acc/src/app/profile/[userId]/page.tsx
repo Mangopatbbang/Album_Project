@@ -391,7 +391,7 @@ export default async function ProfilePage({
                 {(totalDomestic > 0 || totalForeign > 0) && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ color: "var(--accent)", fontSize: 10 }}>● 국내</span>
-                    <span style={{ color: "#6b9ef0", fontSize: 10 }}>● 해외</span>
+                    <span style={{ color: "var(--color-foreign)", fontSize: 10 }}>● 해외</span>
                   </div>
                 )}
               </div>
@@ -407,7 +407,7 @@ export default async function ProfilePage({
                         <div style={{ width: `${domPct}%`, backgroundColor: "var(--accent)", opacity: 0.7 }} />
                       )}
                       {totalForeign > 0 && (
-                        <div style={{ width: `${forPct}%`, backgroundColor: "#6b9ef0", opacity: 0.7 }} />
+                        <div style={{ width: `${forPct}%`, backgroundColor: "var(--color-foreign)", opacity: 0.7 }} />
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
@@ -441,7 +441,7 @@ export default async function ProfilePage({
                           <div style={{ flex: domestic, backgroundColor: "var(--accent)", opacity: 0.8 }} />
                         )}
                         {foreign > 0 && (
-                          <div style={{ flex: foreign, backgroundColor: "#6b9ef0", opacity: 0.8 }} />
+                          <div style={{ flex: foreign, backgroundColor: "var(--color-foreign)", opacity: 0.8 }} />
                         )}
                         {noRegion > 0 && (
                           <div style={{ flex: noRegion, backgroundColor: "var(--text-muted)", opacity: 0.25 }} />

@@ -18,6 +18,10 @@
 
   --error:        #e05050;
   --error-rgb:    224, 80, 80;
+
+  --color-sunday:   #e05050;
+  --color-saturday: #7799cc;
+  --color-foreign:  #6b9ef0;
 }
 
 @theme inline {

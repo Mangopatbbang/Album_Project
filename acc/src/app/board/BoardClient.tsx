@@ -296,7 +296,7 @@ export default function BoardClient() {
                     <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{formatDate(a.created_at)}</span>
                     {a.show_popup && (
                       <span style={{
-                        fontSize: 9, fontWeight: 700, color: "var(--bg)",
+                        fontSize: 11, fontWeight: 700, color: "var(--bg)",
                         backgroundColor: "var(--accent)", borderRadius: 3,
                         padding: "2px 5px", letterSpacing: "0.06em",
                       }}>
@@ -311,8 +311,9 @@ export default function BoardClient() {
                         style={{
                           background: "none", border: "1px solid var(--border)", borderRadius: 4,
                           color: a.show_popup ? "var(--accent)" : "var(--text-muted)",
-                          fontSize: 11, padding: "2px 8px", cursor: "pointer",
+                          fontSize: 11, padding: "4px 10px", cursor: "pointer", transition: "opacity 0.15s",
                         }}
+                        className="hover:opacity-70"
                       >
                         {a.show_popup ? "NEW 해제" : "NEW 설정"}
                       </button>
@@ -320,8 +321,9 @@ export default function BoardClient() {
                         onClick={() => handleDeleteNotice(a.id)}
                         style={{
                           background: "none", border: "1px solid var(--border)", borderRadius: 4,
-                          color: "var(--text-muted)", fontSize: 11, padding: "2px 8px", cursor: "pointer",
+                          color: "var(--text-muted)", fontSize: 11, padding: "4px 10px", cursor: "pointer", transition: "opacity 0.15s",
                         }}
+                        className="hover:opacity-70"
                       >
                         삭제
                       </button>
