@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
+import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
 
 const GENRES = [
   "Hip-Hop", "R&B", "Pop", "Rock",
@@ -94,6 +95,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
+  const [showSoundCloud, setShowSoundCloud] = useState(false);
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -308,6 +310,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   };
 
   return (
+    <>
     <div
       ref={backdropRef}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
@@ -596,21 +599,41 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
 
         {/* 버튼 */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{
-            backgroundColor: "transparent", border: "1px solid var(--border)",
-            color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
-          }}>취소</button>
-          <button onClick={handleSubmit} disabled={saving || duplicates.length > 0 || isSingle} style={{
-            backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
-            borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 600,
-            cursor: saving || duplicates.length > 0 || isSingle ? "not-allowed" : "pointer",
-            opacity: saving || duplicates.length > 0 || isSingle ? 0.4 : 1,
-          }}>
-            {saving ? "입고 중..." : "입고"}
+        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", alignItems: "center" }}>
+          <button
+            onClick={() => setShowSoundCloud(true)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: 10, opacity: 0.5,
+              padding: 0, textDecoration: "underline", textDecorationStyle: "dotted",
+            }}
+          >
+            SoundCloud 앨범 입고하기
           </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{
+              backgroundColor: "transparent", border: "1px solid var(--border)",
+              color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
+            }}>취소</button>
+            <button onClick={handleSubmit} disabled={saving || duplicates.length > 0 || isSingle} style={{
+              backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
+              borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 600,
+              cursor: saving || duplicates.length > 0 || isSingle ? "not-allowed" : "pointer",
+              opacity: saving || duplicates.length > 0 || isSingle ? 0.4 : 1,
+            }}>
+              {saving ? "입고 중..." : "입고"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    {showSoundCloud && (
+      <SoundCloudAddModal
+        onClose={() => setShowSoundCloud(false)}
+        onAdded={() => { setShowSoundCloud(false); onAdded(); onClose(); }}
+      />
+    )}
+    </>
   );
 }
