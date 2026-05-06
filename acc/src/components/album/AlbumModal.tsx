@@ -67,7 +67,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
-  const { showToast } = useToast();
+  const { showToast, showToastWithUndo } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [myReview, setMyReview] = useState("");
@@ -92,8 +92,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [myHistory, setMyHistory] = useState<{ score: number; createdAt: string }[]>([]);
   const [showAllRatings, setShowAllRatings] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [tracklistExpanded, setTracklistExpanded] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
+  const pendingDeleteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deletedScoreRef = useRef<number | null>(null);
+  const deletedReviewRef = useRef<string>("");
+  const initialReviewRef = useRef<string>("");
+  const isDirtyRef = useRef(false);
+  const touchStartY = useRef(0);
 
   const handleDeleteAlbum = async () => {
     if (!profile) return;
@@ -126,9 +134,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   };
 
 
-  const handleClose = () => {
+  const doClose = () => {
     setClosing(true);
     setTimeout(onClose, 160);
+  };
+
+  const handleClose = () => {
+    if (isDirtyRef.current) { setShowCloseConfirm(true); return; }
+    doClose();
   };
 
   const handleToggleLike = async (idx: number) => {
@@ -210,7 +223,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           );
           if (myRating) {
             setMyScore(myRating.score);
-            setMyReview(myRating.one_line_review ?? "");
+            const reviewVal = myRating.one_line_review ?? "";
+            setMyReview(reviewVal);
+            initialReviewRef.current = reviewVal;
             if (myRating.liked_tracks) {
               setMyLikedTracks(new Set(myRating.liked_tracks.split(",").map(Number)));
             }
@@ -235,6 +250,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
       .then((data: { score: number; createdAt: string }[]) => setMyHistory(data))
       .catch(() => {});
   }, [album.id, profile]);
+
+  // 소감 dirty 추적
+  useEffect(() => {
+    isDirtyRef.current = myReview.trim() !== "" && myReview !== initialReviewRef.current;
+  }, [myReview]);
 
   // 찜 여부 fetch
   useEffect(() => {
@@ -270,7 +290,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   // ESC 닫기
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { handleClose(); return; }
+      if (e.key === "Escape") {
+        if (isDirtyRef.current) { setShowCloseConfirm(true); } else { setClosing(true); setTimeout(onClose, 160); }
+        return;
+      }
       if (e.key === "Backspace") {
         const tag = (e.target as HTMLElement).tagName;
         if (tag !== "INPUT" && tag !== "TEXTAREA") e.preventDefault();
@@ -281,30 +304,43 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!profile || myScore === null) return;
-    if (!confirm("평점을 삭제할까요?")) return;
-    setDeleting(true);
-    await fetch("/api/ratings", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, userId: profile.id }),
-    });
+    // 현재 상태 저장
+    deletedScoreRef.current = myScore;
+    deletedReviewRef.current = myReview;
+    // 낙관적 업데이트
     setMyScore(null);
     setMyReview("");
+    initialReviewRef.current = "";
     setMyLikedTracks(new Set());
-    // 삭제 후 최신 데이터로 갱신 (캐시 무효화)
-    albumCache.delete(album.id);
-    const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
-    if (refreshed.ok) {
-      const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
-    } else {
-      setFull(null);
-    }
-    setDeleting(false);
-    showToast("평점을 삭제했어요", "info");
-    onSaved?.(album.id);
+    // undo 토스트 (5초)
+    showToastWithUndo("평점을 삭제했어요", () => {
+      if (pendingDeleteRef.current) { clearTimeout(pendingDeleteRef.current); pendingDeleteRef.current = null; }
+      setMyScore(deletedScoreRef.current);
+      setMyReview(deletedReviewRef.current);
+      initialReviewRef.current = deletedReviewRef.current;
+    });
+    // 5초 후 실제 삭제
+    pendingDeleteRef.current = setTimeout(async () => {
+      pendingDeleteRef.current = null;
+      setDeleting(true);
+      await fetch("/api/ratings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId: album.id, userId: profile.id }),
+      });
+      albumCache.delete(album.id);
+      const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
+      if (refreshed.ok) {
+        const data = await refreshed.json();
+        if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
+      } else {
+        setFull(null);
+      }
+      setDeleting(false);
+      onSaved?.(album.id);
+    }, 5000);
   };
 
   const handleSave = async () => {
@@ -410,20 +446,39 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
         }}
         className="rounded-t-2xl sm:rounded-xl max-h-[85dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+        onTouchEnd={(e) => {
+          const delta = e.changedTouches[0].clientY - touchStartY.current;
+          if (delta > 80 && (cardRef.current?.scrollTop ?? 0) < 5) handleClose();
+        }}
       >
+        {/* 모바일 드래그 핸들 */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-0">
+          <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "var(--border-light)" }} />
+        </div>
+
         {/* 닫기 버튼 전용 행 — 오버랩 없음 */}
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 14px 0" }}>
-          <button
-            onClick={handleClose}
-            style={{
-              color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
-              cursor: "pointer", background: "none", border: "none",
-              padding: "4px 8px", transition: "color 0.15s",
-            }}
-            className="touch-target hover:text-[var(--text)]"
-          >
-            ✕
-          </button>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "10px 14px 0", gap: 8 }}>
+          {showCloseConfirm && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, animation: "fadeUp 0.15s ease-out" }}>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>소감이 저장되지 않아요</span>
+              <button onClick={doClose} style={{ fontSize: 11, color: "var(--error)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>닫기</button>
+              <button onClick={() => setShowCloseConfirm(false)} style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>취소</button>
+            </div>
+          )}
+          {!showCloseConfirm && (
+            <button
+              onClick={handleClose}
+              style={{
+                color: "var(--text-muted)", fontSize: 18, lineHeight: 1,
+                cursor: "pointer", background: "none", border: "none",
+                padding: "4px 8px", transition: "color 0.15s",
+              }}
+              className="touch-target hover:text-[var(--text)]"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* 상단: 블러 배경 + 커버 + 정보 */}
@@ -707,7 +762,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                             transition: "opacity 0.15s, color 0.15s",
                           }}
                           className={[
-                            "p-2 -m-2 active:scale-90",
+                            "p-2 -m-2 transition-colors",
+                            iLikedReview ? "heart-pop" : "active:scale-90",
                             iLikedReview || showReviewHeart
                               ? "opacity-100"
                               : "opacity-0 sm:opacity-0 max-sm:opacity-30",
@@ -855,6 +911,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   );
                 })}
               </div>
+              {myScore === 8 && (
+                <p style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 8, animation: "fadeUp 0.18s ease-out" }}>
+                  8점은 인생을 통틀어 손에 꼽을 앨범에만 허용하는 점수예요
+                </p>
+              )}
               <textarea
                 placeholder="한줄 소감 (100자 이내)"
                 value={myReview}
@@ -965,7 +1026,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                 수록곡
               </p>
               <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                {tracklist.map((track, i) => {
+                {(tracklistExpanded ? tracklist : tracklist.slice(0, 9)).map((track, i) => {
                   const othersWhoLiked = users.filter((u) => {
                     if (u.id === profile?.id) return false;
                     const r = ratings.find((rt) => rt.user_id === u.id);
@@ -999,7 +1060,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                               transition: "opacity 0.15s, color 0.15s",
                             }}
                             className={[
-                              "p-2 -m-2 active:scale-90",
+                              "p-2 -m-2 transition-colors",
+                              iLiked ? "heart-pop" : "active:scale-90",
                               iLiked || hoveredTrack === i
                                 ? "opacity-100"
                                 : "opacity-0 sm:opacity-0 max-sm:opacity-30",
@@ -1022,6 +1084,21 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   );
                 })}
               </ol>
+              {tracklist.length > 9 && (
+                <button
+                  onClick={() => setTracklistExpanded((v) => !v)}
+                  style={{
+                    marginTop: 8, background: "none",
+                    border: "1px solid var(--border)", borderRadius: 6,
+                    color: "var(--text-muted)", fontSize: 11,
+                    cursor: "pointer", padding: "3px 10px",
+                    transition: "border-color 0.15s, color 0.15s",
+                  }}
+                  className="hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
+                >
+                  {tracklistExpanded ? "접기" : `+ ${tracklist.length - 9}곡 더보기`}
+                </button>
+              )}
             </div>
           </>
         )}

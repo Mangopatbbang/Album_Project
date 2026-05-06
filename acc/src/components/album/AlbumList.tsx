@@ -58,6 +58,7 @@ export default function AlbumList({
   const [myScore, setMyScore] = useState<number | null>(urlScore);
   const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
 const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+  const [filterLoading, setFilterLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +102,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   const handleFilter = useCallback(
     async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
       setLoading(true);
+      setFilterLoading(true);
       try {
         const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId });
         setAlbums(data.items ?? []);
@@ -110,6 +112,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         // 네트워크 오류 시 기존 목록 유지
       } finally {
         setLoading(false);
+        setFilterLoading(false);
       }
     },
     [fetchAlbums, scoreUserId]
@@ -367,7 +370,19 @@ return (
       </div>
 
       {/* 앨범 그리드 */}
-      {loading && albums.length === 0 ? (
+      {filterLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: Math.min(Math.max(albums.length, 6), 20) }).map((_, i) => (
+            <div key={i} className="skeleton-shimmer rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              <div style={{ aspectRatio: "1/1" }} />
+              <div style={{ padding: "12px 14px" }}>
+                <div style={{ height: 13, width: "70%", borderRadius: 4, backgroundColor: "var(--bg-elevated)", marginBottom: 6 }} />
+                <div style={{ height: 11, width: "45%", borderRadius: 4, backgroundColor: "var(--bg-elevated)" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : loading && albums.length === 0 ? (
         <div style={{ color: "var(--text-muted)" }} className="text-center py-20 text-sm">
           불러오는 중...
         </div>
@@ -389,8 +404,14 @@ return (
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {albums.map((album) => (
-            <AlbumCard key={album.id} album={album} onClick={setSelectedAlbum} />
+          {albums.map((album, i) => (
+            <div
+              key={album.id}
+              className={albums.length <= 10 ? "animate-stagger" : ""}
+              style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
+            >
+              <AlbumCard album={album} onClick={setSelectedAlbum} />
+            </div>
           ))}
         </div>
       )}

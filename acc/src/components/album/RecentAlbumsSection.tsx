@@ -25,7 +25,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
 
   return (
     <>
-      <div className="flex gap-3 overflow-x-auto pb-1 -mx-6 px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 md:grid-cols-4 sm:gap-4">
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-6 px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-x-visible sm:pb-0 md:grid-cols-4 sm:gap-4 sm:snap-none">
         {albums.map((album) => {
           const scores = album.ratings.map((r) => r.score);
           const avg =
@@ -38,7 +38,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
               key={album.id}
               onClick={() => setSelectedAlbum(album)}
               style={{ backgroundColor: "var(--bg-card)", border: `1px solid ${glowBorder(avg)}`, textAlign: "left", boxShadow: glowShadow(avg) }}
-              className="flex-shrink-0 w-[148px] sm:w-full rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
+              className="flex-shrink-0 w-[148px] snap-start sm:w-full rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
             >
               <div
                 style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
