@@ -143,16 +143,16 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)",
         zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center",
       }}
-      className="p-3 sm:p-6"
+      className="p-4 sm:p-6"
     >
       <div
         style={{
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-          borderRadius: 14, width: "100%", maxWidth: 540, maxHeight: "90vh",
-          overflowY: "auto", display: "flex", flexDirection: "column", gap: 28,
+          borderRadius: 14, width: "100%", maxWidth: 680, maxHeight: "90vh",
+          overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
           opacity: 0.9,
         }}
-        className="p-7 sm:p-10"
+        className="p-6 sm:p-10"
       >
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

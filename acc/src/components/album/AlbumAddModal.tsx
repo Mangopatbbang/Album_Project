@@ -319,14 +319,14 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
         zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
       }}
-      className="p-3 sm:p-6"
+      className="p-4 sm:p-6"
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-        borderRadius: 14, width: "100%", maxWidth: 580, maxHeight: "90vh",
-        overflowY: "auto", display: "flex", flexDirection: "column", gap: 28,
+        borderRadius: 14, width: "100%", maxWidth: 720, maxHeight: "90vh",
+        overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
       }}
-      className="p-7 sm:p-10"
+      className="p-6 sm:p-10"
       >
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
