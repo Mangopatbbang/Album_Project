@@ -218,14 +218,14 @@ export default function BoardClient() {
 
   if (loadingData) {
     return (
-      <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 80px" }}>
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오는 중...</p>
       </main>
     );
   }
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 80px" }}>
+    <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
       {/* 페이지 타이틀 */}
       <div style={{ marginBottom: 40 }}>

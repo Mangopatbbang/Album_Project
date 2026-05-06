@@ -183,7 +183,7 @@ function SectionGrid({
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[72px] sm:w-[90px]"
+            className="w-[84px] sm:w-[90px]"
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -194,7 +194,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
-            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px] transition-opacity hover:opacity-80"
+            className="w-[84px] h-[84px] sm:w-[90px] sm:h-[90px] transition-opacity hover:opacity-80"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -256,7 +256,7 @@ function ArtistSection({
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[72px] sm:w-[80px] transition-transform active:scale-[0.93]"
+            className="w-[84px] sm:w-[80px] transition-transform active:scale-[0.93]"
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -266,7 +266,7 @@ function ArtistSection({
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
-            className="w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] transition-opacity hover:opacity-80"
+            className="w-[84px] h-[84px] sm:w-[80px] sm:h-[80px] transition-opacity hover:opacity-80"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element

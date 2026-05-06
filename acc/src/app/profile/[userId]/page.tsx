@@ -195,7 +195,7 @@ export default async function ProfilePage({
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
       <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
 

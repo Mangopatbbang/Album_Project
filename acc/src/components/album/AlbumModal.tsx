@@ -389,11 +389,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
         backgroundColor: "rgba(0,0,0,0.75)",
         zIndex,
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
         animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
-      className="p-3 sm:p-8"
+      className="items-end sm:items-center p-0 sm:p-8"
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); mouseDownOnBackdrop.current = false; }}
     >
@@ -403,14 +402,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           position: "relative",
           backgroundColor: "var(--bg-card)",
           border: "1px solid var(--border)",
-          borderRadius: 12,
           width: "100%",
           maxWidth: 760,
-          maxHeight: "90vh",
           overflowY: "auto",
           textAlign: "left",
           animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
+        className="rounded-t-2xl sm:rounded-xl max-h-[85dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 닫기 버튼 전용 행 — 오버랩 없음 */}
@@ -441,7 +439,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               opacity: 0.18,
             }} />
           )}
-          <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 20, padding: "8px 32px 24px" }}>
+          <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 20 }} className="px-5 pb-6 pt-2 sm:px-8">
           {/* 커버 */}
           <div
             style={{
