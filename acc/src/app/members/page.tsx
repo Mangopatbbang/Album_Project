@@ -53,7 +53,7 @@ export default async function MembersPage() {
     const genreMap = new Map<string, number>();
     const artistMap = new Map<string, { count: number; total: number }>();
     for (const r of mine) {
-      if (r.albums?.genre) genreMap.set(r.albums.genre, (genreMap.get(r.albums.genre) ?? 0) + 1);
+      if (r.albums?.genre) { const g = koGenre(r.albums.genre); genreMap.set(g, (genreMap.get(g) ?? 0) + 1); }
       if (r.albums?.artist) {
         const prev = artistMap.get(r.albums.artist) ?? { count: 0, total: 0 };
         artistMap.set(r.albums.artist, { count: prev.count + 1, total: prev.total + r.score });

@@ -141,7 +141,7 @@ export default async function ProfilePage({
   // 장르 분포
   const genreMap = new Map<string, { count: number; total: number; domestic: number; foreign: number }>();
   for (const r of validRatings) {
-    const g = r.albums?.genre ?? "기타";
+    const g = koGenre(r.albums?.genre ?? "기타");
     const region = r.albums?.region ?? null;
     const prev = genreMap.get(g) ?? { count: 0, total: 0, domestic: 0, foreign: 0 };
     genreMap.set(g, {

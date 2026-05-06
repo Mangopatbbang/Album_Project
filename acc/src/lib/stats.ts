@@ -88,7 +88,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
     }
     const byUser = new Map<string, Map<string, number>>();
     for (const r of all) {
-      const g = r.albums?.genre ?? "기타";
+      const g = koGenre(r.albums?.genre ?? "기타");
       if (!byUser.has(r.user_id)) byUser.set(r.user_id, new Map());
       const gm = byUser.get(r.user_id)!;
       gm.set(g, (gm.get(g) ?? 0) + 1);
@@ -207,7 +207,7 @@ export function getBestByGenre(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   const valid = validAlbums(albums).filter((a) => a.genre);
   const map = new Map<string, AlbumStat[]>();
   for (const a of valid) {
-    const g = a.genre!;
+    const g = koGenre(a.genre!);
     if (!map.has(g)) map.set(g, []);
     map.get(g)!.push(a);
   }
