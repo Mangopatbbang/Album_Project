@@ -5,6 +5,7 @@ import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { koGenre } from "@/lib/bio";
 
 export const metadata: Metadata = {
   title: "음반고",
@@ -59,7 +60,8 @@ async function getGenres(): Promise<string[]> {
     all.push(...data);
     if (data.length < 1000) break;
   }
-  const unique = [...new Set(all.map((d) => d.genre).filter(Boolean))].sort();
+  // DB의 날것 장르값을 정규화 후 중복 제거 (예: "알앤비"와 "R&B" 둘 다 "R&B" 하나로)
+  const unique = [...new Set(all.map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
   return unique as string[];
 }
 

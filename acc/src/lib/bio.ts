@@ -29,6 +29,15 @@ export function koGenre(genre: string): string {
   return GENRE_KO[genre] ?? genre;
 }
 
+// 정규화된 장르명 → DB에 저장될 수 있는 모든 원시 값 (필터 쿼리용)
+export function getRawGenreValues(normalizedGenre: string): string[] {
+  const result = new Set<string>([normalizedGenre]);
+  for (const [raw, norm] of Object.entries(GENRE_KO)) {
+    if (norm === normalizedGenre) result.add(raw);
+  }
+  return [...result];
+}
+
 export const GENRE_COLOR: Record<string, string> = {
   "Hip-Hop":     "#f59e0b",
   "R&B":         "#a855f7",
