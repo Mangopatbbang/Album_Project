@@ -8,6 +8,7 @@ import type { AlbumStat } from "@/lib/stats";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import { GENRE_COLOR, koGenre } from "@/lib/bio";
 
 const TOP_N = 5;
 const MEDAL = ["🥇", "🥈", "🥉"];
@@ -70,7 +71,7 @@ function SectionPopup({
           flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em" }}>
+            <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em", color: GENRE_COLOR[koGenre(label)] ?? "var(--text)" }}>
               {label}
             </span>
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{list.length}장</span>
@@ -156,9 +157,11 @@ function SectionGrid({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-        <h2 style={{ color: "var(--text)", fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em" }}>
+        {(() => { const gColor = GENRE_COLOR[koGenre(label)]; return (
+        <h2 style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em", ...(gColor ? { color: gColor } : { color: "var(--text)" }) }}>
           {label}
         </h2>
+        ); })()}
         <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
         {list.length > TOP_N && (
           <button
