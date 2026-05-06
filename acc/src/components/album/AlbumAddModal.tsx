@@ -294,7 +294,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     border: "1px solid var(--border)",
     color: "var(--text)",
     borderRadius: 6,
-    padding: "8px 12px",
+    padding: "10px 14px",
     fontSize: 13,
     outline: "none",
     width: "100%",
@@ -323,10 +323,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-        borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "90vh",
-        overflowY: "auto", display: "flex", flexDirection: "column", gap: 20,
+        borderRadius: 14, width: "100%", maxWidth: 580, maxHeight: "90vh",
+        overflowY: "auto", display: "flex", flexDirection: "column", gap: 28,
       }}
-      className="p-5 sm:p-8"
+      className="p-7 sm:p-10"
       >
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
