@@ -664,7 +664,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                   onMouseLeave={() => setHoveredReview(null)}
                 >
                   <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={avatarMap[user.id]} size={18} /></span>
-                  <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, flexShrink: 0, textDecoration: "none" }} className="w-[72px] sm:w-[110px] hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
+                  <Link href={`/profile/${user.id}`} style={{ color: "var(--text-sub)", fontSize: 13, flexShrink: 0, textDecoration: "none" }} className="w-[72px] sm:w-[110px] truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
 
                   {r ? (
                     <>

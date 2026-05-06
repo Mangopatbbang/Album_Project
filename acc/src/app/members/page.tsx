@@ -259,8 +259,8 @@ export default async function MembersPage() {
               {memberStats.map(({ user, total, topGenres }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px" }}>{g}</span>; })}</span>
-                    <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>{total}장</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>{g}</span>; })}</span>
+                    <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{total}장</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${(total / maxTotal) * 100}%`, backgroundColor: "var(--accent)", borderRadius: 2 }} />
@@ -277,8 +277,8 @@ export default async function MembersPage() {
               {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg, topGenres }, i) => (
                 <div key={user.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px" }}>{g}</span>; })}</span>
-                    <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600 }}>{avg!.toFixed(2)}</span>
+                    <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>{i + 1}. <UserAvatar avatarUrl={avatarMap[user.id]} size={18} /> <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>{topGenres.map((g) => { const gColor = GENRE_COLOR[g] ?? "#94a3b8"; return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>{g}</span>; })}</span>
+                    <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{avg!.toFixed(2)}</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${(avg! / 8) * 100}%`, backgroundColor: scoreColor(avg), borderRadius: 2 }} />

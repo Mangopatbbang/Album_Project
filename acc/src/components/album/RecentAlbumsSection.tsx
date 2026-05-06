@@ -15,6 +15,14 @@ export default function RecentAlbumsSection({ albums }: Props) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
+  if (albums.length === 0) {
+    return (
+      <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
+        아직 청음 기록이 없어요
+      </p>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

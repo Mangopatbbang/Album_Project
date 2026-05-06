@@ -130,7 +130,7 @@ export default function Header() {
                 {showNotif && (
                   <div style={{
                     position: "absolute", right: 0, top: "calc(100% + 8px)",
-                    width: 300, backgroundColor: "var(--bg-card)",
+                    width: "min(300px, calc(100vw - 32px))", backgroundColor: "var(--bg-card)",
                     border: "1px solid var(--border)", borderRadius: 10,
                     boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
                     zIndex: 200, overflow: "hidden",
@@ -165,7 +165,7 @@ export default function Header() {
                             >
                               <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} /></span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: 11, color: "var(--text)", lineHeight: 1.5 }}>
+                                <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
                                   <span style={{ marginRight: 4 }}>{typeIcon}</span>
                                   <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
                                   {" "}님이 {label}
@@ -181,9 +181,10 @@ export default function Header() {
                 )}
               </div>
 
-              <Link href={`/profile/${profile.id}`} style={{ color: "var(--text-muted)", fontSize: 12, textDecoration: "none" }}
-                className="hover:text-[var(--text)] transition-colors hidden sm:block">
-                <UserAvatar avatarUrl={profile.avatar_url} size={18} /> {profile.display_name}
+              <Link href={`/profile/${profile.id}`} style={{ color: "var(--text-muted)", fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 5, maxWidth: 120, minWidth: 0 }}
+                className="hover:text-[var(--text)] transition-colors hidden sm:flex">
+                <UserAvatar avatarUrl={profile.avatar_url} size={18} />
+                <span className="truncate">{profile.display_name}</span>
               </Link>
               <button
                 onClick={signOut}

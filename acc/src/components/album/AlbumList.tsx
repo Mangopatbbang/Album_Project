@@ -319,7 +319,7 @@ return (
                 fontWeight: myScore === s ? 700 : 400,
                 cursor: "pointer",
               }}
-              className="w-[34px] h-[34px] max-sm:w-9 max-sm:h-9"
+              className="w-[34px] h-[34px] max-sm:w-11 max-sm:h-11"
             >
               {s}
             </button>
