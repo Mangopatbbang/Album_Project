@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
-import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
+import { koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
 import { PairsSection, UnanimousSection, ControversialSection, type PairData, type AlbumSectionData } from "./MembersSections";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
@@ -64,24 +64,12 @@ export default async function MembersPage() {
       .map(([artist, { count, total: t }]) => ({ artist, count, avg: t / count }))
       .sort((a, b) => b.count - a.count)[0];
 
-    const badges = generateBadges({
-      avg: total > 0 ? avg.toFixed(2) : null,
-      topGenre: topGenreEntry?.[0] ?? null,
-      topGenreRatio: topGenreEntry ? topGenreEntry[1] / Math.max(total, 1) : 0,
-      topArtist: topArtistEntry?.artist ?? null,
-      topArtistCount: topArtistEntry?.count ?? 0,
-      topArtistAvg: topArtistEntry?.avg ?? 0,
-      eightCount,
-      total,
-      reviewCount,
-    });
-
     const topGenres = [...genreMap.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 2)
       .map(([g]) => koGenre(g));
 
-    return { user, total, avg: total > 0 ? avg : null, reviewCount, eightCount, scoreDist, badges, topGenres };
+    return { user, total, avg: total > 0 ? avg : null, reviewCount, eightCount, scoreDist, topGenres };
   }).sort((a, b) => b.total - a.total);
 
   const maxTotal = memberStats[0]?.total ?? 1;
@@ -177,9 +165,49 @@ export default async function MembersPage() {
           청음인 현황
         </p>
 
-        {/* ── 멤버 카드 ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
-          {memberStats.map(({ user, total, avg, reviewCount, eightCount, scoreDist, badges, topGenres }) => {
+        {/* ── 멤버 카드: 모바일 리스트 ── */}
+        <div className="sm:hidden flex flex-col gap-2 mb-8">
+          {memberStats.map(({ user, total, avg, topGenres }) => (
+            <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
+              <div
+                style={{
+                  backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: 12, padding: "12px 16px",
+                  display: "flex", alignItems: "center", gap: 12,
+                }}
+                className="active:opacity-70 transition-opacity"
+              >
+                <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14 }}>{user.display_name}</p>
+                  <div style={{ display: "flex", gap: 4, marginTop: 3, flexWrap: "wrap" }}>
+                    {topGenres.map((g) => {
+                      const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                      return (
+                        <span key={g} style={{
+                          fontSize: 10, fontWeight: 600,
+                          backgroundColor: `${gColor}1a`, color: gColor,
+                          border: `1px solid ${gColor}40`,
+                          borderRadius: 4, padding: "1px 6px",
+                        }}>{g}</span>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ color: avg !== null ? scoreColor(avg) : "var(--text-muted)", fontWeight: 700, fontSize: 16 }}>
+                    {avg !== null ? avg.toFixed(2) : "—"}
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>{total}장</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── 멤버 카드: 데스크탑 그리드 ── */}
+        <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
+          {memberStats.map(({ user, total, avg, reviewCount, eightCount, scoreDist, topGenres }) => {
             const maxDist = Math.max(...scoreDist.map((d) => d.count), 1);
             return (
               <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
@@ -199,17 +227,19 @@ export default async function MembersPage() {
                     </div>
                   </div>
 
-                  {badges.length > 0 && (
+                  {topGenres.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
-                      {badges.map((badge) => (
-                        <span key={badge} style={{
-                          color: "var(--text-muted)", fontSize: 10,
-                          backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                          borderRadius: 20, padding: "2px 8px", whiteSpace: "nowrap",
-                        }}>
-                          {badge}
-                        </span>
-                      ))}
+                      {topGenres.map((g) => {
+                        const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                        return (
+                          <span key={g} style={{
+                            fontSize: 10, fontWeight: 600,
+                            backgroundColor: `${gColor}1a`, color: gColor,
+                            border: `1px solid ${gColor}40`,
+                            borderRadius: 4, padding: "2px 8px", whiteSpace: "nowrap",
+                          }}>{g}</span>
+                        );
+                      })}
                     </div>
                   )}
 

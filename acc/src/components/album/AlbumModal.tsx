@@ -737,8 +737,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                 cursor: "pointer", padding: "4px 10px",
                 transition: "border-color 0.15s, color 0.15s",
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-sub)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; }}
+              className="hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
             >
               + {hiddenCount}명 더보기
             </button>

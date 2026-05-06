@@ -116,7 +116,7 @@ export default function AlbumCard({ album, onClick }: Props) {
             {displayEntries.map(({ user, rating }) => (
               <span
                 key={user.id}
-                style={{ fontSize: 11, color: scoreColor(rating.score), display: "inline-flex", alignItems: "center", gap: 2 }}
+                style={{ fontSize: 12, color: scoreColor(rating.score), display: "inline-flex", alignItems: "center", gap: 2 }}
               >
                 <UserAvatar avatarUrl={avatarMap[user.id]} size={12} />{rating.score}
               </span>

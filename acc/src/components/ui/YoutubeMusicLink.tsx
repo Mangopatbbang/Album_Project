@@ -26,8 +26,7 @@ export default function YoutubeMusicLink({ artist, title }: Props) {
         transition: "color 0.15s ease",
         flexShrink: 0,
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.9)")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+      className="hover:!text-white/90"
     >
       {/* YouTube Music 아이콘 (play triangle in rounded square) */}
       <svg

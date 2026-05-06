@@ -42,14 +42,13 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
             style={{ padding: 0, background: "none", border: "none", cursor: "pointer" }}
             className="transition-transform active:scale-[0.92]"
           >
-            <div style={{
-              width: coverSize, height: coverSize, borderRadius: 6, overflow: "hidden",
-              backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(8)}`,
-              boxShadow: glowShadow(8),
-              transition: "opacity 0.15s",
-            }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            <div
+              style={{
+                width: coverSize, height: coverSize, borderRadius: 6, overflow: "hidden",
+                backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(8)}`,
+                boxShadow: glowShadow(8),
+              }}
+              className="transition-opacity hover:opacity-70"
             >
               {a.cover_url ? (
                 // eslint-disable-next-line @next/next/no-img-element

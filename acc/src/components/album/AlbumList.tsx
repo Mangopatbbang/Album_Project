@@ -257,6 +257,36 @@ return (
           ))}
         </select>
 
+        {/* 모바일 내 평점 필터 */}
+        {profile && (
+          <select
+            value={myScore ?? ""}
+            onChange={(e) => {
+              const v = e.target.value ? Number(e.target.value) : null;
+              setMyScore(v);
+              if (!v) setScoreUserId(null);
+              setUnrated(false);
+              handleFilter(search, genre, sort, false, v, v === null ? null : scoreUserId);
+            }}
+            style={{
+              backgroundColor: "var(--bg-card)",
+              border: `1px solid ${myScore ? "var(--accent)" : "var(--border)"}`,
+              color: myScore ? "var(--accent)" : "var(--text)",
+              borderRadius: 6,
+              padding: "6px 12px",
+              fontSize: 13,
+              cursor: "pointer",
+              fontWeight: myScore ? 600 : 400,
+            }}
+            className="sm:hidden"
+          >
+            <option value="">내 평점</option>
+            {[1,2,3,4,5,6,7,8].map((s) => (
+              <option key={s} value={s}>{s}점</option>
+            ))}
+          </select>
+        )}
+
         {/* 미평가 토글 (로그인 시에만) */}
         {profile && (
           <button
@@ -302,9 +332,9 @@ return (
         )}
       </div>
 
-      {/* 내 점수 필터 (로그인 시) */}
+      {/* 내 점수 필터 (로그인 시, 데스크탑만) */}
       {profile && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="hidden sm:flex items-center gap-2 flex-wrap">
           <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}>내 평점</span>
           {[1,2,3,4,5,6,7,8].map((s) => (
             <button

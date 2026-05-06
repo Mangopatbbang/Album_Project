@@ -38,14 +38,12 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
           <div
             key={r.id + r.updated_at}
             onClick={() => setSelected(r)}
-            className="rating-row"
+            className="rating-row hover:bg-[var(--bg-elevated)]"
             style={{
               display: "flex", alignItems: "center", gap: 12,
               padding: "8px 10px", borderRadius: 8,
               cursor: "pointer", transition: "background 0.15s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
           >
             <div style={{
               width: 40, height: 40, flexShrink: 0, borderRadius: 4, overflow: "hidden",
@@ -114,9 +112,8 @@ export function RecentReviewsSection({ items }: { items: RatingItem[] }) {
           <div
             key={r.id + r.updated_at}
             onClick={() => setSelected(r)}
-            style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", transition: "opacity 0.15s" }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer" }}
+            className="transition-opacity hover:opacity-70"
           >
             <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 13, flexShrink: 0, width: 14, textAlign: "right" }}>{r.score}</span>
             <div style={{ flex: 1, minWidth: 0 }}>

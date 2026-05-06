@@ -38,8 +38,7 @@ export default function SpotifyAttribution({ spotifyId, size = "sm" }: Props) {
         transition: "color 0.15s ease",
         flexShrink: 0,
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.9)")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+      className="hover:!text-white/90"
     >
       {/* Spotify 공식 아이콘 SVG — 변형 없이 그대로 */}
       <svg

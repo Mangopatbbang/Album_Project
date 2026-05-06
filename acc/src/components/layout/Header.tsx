@@ -142,7 +142,7 @@ export default function Header() {
                         <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{notifications.length}개</span>
                       )}
                     </div>
-                    <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                    <div style={{ maxHeight: "min(320px, 50dvh)", overflowY: "auto" }}>
                       {notifications.length === 0 ? (
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (

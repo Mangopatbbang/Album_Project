@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const containerStyle = {
   width: "100%",
-  maxWidth: "400px",
+  maxWidth: "440px",
   margin: "0 auto",
   padding: "0 24px",
 };

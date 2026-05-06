@@ -143,6 +143,7 @@ export default function FloatingActions() {
     fontWeight: 500,
     boxShadow: "0 2px 8px rgba(0,0,0,0.22)",
     cursor: "pointer",
+    minHeight: 44,
     fontFamily: "inherit",
     textDecoration: "none",
     whiteSpace: "nowrap" as const,

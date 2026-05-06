@@ -124,12 +124,12 @@ function MonthCalendar({
               </span>
               {count > 0 && (
                 <span style={{
-                  fontSize: 8,
+                  fontSize: 10,
                   color: "var(--accent)",
                   fontWeight: 700,
                   lineHeight: 1,
                 }}>
-                  {count}장
+                  {count}
                 </span>
               )}
             </div>

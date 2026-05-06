@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
@@ -100,8 +101,7 @@ function SectionPopup({
                 borderBottom: idx < list.length - 1 ? "1px solid var(--border)" : "none",
                 transition: "background 0.12s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              className="hover:bg-[var(--bg-elevated)]"
             >
               <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
                 {idx + 1}
@@ -194,9 +194,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
-            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px]"
-            onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+            className="w-[72px] h-[72px] sm:w-[90px] sm:h-[90px] transition-opacity hover:opacity-80"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -268,9 +266,7 @@ function ArtistSection({
               boxShadow: glowShadow(album.avg),
               transition: "opacity 0.15s",
             }}
-            className="w-[72px] h-[72px] sm:w-[80px] sm:h-[80px]"
-              onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+            className="w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] transition-opacity hover:opacity-80"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -332,9 +328,7 @@ function RankedTile({
           boxShadow: glowShadow(album.avg),
           transition: "opacity 0.15s",
         }}
-        className={coverClass}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "0.8")}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.opacity = "1")}
+        className={`${coverClass} transition-opacity hover:opacity-80`}
       >
         {album.cover_url
           // eslint-disable-next-line @next/next/no-img-element
@@ -448,6 +442,7 @@ export default function BestPageClient({
   foreignRanked: AlbumStat[];
   view: string;
 }) {
+  const router = useRouter();
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [artistSort, setArtistSort] = useState<"count" | "avg">("avg");
@@ -476,10 +471,54 @@ export default function BestPageClient({
     ? sections.find(([label]) => label === openSection)
     : null;
 
+  const mobileSelectStyle = {
+    backgroundColor: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    color: "var(--text)",
+    borderRadius: 6,
+    padding: "7px 10px",
+    fontSize: 13,
+    cursor: "pointer",
+    flex: 1,
+  } as const;
+
   return (
     <>
-      {/* 필터 행: 지역(좌) + 탭/정렬(우) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
+      {/* 모바일 필터: select 2개 */}
+      <div className="sm:hidden flex gap-2 mb-5">
+        <select
+          value={regionFilter}
+          onChange={(e) => setRegionFilter(e.target.value as "전체" | "국내" | "해외")}
+          style={mobileSelectStyle}
+        >
+          {(["전체", "국내", "해외"] as const).map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+        <select
+          value={view}
+          onChange={(e) => router.push(`/best?view=${e.target.value}`)}
+          style={mobileSelectStyle}
+        >
+          <option value="all">통합</option>
+          <option value="year">연도별</option>
+          <option value="genre">장르별</option>
+          <option value="artist">아티스트별</option>
+        </select>
+        {view === "artist" && (
+          <select
+            value={artistSort}
+            onChange={(e) => setArtistSort(e.target.value as "count" | "avg")}
+            style={{ ...mobileSelectStyle, flex: "none" }}
+          >
+            <option value="avg">평균 평점순</option>
+            <option value="count">음반 수순</option>
+          </select>
+        )}
+      </div>
+
+      {/* 데스크탑 필터 행: 지역(좌) + 탭/정렬(우) */}
+      <div className="hidden sm:flex" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {(["전체", "국내", "해외"] as const).map((r) => (
             <button

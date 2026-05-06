@@ -352,8 +352,7 @@ function ReviewRow({
       {/* 메인 행 */}
       <div
         style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+        className="hover:bg-[var(--bg-elevated)]"
       >
         {/* 커버 → 앨범 모달 */}
         <button

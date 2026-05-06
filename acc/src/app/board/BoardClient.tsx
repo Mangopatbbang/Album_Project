@@ -225,7 +225,7 @@ export default function BoardClient() {
   }
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 100px" }}>
+    <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px 80px" }}>
 
       {/* 페이지 타이틀 */}
       <div style={{ marginBottom: 40 }}>
@@ -465,8 +465,7 @@ export default function BoardClient() {
                                 color: "var(--text)", fontSize: 13, cursor: "pointer",
                                 borderBottom: i < inquirySearchResults.length - 1 ? "1px solid var(--border)" : "none",
                               }}
-                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
-                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                              className="hover:bg-[var(--bg-elevated)]"
                             >
                               {r.label}
                             </button>
