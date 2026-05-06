@@ -15,8 +15,8 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetch("/api/users")
-      .then((r) => r.json())
-      .then((data) => { if (data.users) setUsers(data.users); })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((data) => { if (Array.isArray(data.users)) setUsers(data.users); })
       .catch(() => {});
   }, []);
 

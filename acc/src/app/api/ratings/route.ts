@@ -126,6 +126,7 @@ export async function PATCH(req: NextRequest) {
   if (reviewerId && likerId) {
     let newVal: string | null = null;
     let isAdding = false;
+    let succeeded = false;
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const { data: current } = await supabaseServer
@@ -154,9 +155,11 @@ export async function PATCH(req: NextRequest) {
       ).select("id");
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      if (updated && updated.length > 0) break;
+      if (updated && updated.length > 0) { succeeded = true; break; }
       // 동시 수정 감지 → 재시도
     }
+
+    if (!succeeded) return NextResponse.json({ error: "업데이트 충돌이 발생했습니다. 다시 시도해주세요." }, { status: 409 });
 
     // 좋아요 추가 시 (취소가 아닐 때) + 자기 소감이 아닐 때 알림 생성
     if (isAdding && likerId !== reviewerId) {

@@ -61,7 +61,8 @@ export default function SignupPage() {
       }),
     });
 
-    const json = await res.json();
+    let json: { error?: string } = {};
+    try { json = await res.json(); } catch { /* non-JSON response */ }
 
     if (!res.ok) {
       // auth 계정은 만들어졌지만 프로필 생성 실패 — username 중복 등

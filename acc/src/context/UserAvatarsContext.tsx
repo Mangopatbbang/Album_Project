@@ -11,7 +11,7 @@ export function UserAvatarsProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     fetch("/api/user-avatars")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setAvatarMap)
       .catch(() => {});
   }, []);
