@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const SEAM_C = "rgba(185,152,72,0.6)";
+const G = (a: number) => `rgba(185,152,72,${a})`;
 
 function LogoInDoor({ side }: { side: "left" | "right" }) {
   return (
@@ -21,55 +21,86 @@ function LogoInDoor({ side }: { side: "left" | "right" }) {
         userSelect: "none",
       }}
     >
-      <span
-        style={{
-          color: "var(--accent)",
-          fontSize: 34,
-          animation: "splashIn 0.9s ease-out forwards",
-          opacity: 0,
-        }}
-      >
+      <span style={{ color: "var(--accent)", fontSize: 34, animation: "splashIn 0.9s ease-out forwards", opacity: 0 }}>
         ♪
       </span>
-      <p
-        style={{
-          color: "var(--text)",
-          fontWeight: 700,
-          fontSize: 26,
-          letterSpacing: "-0.04em",
-          margin: 0,
-          whiteSpace: "nowrap",
-          animation: "splashIn 0.9s ease-out 0.3s forwards",
-          opacity: 0,
-        }}
-      >
+      <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 26, letterSpacing: "-0.04em", margin: 0, whiteSpace: "nowrap", animation: "splashIn 0.9s ease-out 0.3s forwards", opacity: 0 }}>
         아차청음사
       </p>
-      <p
-        style={{
-          color: "var(--text-muted)",
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          margin: 0,
-          whiteSpace: "nowrap",
-          animation: "splashIn 0.9s ease-out 0.65s forwards",
-          opacity: 0,
-        }}
-      >
+      <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", margin: 0, whiteSpace: "nowrap", animation: "splashIn 0.9s ease-out 0.65s forwards", opacity: 0 }}>
         청음의 기록
       </p>
     </div>
   );
 }
 
-function TempleDoor({
-  side,
-  opening,
-}: {
-  side: "left" | "right";
-  opening: boolean;
-}) {
+function DoorPanels() {
+  const panel = {
+    border: `1px solid ${G(0.28)}`,
+    borderRadius: 1,
+  };
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: "5% 8%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4%",
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{ ...panel, flex: 1.3 }} />
+      <div style={{ ...panel, flex: 2.2 }} />
+      <div style={{ ...panel, flex: 1.3 }} />
+    </div>
+  );
+}
+
+function DoorHandle({ side }: { side: "left" | "right" }) {
+  const isLeft = side === "left";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        ...(isLeft ? { right: 16 } : { left: 16 }),
+        top: "50%",
+        transform: "translateY(-50%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {/* 마운팅 플레이트 */}
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          backgroundColor: G(0.07),
+          border: `1px solid ${G(0.38)}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: `0 0 12px ${G(0.1)}`,
+        }}
+      >
+        {/* 고리 */}
+        <div
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            border: `2px solid ${G(0.82)}`,
+            boxShadow: `0 0 6px ${G(0.3)}`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolean }) {
   const isLeft = side === "left";
   return (
     <div
@@ -84,41 +115,14 @@ function TempleDoor({
         animation: opening
           ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 2.0s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
-        backgroundColor: "#0f0b07",
+        backgroundColor: "#0c0906",
+        boxShadow: isLeft
+          ? `inset -1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`
+          : `inset 1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`,
       }}
     >
-      {/* 손잡이 */}
-      <div
-        style={{
-          position: "absolute",
-          ...(isLeft ? { right: 22 } : { left: 22 }),
-          top: "50%",
-          transform: "translateY(-50%)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
-        <div
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: "50%",
-            border: "2.5px solid rgba(205,165,65,0.88)",
-            boxShadow: "0 0 8px rgba(205,165,65,0.22)",
-          }}
-        />
-        <div
-          style={{
-            width: 7,
-            height: 11,
-            borderRadius: 3,
-            backgroundColor: "rgba(175,138,55,0.62)",
-          }}
-        />
-      </div>
-
+      <DoorPanels />
+      <DoorHandle side={side} />
       <LogoInDoor side={isLeft ? "left" : "right"} />
     </div>
   );
@@ -134,8 +138,8 @@ export default function SplashScreen() {
     if (!seen) {
       sessionStorage.setItem("acc_splash", "1");
       setShow(true);
-      setTimeout(() => setLineVisible(true), 1400); // 선 그어지기 시작
-      setTimeout(() => setOpening(true), 2300);      // 선 다 그어진 후 갈라짐
+      setTimeout(() => setLineVisible(true), 1400);
+      setTimeout(() => setOpening(true), 2300);
       setTimeout(() => setShow(false), 4500);
     }
   }, []);
@@ -153,10 +157,24 @@ export default function SplashScreen() {
         pointerEvents: opening ? "none" : "all",
       }}
     >
-      <TempleDoor side="left"  opening={opening} />
+      <TempleDoor side="left" opening={opening} />
       <TempleDoor side="right" opening={opening} />
 
-      {/* 중앙 선: 위→아래로 그어지다가 문이 열리면 페이드아웃 */}
+      {/* 문이 열릴 때 중앙 빛 번짐 */}
+      {opening && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(ellipse 38% 28% at 50% 50%, ${G(0.13)} 0%, transparent 100%)`,
+            animation: "lightBloom 1.4s ease-out forwards",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        />
+      )}
+
+      {/* 중앙 금색 세로선 */}
       {lineVisible && (
         <div
           style={{
@@ -165,7 +183,7 @@ export default function SplashScreen() {
             left: "calc(50% - 0.5px)",
             width: 1,
             height: "100%",
-            backgroundColor: SEAM_C,
+            backgroundColor: G(0.65),
             transformOrigin: "top center",
             animation: "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) forwards",
             opacity: opening ? 0 : 1,
