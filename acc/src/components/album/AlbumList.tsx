@@ -8,6 +8,7 @@ import AlbumAddModal from "./AlbumAddModal";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { koGenre } from "@/lib/bio";
+import Spinner from "@/components/ui/Spinner";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -383,8 +384,8 @@ return (
           ))}
         </div>
       ) : loading && albums.length === 0 ? (
-        <div style={{ color: "var(--text-muted)" }} className="text-center py-20 text-sm">
-          불러오는 중...
+        <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
+          <Spinner size={22} />
         </div>
       ) : albums.length === 0 ? (
         <div className="text-center py-20 flex flex-col items-center gap-3">
@@ -419,8 +420,8 @@ return (
       {/* 무한 스크롤 sentinel */}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loading && albums.length > 0 && (
-        <div style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
-          불러오는 중...
+        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
+          <Spinner size={16} />
         </div>
       )}
 

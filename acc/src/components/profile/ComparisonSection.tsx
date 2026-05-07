@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { User } from "@/types";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { GENRE_COLOR } from "@/lib/bio";
+import Spinner from "@/components/ui/Spinner";
 
 type ComparisonItem = {
   user: User;
@@ -74,7 +75,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
           justifyContent: "center",
           minHeight: 80,
         }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>불러오는 중…</p>
+          <Spinner />
         </div>
       )}
 
@@ -110,12 +111,12 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
             )}
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>
               공통 {bestMatch.commonCount}장 · 앨범당 평균{" "}
-              <span style={{ color: bestMatch.diff! < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
-                {bestMatch.diff!.toFixed(2)}점 차이
+              <span style={{ color: (bestMatch.diff ?? 1) < 0.8 ? "var(--accent)" : "var(--text-sub)", fontWeight: 600 }}>
+                {(bestMatch.diff ?? 0).toFixed(2)}점 차이
               </span>
             </p>
             <p style={{ color: "var(--accent)", fontSize: 12, marginTop: 8, fontWeight: 500 }}>
-              {bestMatch.diff! < 0.8 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
+              {(bestMatch.diff ?? 1) < 0.8 ? "취향이 가장 비슷한 청음인" : "그나마 가장 비슷한 청음인"}
             </p>
           </div>
         </div>

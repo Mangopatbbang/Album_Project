@@ -8,6 +8,7 @@ import type { ReviewItem } from "@/app/api/reviews/route";
 import type { CommentItem } from "@/app/api/comments/route";
 import AlbumModal from "@/components/album/AlbumModal";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
+import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -273,7 +274,7 @@ export default function ReviewsClient() {
 
       {/* 피드 */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</div>
+        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}><Spinner size={22} /></div>
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
       ) : (
@@ -306,7 +307,7 @@ export default function ReviewsClient() {
       {/* 인피니티 스크롤 센티넬 */}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loadingMore && (
-        <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>불러오는 중…</div>
+        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}><Spinner size={16} /></div>
       )}
       {!hasMore && items.length > 0 && !loading && !loadingMore && (
         <div style={{ textAlign: "center", padding: "16px 0", color: "var(--text-muted)", fontSize: 12 }}>모두 불러왔어요</div>

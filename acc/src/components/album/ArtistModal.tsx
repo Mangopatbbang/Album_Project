@@ -6,6 +6,7 @@ import { useUsers } from "@/context/UsersContext";
 import { scoreColor, glowBorder, glowShadow } from "@/lib/score";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
+import Spinner from "@/components/ui/Spinner";
 
 type Props = {
   artistName: string;
@@ -171,7 +172,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         <div className="overflow-y-auto px-6 pt-4 pb-8">
           {loading ? (
             <div className="flex justify-center py-16">
-              <span style={{ color: "var(--text-muted)", fontSize: 14 }}>불러오는 중…</span>
+              <Spinner />
             </div>
           ) : fetchError ? (
             <div className="flex justify-center py-16">

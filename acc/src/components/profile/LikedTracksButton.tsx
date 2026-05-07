@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { LikedTrackItem } from "@/app/api/liked-tracks/route";
+import Spinner from "@/components/ui/Spinner";
 
 type SortKey = "album" | "artist";
 
@@ -143,8 +144,8 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
             {/* 본문 */}
             <div style={{ overflowY: "auto", flex: 1, padding: "12px 0" }}>
               {loading ? (
-                <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
-                  불러오는 중…
+                <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+                  <Spinner size={20} />
                 </div>
               ) : fetchError ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>

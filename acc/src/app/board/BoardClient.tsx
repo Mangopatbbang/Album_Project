@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
+import Spinner from "@/components/ui/Spinner";
 
 type Announcement = {
   id: number;
@@ -218,8 +219,8 @@ export default function BoardClient() {
 
   if (loadingData) {
     return (
-      <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오는 중...</p>
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))", display: "flex", justifyContent: "center" }}>
+        <Spinner size={22} />
       </main>
     );
   }
