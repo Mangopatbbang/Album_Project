@@ -13,6 +13,7 @@ type Props = {
   genre?: string | null;
   userName?: string;
   spotifyId?: string | null;
+  likedTracks?: { index: number; name: string }[];
   onClose: () => void;
 };
 
@@ -25,11 +26,13 @@ export default function StoryCardPreviewModal({
   genre,
   userName,
   spotifyId,
+  likedTracks,
   onClose,
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [includeReview, setIncludeReview] = useState(true);
+  const [includeTracks, setIncludeTracks] = useState(true);
 
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
@@ -130,6 +133,7 @@ export default function StoryCardPreviewModal({
           genre={genre}
           userName={userName}
           spotifyId={spotifyId}
+          likedTracks={includeTracks ? likedTracks : undefined}
         />
       </div>
 
@@ -138,28 +142,31 @@ export default function StoryCardPreviewModal({
         onClick={(e) => e.stopPropagation()}
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, flexShrink: 0 }}
       >
-        {/* 한줄 평 토글 — 리뷰가 있을 때만 표시 */}
-        {review && (
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              color: "rgba(255,255,255,0.55)",
-              fontSize: 13,
-              userSelect: "none",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={includeReview}
-              onChange={(e) => setIncludeReview(e.target.checked)}
-              style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }}
-            />
-            한줄 평 포함
-          </label>
-        )}
+        {/* 토글 옵션 */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          {review && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "rgba(255,255,255,0.55)", fontSize: 13, userSelect: "none" }}>
+              <input
+                type="checkbox"
+                checked={includeReview}
+                onChange={(e) => setIncludeReview(e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }}
+              />
+              한줄 평 포함
+            </label>
+          )}
+          {likedTracks && likedTracks.length > 0 && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "rgba(255,255,255,0.55)", fontSize: 13, userSelect: "none" }}>
+              <input
+                type="checkbox"
+                checked={includeTracks}
+                onChange={(e) => setIncludeTracks(e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }}
+              />
+              Best Tracks 포함
+            </label>
+          )}
+        </div>
 
         {/* 저장/공유 버튼 */}
         <div style={{ display: "flex", gap: 10 }}>

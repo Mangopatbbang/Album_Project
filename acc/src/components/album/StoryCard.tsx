@@ -11,6 +11,7 @@ type Props = {
   genre?: string | null;
   userName?: string;
   spotifyId?: string | null;
+  likedTracks?: { index: number; name: string }[];
   containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
@@ -23,6 +24,7 @@ export default function StoryCard({
   genre,
   userName,
   spotifyId,
+  likedTracks,
   containerRef,
 }: Props) {
   const proxiedCover = coverUrl
@@ -167,6 +169,27 @@ export default function StoryCard({
             {genre && <span style={{ color: "rgba(255,255,255,0.32)" }}> · {genre}</span>}
           </p>
         </div>
+
+        {/* Best Tracks */}
+        {likedTracks && likedTracks.length > 0 && (
+          <div style={{ marginTop: 14, width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
+              <div style={{ flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", letterSpacing: "0.08em" }}>BEST TRACKS</span>
+              <div style={{ flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
+            </div>
+            {likedTracks.slice(0, 4).map((t) => (
+              <div key={t.index} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.32)", width: 18, textAlign: "right", flexShrink: 0 }}>
+                  {t.index}
+                </span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {t.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* 여백 */}
         <div style={{ flex: 1 }} />

@@ -1153,6 +1153,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           genre={data.genre ?? null}
           userName={profile?.display_name ?? profile?.id}
           spotifyId={data.spotify_id}
+          likedTracks={[...myLikedTracks].sort((a, b) => a - b).map((i) => ({ index: i + 1, name: tracklist[i] })).filter((t) => t.name)}
           onClose={() => setShowCardPreview(false)}
         />
       )}
