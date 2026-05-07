@@ -194,6 +194,13 @@ main {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari 입력창 자동 줌인 방지 (font-size < 16px 시 발생) */
+@media (max-width: 639px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 /* 터치 디바이스: active 피드백 */
 @media (hover: none) {
   button:active,

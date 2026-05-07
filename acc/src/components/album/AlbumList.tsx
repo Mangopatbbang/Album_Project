@@ -110,7 +110,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
       } catch {
-        // 네트워크 오류 시 기존 목록 유지
+        setAlbums([]);
       } finally {
         setLoading(false);
         setFilterLoading(false);

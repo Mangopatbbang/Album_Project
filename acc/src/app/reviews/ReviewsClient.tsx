@@ -60,10 +60,13 @@ export default function ReviewsClient() {
     q.set("offset", String(params.offset));
     try {
       const res = await fetch(`/api/reviews?${q}`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setItems((prev) => append ? [...prev, ...data.items] : data.items);
       setHasMore(data.hasMore);
       setOffset(params.offset + data.items.length);
+    } catch {
+      if (!append) setItems([]);
     } finally {
       if (!append) setLoading(false); else setLoadingMore(false);
     }

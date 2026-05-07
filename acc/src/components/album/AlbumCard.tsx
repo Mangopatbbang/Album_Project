@@ -17,6 +17,7 @@ type Props = {
 
 export default function AlbumCard({ album, onClick }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
+  const [imgError, setImgError] = useState(false);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
   const { profile } = useAuth();
@@ -53,12 +54,13 @@ export default function AlbumCard({ album, onClick }: Props) {
         style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
         className="w-full flex items-center justify-center overflow-hidden"
       >
-        {album.cover_url ? (
+        {album.cover_url && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={album.cover_url}
             alt={album.title}
             className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="flex flex-col items-center gap-1">
