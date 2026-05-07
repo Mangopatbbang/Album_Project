@@ -215,34 +215,6 @@ export function getBestByGenre(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   return new Map([...map.entries()].sort((a, b) => b[1][0].avg - a[1][0].avg));
 }
 
-// 테마: 8점 클럽
-export function getEightClub(albums: RawAlbum[]): AlbumStat[] {
-  return validAlbums(albums)
-    .filter((a) => albums.find((r) => r.id === a.id)!.ratings.some((r) => r.score === 8))
-    .sort((a, b) => b.avg - a.avg);
-}
-
-// 테마: 만장일치 명반 (4명 모두 평가 + avg >= 7)
-export function getUnanimous(albums: RawAlbum[]): AlbumStat[] {
-  return validAlbums(albums)
-    .filter((a) => a.count >= 4 && a.avg >= 7)
-    .sort((a, b) => b.avg - a.avg);
-}
-
-// 테마: 의견 충돌 (분산 높은 순)
-export function getControversial(albums: RawAlbum[]): AlbumStat[] {
-  return validAlbums(albums)
-    .sort((a, b) => (b.variance ?? 0) - (a.variance ?? 0));
-}
-
-// 테마: 숨겨진 명반 (1명만 들었는데 고점)
-export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
-  return albums
-    .filter((a) => a.ratings.length === 1 && a.ratings[0].score >= 7)
-    .map(toStat)
-    .sort((a, b) => b.avg - a.avg);
-}
-
 // 아티스트별: 2장 이상인 아티스트의 앨범 목록 (아티스트 평균 내림차순)
 export function getBestByArtist(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   const valid = validAlbums(albums);
@@ -278,14 +250,6 @@ export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
 
   return [...artistMap.values()].sort((a, b) => b.avg - a.avg);
 }
-
-export const THEMES = [
-  { id: "eight_club", name: "8점 클럽", emoji: "⭐", description: "누군가 8점을 준 앨범들" },
-  { id: "unanimous", name: "만장일치 명반", emoji: "🤝", description: "전원 평가 · 평균 7점 이상" },
-  { id: "artist_best", name: "아티스트 대표작", emoji: "🎤", description: "2장 이상 청음한 아티스트의 최고작" },
-  { id: "hidden_gems", name: "숨겨진 명반", emoji: "💎", description: "한 명만 들었는데 7점 이상" },
-  { id: "controversial", name: "의견 충돌", emoji: "⚡", description: "멤버 간 점수 편차가 가장 큰 앨범들" },
-] as const;
 
 // 통합 랭킹: 평균 점수 내림차순 상위 50개 (평점 2명 이상)
 export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
