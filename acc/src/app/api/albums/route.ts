@@ -188,9 +188,12 @@ async function handleAvgSort(params: {
 }
 
 export async function POST(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const body = await req.json();
-  const { title, artist, extra_artists, year, release_date, genre, cover_url, tracklist, spotify_id, soundcloud_url, added_by } = body;
-  if (!(await validateUser(added_by))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  const { title, artist, extra_artists, year, release_date, genre, cover_url, tracklist, spotify_id, soundcloud_url } = body;
+  const added_by = authed.id;
   if (!title?.trim() || !artist?.trim()) return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   if (tracklist) {
     const trackCount = tracklist.split(";").map((t: string) => t.trim()).filter(Boolean).length;

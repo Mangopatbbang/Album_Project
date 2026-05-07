@@ -7,6 +7,7 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
 import type { NotificationItem } from "@/app/api/notifications/route";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function Header() {
   const { profile, loading, signOut } = useAuth();
@@ -51,10 +52,10 @@ export default function Header() {
     setShowNotif((v) => !v);
     if (!showNotif && unreadCount > 0 && profile) {
       // 열면 전체 읽음 처리
-      await fetch("/api/notifications", {
+      await apiFetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: profile.id }),
+        body: JSON.stringify({}),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }

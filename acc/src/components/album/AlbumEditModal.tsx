@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
 import { koGenre } from "@/lib/bio";
+import { apiFetch } from "@/lib/apiFetch";
 
 const GENRES = [
   "Hip-Hop", "R&B", "Pop", "Rock",
@@ -28,7 +29,6 @@ type ArtistHint = {
 };
 
 type Props = {
-  userId?: string;
   album: {
     id: string;
     title: string;
@@ -75,7 +75,7 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
   );
 }
 
-export default function AlbumEditModal({ userId, album, onClose, onSaved }: Props) {
+export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
   const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
   const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
@@ -195,11 +195,10 @@ export default function AlbumEditModal({ userId, album, onClose, onSaved }: Prop
     setSaving(true);
     setError("");
 
-    const res = await fetch(`/api/albums/${album.id}`, {
+    const res = await apiFetch(`/api/albums/${album.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...(userId ? { userId } : {}),
         title: title.trim(),
         extra_artists: extraArtists.trim() || null,
         release_date: releaseDate || null,

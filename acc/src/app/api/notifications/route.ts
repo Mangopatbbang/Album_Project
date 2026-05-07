@@ -44,11 +44,11 @@ export async function GET(req: NextRequest) {
 }
 
 // PATCH /api/notifications
-// body: { userId } — 전체 읽음 처리
+// body: {} — 전체 읽음 처리 (JWT 사용자 기준)
 // body: { id } — 단건 읽음 처리
 export async function PATCH(req: NextRequest) {
   const body = await req.json();
-  const { userId, id } = body as { userId?: string; id?: string };
+  const { id } = body as { id?: string };
 
   if (id) {
     const { error } = await supabaseServer
@@ -59,16 +59,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (userId) {
-    if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
-    const { error } = await supabaseServer
-      .from("notifications")
-      .update({ read: true })
-      .eq("user_id", userId)
-      .eq("read", false);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
-  }
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  return NextResponse.json({ error: "userId 또는 id 필수" }, { status: 400 });
+  const { error } = await supabaseServer
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", authed.id)
+    .eq("read", false);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }

@@ -33,20 +33,22 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/ratings
-// body: { albumId, userId, score, one_line_review? }
+// body: { albumId, score, one_line_review? }
 export async function POST(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const body = await req.json();
-  const { albumId, userId, score, one_line_review } = body as {
+  const { albumId, score, one_line_review } = body as {
     albumId: string;
-    userId: string;
     score: number;
     one_line_review?: string;
   };
+  const userId = authed.id;
 
-  if (!albumId || !userId || score == null) {
-    return NextResponse.json({ error: "albumId, userId, score 필수" }, { status: 400 });
+  if (!albumId || score == null) {
+    return NextResponse.json({ error: "albumId, score 필수" }, { status: 400 });
   }
-  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   if (score < 1 || score > 8) {
     return NextResponse.json({ error: "score는 1~8 사이여야 합니다" }, { status: 400 });
@@ -95,35 +97,36 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH /api/ratings
-// liked_tracks: { albumId, userId, liked_tracks }
-// 리뷰 좋아요 토글: { albumId, reviewerId, likerId }
+// liked_tracks: { albumId, liked_tracks }
+// 리뷰 좋아요 토글: { albumId, reviewerId }
 export async function PATCH(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const body = await req.json();
-  const { albumId, userId, liked_tracks, reviewerId, likerId } = body as {
+  const { albumId, liked_tracks, reviewerId } = body as {
     albumId: string;
-    userId?: string;
     liked_tracks?: string | null;
     reviewerId?: string;
-    likerId?: string;
   };
+  const actorId = authed.id;
 
   if (!albumId) return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
-  const actorId = userId ?? likerId;
-  if (!(await validateUser(actorId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   // liked_tracks 업데이트
-  if (userId && liked_tracks !== undefined) {
+  if (liked_tracks !== undefined && !reviewerId) {
     const { error } = await supabaseServer
       .from("ratings")
       .update({ liked_tracks })
       .eq("album_id", albumId)
-      .eq("user_id", userId);
+      .eq("user_id", actorId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
   // 리뷰 좋아요 토글 (optimistic locking — 동시 요청 충돌 방지)
-  if (reviewerId && likerId) {
+  if (reviewerId) {
+    const likerId = actorId;
     let newVal: string | null = null;
     let isAdding = false;
     let succeeded = false;
@@ -156,12 +159,10 @@ export async function PATCH(req: NextRequest) {
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       if (updated && updated.length > 0) { succeeded = true; break; }
-      // 동시 수정 감지 → 재시도
     }
 
     if (!succeeded) return NextResponse.json({ error: "업데이트 충돌이 발생했습니다. 다시 시도해주세요." }, { status: 409 });
 
-    // 좋아요 추가 시 (취소가 아닐 때) + 자기 소감이 아닐 때 알림 생성
     if (isAdding && likerId !== reviewerId) {
       await supabaseServer
         .from("notifications")
@@ -175,15 +176,18 @@ export async function PATCH(req: NextRequest) {
 }
 
 // DELETE /api/ratings
-// body: { albumId, userId }
+// body: { albumId }
 export async function DELETE(req: NextRequest) {
-  const body = await req.json();
-  const { albumId, userId } = body as { albumId: string; userId: string };
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  if (!albumId || !userId) {
-    return NextResponse.json({ error: "albumId, userId 필수" }, { status: 400 });
+  const body = await req.json();
+  const { albumId } = body as { albumId: string };
+  const userId = authed.id;
+
+  if (!albumId) {
+    return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
   }
-  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const [{ error }, { data: albumData }] = await Promise.all([
     supabaseServer.from("ratings").delete().eq("album_id", albumId).eq("user_id", userId),

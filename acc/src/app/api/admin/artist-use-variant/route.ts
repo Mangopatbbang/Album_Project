@@ -4,12 +4,8 @@ import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
 
 // GET /api/admin/artist-use-variant
-// → { stats: Record<spotify_name, { total: number; using: number }> }
-// (alias 등록된 아티스트 전체의 variant 사용 현황)
 export async function GET(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
-  // 1) alias 등록된 아티스트 목록
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { data: aliasData, error: aliasErr } = await supabaseServer
     .from("artist_aliases")
     .select("spotify_name");
@@ -18,7 +14,6 @@ export async function GET(req: NextRequest) {
   const names = (aliasData ?? []).map((r: { spotify_name: string }) => r.spotify_name);
   if (names.length === 0) return NextResponse.json({ stats: {} });
 
-  // 2) 해당 아티스트들의 앨범 variant 사용 현황
   const { data: albumData, error: albumErr } = await supabaseServer
     .from("albums")
     .select("artist, use_artist_variant")
@@ -38,10 +33,8 @@ export async function GET(req: NextRequest) {
 
 // PATCH /api/admin/artist-use-variant
 // body: { spotify_name, use_variant: boolean }
-// → 해당 아티스트 전체 앨범 use_artist_variant 일괄 변경
 export async function PATCH(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name, use_variant } = await req.json();
   if (!spotify_name?.trim() || use_variant === undefined) {
     return NextResponse.json({ error: "spotify_name과 use_variant 필수" }, { status: 400 });

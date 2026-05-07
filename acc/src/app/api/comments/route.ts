@@ -43,20 +43,22 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/comments
-// body: { albumId, reviewerId, commenterId, content }
+// body: { albumId, reviewerId, content }
 export async function POST(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const body = await req.json();
-  const { albumId, reviewerId, commenterId, content } = body as {
+  const { albumId, reviewerId, content } = body as {
     albumId: string;
     reviewerId: string;
-    commenterId: string;
     content: string;
   };
+  const commenterId = authed.id;
 
-  if (!albumId || !reviewerId || !commenterId || !content?.trim()) {
+  if (!albumId || !reviewerId || !content?.trim()) {
     return NextResponse.json({ error: "필수 항목 누락" }, { status: 400 });
   }
-  if (!(await validateUser(commenterId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   if (content.length > 200) {
     return NextResponse.json({ error: "댓글은 200자 이하여야 합니다" }, { status: 400 });
@@ -70,7 +72,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // 자기 소감에 자기가 댓글 달면 알림 생성 안 함
   if (commenterId !== reviewerId) {
     await supabaseServer
       .from("notifications")

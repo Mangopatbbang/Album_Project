@@ -5,16 +5,17 @@ import { getAccessToken } from "@/lib/spotify";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { logActivity } from "@/lib/activityLog";
 import { validateAdmin } from "@/lib/validateAdmin";
+import { validateUser } from "@/lib/validateUser";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await req.json();
-  const logUserId = (body.userId as string | undefined) ?? null;
-  if (!(await validateAdmin(logUserId))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
+  const body = await req.json();
   const allowed = ["spotify_id", "cover_url", "tracklist", "title", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
@@ -61,7 +62,7 @@ export async function PATCH(
 
   const updatedRow = updateData?.[0];
   await logActivity({
-    userId: logUserId, action: "album_edit",
+    userId: authed.id, action: "album_edit",
     albumId: id, albumTitle: updatedRow?.title, albumArtist: updatedRow?.artist,
     details: { updated_fields: Object.keys(update) },
   });
@@ -108,24 +109,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { userId } = await req.json();
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  if (!userId) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
-
-  const [{ data: album }, { data: userProfile }] = await Promise.all([
-    supabaseServer.from("albums").select("added_by, title, artist").eq("id", id).single(),
-    supabaseServer.from("users").select("role").eq("id", userId).single(),
-  ]);
-
+  const { data: album } = await supabaseServer.from("albums").select("added_by, title, artist").eq("id", id).single();
   if (!album) return NextResponse.json({ error: "앨범 없음" }, { status: 404 });
-  const role = userProfile?.role ?? "user";
-  if (role !== "admin" && album.added_by !== userId) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
+  if (authed.role !== "admin" && album.added_by !== authed.id) return NextResponse.json({ error: "삭제 권한 없음" }, { status: 403 });
 
   const { error } = await supabaseServer.from("albums").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await logActivity({
-    userId, action: "album_delete",
+    userId: authed.id, action: "album_delete",
     albumId: id, albumTitle: album.title, albumArtist: album.artist,
   });
 

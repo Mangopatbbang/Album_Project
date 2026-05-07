@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -638,11 +639,7 @@ export default function AdminPage() {
   }
 
   function adminFetch(url: string, init?: RequestInit) {
-    const headers: Record<string, string> = {
-      ...(init?.headers as Record<string, string> ?? {}),
-      "x-user-id": profile?.id ?? "",
-    };
-    return fetch(url, { ...init, headers });
+    return apiFetch(url, init);
   }
 
   if (authLoading) return (

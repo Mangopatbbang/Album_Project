@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // artist_display 해상도 적용
   type WatchlistRow = { album_id: string; created_at: string; albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; year: string | null; release_date: string | null; genre: string | null; cover_url: string | null; spotify_id: string | null; artist_display?: string } | null };
   const items = (data ?? []) as unknown as WatchlistRow[];
   const albumObjs = items.map((i) => i.albums).filter((a): a is NonNullable<typeof a> => a != null);
@@ -32,27 +31,31 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, albumId } = await req.json();
-  if (!userId || !albumId) return NextResponse.json({ error: "userId and albumId required" }, { status: 400 });
-  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const { albumId } = await req.json();
+  if (!albumId) return NextResponse.json({ error: "albumId required" }, { status: 400 });
 
   const { error } = await supabaseServer
     .from("watchlist")
-    .upsert({ user_id: userId, album_id: albumId });
+    .upsert({ user_id: authed.id, album_id: albumId });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: NextRequest) {
-  const { userId, albumId } = await req.json();
-  if (!userId || !albumId) return NextResponse.json({ error: "userId and albumId required" }, { status: 400 });
-  if (!(await validateUser(userId))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const { albumId } = await req.json();
+  if (!albumId) return NextResponse.json({ error: "albumId required" }, { status: 400 });
 
   const { error } = await supabaseServer
     .from("watchlist")
     .delete()
-    .eq("user_id", userId)
+    .eq("user_id", authed.id)
     .eq("album_id", albumId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

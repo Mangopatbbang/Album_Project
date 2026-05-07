@@ -6,8 +6,7 @@ import { validateAdmin } from "@/lib/validateAdmin";
 const BATCH_SIZE = 30;
 
 export async function POST(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { offset = 0, force = false } = await req.json().catch(() => ({ offset: 0, force: false }));
 
   // 전체 대상 수

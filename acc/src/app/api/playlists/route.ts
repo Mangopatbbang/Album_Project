@@ -28,17 +28,19 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { user_id, title, entries } = body;
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
-  if (!user_id || !title || !entries?.length) {
-    return NextResponse.json({ error: "user_id, title, entries required" }, { status: 400 });
+  const body = await req.json();
+  const { title, entries } = body;
+
+  if (!title || !entries?.length) {
+    return NextResponse.json({ error: "title, entries required" }, { status: 400 });
   }
-  if (!(await validateUser(user_id))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const { data: playlist, error: plErr } = await supabaseServer
     .from("playlists")
-    .insert({ user_id, title })
+    .insert({ user_id: authed.id, title })
     .select()
     .single();
 

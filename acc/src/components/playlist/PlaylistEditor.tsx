@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 
 type Album = {
   id: string;
@@ -115,11 +116,10 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
     setSaving(true);
     setError("");
 
-    const res = await fetch("/api/playlists", {
+    const res = await apiFetch("/api/playlists", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id: profile.id,
         title,
         entries: entries.map((e, i) => ({
           album_id: e.album.id,

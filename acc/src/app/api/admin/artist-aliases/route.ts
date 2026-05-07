@@ -8,8 +8,7 @@ import { validateAdmin } from "@/lib/validateAdmin";
 // - ?unaliased=true  → alias 없는 아티스트 목록 반환 { artists: string[] }
 // - (no param)       → 전체 alias 목록 반환 { aliases: { spotify_name, variant_name }[] }
 export async function GET(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const url = new URL(req.url);
   const artist = url.searchParams.get("artist")?.trim();
   const unaliased = url.searchParams.get("unaliased") === "true";
@@ -25,13 +24,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (unaliased) {
-    // 앨범 테이블에서 모든 고유 아티스트 가져오기
     const { data: albumData, error: albumErr } = await supabaseServer
       .from("albums")
       .select("artist");
     if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
 
-    // alias 목록 가져오기
     const { data: aliasData, error: aliasErr } = await supabaseServer
       .from("artist_aliases")
       .select("spotify_name");
@@ -54,10 +51,8 @@ export async function GET(req: NextRequest) {
 
 // POST /api/admin/artist-aliases
 // body: { spotify_name, variant_name }
-// → upsert alias
 export async function POST(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name, variant_name } = await req.json();
   if (!spotify_name?.trim() || !variant_name?.trim()) {
     return NextResponse.json({ error: "spotify_name과 variant_name 필수" }, { status: 400 });
@@ -77,10 +72,8 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/admin/artist-aliases
 // body: { spotify_name }
-// → alias 삭제
 export async function DELETE(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name } = await req.json();
   if (!spotify_name?.trim()) {
     return NextResponse.json({ error: "spotify_name 필수" }, { status: 400 });

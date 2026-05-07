@@ -9,6 +9,7 @@ import type { CommentItem } from "@/app/api/comments/route";
 import AlbumModal from "@/components/album/AlbumModal";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { apiFetch } from "@/lib/apiFetch";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
@@ -100,10 +101,10 @@ export default function ReviewsClient() {
     const key = `${item.albumId}-${item.userId}`;
     setLiking(key);
     try {
-      const res = await fetch("/api/ratings", {
+      const res = await apiFetch("/api/ratings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ albumId: item.albumId, reviewerId: item.userId, likerId: profile.id }),
+        body: JSON.stringify({ albumId: item.albumId, reviewerId: item.userId }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -169,12 +170,12 @@ export default function ReviewsClient() {
     if (!profile || !commentInput.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/comments", {
+      const res = await apiFetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           albumId: item.albumId, reviewerId: item.userId,
-          commenterId: profile.id, content: commentInput.trim(),
+          content: commentInput.trim(),
         }),
       });
       if (res.ok) {

@@ -3,8 +3,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
 
 export async function GET(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { count: total } = await supabaseServer
     .from("albums")
     .select("id", { count: "exact", head: true });

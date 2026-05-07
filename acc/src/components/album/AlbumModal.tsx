@@ -9,6 +9,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { captureElement } from "@/lib/capture";
+import { apiFetch } from "@/lib/apiFetch";
 import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -107,10 +108,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     if (!profile) return;
     if (!confirm("이 앨범을 삭제할까요? 모든 평점도 함께 삭제됩니다.")) return;
     setDeletingAlbum(true);
-    const res = await fetch(`/api/albums/${album.id}`, {
+    const res = await apiFetch(`/api/albums/${album.id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: profile.id, role: profile.role }),
+      body: JSON.stringify({}),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -153,12 +154,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     if (next.has(idx)) next.delete(idx); else next.add(idx);
     setMyLikedTracks(next);
     setSavingLike(true);
-    await fetch("/api/ratings", {
+    await apiFetch("/api/ratings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         albumId: album.id,
-        userId: profile.id,
         liked_tracks: next.size > 0 ? [...next].sort((a, b) => a - b).join(",") : null,
       }),
     });
@@ -172,10 +172,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     if (next.has(reviewerId)) next.delete(reviewerId); else next.add(reviewerId);
     setMyLikedReviews(next);
     setSavingLike(true);
-    const res = await fetch("/api/ratings", {
+    const res = await apiFetch("/api/ratings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, reviewerId, likerId: profile.id }),
+      body: JSON.stringify({ albumId: album.id, reviewerId }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -273,10 +273,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     if (!profile) return;
     const adding = !isWatchlisted;
     setIsWatchlisted(adding);
-    await fetch("/api/watchlist", {
+    await apiFetch("/api/watchlist", {
       method: adding ? "POST" : "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: profile.id, albumId: album.id }),
+      body: JSON.stringify({ albumId: album.id }),
     });
     showToast(adding ? "나중에 들을 목록에 추가했어요" : "목록에서 제거했어요", "info");
   };
@@ -325,10 +325,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     pendingDeleteRef.current = setTimeout(async () => {
       pendingDeleteRef.current = null;
       setDeleting(true);
-      await fetch("/api/ratings", {
+      await apiFetch("/api/ratings", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ albumId: album.id, userId: profile.id }),
+        body: JSON.stringify({ albumId: album.id }),
       });
       albumCache.delete(album.id);
       const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
@@ -351,12 +351,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     }
     setSaving(true);
 
-    const res = await fetch("/api/ratings", {
+    const res = await apiFetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         albumId: album.id,
-        userId: profile.id,
         score: myScore,
         one_line_review: myReview || null,
       }),
@@ -373,10 +372,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     }
     // 평점 저장 시 찜 자동 해제
     if (isWatchlisted) {
-      fetch("/api/watchlist", {
+      apiFetch("/api/watchlist", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: profile.id, albumId: album.id }),
+        body: JSON.stringify({ albumId: album.id }),
       });
       setIsWatchlisted(false);
     }
@@ -1151,7 +1150,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
       {editing && (
         <AlbumEditModal
-          userId={profile?.id}
           album={{
             id: album.id,
             title: data.title,

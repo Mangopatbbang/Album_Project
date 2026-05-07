@@ -4,8 +4,7 @@ import { validateAdmin } from "@/lib/validateAdmin";
 
 // 발매일 비교용 전용 엔드포인트 — release_date 필드 포함
 export async function GET(req: NextRequest) {
-  const uid = req.headers.get("x-user-id");
-  if (!(await validateAdmin(uid))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const scope = new URL(req.url).searchParams.get("scope") ?? "2026";
 
   let query = supabaseServer

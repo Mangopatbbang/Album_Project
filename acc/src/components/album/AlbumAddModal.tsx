@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
+import { apiFetch } from "@/lib/apiFetch";
 
 const GENRES = [
   "Hip-Hop", "R&B", "Pop", "Rock",
@@ -259,7 +260,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     setSaving(true);
     setError("");
 
-    const res = await fetch("/api/albums", {
+    const res = await apiFetch("/api/albums", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -272,7 +273,6 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
         spotify_id: spotifyId || null,
-        added_by: profile?.id ?? null,
       }),
     });
 
