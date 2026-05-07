@@ -86,6 +86,18 @@ export default function StoryCard({
           padding: "56px 32px 68px",
         }}
       >
+        {/* 상단: ACHA (좌) / 닉네임 (우) */}
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.22)", letterSpacing: "0.18em", fontFamily: "Georgia, 'Times New Roman', serif" }}>
+            ACHA
+          </span>
+          {userName && (
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", letterSpacing: "0.02em" }}>
+              {userName}
+            </span>
+          )}
+        </div>
+
         {/* 점수 + 한줄평 */}
         <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
@@ -110,7 +122,7 @@ export default function StoryCard({
             <p
               style={{
                 flex: 1,
-                margin: "10px 0 0",
+                margin: "52px 0 0",
                 fontSize: 12,
                 fontStyle: "italic",
                 color: "rgba(255,255,255,0.62)",
@@ -229,11 +241,6 @@ export default function StoryCard({
             아차청음사
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {userName && (
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", letterSpacing: "0.02em" }}>
-                {userName}
-              </span>
-            )}
             {spotifyId && (
               <div style={{ display: "flex", alignItems: "center", gap: 3, color: "rgba(255,255,255,0.22)" }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
