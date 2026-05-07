@@ -493,7 +493,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               opacity: 0.18,
             }} />
           )}
-          <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 20 }} className="px-5 pb-6 pt-2 sm:px-8">
+          <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 20, padding: "8px 20px 24px" }}>
           {/* 커버 */}
           <div
             style={{
@@ -502,8 +502,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               borderRadius: 8,
               overflow: "hidden",
               border: "1px solid var(--border)",
+              width: 96,
+              height: 96,
             }}
-            className="w-[88px] h-[88px] sm:w-[120px] sm:h-[120px]"
           >
             {data.cover_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -516,13 +517,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           </div>
 
           {/* 앨범 정보 */}
-          {/* 모바일: paddingRight으로 ✕ 버튼 겹침 방지. 데스크탑: pr-0 */}
-          <div style={{ flex: 1, minWidth: 0 }} className="pr-7 sm:pr-11">
-            {/* 데스크탑: 제목/아티스트 왼쪽 + 버튼 오른쪽 (space-between) */}
-            {/* 모바일: 제목/아티스트 위, 버튼 아래 (flex-col) */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-2">
-              <div className="sm:flex-1 sm:min-w-0">
-                <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }} className="text-base sm:text-xl">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2, fontSize: 17 }}>
                   {data.title}
                 </p>
                 <p style={{ color: "var(--text-sub)", fontSize: 14, marginTop: 4 }}>
@@ -566,7 +564,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               </div>
 
               {/* 액션 버튼: 데스크탑 오른쪽, 모바일 아래 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} className="mt-2 sm:mt-0">
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 {profile && !ratings.find((r) => r.user_id === profile.id) && (
                   <button
                     onClick={handleToggleWatchlist}
