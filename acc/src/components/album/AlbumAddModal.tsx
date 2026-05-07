@@ -318,16 +318,15 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
         zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 16,
       }}
-      className="p-4 sm:p-6"
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 720, maxHeight: "90vh",
         overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
-      }}
-      className="p-6 sm:p-10"
-      >
+        padding: 32,
+      }}>
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>음반 입고</p>
@@ -463,8 +462,8 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               style={{
                 position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
                 zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
+                padding: 16,
               }}
-              className="p-3 sm:p-6"
             >
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -472,9 +471,8 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
                   borderRadius: 14, width: "100%", maxWidth: 600, maxHeight: "80vh",
                   overflowY: "auto", display: "flex", flexDirection: "column", gap: 16,
-                }}
-                className="p-5 sm:p-7"
-              >
+                  padding: 24,
+                }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>검색 결과 전체 ({candidates.length}개)</p>
                   <button onClick={() => setShowCandidatePopup(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>

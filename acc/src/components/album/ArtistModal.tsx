@@ -51,14 +51,13 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center p-3 sm:p-4"
-      style={{ zIndex: 110, backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+      style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 12, zIndex: 110, backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); }}
     >
       <div
-        className="rounded-xl overflow-hidden flex flex-col"
         style={{
+          borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column",
           backgroundColor: "var(--bg-card)",
           border: "1px solid var(--border)",
           width: "min(960px, 100%)",

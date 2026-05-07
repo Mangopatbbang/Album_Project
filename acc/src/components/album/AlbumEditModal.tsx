@@ -253,16 +253,15 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
         zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 16,
       }}
-      className="p-3 sm:p-6"
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "90vh",
         overflowY: "auto", display: "flex", flexDirection: "column", gap: 20,
-      }}
-      className="p-5 sm:p-8"
-      >
+        padding: 28,
+      }}>
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>앨범 수정</p>
@@ -413,14 +412,11 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
           {showCandidatePopup && (
             <div
               onClick={() => setShowCandidatePopup(false)}
-              style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}
-            className="p-3 sm:p-6"
+              style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 600, maxHeight: "80vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}
-                className="p-5 sm:p-7"
-              >
+                style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, width: "100%", maxWidth: 600, maxHeight: "80vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 16, padding: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>검색 결과 전체 ({candidates.length}개)</p>
                   <button onClick={() => setShowCandidatePopup(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
