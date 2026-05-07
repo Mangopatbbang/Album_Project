@@ -86,24 +86,46 @@ export default function StoryCard({
           padding: "56px 32px 68px",
         }}
       >
-        {/* 점수 — 좌측 정렬 */}
-        <div style={{ width: "100%", display: "flex", alignItems: "baseline", gap: 5 }}>
-          <span
-            style={{
-              fontSize: 72,
-              fontWeight: 900,
-              lineHeight: 1,
-              color,
-              letterSpacing: "-0.05em",
-              textShadow:
-                score >= 7 ? `0 0 28px ${color}99, 0 0 10px ${color}55` : "none",
-            }}
-          >
-            {score}
-          </span>
-          <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
-            /8
-          </span>
+        {/* 점수 + 한줄평 */}
+        <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
+            <span
+              style={{
+                fontSize: 72,
+                fontWeight: 900,
+                lineHeight: 1,
+                color,
+                letterSpacing: "-0.05em",
+                textShadow:
+                  score >= 7 ? `0 0 28px ${color}99, 0 0 10px ${color}55` : "none",
+              }}
+            >
+              {score}
+            </span>
+            <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
+              /8
+            </span>
+          </div>
+          {review && (
+            <p
+              style={{
+                flex: 1,
+                margin: "10px 0 0",
+                fontSize: 12,
+                fontStyle: "italic",
+                color: "rgba(255,255,255,0.62)",
+                lineHeight: 1.6,
+                letterSpacing: "-0.01em",
+                wordBreak: "break-word",
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              &ldquo;{review}&rdquo;
+            </p>
+          )}
         </div>
 
         {/* 앨범 커버 — 중앙, 크게 */}
@@ -193,24 +215,6 @@ export default function StoryCard({
 
         {/* 여백 */}
         <div style={{ flex: 1 }} />
-
-        {/* 리뷰 */}
-        {review && (
-          <p
-            style={{
-              fontSize: 13,
-              fontStyle: "italic",
-              color: "rgba(255,255,255,0.75)",
-              lineHeight: 1.65,
-              letterSpacing: "-0.01em",
-              marginBottom: 14,
-              textAlign: "center",
-              wordBreak: "break-word",
-            }}
-          >
-            &ldquo;{review}&rdquo;
-          </p>
-        )}
 
         {/* 하단 워터마크 */}
         <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
