@@ -131,7 +131,7 @@ export default function SplashScreen() {
         zIndex: 9999,
         perspective: "900px",
         perspectiveOrigin: "50% 50%",
-        pointerEvents: opening ? "none" : "all",
+        pointerEvents: "none",
       }}
     >
       <TempleDoor side="left" opening={opening} />
