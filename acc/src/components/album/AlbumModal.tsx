@@ -558,6 +558,17 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                 </p>
                 <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
+                  {data.soundcloud_url && (
+                    <a
+                      href={data.soundcloud_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none", color: "rgba(255,85,0,0.7)", fontSize: 11, fontWeight: 600 }}
+                      className="hover:!text-[#f50] transition-colors"
+                    >
+                      SoundCloud
+                    </a>
+                  )}
                   <AppleMusicLink artist={data.artist} title={data.title} />
                   <YoutubeMusicLink artist={data.artist} title={data.title} />
                 </div>

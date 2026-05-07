@@ -84,7 +84,7 @@ export async function GET(
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, region, cover_url, spotify_id, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks)")
+    .select("id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks)")
     .eq("id", id)
     .single();
 

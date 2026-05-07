@@ -258,37 +258,43 @@ export default async function ProfilePage({
       </div>
 
       {/* ── 명반전 (상단 강조) ── */}
-      {hallOfFame.length > 0 && (
+      <div style={{
+        borderRadius: 12,
+        marginBottom: 16,
+        overflow: "hidden",
+        border: "1px solid var(--border)",
+      }}>
+        {/* 헤더 배너 */}
         <div style={{
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          border: "1px solid var(--border)",
+          background: "linear-gradient(135deg, rgba(232,213,163,0.12) 0%, rgba(232,213,163,0.04) 100%)",
+          borderBottom: "1px solid var(--border)",
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}>
-          {/* 헤더 배너 */}
-          <div style={{
-            background: "linear-gradient(135deg, rgba(232,213,163,0.12) 0%, rgba(232,213,163,0.04) 100%)",
-            borderBottom: "1px solid var(--border)",
-            padding: "14px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "var(--accent)", fontSize: 16 }}>★</span>
-              <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>명반전</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ color: "var(--accent)", fontSize: 16 }}>★</span>
+            <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>명반전</span>
+            {hallOfFame.length > 0 && (
               <span style={{ color: "var(--text-muted)", fontSize: 12 }}>8점 · {hallOfFame.length}장</span>
-            </div>
+            )}
           </div>
-          <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
+        </div>
+        <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
+          {hallOfFame.length > 0 ? (
             <HallOfFameSection
               albums={hallOfFame.map((r) => ({ ...r.albums!, score: r.score }))}
               count={hallOfFame.length}
               inline
             />
-          </div>
+          ) : (
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "8px 0" }}>
+              아직 8점을 준 앨범이 없어요
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── 점수 분포 + 청음 캘린더 ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

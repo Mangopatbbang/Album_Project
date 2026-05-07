@@ -344,6 +344,7 @@ return (
               key={s}
               onClick={() => handleScoreFilter(s)}
               style={{
+                width: 36, height: 36,
                 borderRadius: 6,
                 border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
                 backgroundColor: myScore === s ? "var(--accent)" : "var(--bg-card)",
@@ -352,7 +353,6 @@ return (
                 fontWeight: myScore === s ? 700 : 400,
                 cursor: "pointer",
               }}
-              className="w-[34px] h-[34px] max-sm:w-11 max-sm:h-11"
             >
               {s}
             </button>

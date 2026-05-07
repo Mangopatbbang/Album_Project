@@ -142,7 +142,7 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("albums")
-      .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, region, ratings(user_id, score)")
+      .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, soundcloud_url, region, ratings(user_id, score)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
     result.push(...(data as RawAlbum[]));

@@ -122,7 +122,21 @@ export default function AlbumCard({ album, onClick }: Props) {
               </span>
             ))}
           </div>
-          <SpotifyAttribution spotifyId={album.spotify_id} />
+          {album.soundcloud_url ? (
+            <a
+              href={album.soundcloud_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="SoundCloud에서 보기"
+              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", color: "rgba(255,85,0,0.55)", flexShrink: 0, transition: "color 0.15s", fontSize: 10, fontWeight: 800, letterSpacing: "0.03em" }}
+              className="hover:!text-[#f50]"
+            >
+              SC
+            </a>
+          ) : (
+            <SpotifyAttribution spotifyId={album.spotify_id} />
+          )}
         </div>
       </div>
     </button>

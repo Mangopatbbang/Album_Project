@@ -16,6 +16,7 @@ export type Album = {
   genre?: string;
   tracklist?: string;
   spotify_id?: string;
+  soundcloud_url?: string | null;
   cover_url?: string;
 };
 

@@ -116,7 +116,7 @@ export default async function HomePage() {
           >
             아차청음사
           </h1>
-          <p style={{ color: "var(--text-sub)", fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 8 }} className="text-3xl sm:text-[48px]">
+          <p style={{ color: "var(--text-sub)", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 8 }} className="text-3xl sm:text-[48px]">
             <CountUp target={totalCount} />
           </p>
           <MobileLoginHint />

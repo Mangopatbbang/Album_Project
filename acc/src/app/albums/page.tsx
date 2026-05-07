@@ -22,7 +22,7 @@ const containerStyle = {
 async function getInitialAlbums() {
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, use_artist_variant, year, genre, cover_url, spotify_id, created_at, ratings(user_id, score)")
+    .select("id, title, artist, use_artist_variant, year, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)")
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(0, 30);
