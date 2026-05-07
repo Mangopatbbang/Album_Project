@@ -29,7 +29,11 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const handleOpen = async () => {
@@ -134,7 +138,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                 ))}
                 <button
                   onClick={() => setOpen(false)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, padding: 4, lineHeight: 1 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, padding: 10, margin: -6, lineHeight: 1 }}
                 >
                   ✕
                 </button>

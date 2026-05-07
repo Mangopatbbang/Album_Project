@@ -100,22 +100,22 @@ export default function StoryCardPreviewModal({
         overflowY: "auto",
       }}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
-      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) onClose(); mouseDownOnBackdrop.current = false; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current && !capturing) onClose(); mouseDownOnBackdrop.current = false; }}
     >
       {/* 닫기 */}
       <button
         onClick={onClose}
         style={{
           position: "fixed",
-          top: 16,
-          right: 18,
+          top: 10,
+          right: 12,
           color: "rgba(255,255,255,0.55)",
           background: "none",
           border: "none",
           fontSize: 20,
           cursor: "pointer",
           lineHeight: 1,
-          padding: "4px 6px",
+          padding: 10,
           zIndex: 201,
         }}
       >

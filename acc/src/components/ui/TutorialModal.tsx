@@ -76,6 +76,12 @@ export default function TutorialModal() {
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   const dismiss = () => {
     localStorage.setItem(STORAGE_KEY, "1");
     setOpen(false);
@@ -108,7 +114,7 @@ export default function TutorialModal() {
             <p style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, letterSpacing: "0.08em", margin: "0 0 2px 0" }}>GUIDE</p>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", margin: 0 }}>아차청음사 이용 안내</h1>
           </div>
-          <button onClick={dismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 4 }}>
+          <button onClick={dismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 10, margin: -6 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>

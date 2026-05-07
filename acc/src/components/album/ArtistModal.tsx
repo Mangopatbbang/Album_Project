@@ -70,7 +70,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
         <div className="flex justify-end px-6 pt-5 shrink-0">
           <button
             onClick={handleClose}
-            style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
+            style={{ color: "var(--text-muted)", fontSize: 20, lineHeight: 1, background: "none", border: "none", cursor: "pointer", padding: 10, margin: -6 }}
             className="hover:opacity-70 transition-opacity"
           >
             ✕
