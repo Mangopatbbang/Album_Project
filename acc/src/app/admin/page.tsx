@@ -61,6 +61,7 @@ type LogRow = {
 
 export default function AdminPage() {
   const { profile, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<"overview" | "albums" | "artists" | "migration">("overview");
 
   // --- 활동 로그 ---
   const [logs, setLogs] = useState<LogRow[] | null>(null);
@@ -503,7 +504,7 @@ export default function AdminPage() {
 
   async function applyItunesDate(m: ItunesMismatch) {
     const year = m.itunesDate.slice(0, 4);
-    const res = await fetch(`/api/albums/${m.id}`, {
+    const res = await apiFetch(`/api/albums/${m.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ release_date: m.itunesDate, year }),
@@ -615,7 +616,7 @@ export default function AdminPage() {
     setPreview(null);
 
     const tracklist = tracks.length > 0 ? tracks.join("; ") : undefined;
-    const res = await fetch(`/api/albums/${albumId}`, {
+    const res = await apiFetch(`/api/albums/${albumId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_id: c.spotify_id, cover_url: c.cover_url, ...(tracklist ? { tracklist } : {}) }),
@@ -653,13 +654,17 @@ export default function AdminPage() {
     </div>
   );
 
+  const card: React.CSSProperties = { backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 };
+  const secTitle: React.CSSProperties = { color: "var(--text)", fontWeight: 700, fontSize: 15, marginBottom: 4 };
+  const secDesc: React.CSSProperties = { color: "var(--text-muted)", fontSize: 12, marginBottom: 20, lineHeight: 1.6 };
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "40px 24px" }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
-          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>
-            Admin
-          </p>
+
+        {/* ── 헤더 ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>Admin</p>
           <button
             onClick={openTutorial}
             style={{
@@ -676,10 +681,38 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* ── 통계 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>DB 현황</p>
+        {/* ── 탭 바 ── */}
+        <div style={{ display: "flex", gap: 2, marginBottom: 28, backgroundColor: "var(--bg-elevated)", borderRadius: 10, padding: 4 }}>
+          {([
+            { key: "overview", label: "현황" },
+            { key: "albums", label: "앨범 교정" },
+            { key: "artists", label: "아티스트" },
+            { key: "migration", label: "마이그레이션" },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer",
+                fontWeight: activeTab === tab.key ? 700 : 500, fontSize: 13,
+                backgroundColor: activeTab === tab.key ? "var(--bg-card)" : "transparent",
+                color: activeTab === tab.key ? "var(--text)" : "var(--text-muted)",
+                transition: "all 0.15s",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ════ 현황 탭 ════ */}
+        {activeTab === "overview" && (<>
+
+          {/* DB 통계 */}
+          <div style={card}>
+            <p style={secTitle}>DB 현황</p>
+            <p style={secDesc}>앨범 데이터 완성도를 확인합니다. 미완료 항목 클릭 시 해당 앨범 목록이 표시됩니다.</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
             <button
               onClick={loadStats}
               disabled={statsLoading}
@@ -691,7 +724,7 @@ export default function AdminPage() {
             >
               {statsLoading ? "로딩 중..." : "새로고침"}
             </button>
-          </div>
+            </div>
           {stats ? (
             <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -746,7 +779,7 @@ export default function AdminPage() {
                 ) : statsAlbums.map((a) => (
                   <div
                     key={a.id}
-                    onClick={() => { selectAlbum(a); setSearchQuery(a.title); setSearchArtist(a.artist); }}
+                    onClick={() => { selectAlbum(a); setSearchQuery(a.title); setSearchArtist(a.artist); setActiveTab("albums"); }}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", transition: "background 0.1s" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-elevated)")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -771,845 +804,420 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── 마이그레이션 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-            SPOTIFY 마이그레이션
-          </p>
-
-          {remaining !== null && (
-            <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>
-              남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{remaining}</span>개
-              &nbsp;·&nbsp; 성공: <span style={{ color: "var(--accent)" }}>{totalSuccess}</span>
-              &nbsp;·&nbsp; 미매칭: <span style={{ color: "var(--text-muted)" }}>{totalNotFound}</span>
-            </p>
-          )}
-
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <button
-              onClick={runMigration}
-              disabled={running}
-              style={{
-                padding: "8px 20px", borderRadius: 6, border: "none", cursor: running ? "not-allowed" : "pointer",
-                backgroundColor: running ? "var(--bg-elevated)" : "var(--accent)",
-                color: running ? "var(--text-muted)" : "var(--bg)",
-                fontWeight: 600, fontSize: 13,
-              }}
-            >
-              {running ? "실행 중..." : "▶ 시작"}
-            </button>
-            {running && (
-              <button
-                onClick={() => { stopRef.current = true; }}
-                style={{
-                  padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
-                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                  color: "var(--text-muted)", fontWeight: 600, fontSize: 13,
-                }}
-              >
-                ■ 중지
-              </button>
-            )}
-          </div>
-
-          {migLog.length > 0 && (
-            <div style={{
-              backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px",
-              maxHeight: 240, overflowY: "auto", fontSize: 12, color: "var(--text-muted)",
-              fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2,
-            }}>
-              {migLog.map((line, i) => (
-                <span key={i}>{line}</span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── 트랙리스트 마이그레이션 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-            트랙리스트 채우기 (spotify_id 있는 앨범 대상)
-          </p>
-
-          {trackRemaining !== null && (
-            <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>
-              남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{trackRemaining}</span>개
-            </p>
-          )}
-
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            <button
-              onClick={runTracklistMigration}
-              disabled={trackRunning}
-              style={{
-                padding: "8px 20px", borderRadius: 6, border: "none", cursor: trackRunning ? "not-allowed" : "pointer",
-                backgroundColor: trackRunning ? "var(--bg-elevated)" : "var(--accent)",
-                color: trackRunning ? "var(--text-muted)" : "var(--bg)",
-                fontWeight: 600, fontSize: 13,
-              }}
-            >
-              {trackRunning ? "실행 중..." : "▶ 시작"}
-            </button>
-            {trackRunning && (
-              <button
-                onClick={() => { trackStopRef.current = true; }}
-                style={{
-                  padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
-                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                  color: "var(--text-muted)", fontWeight: 600, fontSize: 13,
-                }}
-              >
-                ■ 중지
-              </button>
-            )}
-          </div>
-
-          {trackLog.length > 0 && (
-            <div style={{
-              backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px",
-              maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)",
-              fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2,
-            }}>
-              {trackLog.map((line, i) => <span key={i}>{line}</span>)}
-            </div>
-          )}
-        </div>
-
-        {/* ── 발매일 일괄 채우기 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-            발매일 채우기 (spotify_id 있는 앨범 전체 대상)
-          </p>
-          {dateRemaining !== null && (
-            <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>
-              남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{dateRemaining}</span>개
-            </p>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <label style={{ color: "var(--text-muted)", fontSize: 12 }}>시작 배치 번호</label>
-            <input
-              type="number"
-              min={1}
-              value={dateStartBatch}
-              onChange={(e) => setDateStartBatch(Math.max(1, Number(e.target.value)))}
-              disabled={dateRunning}
-              style={{
-                width: 72, padding: "4px 8px", borderRadius: 6,
-                border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)",
-                color: "var(--text)", fontSize: 13, textAlign: "center",
-              }}
-            />
-            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
-              → offset {(dateStartBatch - 1) * 30}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-            <button
-              onClick={() => runDateBackfill(false)}
-              disabled={dateRunning}
-              style={{
-                padding: "8px 20px", borderRadius: 6, border: "none", cursor: dateRunning ? "not-allowed" : "pointer",
-                backgroundColor: dateRunning ? "var(--bg-elevated)" : "var(--accent)",
-                color: dateRunning ? "var(--text-muted)" : "var(--bg)",
-                fontWeight: 600, fontSize: 13,
-              }}
-            >
-              {dateRunning ? "실행 중..." : "▶ 빈 항목만 채우기"}
-            </button>
-            <button
-              onClick={() => { if (confirm("모든 앨범의 발매일을 Spotify에서 강제로 덮어씁니다. 계속할까요?")) runDateBackfill(true); }}
-              disabled={dateRunning}
-              style={{
-                padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
-                cursor: dateRunning ? "not-allowed" : "pointer",
-                backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
-                fontWeight: 600, fontSize: 13,
-              }}
-            >
-              ⚡ 전체 강제 갱신
-            </button>
-            {dateRunning && (
-              <button
-                onClick={() => { dateStopRef.current = true; }}
-                style={{
-                  padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)",
-                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                  color: "var(--text-muted)", fontWeight: 600, fontSize: 13,
-                }}
-              >
-                ■ 중지
-              </button>
-            )}
-          </div>
-          {dateLog.length > 0 && (
-            <div style={{
-              backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px",
-              maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)",
-              fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2,
-            }}>
-              {dateLog.map((line, i) => <span key={i}>{line}</span>)}
-            </div>
-          )}
-        </div>
-
-        {/* ── iTunes 발매일 비교 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginBottom: 24 }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-            iTunes 발매일 비교 검증
-          </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <select
-              value={itunesScope}
-              onChange={(e) => setItunesScope(e.target.value as "2026" | "all")}
-              disabled={itunesRunning}
-              style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
-            >
-              <option value="2026">2026년 앨범만 (빠름)</option>
-              <option value="all">전체 앨범 (느림)</option>
-            </select>
-            {!itunesRunning ? (
-              <button onClick={runItunesCheck} style={{ padding: "7px 18px", borderRadius: 6, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13 }}>
-                ▶ 조회 시작
-              </button>
-            ) : (
-              <button onClick={() => { itunesStopRef.current = true; }} style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>
-                ■ 중지
-              </button>
-            )}
-            {itunesRunning && (
-              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                {itunesProgress.current} / {itunesProgress.total} 처리 중...
-              </span>
-            )}
-          </div>
-
-          {itunesMismatches.length > 0 && (
-            <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", gap: 0, backgroundColor: "var(--bg-elevated)", padding: "8px 14px", borderBottom: "1px solid var(--border)" }}>
-                {["앨범", "아티스트", "현재 (DB)", "iTunes", ""].map((h, i) => (
-                  <span key={i} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" }}>{h}</span>
-                ))}
-              </div>
-              <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                {itunesMismatches.map((m) => (
-                  <div key={m.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", gap: 0, padding: "10px 14px", borderBottom: "1px solid var(--border)", backgroundColor: m.fixed ? "rgba(100,180,100,0.06)" : "transparent", alignItems: "center" }}>
-                    <span style={{ color: m.fixed ? "var(--text-muted)" : "var(--text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</span>
-                    <span style={{ color: "var(--text-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.artist}</span>
-                    <span style={{ color: "#e06060", fontSize: 12, fontFamily: "monospace" }}>{m.dbDate}</span>
-                    <span style={{ color: "#60c060", fontSize: 12, fontFamily: "monospace" }}>{m.itunesDate}</span>
-                    {m.fixed ? (
-                      <span style={{ color: "#60c060", fontSize: 11 }}>✓ 수정됨</span>
-                    ) : (
-                      <button onClick={() => applyItunesDate(m)} style={{ padding: "3px 10px", borderRadius: 4, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 11 }}>
-                        적용
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div style={{ padding: "10px 14px", backgroundColor: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                  불일치 {itunesMismatches.length}개 발견 · 미수정 {itunesMismatches.filter(m => !m.fixed).length}개
-                </span>
-                {itunesMismatches.some(m => !m.fixed) && (
-                  <button
-                    onClick={() => { if (confirm("불일치 항목을 전부 iTunes 날짜로 수정할까요?")) itunesMismatches.filter(m => !m.fixed).forEach(applyItunesDate); }}
-                    style={{ marginLeft: 16, padding: "3px 12px", borderRadius: 4, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 11, fontWeight: 600 }}
-                  >
-                    전체 적용
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {!itunesRunning && itunesProgress.total > 0 && itunesMismatches.length === 0 && (
-            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>✓ 불일치 항목 없음</p>
-          )}
-        </div>
-
-        {/* ── 커버 교정 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px" }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-            커버 / 정보 교정
-          </p>
-
-          {/* 앨범 목록 로드 */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-            <select
-              value={albumFilter}
-              onChange={(e) => setAlbumFilter(e.target.value as "no_cover" | "no_spotify" | "all")}
-              style={{
-                padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)",
-                backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12,
-              }}
-            >
-              <option value="no_cover">커버 없는 앨범</option>
-              <option value="no_spotify">Spotify 미매칭</option>
-              <option value="all">전체</option>
-            </select>
-            <button
-              onClick={loadAlbums}
-              style={{
-                padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border)",
-                cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                color: "var(--text-sub)", fontSize: 12, fontWeight: 600,
-              }}
-            >
-              목록 불러오기
-            </button>
-          </div>
-
-          {/* 앨범 목록 */}
-          {albumsLoaded && albums.length > 0 && (
-            <div style={{
-              border: "1px solid var(--border)", borderRadius: 8, marginBottom: 16,
-              maxHeight: 200, overflowY: "auto",
-            }}>
-              {albums.map((a) => (
-                <div
-                  key={a.id}
-                  onClick={() => selectAlbum(a)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "8px 14px",
-                    cursor: "pointer", borderBottom: "1px solid var(--border)",
-                    backgroundColor: albumId === a.id ? "var(--bg-elevated)" : "transparent",
-                  }}
-                >
-                  {a.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3 }} />
-                  ) : (
-                    <div style={{ width: 32, height: 32, backgroundColor: "var(--bg-elevated)", borderRadius: 3, border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 12 }}>♪</span>
-                    </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{a.artist}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {albumsLoaded && albums.length === 0 && (
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16 }}>해당 조건의 앨범 없음</p>
-          )}
-
-          {/* 직접 ID 입력 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 8, marginBottom: 12 }}>
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") searchSpotify(); }}
-              placeholder="앨범 제목 (비워도 됨)"
-              style={{
-                padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)",
-                backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 13,
-              }}
-            />
-            <input
-              value={searchArtist}
-              onChange={(e) => setSearchArtist(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") searchSpotify(); }}
-              placeholder="아티스트"
-              style={{
-                padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)",
-                backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 13,
-              }}
-            />
-            <button
-              onClick={searchSpotify}
-              disabled={searching || (!searchQuery && !searchArtist)}
-              style={{
-                padding: "8px 14px", borderRadius: 6, border: "none",
-                cursor: searching || !searchQuery ? "not-allowed" : "pointer",
-                backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13,
-              }}
-            >
-              {searching ? "검색 중..." : "검색"}
-            </button>
-          </div>
-
-          <input
-            value={albumId}
-            onChange={(e) => setAlbumId(e.target.value)}
-            placeholder="앨범 ID (목록에서 선택하거나 직접 입력)"
-            style={{
-              width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)",
-              backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12,
-              marginBottom: 16, boxSizing: "border-box",
-            }}
-          />
-
-          {/* Spotify 검색 결과 */}
-          {candidates.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginBottom: 12 }}>
-              {candidates.map((c) => (
-                <div
-                  key={c.spotify_id}
-                  onClick={() => selectCandidate(c)}
-                  style={{
-                    border: `1px solid ${preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)"}`,
-                    borderRadius: 8, overflow: "hidden",
-                    cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                    transition: "border-color 0.15s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)")}
-                >
-                  {c.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.cover_url} alt={c.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: "100%", aspectRatio: "1", backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span>♪</span>
-                    </div>
-                  )}
-                  <div style={{ padding: "8px" }}>
-                    <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.artist}</p>
-                    <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2 }}>{c.release_date?.slice(0, 4)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 미리보기 패널 */}
-          {preview && (
-            <div style={{
-              border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, borderRadius: 10,
-              backgroundColor: "var(--bg-elevated)", padding: 16,
-              marginBottom: 12, display: "flex", gap: 16,
-            }}>
-              {!albumId && (
-                <div style={{ position: "absolute", background: "#e05050", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 4, marginTop: -28 }}>
-                  ⚠️ 앨범 ID가 없습니다 — 목록에서 앨범을 먼저 선택하세요
-                </div>
-              )}
-              {/* 커버 */}
-              <div style={{ flexShrink: 0 }}>
-                {preview.candidate.cover_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={preview.candidate.cover_url} alt={preview.candidate.name}
-                    style={{ width: 100, height: 100, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
-                ) : (
-                  <div style={{ width: 100, height: 100, borderRadius: 6, backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)" }}>
-                    <span style={{ color: "var(--text-muted)", fontSize: 24 }}>♪</span>
-                  </div>
-                )}
-              </div>
-              {/* 정보 + 트랙리스트 */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14 }}>{preview.candidate.name}</p>
-                <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>{preview.candidate.artist} · {preview.candidate.release_date?.slice(0, 4)}</p>
-                <div style={{ marginTop: 10 }}>
-                  {preview.loading ? (
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>트랙리스트 불러오는 중...</p>
-                  ) : preview.tracks.length > 0 ? (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 12px" }}>
-                      {preview.tracks.map((t, i) => (
-                        <span key={i} style={{ color: "var(--text-sub)", fontSize: 11 }}>
-                          <span style={{ color: "var(--text-muted)", marginRight: 4 }}>{i + 1}</span>{t}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ color: "var(--text-muted)", fontSize: 11 }}>트랙리스트 없음</p>
-                  )}
-                </div>
-                {/* 적용 대상 DB 앨범 */}
-                <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, backgroundColor: "var(--bg)" }}>
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>적용 대상 DB 앨범</p>
-                  {matchedAlbum ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {matchedAlbum.cover_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={matchedAlbum.cover_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", border: "1px solid var(--border)" }} />
-                      ) : (
-                        <div style={{ width: 36, height: 36, borderRadius: 4, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <span style={{ fontSize: 14 }}>♪</span>
-                        </div>
-                      )}
-                      <div>
-                        <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}>{matchedAlbum.title}</p>
-                        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{matchedAlbum.artist} · ID: {matchedAlbum.id}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p style={{ color: "#e05050", fontSize: 11 }}>⚠️ 위 목록에서 앨범을 먼저 선택하세요 (앨범 ID ≠ Spotify ID)</p>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                  <button
-                    onClick={() => applyCandidate(preview.candidate, preview.tracks)}
-                    disabled={preview.loading || !albumId}
-                    style={{
-                      padding: "6px 16px", borderRadius: 6, border: "none",
-                      backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13,
-                      cursor: (preview.loading || !albumId) ? "not-allowed" : "pointer",
-                      opacity: (preview.loading || !albumId) ? 0.4 : 1,
-                    }}
-                  >
-                    적용
-                  </button>
-                  <button
-                    onClick={() => setPreview(null)}
-                    style={{
-                      padding: "6px 12px", borderRadius: 6,
-                      border: "1px solid var(--border)", backgroundColor: "transparent",
-                      color: "var(--text-muted)", fontSize: 13, cursor: "pointer",
-                    }}
-                  >
-                    취소
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {fixMsg && (
-            <p style={{ color: fixMsg.startsWith("✅") ? "var(--accent)" : fixMsg.startsWith("⚠️") ? "#df9e30" : "var(--text-muted)", fontSize: 13, marginTop: 8 }}>
-              {fixMsg}
-            </p>
-          )}
-        </div>
-
-        {/* ── 아티스트 별칭 관리 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginTop: 24 }}>
-        <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 20 }}>아티스트 별칭 관리</p>
-
-        {/* 새 별칭 추가 */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
-          <div>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Spotify 정식명</p>
-            <input
-              value={newSpotifyName}
-              onChange={(e) => setNewSpotifyName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }}
-              placeholder="예: IU"
-              style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220 }}
-            />
-          </div>
-          <div>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>한글/별칭</p>
-            <input
-              value={newVariantName}
-              onChange={(e) => setNewVariantName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }}
-              placeholder="예: 아이유"
-              style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 180 }}
-            />
-          </div>
-          <button
-            onClick={handleAddAlias}
-            disabled={!newSpotifyName.trim() || !newVariantName.trim()}
-            style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 6, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!newSpotifyName.trim() || !newVariantName.trim()) ? 0.4 : 1 }}
-          >
-            추가/저장
-          </button>
-          <button
-            onClick={loadAliases}
-            disabled={aliasesLoading}
-            style={{ backgroundColor: listMode === "aliases" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "aliases" ? "var(--accent)" : "var(--border)"}`, color: listMode === "aliases" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
-          >
-            {aliasesLoading ? "로딩..." : "alias 전체목록"}
-          </button>
-          <button
-            onClick={loadUnaliased}
-            disabled={unaliasedLoading}
-            style={{ backgroundColor: listMode === "unaliased" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "unaliased" ? "var(--accent)" : "var(--border)"}`, color: listMode === "unaliased" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}
-          >
-            {unaliasedLoading ? "로딩..." : "alias 없는 아티스트"}
-          </button>
-        </div>
-
-        {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
-
-        {/* alias 전체 목록 */}
-        {listMode === "aliases" && aliases.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 600, overflowY: "auto" }}>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>총 {aliases.length}개</p>
-            {aliases.map((a) => {
-              const st = variantStats[a.spotify_name];
-              const total = st?.total ?? 0;
-              const using = st?.using ?? 0;
-              const allOn = total > 0 && using === total;
-              const allOff = total === 0 || using === 0;
-              const mixed = !allOn && !allOff;
-              return (
-              <div key={a.spotify_name} style={{ border: "1px solid var(--border)", borderRadius: 6 }}>
-                {/* 메인 행 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", minHeight: 36 }}>
-                  {editingAlias === a.spotify_name ? (
-                    <>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, width: 180 }}>{a.spotify_name}</span>
-                      <input
-                        value={editVariant}
-                        onChange={(e) => setEditVariant(e.target.value)}
-                        style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--accent)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, flex: 1, minWidth: 0 }}
-                      />
-                      <button onClick={handleSaveEditAlias} style={{ flexShrink: 0, backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>저장</button>
-                      <button onClick={() => { setEditingAlias(null); setEditVariant(""); }} style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 11 }}>취소</button>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, width: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.spotify_name}</span>
-                      <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.variant_name}</span>
-                      {/* 표시 이름 선택 */}
-                      <div style={{ display: "flex", gap: 3, flexShrink: 0 }} title={`앨범 ${total}개 중 ${using}개 별칭 표시 중`}>
-                        <button
-                          onClick={() => handleSetVariant(a.spotify_name, false)}
-                          style={{
-                            flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap",
-                            border: `1px solid ${allOff && total > 0 ? "var(--accent)" : "var(--border)"}`,
-                            backgroundColor: allOff && total > 0 ? "transparent" : "transparent",
-                            color: allOff && total > 0 ? "var(--text-sub)" : "var(--text-muted)",
-                            fontWeight: allOff && total > 0 ? 700 : 400,
-                          }}
-                        >
-                          원래이름
-                        </button>
-                        <button
-                          onClick={() => handleSetVariant(a.spotify_name, true)}
-                          style={{
-                            flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap",
-                            border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`,
-                            backgroundColor: allOn ? "var(--accent)" : "transparent",
-                            color: allOn ? "var(--bg)" : "var(--text-muted)",
-                          }}
-                        >
-                          별칭{mixed ? ` ${using}/${total}` : ""}
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => toggleSearchAliases(a.spotify_name)}
-                        style={{
-                          flexShrink: 0, background: "none", whiteSpace: "nowrap",
-                          border: `1px solid ${expandedAlias === a.spotify_name ? "var(--accent)" : "var(--border)"}`,
-                          color: expandedAlias === a.spotify_name ? "var(--accent)" : "var(--text-muted)",
-                          borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer",
-                        }}
-                      >
-                        검색alias {expandedAlias === a.spotify_name ? "▲" : "▼"}
-                        {(searchAliasMap[a.spotify_name]?.length ?? 0) > 0 && (
-                          <span style={{ marginLeft: 4, backgroundColor: "var(--accent)", color: "var(--bg)", borderRadius: 10, padding: "0 5px", fontSize: 10 }}>
-                            {searchAliasMap[a.spotify_name].length}
-                          </span>
-                        )}
-                      </button>
-                      <button onClick={() => { setEditingAlias(a.spotify_name); setEditVariant(a.variant_name); }} style={{ flexShrink: 0, background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>수정</button>
-                      <button onClick={() => handleDeleteAlias(a.spotify_name)} style={{ flexShrink: 0, background: "none", border: "none", color: "#e05050", cursor: "pointer", fontSize: 11 }}>삭제</button>
-                    </>
-                  )}
-                </div>
-                {/* 검색 alias 확장 영역 */}
-                {expandedAlias === a.spotify_name && (
-                  <div style={{ padding: "10px 12px 12px", borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-card)" }}>
-                    <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 8 }}>검색 ALIAS (표시 이름 외 추가 검색어)</p>
-                    {searchAliasLoading ? (
-                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>로딩...</p>
-                    ) : (
-                      <>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                          {(searchAliasMap[a.spotify_name] ?? []).length === 0 && (
-                            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>없음</span>
-                          )}
-                          {(searchAliasMap[a.spotify_name] ?? []).map((sa) => (
-                            <span key={sa.id} style={{
-                              display: "inline-flex", alignItems: "center", gap: 4,
-                              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                              borderRadius: 12, padding: "2px 8px 2px 10px", fontSize: 11, color: "var(--text-sub)",
-                            }}>
-                              {sa.alias}
-                              <button
-                                onClick={() => handleDeleteSearchAlias(a.spotify_name, sa.id)}
-                                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input
-                            value={searchAliasInput}
-                            onChange={(e) => setSearchAliasInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter") handleAddSearchAlias(a.spotify_name); }}
-                            placeholder="추가할 검색 alias"
-                            style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }}
-                          />
-                          <button
-                            onClick={() => handleAddSearchAlias(a.spotify_name)}
-                            disabled={!searchAliasInput.trim()}
-                            style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: !searchAliasInput.trim() ? 0.4 : 1 }}
-                          >
-                            추가
-                          </button>
-                        </div>
-                        {searchAliasMsg[a.spotify_name] && (
-                          <p style={{ fontSize: 11, color: "#e05050", marginTop: 4 }}>{searchAliasMsg[a.spotify_name]}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-            })}
-          </div>
-        )}
-
-        {/* alias 없는 아티스트 목록 */}
-        {listMode === "unaliased" && unaliasedArtists.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>총 {unaliasedArtists.length}명 — 클릭하면 Spotify 정식명 자동 입력</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {unaliasedArtists.map((a) => (
-                <button
-                  key={a}
-                  onClick={() => setNewSpotifyName(a)}
-                  style={{
-                    backgroundColor: newSpotifyName === a ? "var(--accent)" : "var(--bg-elevated)",
-                    border: `1px solid ${newSpotifyName === a ? "var(--accent)" : "var(--border)"}`,
-                    color: newSpotifyName === a ? "var(--bg)" : "var(--text-sub)",
-                    borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer",
-                  }}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {listMode === "unaliased" && !unaliasedLoading && unaliasedArtists.length === 0 && (
-          <p style={{ fontSize: 12, color: "var(--accent)", marginTop: 8 }}>✅ 모든 아티스트에 alias가 있습니다</p>
-        )}
-
-        {/* Spotify 정식명 변경 (admin 전용) */}
-        <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-          <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 12, color: "var(--text-sub)" }}>앨범 아티스트 정식명 변경 (admin)</p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-            <div>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>앨범 ID</p>
-              <input
-                value={canonicalAlbumId}
-                onChange={(e) => setCanonicalAlbumId(e.target.value)}
-                placeholder="album UUID"
-                style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 300 }}
-              />
-            </div>
-            <div>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>새 Spotify 정식명</p>
-              <input
-                value={canonicalArtist}
-                onChange={(e) => setCanonicalArtist(e.target.value)}
-                placeholder="정확한 Spotify 아티스트명"
-                style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 220 }}
-              />
-            </div>
-            <button
-              onClick={handleCanonicalChange}
-              disabled={!canonicalAlbumId.trim() || !canonicalArtist.trim()}
-              style={{ backgroundColor: "#c0392b", border: "none", color: "white", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!canonicalAlbumId.trim() || !canonicalArtist.trim()) ? 0.4 : 1 }}
-            >
-              변경
-            </button>
-          </div>
-          {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
-        </div>
-      </div>
-
-        {/* ── 활동 로그 ── */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "28px 32px", marginTop: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>활동 로그</p>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <select
-                value={logsAction}
-                onChange={(e) => setLogsAction(e.target.value)}
-                style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
-              >
-                <option value="">전체</option>
+          {/* 활동 로그 */}
+          <div style={card}>
+            <p style={secTitle}>활동 로그</p>
+            <p style={secDesc}>앨범 등록·수정·삭제와 평점 이력을 확인합니다. 15일 이전 로그는 주기적으로 정리하세요.</p>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
+              <select value={logsAction} onChange={(e) => setLogsAction(e.target.value)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
+                <option value="">전체 액션</option>
                 <option value="album_add">앨범 등록</option>
                 <option value="album_edit">앨범 수정</option>
                 <option value="album_delete">앨범 삭제</option>
                 <option value="rating_set">평점 저장</option>
                 <option value="rating_delete">평점 삭제</option>
               </select>
-              <button
-                onClick={() => loadLogs(logsAction || undefined)}
-                disabled={logsLoading}
-                style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}
-              >
+              <button onClick={() => loadLogs(logsAction || undefined)} disabled={logsLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
                 {logsLoading ? "로딩 중..." : logs === null ? "불러오기" : "새로고침"}
               </button>
-              <button
-                onClick={handleClearLogs}
-                disabled={logsClearLoading}
-                style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsClearLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "#e05050", fontSize: 12, fontWeight: 600 }}
-              >
+              <button onClick={handleClearLogs} disabled={logsClearLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsClearLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "#e05050", fontSize: 12, fontWeight: 600 }}>
                 {logsClearLoading ? "삭제 중..." : "15일 이전 삭제"}
               </button>
             </div>
+            {logs === null ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오기를 눌러 확인하세요</p>
+            ) : logs.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>로그 없음</p>
+            ) : (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+                <div style={{ maxHeight: 480, overflowY: "auto" }}>
+                  {logs.map((log) => {
+                    const actionLabels: Record<string, { label: string; fg: string; bg: string }> = {
+                      album_add:    { label: "앨범 등록", fg: "#4caf50", bg: "rgba(76,175,80,0.12)" },
+                      album_edit:   { label: "앨범 수정", fg: "#2196f3", bg: "rgba(33,150,243,0.12)" },
+                      album_delete: { label: "앨범 삭제", fg: "#e05050", bg: "rgba(224,80,80,0.12)" },
+                      rating_set:   { label: "평점 저장", fg: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+                      rating_delete:{ label: "평점 삭제", fg: "#e07070", bg: "rgba(224,112,112,0.12)" },
+                    };
+                    const actionInfo = actionLabels[log.action] ?? { label: log.action, fg: "#888", bg: "rgba(128,128,128,0.1)" };
+                    const ts = new Date(log.created_at);
+                    const diffMs = Date.now() - ts.getTime();
+                    const diffMin = Math.floor(diffMs / 60000);
+                    const timeStr = diffMin < 1 ? "방금" : diffMin < 60 ? `${diffMin}분 전` : diffMin < 1440 ? `${Math.floor(diffMin / 60)}시간 전` : ts.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <div key={log.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
+                        <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", width: 72, paddingTop: 2 }}>{timeStr}</span>
+                        <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, backgroundColor: actionInfo.bg, color: actionInfo.fg, width: 72, textAlign: "center" }}>{actionInfo.label}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {log.album_title && (
+                            <p style={{ fontSize: 12, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {log.album_title}{log.album_artist && <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>· {log.album_artist}</span>}
+                            </p>
+                          )}
+                          {log.details && Object.keys(log.details).length > 0 && (
+                            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(log.details)}</p>
+                          )}
+                        </div>
+                        <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.user_id ?? "–"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </>)}
+
+        {/* ════ 앨범 교정 탭 ════ */}
+        {activeTab === "albums" && (<>
+
+          {/* 커버 · Spotify 정보 교정 */}
+          <div style={card}>
+            <p style={secTitle}>커버 · Spotify 정보 교정</p>
+            <p style={secDesc}>Spotify에서 앨범을 검색해 커버·트랙리스트·Spotify ID를 직접 연결합니다. 신규 앨범 입고 후 자동 매칭이 안 된 경우 사용하세요.</p>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+              <select value={albumFilter} onChange={(e) => setAlbumFilter(e.target.value as "no_cover" | "no_spotify" | "all")} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
+                <option value="no_cover">커버 없는 앨범</option>
+                <option value="no_spotify">Spotify 미매칭</option>
+                <option value="all">전체 앨범</option>
+              </select>
+              <button onClick={loadAlbums} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
+                목록 불러오기
+              </button>
+            </div>
+
+            {albumsLoaded && albums.length > 0 && (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 8, marginBottom: 16, maxHeight: 200, overflowY: "auto" }}>
+                {albums.map((a) => (
+                  <div key={a.id} onClick={() => selectAlbum(a)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid var(--border)", backgroundColor: albumId === a.id ? "var(--bg-elevated)" : "transparent" }}>
+                    {a.cover_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3 }} />
+                      : <div style={{ width: 32, height: 32, backgroundColor: "var(--bg-elevated)", borderRadius: 3, border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12 }}>♪</span></div>
+                    }
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{a.artist}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {albumsLoaded && albums.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16 }}>해당 조건의 앨범 없음</p>}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 8, marginBottom: 12 }}>
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchSpotify(); }} placeholder="앨범 제목" style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 13 }} />
+              <input value={searchArtist} onChange={(e) => setSearchArtist(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchSpotify(); }} placeholder="아티스트" style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 13 }} />
+              <button onClick={searchSpotify} disabled={searching || (!searchQuery && !searchArtist)} style={{ padding: "8px 14px", borderRadius: 6, border: "none", cursor: searching || (!searchQuery && !searchArtist) ? "not-allowed" : "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                {searching ? "검색 중..." : "Spotify 검색"}
+              </button>
+            </div>
+
+            <input value={albumId} onChange={(e) => setAlbumId(e.target.value)} placeholder="앨범 ID (목록에서 선택하거나 직접 입력)" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, marginBottom: 16, boxSizing: "border-box" }} />
+
+            {candidates.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginBottom: 12 }}>
+                {candidates.map((c) => (
+                  <div key={c.spotify_id} onClick={() => selectCandidate(c)} style={{ border: `1px solid ${preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)"}`, borderRadius: 8, overflow: "hidden", cursor: "pointer", backgroundColor: "var(--bg-elevated)", transition: "border-color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)")}>
+                    {c.cover_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={c.cover_url} alt={c.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover" }} />
+                      : <div style={{ width: "100%", aspectRatio: "1", backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}><span>♪</span></div>
+                    }
+                    <div style={{ padding: 8 }}>
+                      <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.artist}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2 }}>{c.release_date?.slice(0, 4)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {preview && (
+              <div style={{ border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, borderRadius: 10, backgroundColor: "var(--bg-elevated)", padding: 16, marginBottom: 12, display: "flex", gap: 16 }}>
+                {preview.candidate.cover_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={preview.candidate.cover_url} alt={preview.candidate.name} style={{ width: 100, height: 100, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)", flexShrink: 0 }} />
+                  : <div style={{ width: 100, height: 100, borderRadius: 6, backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", flexShrink: 0 }}><span style={{ color: "var(--text-muted)", fontSize: 24 }}>♪</span></div>
+                }
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14 }}>{preview.candidate.name}</p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>{preview.candidate.artist} · {preview.candidate.release_date?.slice(0, 4)}</p>
+                  <div style={{ marginTop: 10 }}>
+                    {preview.loading ? (
+                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>트랙리스트 불러오는 중...</p>
+                    ) : preview.tracks.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 12px" }}>
+                        {preview.tracks.map((t, i) => <span key={i} style={{ color: "var(--text-sub)", fontSize: 11 }}><span style={{ color: "var(--text-muted)", marginRight: 4 }}>{i + 1}</span>{t}</span>)}
+                      </div>
+                    ) : (
+                      <p style={{ color: "var(--text-muted)", fontSize: 11 }}>트랙리스트 없음</p>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, backgroundColor: "var(--bg)" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>적용 대상 DB 앨범</p>
+                    {matchedAlbum ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {matchedAlbum.cover_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={matchedAlbum.cover_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", border: "1px solid var(--border)" }} />
+                          : <div style={{ width: 36, height: 36, borderRadius: 4, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14 }}>♪</span></div>
+                        }
+                        <div>
+                          <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}>{matchedAlbum.title}</p>
+                          <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{matchedAlbum.artist} · ID: {matchedAlbum.id}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ color: "#e05050", fontSize: 11 }}>⚠️ 위 목록에서 앨범을 먼저 선택하세요 (앨범 ID ≠ Spotify ID)</p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    <button onClick={() => applyCandidate(preview.candidate, preview.tracks)} disabled={preview.loading || !albumId} style={{ padding: "6px 16px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13, cursor: (preview.loading || !albumId) ? "not-allowed" : "pointer", opacity: (preview.loading || !albumId) ? 0.4 : 1 }}>적용</button>
+                    <button onClick={() => setPreview(null)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>취소</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {fixMsg && <p style={{ color: fixMsg.startsWith("✅") ? "var(--accent)" : fixMsg.startsWith("⚠️") ? "#df9e30" : "var(--text-muted)", fontSize: 13, marginTop: 8 }}>{fixMsg}</p>}
           </div>
 
-          {logs === null ? (
-            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오기를 눌러 확인하세요</p>
-          ) : logs.length === 0 ? (
-            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>로그 없음</p>
-          ) : (
-            <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ maxHeight: 480, overflowY: "auto" }}>
-                {logs.map((log) => {
-                  const actionLabels: Record<string, { label: string; fg: string; bg: string }> = {
-                    album_add:    { label: "앨범 등록", fg: "#4caf50", bg: "rgba(76,175,80,0.12)" },
-                    album_edit:   { label: "앨범 수정", fg: "#2196f3", bg: "rgba(33,150,243,0.12)" },
-                    album_delete: { label: "앨범 삭제", fg: "#e05050", bg: "rgba(224,80,80,0.12)" },
-                    rating_set:   { label: "평점 저장", fg: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-                    rating_delete:{ label: "평점 삭제", fg: "#e07070", bg: "rgba(224,112,112,0.12)" },
-                  };
-                  const actionInfo = actionLabels[log.action] ?? { label: log.action, fg: "#888", bg: "rgba(128,128,128,0.1)" };
-                  const ts = new Date(log.created_at);
-                  const now = Date.now();
-                  const diffMs = now - ts.getTime();
-                  const diffMin = Math.floor(diffMs / 60000);
-                  const timeStr = diffMin < 1 ? "방금" : diffMin < 60 ? `${diffMin}분 전` : diffMin < 1440 ? `${Math.floor(diffMin / 60)}시간 전` : ts.toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+          {/* 발매일 자동 채우기 */}
+          <div style={card}>
+            <p style={secTitle}>발매일 자동 채우기</p>
+            <p style={secDesc}>Spotify에서 발매일을 가져옵니다. 빈 항목만 채우기를 권장하며, 강제 갱신은 수동 수정값을 덮어씁니다.</p>
+            {dateRemaining !== null && <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{dateRemaining}</span>개</p>}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <label style={{ color: "var(--text-muted)", fontSize: 12 }}>시작 배치 번호</label>
+              <input type="number" min={1} value={dateStartBatch} onChange={(e) => setDateStartBatch(Math.max(1, Number(e.target.value)))} disabled={dateRunning} style={{ width: 72, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 13, textAlign: "center" }} />
+              <span style={{ color: "var(--text-muted)", fontSize: 11 }}>→ offset {(dateStartBatch - 1) * 30}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+              <button onClick={() => runDateBackfill(false)} disabled={dateRunning} style={{ padding: "8px 20px", borderRadius: 6, border: "none", cursor: dateRunning ? "not-allowed" : "pointer", backgroundColor: dateRunning ? "var(--bg-elevated)" : "var(--accent)", color: dateRunning ? "var(--text-muted)" : "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                {dateRunning ? "실행 중..." : "▶ 빈 항목만 채우기"}
+              </button>
+              <button onClick={() => { if (confirm("모든 앨범의 발매일을 Spotify에서 강제로 덮어씁니다. 계속할까요?")) runDateBackfill(true); }} disabled={dateRunning} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: dateRunning ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontWeight: 600, fontSize: 13 }}>⚡ 전체 강제 갱신</button>
+              {dateRunning && <button onClick={() => { dateStopRef.current = true; }} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>}
+            </div>
+            {dateLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{dateLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
+          </div>
 
+          {/* iTunes 발매일 검증 */}
+          <div style={card}>
+            <p style={secTitle}>iTunes 발매일 검증</p>
+            <p style={secDesc}>DB 발매연도와 iTunes를 비교해 불일치 항목을 확인하고 교정합니다. 2026년 앨범부터 확인하는 걸 권장합니다.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+              <select value={itunesScope} onChange={(e) => setItunesScope(e.target.value as "2026" | "all")} disabled={itunesRunning} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
+                <option value="2026">2026년 앨범만 (빠름)</option>
+                <option value="all">전체 앨범 (느림)</option>
+              </select>
+              {!itunesRunning ? (
+                <button onClick={runItunesCheck} style={{ padding: "7px 18px", borderRadius: 6, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13 }}>▶ 조회 시작</button>
+              ) : (
+                <button onClick={() => { itunesStopRef.current = true; }} style={{ padding: "7px 18px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>
+              )}
+              {itunesRunning && <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{itunesProgress.current} / {itunesProgress.total} 처리 중...</span>}
+            </div>
+            {itunesMismatches.length > 0 && (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", backgroundColor: "var(--bg-elevated)", padding: "8px 14px", borderBottom: "1px solid var(--border)" }}>
+                  {["앨범", "아티스트", "현재 (DB)", "iTunes", ""].map((h, i) => <span key={i} style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" }}>{h}</span>)}
+                </div>
+                <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                  {itunesMismatches.map((m) => (
+                    <div key={m.id} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 130px 130px 72px", padding: "10px 14px", borderBottom: "1px solid var(--border)", backgroundColor: m.fixed ? "rgba(100,180,100,0.06)" : "transparent", alignItems: "center" }}>
+                      <span style={{ color: m.fixed ? "var(--text-muted)" : "var(--text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</span>
+                      <span style={{ color: "var(--text-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.artist}</span>
+                      <span style={{ color: "#e06060", fontSize: 12, fontFamily: "monospace" }}>{m.dbDate}</span>
+                      <span style={{ color: "#60c060", fontSize: 12, fontFamily: "monospace" }}>{m.itunesDate}</span>
+                      {m.fixed ? <span style={{ color: "#60c060", fontSize: 11 }}>✓ 수정됨</span> : <button onClick={() => applyItunesDate(m)} style={{ padding: "3px 10px", borderRadius: 4, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 11 }}>적용</button>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding: "10px 14px", backgroundColor: "var(--bg-elevated)", borderTop: "1px solid var(--border)" }}>
+                  <span style={{ color: "var(--text-muted)", fontSize: 12 }}>불일치 {itunesMismatches.length}개 발견 · 미수정 {itunesMismatches.filter((m) => !m.fixed).length}개</span>
+                  {itunesMismatches.some((m) => !m.fixed) && (
+                    <button onClick={() => { if (confirm("불일치 항목을 전부 iTunes 날짜로 수정할까요?")) itunesMismatches.filter((m) => !m.fixed).forEach(applyItunesDate); }} style={{ marginLeft: 16, padding: "3px 12px", borderRadius: 4, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 11, fontWeight: 600 }}>전체 적용</button>
+                  )}
+                </div>
+              </div>
+            )}
+            {!itunesRunning && itunesProgress.total > 0 && itunesMismatches.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>✓ 불일치 항목 없음</p>}
+          </div>
+        </>)}
+
+        {/* ════ 아티스트 탭 ════ */}
+        {activeTab === "artists" && (<>
+
+          {/* 표시 이름 (별칭) */}
+          <div style={card}>
+            <p style={secTitle}>표시 이름 (별칭)</p>
+            <p style={secDesc}>Spotify 정식명을 한글명 등으로 표시하려면 여기서 매핑하세요. "별칭" 버튼을 켜면 앨범 카드와 검색에 한글명이 표시됩니다. 검색 alias는 추가 검색어입니다.</p>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Spotify 정식명</p>
+                <input value={newSpotifyName} onChange={(e) => setNewSpotifyName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }} placeholder="예: IU" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220 }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>한글 / 별칭</p>
+                <input value={newVariantName} onChange={(e) => setNewVariantName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddAlias(); }} placeholder="예: 아이유" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 180 }} />
+              </div>
+              <button onClick={handleAddAlias} disabled={!newSpotifyName.trim() || !newVariantName.trim()} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 6, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!newSpotifyName.trim() || !newVariantName.trim()) ? 0.4 : 1 }}>추가 / 저장</button>
+              <button onClick={loadAliases} disabled={aliasesLoading} style={{ backgroundColor: listMode === "aliases" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "aliases" ? "var(--accent)" : "var(--border)"}`, color: listMode === "aliases" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}>
+                {aliasesLoading ? "로딩..." : "전체 목록"}
+              </button>
+              <button onClick={loadUnaliased} disabled={unaliasedLoading} style={{ backgroundColor: listMode === "unaliased" ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${listMode === "unaliased" ? "var(--accent)" : "var(--border)"}`, color: listMode === "unaliased" ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}>
+                {unaliasedLoading ? "로딩..." : "별칭 없는 아티스트"}
+              </button>
+            </div>
+
+            {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
+
+            {listMode === "aliases" && aliases.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 600, overflowY: "auto" }}>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>총 {aliases.length}개</p>
+                {aliases.map((a) => {
+                  const st = variantStats[a.spotify_name];
+                  const total = st?.total ?? 0;
+                  const using = st?.using ?? 0;
+                  const allOn = total > 0 && using === total;
+                  const allOff = total === 0 || using === 0;
+                  const mixed = !allOn && !allOff;
                   return (
-                    <div key={log.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 16px", borderBottom: "1px solid var(--border)" }}>
-                      <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", width: 72, paddingTop: 2 }}>{timeStr}</span>
-                      <span style={{
-                        flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
-                        backgroundColor: actionInfo.bg, color: actionInfo.fg, width: 72, textAlign: "center",
-                      }}>
-                        {actionInfo.label}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {log.album_title && (
-                          <p style={{ fontSize: 12, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {log.album_title}
-                            {log.album_artist && <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>· {log.album_artist}</span>}
-                          </p>
-                        )}
-                        {log.details && Object.keys(log.details).length > 0 && (
-                          <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {JSON.stringify(log.details)}
-                          </p>
+                    <div key={a.spotify_name} style={{ border: "1px solid var(--border)", borderRadius: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", minHeight: 36 }}>
+                        {editingAlias === a.spotify_name ? (
+                          <>
+                            <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, width: 180 }}>{a.spotify_name}</span>
+                            <input value={editVariant} onChange={(e) => setEditVariant(e.target.value)} style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--accent)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, flex: 1, minWidth: 0 }} />
+                            <button onClick={handleSaveEditAlias} style={{ flexShrink: 0, backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>저장</button>
+                            <button onClick={() => { setEditingAlias(null); setEditVariant(""); }} style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 11 }}>취소</button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, width: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.spotify_name}</span>
+                            <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.variant_name}</span>
+                            <div style={{ display: "flex", gap: 3, flexShrink: 0 }} title={`앨범 ${total}개 중 ${using}개 별칭 표시 중`}>
+                              <button onClick={() => handleSetVariant(a.spotify_name, false)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOff && total > 0 ? "var(--accent)" : "var(--border)"}`, backgroundColor: "transparent", color: allOff && total > 0 ? "var(--text-sub)" : "var(--text-muted)", fontWeight: allOff && total > 0 ? 700 : 400 }}>원래이름</button>
+                              <button onClick={() => handleSetVariant(a.spotify_name, true)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`, backgroundColor: allOn ? "var(--accent)" : "transparent", color: allOn ? "var(--bg)" : "var(--text-muted)" }}>별칭{mixed ? ` ${using}/${total}` : ""}</button>
+                            </div>
+                            <button onClick={() => toggleSearchAliases(a.spotify_name)} style={{ flexShrink: 0, background: "none", whiteSpace: "nowrap", border: `1px solid ${expandedAlias === a.spotify_name ? "var(--accent)" : "var(--border)"}`, color: expandedAlias === a.spotify_name ? "var(--accent)" : "var(--text-muted)", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>
+                              검색alias {expandedAlias === a.spotify_name ? "▲" : "▼"}
+                              {(searchAliasMap[a.spotify_name]?.length ?? 0) > 0 && <span style={{ marginLeft: 4, backgroundColor: "var(--accent)", color: "var(--bg)", borderRadius: 10, padding: "0 5px", fontSize: 10 }}>{searchAliasMap[a.spotify_name].length}</span>}
+                            </button>
+                            <button onClick={() => { setEditingAlias(a.spotify_name); setEditVariant(a.variant_name); }} style={{ flexShrink: 0, background: "none", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>수정</button>
+                            <button onClick={() => handleDeleteAlias(a.spotify_name)} style={{ flexShrink: 0, background: "none", border: "none", color: "#e05050", cursor: "pointer", fontSize: 11 }}>삭제</button>
+                          </>
                         )}
                       </div>
-                      <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {log.user_id ?? "–"}
-                      </span>
+                      {expandedAlias === a.spotify_name && (
+                        <div style={{ padding: "10px 12px 12px", borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-card)" }}>
+                          <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 8 }}>검색 ALIAS (표시 이름 외 추가 검색어)</p>
+                          {searchAliasLoading ? <p style={{ fontSize: 11, color: "var(--text-muted)" }}>로딩...</p> : (
+                            <>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                                {(searchAliasMap[a.spotify_name] ?? []).length === 0 && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>없음</span>}
+                                {(searchAliasMap[a.spotify_name] ?? []).map((sa) => (
+                                  <span key={sa.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 12, padding: "2px 8px 2px 10px", fontSize: 11, color: "var(--text-sub)" }}>
+                                    {sa.alias}
+                                    <button onClick={() => handleDeleteSearchAlias(a.spotify_name, sa.id)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}>×</button>
+                                  </span>
+                                ))}
+                              </div>
+                              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <input value={searchAliasInput} onChange={(e) => setSearchAliasInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddSearchAlias(a.spotify_name); }} placeholder="추가할 검색 alias" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 180 }} />
+                                <button onClick={() => handleAddSearchAlias(a.spotify_name)} disabled={!searchAliasInput.trim()} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: !searchAliasInput.trim() ? 0.4 : 1 }}>추가</button>
+                              </div>
+                              {searchAliasMsg[a.spotify_name] && <p style={{ fontSize: 11, color: "#e05050", marginTop: 4 }}>{searchAliasMsg[a.spotify_name]}</p>}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
+            )}
+
+            {listMode === "unaliased" && unaliasedArtists.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>총 {unaliasedArtists.length}명 — 클릭하면 Spotify 정식명 자동 입력</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {unaliasedArtists.map((a) => (
+                    <button key={a} onClick={() => setNewSpotifyName(a)} style={{ backgroundColor: newSpotifyName === a ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${newSpotifyName === a ? "var(--accent)" : "var(--border)"}`, color: newSpotifyName === a ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer" }}>
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {listMode === "unaliased" && !unaliasedLoading && unaliasedArtists.length === 0 && <p style={{ fontSize: 12, color: "var(--accent)", marginTop: 8 }}>✅ 모든 아티스트에 별칭이 있습니다</p>}
+          </div>
+
+          {/* 아티스트 정규명 직접 변경 */}
+          <div style={{ ...card, borderColor: "rgba(192,57,43,0.35)" }}>
+            <p style={secTitle}>아티스트 정규명 직접 변경</p>
+            <p style={secDesc}>특정 앨범의 artist 원본값을 DB에서 직접 수정합니다. 별칭이 아닌 원본을 바꾸므로 신중하게 사용하세요.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>앨범 ID</p>
+                <input value={canonicalAlbumId} onChange={(e) => setCanonicalAlbumId(e.target.value)} placeholder="album UUID" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 300 }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>새 Spotify 정식명</p>
+                <input value={canonicalArtist} onChange={(e) => setCanonicalArtist(e.target.value)} placeholder="정확한 Spotify 아티스트명" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12, width: 220 }} />
+              </div>
+              <button onClick={handleCanonicalChange} disabled={!canonicalAlbumId.trim() || !canonicalArtist.trim()} style={{ backgroundColor: "#c0392b", border: "none", color: "white", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!canonicalAlbumId.trim() || !canonicalArtist.trim()) ? 0.4 : 1 }}>변경</button>
             </div>
-          )}
-        </div>
+            {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
+          </div>
+        </>)}
+
+        {/* ════ 마이그레이션 탭 ════ */}
+        {activeTab === "migration" && (<>
+          <div style={{ backgroundColor: "rgba(240,160,40,0.08)", border: "1px solid rgba(240,160,40,0.25)", borderRadius: 10, padding: "14px 20px", marginBottom: 24 }}>
+            <p style={{ color: "#df9e30", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>초기 셋업용 도구</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.5 }}>대량 앨범 입고 직후 1회 실행용입니다. 개별 앨범 교정은 "앨범 교정" 탭을 사용하세요.</p>
+          </div>
+
+          {/* Spotify 일괄 매칭 */}
+          <div style={card}>
+            <p style={secTitle}>Spotify 일괄 매칭</p>
+            <p style={secDesc}>Spotify ID가 없는 앨범 전체에 커버·발매일을 자동으로 채웁니다. 신규 앨범을 대량 입고한 뒤 1회 실행하세요.</p>
+            {remaining !== null && (
+              <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>
+                남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{remaining}</span>개 · 성공: <span style={{ color: "var(--accent)" }}>{totalSuccess}</span> · 미매칭: <span style={{ color: "var(--text-muted)" }}>{totalNotFound}</span>
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <button onClick={runMigration} disabled={running} style={{ padding: "8px 20px", borderRadius: 6, border: "none", cursor: running ? "not-allowed" : "pointer", backgroundColor: running ? "var(--bg-elevated)" : "var(--accent)", color: running ? "var(--text-muted)" : "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                {running ? "실행 중..." : "▶ 시작"}
+              </button>
+              {running && <button onClick={() => { stopRef.current = true; }} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>}
+            </div>
+            {migLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 240, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{migLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
+          </div>
+
+          {/* 트랙리스트 일괄 채우기 */}
+          <div style={card}>
+            <p style={secTitle}>트랙리스트 일괄 채우기</p>
+            <p style={secDesc}>Spotify ID는 있지만 트랙리스트가 없는 앨범에 트랙 목록을 채웁니다. Spotify 일괄 매칭 후 실행하세요.</p>
+            {trackRemaining !== null && <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{trackRemaining}</span>개</p>}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <button onClick={runTracklistMigration} disabled={trackRunning} style={{ padding: "8px 20px", borderRadius: 6, border: "none", cursor: trackRunning ? "not-allowed" : "pointer", backgroundColor: trackRunning ? "var(--bg-elevated)" : "var(--accent)", color: trackRunning ? "var(--text-muted)" : "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                {trackRunning ? "실행 중..." : "▶ 시작"}
+              </button>
+              {trackRunning && <button onClick={() => { trackStopRef.current = true; }} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>}
+            </div>
+            {trackLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{trackLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
+          </div>
+        </>)}
+
+      </div>
     </div>
-  </div>
   );
 }
