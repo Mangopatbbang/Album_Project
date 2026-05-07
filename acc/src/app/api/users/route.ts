@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
 
 // POST /api/users — 회원가입 시 users 프로필 생성
 export async function POST(req: NextRequest) {
@@ -62,15 +63,15 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/users — 프로필 수정 (display_name, emoji, avatar_url)
 export async function PATCH(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const body = await req.json();
-  const { auth_id, display_name, emoji, avatar_url } = body as {
-    auth_id: string;
+  const { display_name, emoji, avatar_url } = body as {
     display_name?: string;
     emoji?: string;
     avatar_url?: string | null;
   };
-
-  if (!auth_id) return NextResponse.json({ error: "auth_id 필수" }, { status: 400 });
 
   const updates: Record<string, string | null> = {};
   if (display_name !== undefined) updates.display_name = display_name;
@@ -80,7 +81,7 @@ export async function PATCH(req: NextRequest) {
   const { data, error } = await supabaseServer
     .from("users")
     .update(updates)
-    .eq("auth_id", auth_id)
+    .eq("id", authed.id)
     .select()
     .single();
 

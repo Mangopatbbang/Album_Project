@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiFetch";
 
 type Props = {
   userId: string;
@@ -54,8 +55,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
     if (avatarFile) {
       const formData = new FormData();
       formData.append("file", avatarFile);
-      formData.append("userId", userId);
-      const res = await fetch("/api/users/avatar", { method: "POST", body: formData });
+      const res = await apiFetch("/api/users/avatar", { method: "POST", body: formData });
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "이미지 업로드 실패");
@@ -66,11 +66,10 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
       avatarUrl = data.url;
     }
 
-    const res = await fetch("/api/users", {
+    const res = await apiFetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        auth_id: authUser.id,
         display_name: displayName.trim() || initialDisplayName,
         emoji: initialEmoji,
         avatar_url: avatarUrl,
