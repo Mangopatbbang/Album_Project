@@ -34,28 +34,6 @@ function LogoInDoor({ side }: { side: "left" | "right" }) {
   );
 }
 
-function DoorPanels() {
-  const panel = {
-    border: `1px solid ${G(0.28)}`,
-    borderRadius: 1,
-  };
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: "5% 8%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "4%",
-        pointerEvents: "none",
-      }}
-    >
-      <div style={{ ...panel, flex: 1.3 }} />
-      <div style={{ ...panel, flex: 2.2 }} />
-      <div style={{ ...panel, flex: 1.3 }} />
-    </div>
-  );
-}
 
 function DoorHandle({ side }: { side: "left" | "right" }) {
   const isLeft = side === "left";
@@ -121,7 +99,6 @@ function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolea
           : `inset 1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`,
       }}
     >
-      <DoorPanels />
       <DoorHandle side={side} />
       <LogoInDoor side={isLeft ? "left" : "right"} />
     </div>
