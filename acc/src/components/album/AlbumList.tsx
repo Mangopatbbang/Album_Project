@@ -51,6 +51,7 @@ export default function AlbumList({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [nextOffset, setNextOffset] = useState<number | null>(initialNextOffset);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const [search, setSearch] = useState(urlSearch);
   const [genre, setGenre] = useState("");
@@ -109,8 +110,10 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         setAlbums(data.items ?? []);
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
+        setFetchError(false);
       } catch {
         setAlbums([]);
+        setFetchError(true);
       } finally {
         setLoading(false);
         setFilterLoading(false);
@@ -386,6 +389,19 @@ return (
       ) : loading && albums.length === 0 ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}>
           <Spinner size={22} />
+        </div>
+      ) : fetchError ? (
+        <div className="text-center py-20 flex flex-col items-center gap-3">
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오지 못했어요</p>
+          <button
+            onClick={() => handleFilter(search, genre, sort, unrated, myScore)}
+            style={{
+              backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-sub)",
+              borderRadius: 6, padding: "7px 16px", fontSize: 13, cursor: "pointer",
+            }}
+          >
+            다시 시도
+          </button>
         </div>
       ) : albums.length === 0 ? (
         <div className="text-center py-20 flex flex-col items-center gap-3">

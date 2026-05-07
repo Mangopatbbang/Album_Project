@@ -349,6 +349,19 @@ export default async function ProfilePage({
             />
           )}
 
+          {/* 최근 청음 */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
+              최근 청음
+            </p>
+            <RecentListSection items={recent.map((r) => ({
+              id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
+              artist_display: r.albums!.artist_display,
+              year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
+              score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
+            }))} />
+          </div>
+
           {/* 최근 한줄 소감 */}
           {recentReviews.length > 0 && (
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
@@ -363,19 +376,6 @@ export default async function ProfilePage({
               }))} />
             </div>
           )}
-
-          {/* 최근 청음 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
-              최근 청음
-            </p>
-            <RecentListSection items={recent.map((r) => ({
-              id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
-              artist_display: r.albums!.artist_display,
-              year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
-              score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
-            }))} />
-          </div>
         </div>
 
         {/* 오른쪽 */}

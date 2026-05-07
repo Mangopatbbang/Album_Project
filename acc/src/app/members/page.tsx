@@ -4,8 +4,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
 import { koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
-import { PairsSection, UnanimousSection, ControversialSection, type PairData, type AlbumSectionData } from "./MembersSections";
-import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { PairsSection, type PairData } from "./MembersSections";
 import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
 
@@ -98,64 +97,8 @@ export default async function MembersPage() {
     }
   }
 
-  // 만장일치 앨범 (전원 청음)
-  const allUserIds = USERS.map((u) => u.id);
-  const albumRaterMap = new Map<string, { userIds: Set<string>; scores: number[] }>();
-  for (const r of ratings) {
-    if (!albumRaterMap.has(r.album_id)) albumRaterMap.set(r.album_id, { userIds: new Set(), scores: [] });
-    const entry = albumRaterMap.get(r.album_id)!;
-    entry.userIds.add(r.user_id);
-    entry.scores.push(r.score);
-  }
-
-  const unanimousIds = [...albumRaterMap.entries()]
-    .filter(([, v]) => allUserIds.every((uid) => v.userIds.has(uid)))
-    .map(([id, v]) => ({ id, avg: v.scores.reduce((a, b) => a + b, 0) / v.scores.length, scores: v.scores }))
-    .sort((a, b) => b.avg - a.avg);
-
-  // 만장일치 앨범 커버/제목 가져오기
-  const unanimousAlbumIds = unanimousIds.slice(0, 10).map((a) => a.id);
-  const { data: unanimousAlbumsRaw } = unanimousAlbumIds.length > 0
-    ? await supabaseServer.from("albums").select("id, title, artist, use_artist_variant, cover_url, spotify_id").in("id", unanimousAlbumIds)
-    : { data: [] };
-  const unanimousAlbums = await resolveArtistDisplay(unanimousAlbumsRaw ?? []);
-  const unanimousAlbumMap = new Map(unanimousAlbums.map((a) => [a.id, a]));
-
-  // 취향 충돌 (분산 높은 앨범, 전원 청음 중)
-  const controversial = unanimousIds
-    .map((a) => {
-      const mean = a.avg;
-      const variance = a.scores.reduce((s, x) => s + Math.pow(x - mean, 2), 0) / a.scores.length;
-      return { ...a, variance };
-    })
-    .sort((a, b) => b.variance - a.variance)
-    .slice(0, 8);
-
   // 클라이언트 컴포넌트용 직렬화 데이터
   const pairsData: PairData[] = pairs.sort((a, b) => (a.diff ?? 99) - (b.diff ?? 99));
-
-  const toAlbumSectionData = (items: typeof unanimousIds, withVariance = false): AlbumSectionData[] =>
-    items.map(({ id, avg, scores, ...rest }) => {
-      const album = unanimousAlbumMap.get(id);
-      if (!album) return null;
-      const userScores = USERS
-        .map((u) => { const s = albumScoreMaps.get(u.id)?.get(id); return s !== undefined ? { userId: u.id, score: s } : null; })
-        .filter(Boolean) as { userId: string; score: number }[];
-      return {
-        id,
-        title: album.title,
-        artist: album.artist,
-        artist_display: album.artist_display ?? album.artist,
-        cover_url: album.cover_url ?? null,
-        spotify_id: (album as { spotify_id?: string | null }).spotify_id ?? null,
-        avg,
-        ...(withVariance ? { variance: (rest as { variance?: number }).variance } : {}),
-        userScores,
-      };
-    }).filter(Boolean) as AlbumSectionData[];
-
-  const unanimousData = toAlbumSectionData(unanimousIds.slice(0, 10));
-  const controversialData = toAlbumSectionData(controversial as typeof unanimousIds, true);
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -320,8 +263,6 @@ export default async function MembersPage() {
         </div>
 
         <PairsSection pairs={pairsData} avatarMap={avatarMap} />
-        <UnanimousSection albums={unanimousData} />
-        <ControversialSection albums={controversialData} />
       </main>
     </div>
   );

@@ -27,6 +27,7 @@ export default function ReviewsClient() {
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
@@ -65,8 +66,9 @@ export default function ReviewsClient() {
       setItems((prev) => append ? [...prev, ...data.items] : data.items);
       setHasMore(data.hasMore);
       setOffset(params.offset + data.items.length);
+      if (!append) setFetchError(false);
     } catch {
-      if (!append) setItems([]);
+      if (!append) { setItems([]); setFetchError(true); }
     } finally {
       if (!append) setLoading(false); else setLoadingMore(false);
     }
@@ -278,6 +280,16 @@ export default function ReviewsClient() {
       {/* 피드 */}
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}><Spinner size={22} /></div>
+      ) : fetchError ? (
+        <div style={{ textAlign: "center", padding: "60px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>불러오지 못했어요</p>
+          <button
+            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset: 0 })}
+            style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-sub)", fontSize: 13, cursor: "pointer" }}
+          >
+            다시 시도
+          </button>
+        </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
       ) : (
@@ -342,6 +354,7 @@ function ReviewRow({
   onCommentSubmit: () => void;
   isLast: boolean;
 }) {
+  const [imgError, setImgError] = useState(false);
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
   const user = getUserById(item.userId);
@@ -365,9 +378,9 @@ function ReviewRow({
           style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
           className="hover:opacity-75 transition-opacity"
         >
-          {item.coverUrl
+          {item.coverUrl && !imgError
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
             : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
           }
         </button>
