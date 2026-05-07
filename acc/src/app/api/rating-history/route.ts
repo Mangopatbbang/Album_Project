@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId")?.trim();
   const albumId = searchParams.get("albumId")?.trim();
 
-  if (!userId && !albumId) return NextResponse.json([], { status: 400 });
+  if (!userId && !albumId) return NextResponse.json({ error: "userId 또는 albumId 필요" }, { status: 400 });
 
   let query = supabaseServer
     .from("rating_history")
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   if (albumId) query = query.eq("album_id", albumId);
 
   const { data, error } = await query;
-  if (error) return NextResponse.json([], { status: 500 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const items: RatingHistoryItem[] = (data ?? []).map((r) => ({
     id: r.id,

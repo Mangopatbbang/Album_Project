@@ -1,11 +1,21 @@
+import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 
-/** artist_aliases 테이블 전체를 Map으로 반환 (spotify_name → variant_name) */
+// artist_aliases 전체를 직렬화 가능한 배열로 캐시 (unstable_cache는 JSON만 허용)
+const _fetchAliasEntries = unstable_cache(
+  async (): Promise<[string, string][]> => {
+    const { data } = await supabaseServer
+      .from("artist_aliases")
+      .select("spotify_name, variant_name");
+    return (data ?? []).map((r: { spotify_name: string; variant_name: string }) => [r.spotify_name, r.variant_name] as [string, string]);
+  },
+  ["artist-aliases"],
+  { tags: ["artist-aliases"], revalidate: 86400 }
+);
+
+/** artist_aliases 테이블 전체를 Map으로 반환 (캐시됨) */
 export async function fetchAliasMap(): Promise<Map<string, string>> {
-  const { data } = await supabaseServer
-    .from("artist_aliases")
-    .select("spotify_name, variant_name");
-  return new Map((data ?? []).map((r: { spotify_name: string; variant_name: string }) => [r.spotify_name, r.variant_name]));
+  return new Map(await _fetchAliasEntries());
 }
 
 type HasArtist = {
@@ -33,19 +43,12 @@ export function applyArtistDisplay<T extends HasArtist>(
   });
 }
 
-/** 앨범 배열에 대해 alias DB 조회 + artist_display 적용을 한 번에 처리 */
+/** 앨범 배열에 대해 alias 조회(캐시) + artist_display 적용을 한 번에 처리 */
 export async function resolveArtistDisplay<T extends HasArtist>(
   albums: T[]
 ): Promise<(T & { artist_display: string })[]> {
   if (albums.length === 0) return [];
-  const names = [...new Set(albums.map((a) => a.artist))];
-  const { data } = await supabaseServer
-    .from("artist_aliases")
-    .select("spotify_name, variant_name")
-    .in("spotify_name", names);
-  const map = new Map(
-    (data ?? []).map((r: { spotify_name: string; variant_name: string }) => [r.spotify_name, r.variant_name])
-  );
+  const map = await fetchAliasMap();
   return applyArtistDisplay(albums, map);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { User } from "@/types";
 
 type UsersContextType = {
@@ -20,10 +20,13 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  const getUserById = (id: string) => users.find((u) => u.id === id);
+  const contextValue = useMemo(() => ({
+    users,
+    getUserById: (id: string) => users.find((u) => u.id === id),
+  }), [users]);
 
   return (
-    <UsersContext.Provider value={{ users, getUserById }}>
+    <UsersContext.Provider value={contextValue}>
       {children}
     </UsersContext.Provider>
   );

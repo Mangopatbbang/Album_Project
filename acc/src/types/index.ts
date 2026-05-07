@@ -1,5 +1,3 @@
-export type UserId = string;
-
 export type User = {
   id: string;
   display_name: string;

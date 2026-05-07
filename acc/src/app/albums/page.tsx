@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import Header from "@/components/layout/Header";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
@@ -48,29 +49,36 @@ async function getInitialAlbums() {
   };
 }
 
-async function getGenres(): Promise<string[]> {
-  const all: { genre: string | null }[] = [];
-  for (let page = 0; ; page++) {
-    const { data } = await supabaseServer
-      .from("albums")
-      .select("genre")
-      .not("genre", "is", null)
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < 1000) break;
-  }
-  // DB의 날것 장르값을 정규화 후 중복 제거 (예: "알앤비"와 "R&B" 둘 다 "R&B" 하나로)
-  const unique = [...new Set(all.map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
-  return unique as string[];
-}
+const getGenres = unstable_cache(
+  async (): Promise<string[]> => {
+    const all: { genre: string | null }[] = [];
+    for (let page = 0; ; page++) {
+      const { data } = await supabaseServer
+        .from("albums")
+        .select("genre")
+        .not("genre", "is", null)
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      if (data.length < 1000) break;
+    }
+    const unique = [...new Set(all.map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
+    return unique as string[];
+  },
+  ["albums-page-genres"],
+  { tags: ["albums-page-meta"], revalidate: 3600 }
+);
 
-async function getTotalCount(): Promise<number> {
-  const { count } = await supabaseServer
-    .from("albums")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
-}
+const getTotalCount = unstable_cache(
+  async (): Promise<number> => {
+    const { count } = await supabaseServer
+      .from("albums")
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  },
+  ["albums-page-count"],
+  { tags: ["albums-page-meta"], revalidate: 3600 }
+);
 
 export default async function AlbumsPage() {
   const [{ items, hasMore, nextOffset }, genres, totalCount] = await Promise.all([

@@ -86,6 +86,7 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (avatar_url !== undefined) revalidateTag("user-avatars", { expire: 0 });
+  if (display_name !== undefined || emoji !== undefined) revalidateTag("all-users", { expire: 0 });
   return NextResponse.json({ ok: true, user: data });
 }
 

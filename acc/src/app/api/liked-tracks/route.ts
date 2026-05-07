@@ -14,7 +14,7 @@ export type LikedTrackItem = {
 
 export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json([], { status: 400 });
+  if (!userId) return NextResponse.json({ error: "userId 필요" }, { status: 400 });
 
   const { data, error } = await supabaseServer
     .from("ratings")
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     .not("liked_tracks", "is", null)
     .neq("liked_tracks", "");
 
-  if (error || !data) return NextResponse.json([], { status: 500 });
+  if (error || !data) return NextResponse.json({ error: error?.message ?? "조회 실패" }, { status: 500 });
 
   // artist_display 해상도
   type AlbumRow = { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null; tracklist: string | null };

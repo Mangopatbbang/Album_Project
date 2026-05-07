@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
+  revalidateTag("artist-aliases", { expire: 0 });
   revalidateTag("all-albums-with-ratings", { expire: 0 });
   revalidateTag("profile-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });
@@ -92,6 +93,7 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
+  revalidateTag("artist-aliases", { expire: 0 });
   revalidateTag("all-albums-with-ratings", { expire: 0 });
   revalidateTag("profile-ratings", { expire: 0 });
   return NextResponse.json({ ok: true });

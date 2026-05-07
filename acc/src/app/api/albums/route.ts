@@ -5,6 +5,7 @@ import { resolveArtistDisplay, findArtistsByVariant } from "@/lib/artistDisplay"
 import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
 import { getRawGenreValues } from "@/lib/bio";
+import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 
 const LIMIT = 30;
 const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, ratings(user_id, score)";
@@ -143,38 +144,30 @@ async function handleAvgSort(params: {
   aliasMatches: string[]; genre?: string; sort: string; userId?: string; unrated?: boolean;
 }) {
   const { limit, offset, search, aliasMatches, genre, sort, userId, unrated } = params;
+
+  // 캐시된 전체 앨범+평점 데이터에서 평균 맵 구성 (DB 풀스캔 대신 캐시 재활용)
+  const cachedAlbums = await fetchAllAlbumsWithRatings();
+  const avgMap = new Map<string, number | null>(
+    cachedAlbums.map((a) => {
+      const scores = a.ratings.map((r) => r.score);
+      return [a.id, scores.length > 0 ? scores.reduce((s, n) => s + n, 0) / scores.length : null];
+    })
+  );
+
   let excludeIds: string[] = [];
   if (unrated && userId) {
     const { data: rated } = await supabaseServer.from("ratings").select("album_id").eq("user_id", userId);
     excludeIds = (rated ?? []).map((r) => r.album_id);
   }
 
-  const ratingData: { album_id: string; score: number }[] = [];
-  for (let page = 0; ; page++) {
-    const { data } = await supabaseServer.from("ratings").select("album_id, score").range(page * 1000, (page + 1) * 1000 - 1);
-    if (!data || data.length === 0) break;
-    ratingData.push(...data);
-    if (data.length < 1000) break;
-  }
-
-  const totalMap = new Map<string, number>();
-  const countMap = new Map<string, number>();
-  for (const r of ratingData) {
-    totalMap.set(r.album_id, (totalMap.get(r.album_id) ?? 0) + r.score);
-    countMap.set(r.album_id, (countMap.get(r.album_id) ?? 0) + 1);
-  }
-
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches));
   if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
-  const { data: allAlbums } = await albumQuery;
+  const { data: filteredAlbums } = await albumQuery;
 
-  const sorted = (allAlbums ?? [])
-    .map((a) => {
-      const total = totalMap.get(a.id); const count = countMap.get(a.id) ?? 0;
-      return { id: a.id, avg: total != null && count > 0 ? total / count : null };
-    })
+  const sorted = (filteredAlbums ?? [])
+    .map((a) => ({ id: a.id, avg: avgMap.get(a.id) ?? null }))
     .sort((a, b) => {
       if (a.avg === null && b.avg === null) return 0;
       if (a.avg === null) return 1; if (b.avg === null) return -1;
@@ -224,6 +217,7 @@ export async function POST(req: NextRequest) {
   revalidatePath("/best");
   revalidatePath("/albums");
   revalidateTag("all-albums-with-ratings", { expire: 0 });
+  revalidateTag("albums-page-meta", { expire: 0 });
   return NextResponse.json(data, { status: 201 });
 }
 
