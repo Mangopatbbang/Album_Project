@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "acs_tutorial_dismissed_v1";
 
@@ -73,6 +73,9 @@ export default function TutorialModal() {
     return () => window.removeEventListener("open-tutorial", handler);
   }, []);
 
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnBackdrop = useRef(false);
+
   const dismiss = () => {
     localStorage.setItem(STORAGE_KEY, "1");
     setOpen(false);
@@ -82,9 +85,11 @@ export default function TutorialModal() {
 
   return (
     <div
+      ref={backdropRef}
       style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.7)" }}
       className="flex items-end sm:items-center justify-center"
-      onClick={(e) => { if (e.target === e.currentTarget) dismiss(); }}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) dismiss(); mouseDownOnBackdrop.current = false; }}
     >
       <div
         style={{

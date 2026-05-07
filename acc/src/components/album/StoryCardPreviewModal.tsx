@@ -30,6 +30,8 @@ export default function StoryCardPreviewModal({
   onClose,
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const mouseDownOnBackdrop = useRef(false);
   const [capturing, setCapturing] = useState(false);
   const [includeReview, setIncludeReview] = useState(true);
   const [includeTracks, setIncludeTracks] = useState(true);
@@ -83,6 +85,7 @@ export default function StoryCardPreviewModal({
 
   return (
     <div
+      ref={backdropRef}
       style={{
         position: "fixed",
         inset: 0,
@@ -96,7 +99,8 @@ export default function StoryCardPreviewModal({
         gap: 16,
         overflowY: "auto",
       }}
-      onClick={onClose}
+      onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) onClose(); mouseDownOnBackdrop.current = false; }}
     >
       {/* 닫기 */}
       <button
