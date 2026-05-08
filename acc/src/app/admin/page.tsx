@@ -123,6 +123,7 @@ export default function AdminPage() {
   const [aliasesLoading, setAliasesLoading] = useState(false);
   const [unaliasedArtists, setUnaliasedArtists] = useState<string[]>([]);
   const [unaliasedLoading, setUnaliasedLoading] = useState(false);
+  const [unaliasedSearch, setUnaliasedSearch] = useState("");
   const [listMode, setListMode] = useState<"aliases" | "unaliased" | null>(null);
   const [newSpotifyName, setNewSpotifyName] = useState("");
   const [newVariantName, setNewVariantName] = useState("");
@@ -1163,18 +1164,54 @@ export default function AdminPage() {
               </div>
             )}
 
-            {listMode === "unaliased" && unaliasedArtists.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 400, overflowY: "auto" }}>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>총 {unaliasedArtists.length}명 — 클릭하면 Spotify 정식명 자동 입력</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {unaliasedArtists.map((a) => (
-                    <button key={a} onClick={() => setNewSpotifyName(a)} style={{ backgroundColor: newSpotifyName === a ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${newSpotifyName === a ? "var(--accent)" : "var(--border)"}`, color: newSpotifyName === a ? "var(--bg)" : "var(--text-sub)", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer" }}>
-                      {a}
-                    </button>
-                  ))}
+            {listMode === "unaliased" && unaliasedArtists.length > 0 && (() => {
+              const filtered = unaliasedSearch.trim()
+                ? unaliasedArtists.filter((a) => a.toLowerCase().includes(unaliasedSearch.trim().toLowerCase()))
+                : unaliasedArtists;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
+                      {filtered.length !== unaliasedArtists.length
+                        ? `${filtered.length} / ${unaliasedArtists.length}명`
+                        : `총 ${unaliasedArtists.length}명`}
+                    </span>
+                    <input
+                      value={unaliasedSearch}
+                      onChange={(e) => setUnaliasedSearch(e.target.value)}
+                      placeholder="검색..."
+                      style={{ flex: 1, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 5, padding: "4px 10px", fontSize: 12, outline: "none" }}
+                    />
+                    {unaliasedSearch && (
+                      <button onClick={() => setUnaliasedSearch("")} style={{ flexShrink: 0, background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1 }}>×</button>
+                    )}
+                  </div>
+                  <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", maxHeight: 360, overflowY: "auto" }}>
+                    {filtered.length === 0 ? (
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", padding: "12px 14px" }}>검색 결과 없음</p>
+                    ) : filtered.map((a, i) => (
+                      <div
+                        key={a}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "7px 12px", gap: 10,
+                          borderTop: i > 0 ? "1px solid var(--border)" : "none",
+                          backgroundColor: newSpotifyName === a ? "rgba(232,213,163,0.06)" : "transparent",
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: "var(--text-sub)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--font-geist-mono, monospace)" }}>{a}</span>
+                        <button
+                          onClick={() => { setNewSpotifyName(a); setUnaliasedSearch(""); }}
+                          style={{ flexShrink: 0, backgroundColor: newSpotifyName === a ? "var(--accent)" : "var(--bg-elevated)", border: `1px solid ${newSpotifyName === a ? "var(--accent)" : "var(--border)"}`, color: newSpotifyName === a ? "var(--bg)" : "var(--text-muted)", borderRadius: 4, padding: "3px 10px", fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}
+                        >
+                          {newSpotifyName === a ? "선택됨" : "입력"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             {listMode === "unaliased" && !unaliasedLoading && unaliasedArtists.length === 0 && <p style={{ fontSize: 12, color: "var(--accent)", marginTop: 8 }}>✅ 모든 아티스트에 별칭이 있습니다</p>}
           </div>
 

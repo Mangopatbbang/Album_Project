@@ -34,9 +34,9 @@ export async function GET(req: NextRequest) {
       .select("spotify_name");
     if (aliasErr) return NextResponse.json({ error: aliasErr.message }, { status: 500 });
 
-    const aliasedSet = new Set((aliasData ?? []).map((a: { spotify_name: string }) => a.spotify_name));
+    const aliasedSet = new Set((aliasData ?? []).map((a: { spotify_name: string }) => a.spotify_name.toLowerCase()));
     const allArtists = [...new Set((albumData ?? []).map((a: { artist: string }) => a.artist))].sort();
-    const unaliasedArtists = allArtists.filter((a) => !aliasedSet.has(a));
+    const unaliasedArtists = allArtists.filter((a) => !aliasedSet.has(a.toLowerCase()));
 
     return NextResponse.json({ artists: unaliasedArtists });
   }

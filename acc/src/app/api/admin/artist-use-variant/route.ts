@@ -20,12 +20,17 @@ export async function GET(req: NextRequest) {
     .in("artist", names);
   if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
 
+  // Group by lowercase to handle case mismatches between albums.artist and artist_aliases.spotify_name
+  const lcToCanonical: Record<string, string> = {};
+  for (const n of names) lcToCanonical[n.toLowerCase()] = n;
+
   const stats: Record<string, { total: number; using: number }> = {};
   for (const row of albumData ?? []) {
-    const s = stats[row.artist] ?? { total: 0, using: 0 };
+    const key = lcToCanonical[row.artist.toLowerCase()] ?? row.artist;
+    const s = stats[key] ?? { total: 0, using: 0 };
     s.total++;
     if (row.use_artist_variant) s.using++;
-    stats[row.artist] = s;
+    stats[key] = s;
   }
 
   return NextResponse.json({ stats });
