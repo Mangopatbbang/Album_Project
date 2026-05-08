@@ -83,24 +83,24 @@ const STEPS: TourStep[] = [
 
 // ── Element finder ─────────────────────────────────────────────
 
+function rectIfVisible(el: Element): DOMRect | null {
+  const style = window.getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden") return null;
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 || rect.height > 0 ? rect : null;
+}
+
 async function findVisible(selector: string, altSelector?: string, timeout = 2500): Promise<DOMRect | null> {
   const start = Date.now();
-  let hiddenStreak = 0;
-  let usingAlt = false;
   while (Date.now() - start < timeout) {
-    const target = usingAlt ? altSelector! : selector;
-    const el = document.querySelector(target);
-    if (el) {
-      const style = window.getComputedStyle(el);
-      if (style.display !== "none" && style.visibility !== "hidden") {
-        const rect = el.getBoundingClientRect();
-        if (rect.width > 0 || rect.height > 0) return rect;
-      } else if (!usingAlt) {
-        hiddenStreak++;
-        if (hiddenStreak >= 5) {
-          if (!altSelector) return null;
-          usingAlt = true;
-        }
+    for (const el of Array.from(document.querySelectorAll(selector))) {
+      const r = rectIfVisible(el);
+      if (r) return r;
+    }
+    if (altSelector) {
+      for (const el of Array.from(document.querySelectorAll(altSelector))) {
+        const r = rectIfVisible(el);
+        if (r) return r;
       }
     }
     await new Promise((r) => setTimeout(r, 100));
@@ -364,7 +364,7 @@ export default function SpotlightTour() {
       const step = STEPS[idx];
       if (step.navigate) {
         router.push(step.navigate);
-        await new Promise((r) => setTimeout(r, 420));
+        await new Promise((r) => setTimeout(r, 600));
       }
 
       const found = await findVisible(step.selector, step.altSelector);

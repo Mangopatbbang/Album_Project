@@ -20,12 +20,12 @@ export default function Header() {
   const notifRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
-    { href: "/albums", label: "음반고" },
-    { href: "/best", label: "청음감" },
-    { href: "/themes", label: "청음집" },
-    { href: "/reviews", label: "청음평" },
-    { href: "/members", label: "청음인" },
-    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록" }] : []),
+    { href: "/albums", label: "음반고", tour: "nav-albums" },
+    { href: "/best", label: "청음감", tour: "nav-best" },
+    { href: "/themes", label: "청음집", tour: undefined },
+    { href: "/reviews", label: "청음평", tour: "nav-reviews" },
+    { href: "/members", label: "청음인", tour: "nav-members" },
+    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile" }] : []),
   ];
 
   useEffect(() => {
@@ -78,12 +78,13 @@ export default function Header() {
 
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
-          {navItems.map(({ href, label }) => (
+          {navItems.map(({ href, label, tour }) => (
             <Link
               key={href}
               href={href}
               onMouseEnter={() => setHoveredNav(href)}
               onMouseLeave={() => setHoveredNav(null)}
+              {...(tour ? { "data-tour": tour } : {})}
               style={{
                 color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
                 backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
