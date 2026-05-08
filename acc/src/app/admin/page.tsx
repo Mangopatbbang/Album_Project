@@ -173,9 +173,13 @@ export default function AdminPage() {
   // 현재 열린 목록을 토글 없이 새로고침
   async function refreshCurrentList(mode: "aliases" | "unaliased" | null) {
     if (mode === "aliases") {
-      const res = await adminFetch("/api/admin/artist-aliases");
-      const data = await res.json();
-      setAliases(data.aliases ?? []);
+      const [res1, res2] = await Promise.all([
+        adminFetch("/api/admin/artist-aliases"),
+        adminFetch("/api/admin/artist-use-variant"),
+      ]);
+      const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
+      setAliases(d1.aliases ?? []);
+      setVariantStats(d2.stats ?? {});
     } else if (mode === "unaliased") {
       const res = await adminFetch("/api/admin/artist-aliases?unaliased=true");
       const data = await res.json();

@@ -215,7 +215,7 @@ export default function ReviewsClient() {
   });
 
   return (
-    <div>
+    <div data-tour="reviews-main">
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>

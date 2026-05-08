@@ -13,6 +13,7 @@ type TourStep = {
   title: string;
   body: string;
   selector: string;
+  altSelector?: string; // fallback for desktop when primary is sm:hidden
   navigate?: string;
 };
 
@@ -41,6 +42,7 @@ const STEPS: TourStep[] = [
     title: "청음감 — 명반 랭킹",
     body: "전체·연도별·장르별·아티스트별 랭킹을 볼 수 있어요. 국내/해외 필터도 지원돼요.",
     selector: '[data-tour="nav-best"]',
+    altSelector: '[data-tour="best-main"]',
     navigate: "/best",
   },
   {
@@ -54,6 +56,7 @@ const STEPS: TourStep[] = [
     title: "청음평 — 한줄평 피드",
     body: "모든 멤버의 한줄평을 피드로 볼 수 있어요. 공감하거나 댓글을 달 수도 있어요.",
     selector: '[data-tour="nav-reviews"]',
+    altSelector: '[data-tour="reviews-main"]',
     navigate: "/reviews",
   },
   {
@@ -61,6 +64,7 @@ const STEPS: TourStep[] = [
     title: "청음인 — 멤버 현황",
     body: "모임 멤버들의 평가 현황과 취향 궁합을 확인할 수 있어요.",
     selector: '[data-tour="nav-members"]',
+    altSelector: '[data-tour="members-main"]',
     navigate: "/members",
   },
   {
@@ -79,15 +83,34 @@ const STEPS: TourStep[] = [
 
 // ── Element finder ─────────────────────────────────────────────
 
-async function findVisible(selector: string, timeout = 2500): Promise<DOMRect | null> {
+async function findVisible(selector: string, altSelector?: string, timeout = 2500): Promise<DOMRect | null> {
   const start = Date.now();
+  let hiddenStreak = 0;
   while (Date.now() - start < timeout) {
     const el = document.querySelector(selector);
     if (el) {
       const style = window.getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") return null;
-      const rect = el.getBoundingClientRect();
-      if (rect.width > 0 || rect.height > 0) return rect;
+      if (style.display === "none" || style.visibility === "hidden") {
+        hiddenStreak++;
+        if (hiddenStreak >= 5) {
+          // Consistently hidden (500ms) — try altSelector for desktop
+          if (altSelector) {
+            const alt = document.querySelector(altSelector);
+            if (alt) {
+              const altStyle = window.getComputedStyle(alt);
+              if (altStyle.display !== "none" && altStyle.visibility !== "hidden") {
+                const altRect = alt.getBoundingClientRect();
+                if (altRect.width > 0 || altRect.height > 0) return altRect;
+              }
+            }
+          }
+          return null;
+        }
+      } else {
+        hiddenStreak = 0;
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 || rect.height > 0) return rect;
+      }
     }
     await new Promise((r) => setTimeout(r, 100));
   }
@@ -353,7 +376,7 @@ export default function SpotlightTour() {
         await new Promise((r) => setTimeout(r, 420));
       }
 
-      const found = await findVisible(step.selector);
+      const found = await findVisible(step.selector, step.altSelector);
       if (!found) {
         // Element not visible (hidden on this breakpoint) — skip
         processingRef.current = false;

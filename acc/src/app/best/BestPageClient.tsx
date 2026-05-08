@@ -518,7 +518,7 @@ export default function BestPageClient({
       </div>
 
       {/* 데스크탑 필터 행: 지역(좌) + 탭/정렬(우) */}
-      <div className="hidden sm:flex" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
+      <div data-tour="best-main" className="hidden sm:flex" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {(["전체", "국내", "해외"] as const).map((r) => (
             <button
