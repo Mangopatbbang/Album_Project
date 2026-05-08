@@ -391,9 +391,8 @@ export default function TutorialModal() {
           borderTop: "1px solid var(--border)",
           flexShrink: 0,
           paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-          display: "flex", flexDirection: "column", gap: 8,
+          display: "flex", gap: 8,
         }}>
-          <div style={{ display: "flex", gap: 8 }}>
             {page > 0 && (
               <button
                 onClick={() => setPage(page - 1)}
@@ -431,23 +430,6 @@ export default function TutorialModal() {
                 다음 →
               </button>
             )}
-          </div>
-          {/* 모바일 전용 — 온보딩 튜토리얼 재실행 */}
-          <button
-            className="sm:hidden"
-            onClick={() => {
-              dismiss();
-              localStorage.removeItem("acs_onboarding_v1");
-              setTimeout(() => window.dispatchEvent(new CustomEvent("open-onboarding")), 50);
-            }}
-            style={{
-              width: "100%", padding: "8px 0",
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 12, color: "var(--text-muted)",
-            }}
-          >
-            ↩ 온보딩 튜토리얼 다시 보기
-          </button>
         </div>
       </div>
     </div>
