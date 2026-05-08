@@ -8,6 +8,7 @@ import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
 import FloatingActions from "@/components/ui/FloatingActions";
 import TutorialModal from "@/components/ui/TutorialModal";
+import OnboardingTutorial from "@/components/ui/OnboardingTutorial";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -61,6 +62,7 @@ export default function RootLayout({
             {children}
             <BottomNav />
             <FloatingActions />
+            <OnboardingTutorial />
             <TutorialModal />
           </ToastProvider>
           </UserAvatarsProvider>

@@ -295,7 +295,8 @@ export default function TutorialModal() {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
+    // 모바일은 온보딩 튜토리얼이 대신 표시되므로 자동오픈 스킵
+    if (!localStorage.getItem(STORAGE_KEY) && window.innerWidth >= 640) setOpen(true);
     const handler = () => { setOpen(true); setPage(0); };
     window.addEventListener("open-tutorial", handler);
     return () => window.removeEventListener("open-tutorial", handler);
@@ -391,45 +392,63 @@ export default function TutorialModal() {
           borderTop: "1px solid var(--border)",
           flexShrink: 0,
           paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-          display: "flex", gap: 8,
+          display: "flex", flexDirection: "column", gap: 8,
         }}>
-          {page > 0 && (
-            <button
-              onClick={() => setPage(page - 1)}
-              style={{
-                flex: 1, padding: "11px 0",
-                backgroundColor: "var(--bg-elevated)",
-                color: "var(--text-sub)",
-                border: "1px solid var(--border)",
-                borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
-              }}
-            >
-              이전
-            </button>
-          )}
-          {isLast ? (
-            <button
-              onClick={dismiss}
-              style={{
-                flex: 2, padding: "11px 0",
-                backgroundColor: "var(--accent)", color: "var(--bg)",
-                border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
-              }}
-            >
-              확인했어요
-            </button>
-          ) : (
-            <button
-              onClick={() => setPage(page + 1)}
-              style={{
-                flex: 2, padding: "11px 0",
-                backgroundColor: "var(--accent)", color: "var(--bg)",
-                border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
-              }}
-            >
-              다음 →
-            </button>
-          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            {page > 0 && (
+              <button
+                onClick={() => setPage(page - 1)}
+                style={{
+                  flex: 1, padding: "11px 0",
+                  backgroundColor: "var(--bg-elevated)",
+                  color: "var(--text-sub)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                이전
+              </button>
+            )}
+            {isLast ? (
+              <button
+                onClick={dismiss}
+                style={{
+                  flex: 2, padding: "11px 0",
+                  backgroundColor: "var(--accent)", color: "var(--bg)",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                확인했어요
+              </button>
+            ) : (
+              <button
+                onClick={() => setPage(page + 1)}
+                style={{
+                  flex: 2, padding: "11px 0",
+                  backgroundColor: "var(--accent)", color: "var(--bg)",
+                  border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}
+              >
+                다음 →
+              </button>
+            )}
+          </div>
+          {/* 모바일 전용 — 온보딩 튜토리얼 재실행 */}
+          <button
+            className="sm:hidden"
+            onClick={() => {
+              dismiss();
+              localStorage.removeItem("acs_onboarding_v1");
+              setTimeout(() => window.dispatchEvent(new CustomEvent("open-onboarding")), 50);
+            }}
+            style={{
+              width: "100%", padding: "8px 0",
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 12, color: "var(--text-muted)",
+            }}
+          >
+            ↩ 온보딩 튜토리얼 다시 보기
+          </button>
         </div>
       </div>
     </div>

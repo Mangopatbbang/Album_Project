@@ -71,6 +71,7 @@ export default function BottomNav() {
 
   return (
     <nav
+      data-bottom-nav="true"
       style={{
         position: "fixed", bottom: 0, left: 0, right: 0,
         backgroundColor: "var(--bg-card)", borderTop: "1px solid var(--border)",
