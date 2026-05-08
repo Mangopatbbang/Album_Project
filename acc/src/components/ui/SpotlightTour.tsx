@@ -86,30 +86,21 @@ const STEPS: TourStep[] = [
 async function findVisible(selector: string, altSelector?: string, timeout = 2500): Promise<DOMRect | null> {
   const start = Date.now();
   let hiddenStreak = 0;
+  let usingAlt = false;
   while (Date.now() - start < timeout) {
-    const el = document.querySelector(selector);
+    const target = usingAlt ? altSelector! : selector;
+    const el = document.querySelector(target);
     if (el) {
       const style = window.getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") {
-        hiddenStreak++;
-        if (hiddenStreak >= 5) {
-          // Consistently hidden (500ms) — try altSelector for desktop
-          if (altSelector) {
-            const alt = document.querySelector(altSelector);
-            if (alt) {
-              const altStyle = window.getComputedStyle(alt);
-              if (altStyle.display !== "none" && altStyle.visibility !== "hidden") {
-                const altRect = alt.getBoundingClientRect();
-                if (altRect.width > 0 || altRect.height > 0) return altRect;
-              }
-            }
-          }
-          return null;
-        }
-      } else {
-        hiddenStreak = 0;
+      if (style.display !== "none" && style.visibility !== "hidden") {
         const rect = el.getBoundingClientRect();
         if (rect.width > 0 || rect.height > 0) return rect;
+      } else if (!usingAlt) {
+        hiddenStreak++;
+        if (hiddenStreak >= 5) {
+          if (!altSelector) return null;
+          usingAlt = true;
+        }
       }
     }
     await new Promise((r) => setTimeout(r, 100));
