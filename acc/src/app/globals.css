@@ -238,8 +238,3 @@ select:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
-
-/* 온보딩 튜토리얼: BottomNav를 오버레이(z-index 200) 위로 끌어올림 */
-body.onboarding-active [data-bottom-nav] {
-  z-index: 201 !important;
-}

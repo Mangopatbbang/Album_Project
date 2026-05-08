@@ -295,8 +295,7 @@ export default function TutorialModal() {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    // 모바일은 온보딩 튜토리얼이 대신 표시되므로 자동오픈 스킵
-    if (!localStorage.getItem(STORAGE_KEY) && window.innerWidth >= 640) setOpen(true);
+    // OnboardingTutorial이 첫 방문 안내를 담당 — 가이드는 수동으로만 열림
     const handler = () => { setOpen(true); setPage(0); };
     window.addEventListener("open-tutorial", handler);
     return () => window.removeEventListener("open-tutorial", handler);
