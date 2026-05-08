@@ -485,7 +485,7 @@ export default function BestPageClient({
   return (
     <>
       {/* 모바일 필터: select 2개 */}
-      <div className="sm:hidden flex gap-2 mb-5">
+      <div data-tour="best-tabs" className="sm:hidden flex gap-2 mb-5">
         <select
           value={regionFilter}
           onChange={(e) => setRegionFilter(e.target.value as "전체" | "국내" | "해외")}

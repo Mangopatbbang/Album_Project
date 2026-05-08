@@ -234,11 +234,21 @@ export default function AdminPage() {
   }
 
   async function handleSetVariant(spotify_name: string, use_variant: boolean) {
-    await adminFetch("/api/admin/artist-use-variant", {
+    const patchRes = await adminFetch("/api/admin/artist-use-variant", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ spotify_name, use_variant }),
     });
+    const patchData = await patchRes.json();
+    if (!patchRes.ok) {
+      setAliasMsg(`❌ ${patchData.error ?? "오류 발생"}`);
+      return;
+    }
+    if (patchData.updated === 0) {
+      setAliasMsg(`⚠️ "${spotify_name}" — 일치하는 앨범 없음 (artist 필드 불일치 확인 필요)`);
+    } else {
+      setAliasMsg(`✅ ${spotify_name}: ${patchData.updated}개 앨범 ${use_variant ? "별칭" : "원래이름"}으로 변경`);
+    }
     const res = await adminFetch("/api/admin/artist-use-variant");
     const data = await res.json();
     setVariantStats(data.stats ?? {});
@@ -1075,7 +1085,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
+            {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : aliasMsg.startsWith("⚠️") ? "#e8a53a" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
 
             {listMode === "aliases" && aliases.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 600, overflowY: "auto" }}>
@@ -1102,8 +1112,14 @@ export default function AdminPage() {
                             <span style={{ color: "var(--text-muted)", fontSize: 12, flexShrink: 0, width: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.spotify_name}</span>
                             <span style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.variant_name}</span>
                             <div style={{ display: "flex", gap: 3, flexShrink: 0 }} title={`앨범 ${total}개 중 ${using}개 별칭 표시 중`}>
-                              <button onClick={() => handleSetVariant(a.spotify_name, false)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOff && total > 0 ? "var(--accent)" : "var(--border)"}`, backgroundColor: "transparent", color: allOff && total > 0 ? "var(--text-sub)" : "var(--text-muted)", fontWeight: allOff && total > 0 ? 700 : 400 }}>원래이름</button>
-                              <button onClick={() => handleSetVariant(a.spotify_name, true)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`, backgroundColor: allOn ? "var(--accent)" : "transparent", color: allOn ? "var(--bg)" : "var(--text-muted)" }}>별칭{mixed ? ` ${using}/${total}` : ""}</button>
+                              {total === 0 ? (
+                                <span style={{ fontSize: 10, color: "var(--text-muted)", padding: "2px 4px" }}>앨범 없음</span>
+                              ) : (
+                                <>
+                                  <button onClick={() => handleSetVariant(a.spotify_name, false)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOff ? "var(--accent)" : "var(--border)"}`, backgroundColor: "transparent", color: allOff ? "var(--text-sub)" : "var(--text-muted)", fontWeight: allOff ? 700 : 400 }}>원래이름</button>
+                                  <button onClick={() => handleSetVariant(a.spotify_name, true)} style={{ flexShrink: 0, fontSize: 10, padding: "2px 7px", borderRadius: 3, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${allOn ? "var(--accent)" : "var(--border)"}`, backgroundColor: allOn ? "var(--accent)" : "transparent", color: allOn ? "var(--bg)" : "var(--text-muted)" }}>별칭{mixed ? ` ${using}/${total}` : ""}</button>
+                                </>
+                              )}
                             </div>
                             <button onClick={() => toggleSearchAliases(a.spotify_name)} style={{ flexShrink: 0, background: "none", whiteSpace: "nowrap", border: `1px solid ${expandedAlias === a.spotify_name ? "var(--accent)" : "var(--border)"}`, color: expandedAlias === a.spotify_name ? "var(--accent)" : "var(--text-muted)", borderRadius: 4, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>
                               검색alias {expandedAlias === a.spotify_name ? "▲" : "▼"}

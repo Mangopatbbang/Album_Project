@@ -25,6 +25,9 @@ export default function SignupPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [emoji, setEmoji] = useState("🎵");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -146,13 +149,47 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* 동의 체크박스 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0 4px" }}>
+            {[
+              { key: "terms", checked: agreeTerms, set: setAgreeTerms, label: "이용약관에 동의합니다 (필수)", link: "/terms" },
+              { key: "privacy", checked: agreePrivacy, set: setAgreePrivacy, label: "개인정보처리방침에 동의합니다 (필수)", link: "/privacy" },
+              { key: "age", checked: agreeAge, set: setAgreeAge, label: "만 14세 이상임을 확인합니다 (필수)", link: null },
+            ].map(({ key, checked, set, label, link }) => (
+              <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => set(e.target.checked)}
+                  style={{ marginTop: 2, accentColor: "var(--accent)", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+                />
+                <span style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.5 }}>
+                  {link ? (
+                    <>
+                      <Link href={link} target="_blank" style={{ color: "var(--accent)", textDecoration: "underline" }}>
+                        {label.split("에 동의합니다")[0]}
+                      </Link>
+                      에 동의합니다{" "}
+                      <span style={{ color: "var(--text-muted)" }}>(필수)</span>
+                    </>
+                  ) : (
+                    <>
+                      만 14세 이상임을 확인합니다{" "}
+                      <span style={{ color: "var(--text-muted)" }}>(필수)</span>
+                    </>
+                  )}
+                </span>
+              </label>
+            ))}
+          </div>
+
           {error && (
             <p style={{ color: "var(--error)", fontSize: 13 }}>{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !agreeTerms || !agreePrivacy || !agreeAge}
             style={{
               backgroundColor: "var(--accent)",
               color: "var(--bg)",
@@ -160,8 +197,8 @@ export default function SignupPage() {
               fontSize: 14,
               padding: "10px",
               borderRadius: 6,
-              cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.7 : 1,
+              cursor: (loading || !agreeTerms || !agreePrivacy || !agreeAge) ? "default" : "pointer",
+              opacity: (loading || !agreeTerms || !agreePrivacy || !agreeAge) ? 0.4 : 1,
               marginTop: 4,
             }}
           >

@@ -51,15 +51,16 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const items = [
-    { href: "/", label: "홈", Icon: HomeIcon },
-    { href: "/albums", label: "음반고", Icon: AlbumsIcon },
-    { href: "/best", label: "청음감", Icon: BestIcon },
-    { href: "/reviews", label: "청음평", Icon: ReviewsIcon },
-    { href: "/members", label: "청음인", Icon: MembersIcon },
+    { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
+    { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums" },
+    { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
+    { href: "/reviews", label: "청음평", Icon: ReviewsIcon, tour: "nav-reviews" },
+    { href: "/members", label: "청음인", Icon: MembersIcon, tour: "nav-members" },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
       label: profile ? "청음록" : "입장",
       Icon: ProfileIcon,
+      tour: "nav-profile",
     },
   ];
 
@@ -80,7 +81,7 @@ export default function BottomNav() {
       className="sm:hidden"
     >
       <div className="flex items-stretch">
-        {items.map(({ href, label, Icon }) => {
+        {items.map(({ href, label, Icon, tour }) => {
           const active = isActive(href);
           return (
             <Link
@@ -88,6 +89,7 @@ export default function BottomNav() {
               href={href}
               aria-label={label}
               aria-current={active ? "page" : undefined}
+              {...(tour ? { "data-tour": tour } : {})}
               style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
               className="flex-1 flex flex-col items-center justify-center gap-1 py-3 active:opacity-60"
             >

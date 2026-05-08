@@ -200,7 +200,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 return (
     <>
       {/* 필터 바 */}
-      <div style={{ borderBottom: "1px solid var(--border)", marginBottom: 32 }} className="py-4 flex flex-col gap-3">
+      <div data-tour="albums-filter" style={{ borderBottom: "1px solid var(--border)", marginBottom: 32 }} className="py-4 flex flex-col gap-3">
 
       {/* 필터 컨트롤: 데스크탑 1줄, 모바일 2줄 */}
       <div className="flex flex-wrap items-center gap-3">

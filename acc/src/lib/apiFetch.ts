@@ -4,6 +4,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   const { data: { session } } = await supabaseBrowser.auth.getSession();
   const token = session?.access_token;
   return fetch(url, {
+    cache: "no-store",
     ...options,
     headers: {
       ...(options.headers ?? {}),

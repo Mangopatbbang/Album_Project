@@ -227,6 +227,7 @@ export default function FloatingActions() {
 
         {/* 메인 토글 버튼 */}
         <button
+          data-tour="floating-actions"
           onClick={() => setOpen((v) => !v)}
           style={{
             ...btnStyle,

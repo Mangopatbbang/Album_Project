@@ -39,15 +39,16 @@ export async function PATCH(req: NextRequest) {
   if (!spotify_name?.trim() || use_variant === undefined) {
     return NextResponse.json({ error: "spotify_name과 use_variant 필수" }, { status: 400 });
   }
-  const { error } = await supabaseServer
+  const { data, error } = await supabaseServer
     .from("albums")
     .update({ use_artist_variant: use_variant })
-    .eq("artist", spotify_name.trim());
+    .eq("artist", spotify_name.trim())
+    .select("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
   revalidateTag("all-albums-with-ratings", { expire: 0 });
   revalidateTag("profile-ratings", { expire: 0 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, updated: data?.length ?? 0 });
 }

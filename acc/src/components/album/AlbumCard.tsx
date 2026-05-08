@@ -39,6 +39,7 @@ export default function AlbumCard({ album, onClick }: Props) {
   return (
     <>
     <button
+      data-tour="album-card"
       onClick={() => onClick(album)}
       style={{
         backgroundColor: "var(--bg-card)",
