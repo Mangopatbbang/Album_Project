@@ -78,12 +78,12 @@ function PairRow({ pair, avatarMap }: { pair: PairData; avatarMap: Record<string
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "12px 16px", backgroundColor: "var(--bg-elevated)", borderRadius: 8,
     }}>
-      <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0, overflow: "hidden" }}>
         <UserAvatar avatarUrl={avatarMap[pair.a.id]} size={18} />
-        <Link href={`/profile/${pair.a.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{pair.a.display_name}</Link>
-        <span style={{ opacity: 0.4 }}>×</span>
+        <Link href={`/profile/${pair.a.id}`} style={{ color: "inherit", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 72 }} className="hover:text-[var(--accent)] transition-colors">{pair.a.display_name}</Link>
+        <span style={{ opacity: 0.4, flexShrink: 0 }}>×</span>
         <UserAvatar avatarUrl={avatarMap[pair.b.id]} size={18} />
-        <Link href={`/profile/${pair.b.id}`} style={{ color: "inherit", textDecoration: "none" }} className="hover:text-[var(--accent)] transition-colors">{pair.b.display_name}</Link>
+        <Link href={`/profile/${pair.b.id}`} style={{ color: "inherit", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 72 }} className="hover:text-[var(--accent)] transition-colors">{pair.b.display_name}</Link>
       </span>
       <div style={{ textAlign: "right" }}>
         <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {pair.commonCount}장</p>
@@ -105,7 +105,7 @@ export function PairsSection({ pairs, avatarMap }: { pairs: PairData[]; avatarMa
   return (
     <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
       <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>취향 궁합</p>
-      <div style={{ display: "grid", gridTemplateColumns: pairs.length > 3 ? "repeat(2, 1fr)" : "1fr", gap: 12 }}>
+      <div className={pairs.length > 3 ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
         {preview.map((pair) => (
           <PairRow key={`${pair.a.id}-${pair.b.id}`} pair={pair} avatarMap={avatarMap} />
         ))}
