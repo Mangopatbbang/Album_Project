@@ -83,11 +83,11 @@ export default function StoryCard({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "56px 32px 68px",
+          padding: "48px 28px 56px",
         }}
       >
         {/* 상단: ACHA (좌) / 닉네임 (우) */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.22)", letterSpacing: "0.18em", fontFamily: "Georgia, 'Times New Roman', serif" }}>
             ACHA
           </span>
@@ -103,7 +103,7 @@ export default function StoryCard({
           <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
             <span
               style={{
-                fontSize: 72,
+                fontSize: 64,
                 fontWeight: 900,
                 lineHeight: 1,
                 color,
@@ -122,7 +122,7 @@ export default function StoryCard({
             <p
               style={{
                 flex: 1,
-                margin: "52px 0 0",
+                margin: "44px 0 0",
                 fontSize: 12,
                 fontStyle: "italic",
                 color: "rgba(255,255,255,0.62)",
@@ -143,9 +143,9 @@ export default function StoryCard({
         {/* 앨범 커버 — 중앙, 크게 */}
         <div
           style={{
-            marginTop: 20,
-            width: 192,
-            height: 192,
+            marginTop: 16,
+            width: 172,
+            height: 172,
             flexShrink: 0,
             borderRadius: 10,
             overflow: "hidden",
@@ -178,7 +178,7 @@ export default function StoryCard({
         </div>
 
         {/* 제목 + 아티스트 · 장르 */}
-        <div style={{ marginTop: 18, textAlign: "center" }}>
+        <div style={{ marginTop: 14, textAlign: "center" }}>
           <p
             style={{
               fontSize: 19,
@@ -206,7 +206,7 @@ export default function StoryCard({
 
         {/* Best Tracks */}
         {likedTracks && likedTracks.length > 0 && (
-          <div style={{ marginTop: 14, width: "100%" }}>
+          <div style={{ marginTop: 10, width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
               <div style={{ flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.1)" }} />
               <span style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", letterSpacing: "0.08em" }}>BEST TRACKS</span>

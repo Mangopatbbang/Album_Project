@@ -8,7 +8,6 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
-import { captureElement } from "@/lib/capture";
 import { apiFetch } from "@/lib/apiFetch";
 import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
@@ -77,8 +76,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
   const [deleting, setDeleting] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [closing, setClosing] = useState(false);
-  const [capturing, setCapturing] = useState(false);
-  const [captured, setCaptured] = useState(false);
   const [showCardPreview, setShowCardPreview] = useState(false);
   const [editing, setEditing] = useState(false);
   const [myLikedTracks, setMyLikedTracks] = useState<Set<number>>(new Set());
@@ -123,17 +120,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
     onSaved?.(album.id);
     handleClose();
   };
-
-  const handleCapture = async () => {
-    if (!cardRef.current || capturing) return;
-    setCapturing(true);
-    await captureElement(cardRef.current);
-    setCapturing(false);
-    setCaptured(true);
-    showToast("이미지로 저장했어요", "info");
-    setTimeout(() => setCaptured(false), 2000);
-  };
-
 
   const doClose = () => {
     setClosing(true);
@@ -627,32 +613,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                     onClick={() => setShowCardPreview(true)}
                     title="평가카드 만들기"
                     style={{
-                      background: "none", border: "1px solid var(--border)",
+                      background: "none", border: "none",
                       cursor: "pointer", color: "var(--text)",
-                      fontSize: 11, lineHeight: 1,
-                      padding: "2px 7px", borderRadius: 4,
-                      whiteSpace: "nowrap",
+                      fontSize: 15, lineHeight: 1, padding: "2px 4px",
                     }}
                   >
-                    카드
-                  </button>
-                )}
-                <button
-                  onClick={handleCapture}
-                  disabled={capturing}
-                  style={{
-                    background: "none", border: "none", cursor: capturing ? "default" : "pointer",
-                    color: captured ? "var(--accent)" : "var(--text)",
-                    fontSize: 15, lineHeight: 1, padding: "2px 4px",
-                    transition: "color 0.2s", opacity: capturing ? 0.5 : 1,
-                  }}
-                >
-                  {captured ? "✓" : (
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
                     </svg>
-                  )}
-                </button>
+                  </button>
+                )}
               </div>
             </div>
 
