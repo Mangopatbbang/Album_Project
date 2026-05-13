@@ -10,6 +10,8 @@ const GENRES = [
   "Electronic", "Folk", "Alternative", "Jazz", "Country", "OST", "Compilation", "Other",
 ];
 
+const REGIONS = ["국내", "해외"] as const;
+
 type Props = {
   onClose: () => void;
   onAdded: () => void;
@@ -35,6 +37,7 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
   const [coverUrl, setCoverUrl] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [genre, setGenre] = useState("");
+  const [region, setRegion] = useState("");
   const [tracklist, setTracklist] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -94,6 +97,7 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
         year: releaseDate ? releaseDate.slice(0, 4) : null,
         release_date: releaseDate || null,
         genre: genre || null,
+        region: region || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
         spotify_id: null,
@@ -275,12 +279,36 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
               placeholder="YYYY-MM-DD"
             />
           </div>
-          <div>
-            <label style={labelStyle}>장르</label>
-            <select style={{ ...inputStyle, cursor: "pointer" }} value={genre} onChange={(e) => setGenre(e.target.value)}>
-              <option value="">선택 안함</option>
-              {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div>
+              <label style={labelStyle}>장르</label>
+              <select style={{ ...inputStyle, cursor: "pointer" }} value={genre} onChange={(e) => setGenre(e.target.value)}>
+                <option value="">선택 안함</option>
+                {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>국내 / 해외</label>
+              <div style={{ display: "flex", gap: 6, height: 36 }}>
+                {REGIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRegion(region === r ? "" : r)}
+                    style={{
+                      flex: 1, borderRadius: 6, border: "1px solid",
+                      borderColor: region === r ? "var(--accent)" : "var(--border)",
+                      backgroundColor: region === r ? "rgba(var(--accent-rgb), 0.12)" : "var(--bg-elevated)",
+                      color: region === r ? "var(--accent)" : "var(--text-muted)",
+                      fontSize: 12, fontWeight: 600, cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

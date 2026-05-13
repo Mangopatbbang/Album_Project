@@ -14,6 +14,7 @@ export type Album = {
   year?: string;
   release_date?: string | null;
   genre?: string;
+  region?: string | null;
   tracklist?: string;
   spotify_id?: string;
   soundcloud_url?: string | null;
