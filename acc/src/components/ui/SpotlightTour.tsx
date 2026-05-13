@@ -38,34 +38,33 @@ const STEPS: TourStep[] = [
     selector: '[data-tour="album-card"]',
   },
   {
+    // Nav item is always in Header/BottomNav — no navigate needed, show on current page
     id: "nav-best",
     title: "청음감 — 명반 랭킹",
     body: "전체·연도별·장르별·아티스트별 랭킹을 볼 수 있어요. 국내/해외 필터도 지원돼요.",
     selector: '[data-tour="nav-best"]',
-    altSelector: '[data-tour="best-main"]',
-    navigate: "/best",
   },
   {
+    // Navigate to /best HERE so page content is loaded for this step
     id: "best-tabs",
     title: "랭킹 보기 전환",
     body: "통합 랭킹부터 연도별·장르별·아티스트별로 다양하게 볼 수 있어요.",
     selector: '[data-tour="best-tabs"]',
+    altSelector: '[data-tour="best-main"]',
+    navigate: "/best",
   },
   {
+    // Nav item in Header/BottomNav — we're already on /best, no new navigate needed
     id: "nav-reviews",
     title: "청음평 — 한줄평 피드",
     body: "모든 멤버의 한줄평을 피드로 볼 수 있어요. 공감하거나 댓글을 달 수도 있어요.",
     selector: '[data-tour="nav-reviews"]',
-    altSelector: '[data-tour="reviews-main"]',
-    navigate: "/reviews",
   },
   {
     id: "nav-members",
     title: "청음인 — 멤버 현황",
     body: "모임 멤버들의 평가 현황과 취향 궁합을 확인할 수 있어요.",
     selector: '[data-tour="nav-members"]',
-    altSelector: '[data-tour="members-main"]',
-    navigate: "/members",
   },
   {
     id: "nav-profile",
@@ -367,7 +366,8 @@ export default function SpotlightTour() {
         await new Promise((r) => setTimeout(r, 600));
       }
 
-      const found = await findVisible(step.selector, step.altSelector);
+      // Navigated steps get more time for the page to finish rendering
+      const found = await findVisible(step.selector, step.altSelector, step.navigate ? 4000 : 2500);
       if (!found) {
         // Element not visible (hidden on this breakpoint) — skip
         processingRef.current = false;
