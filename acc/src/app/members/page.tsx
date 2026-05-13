@@ -254,7 +254,7 @@ export default async function MembersPage() {
                     <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{avg!.toFixed(2)}</span>
                   </div>
                   <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(avg! / 8) * 100}%`, backgroundColor: scoreColor(avg), borderRadius: 2 }} />
+                    <div style={{ height: "100%", width: `${Math.min((avg! / 7) * 100, 100)}%`, backgroundColor: scoreColor(avg), borderRadius: 2 }} />
                   </div>
                 </div>
               ))}

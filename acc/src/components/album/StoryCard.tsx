@@ -100,7 +100,7 @@ export default function StoryCard({
 
         {/* 점수 + 한줄평 */}
         <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: score === 8 ? 3 : 5, flexShrink: 0 }}>
             <span
               style={{
                 fontSize: 64,
@@ -109,14 +109,32 @@ export default function StoryCard({
                 color,
                 letterSpacing: "-0.05em",
                 textShadow:
-                  score >= 7 ? `0 0 28px ${color}99, 0 0 10px ${color}55` : "none",
+                  score === 8
+                    ? `0 0 48px ${color}ee, 0 0 24px ${color}bb, 0 0 80px ${color}55`
+                    : score >= 7
+                    ? `0 0 28px ${color}99, 0 0 10px ${color}55`
+                    : "none",
               }}
             >
               {score}
             </span>
-            <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
-              /8
-            </span>
+            {score === 8 ? (
+              <span
+                style={{
+                  fontSize: 30,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  color,
+                  textShadow: `0 0 20px ${color}cc, 0 0 8px ${color}88`,
+                }}
+              >
+                ★
+              </span>
+            ) : (
+              <span style={{ fontSize: 20, color: "rgba(255,255,255,0.38)", fontWeight: 400 }}>
+                /7
+              </span>
+            )}
           </div>
           {review && (
             <p

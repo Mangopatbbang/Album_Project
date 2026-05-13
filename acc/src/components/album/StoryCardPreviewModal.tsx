@@ -10,6 +10,7 @@ type Props = {
   artist: string;
   coverUrl: string | null | undefined;
   score: number;
+  avgScore?: number | null;
   review: string | null | undefined;
   genre?: string | null;
   userName?: string;
@@ -23,6 +24,7 @@ export default function StoryCardPreviewModal({
   artist,
   coverUrl,
   score,
+  avgScore,
   review,
   genre,
   userName,
@@ -36,6 +38,7 @@ export default function StoryCardPreviewModal({
   const [capturing, setCapturing] = useState(false);
   const [includeReview, setIncludeReview] = useState(true);
   const [includeTracks, setIncludeTracks] = useState(true);
+  const [useAvgScore, setUseAvgScore] = useState(false);
   const [cardScale, setCardScale] = useState(1);
   const { showToast } = useToast();
 
@@ -50,6 +53,7 @@ export default function StoryCardPreviewModal({
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  const displayScore = useAvgScore && avgScore != null ? avgScore : score;
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
   // iOS Safari 감지 (a.download 미지원)
@@ -186,7 +190,7 @@ export default function StoryCardPreviewModal({
           title={title}
           artist={artist}
           coverUrl={coverUrl}
-          score={score}
+          score={displayScore}
           review={includeReview ? (review ?? null) : null}
           genre={genre}
           userName={userName}
@@ -203,6 +207,34 @@ export default function StoryCardPreviewModal({
       >
         {/* 토글 옵션 */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          {avgScore != null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(255,255,255,0.18)", borderRadius: 8, overflow: "hidden", fontSize: 12, fontWeight: 600 }}>
+              <button
+                onClick={() => setUseAvgScore(false)}
+                style={{
+                  padding: "6px 14px",
+                  background: !useAvgScore ? "rgba(255,255,255,0.18)" : "none",
+                  color: !useAvgScore ? "#fff" : "rgba(255,255,255,0.45)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                내 점수
+              </button>
+              <button
+                onClick={() => setUseAvgScore(true)}
+                style={{
+                  padding: "6px 14px",
+                  background: useAvgScore ? "rgba(255,255,255,0.18)" : "none",
+                  color: useAvgScore ? "#fff" : "rgba(255,255,255,0.45)",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                평균 점수
+              </button>
+            </div>
+          )}
           {review && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "rgba(255,255,255,0.55)", fontSize: 13, userSelect: "none" }}>
               <input

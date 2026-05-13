@@ -664,7 +664,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
             {/* 평균 점수 */}
             <p style={{ fontWeight: 700, fontSize: 22, marginTop: 10, color: data.avg ? scoreColor(data.avg) : "var(--text-muted)" }}>
               {data.avg ?? "–"}
-              <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
+              <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 7</span>
             </p>
           </div>
           </div>{/* end 정보 row */}
@@ -1141,6 +1141,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           artist={data.artist_display ?? data.artist}
           coverUrl={data.cover_url}
           score={myScore}
+          avgScore={data.avg != null ? parseFloat(String(data.avg)) : null}
           review={myReview || null}
           genre={data.genre ?? null}
           userName={profile?.display_name ?? profile?.id}
