@@ -33,7 +33,6 @@ export default function StoryCardPreviewModal({
   onClose,
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const captureRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const [capturing, setCapturing] = useState(false);
@@ -46,7 +45,7 @@ export default function StoryCardPreviewModal({
   useEffect(() => {
     const update = () => {
       const scaleW = Math.min(1, (window.innerWidth - 32) / 360);
-      const scaleH = Math.min(1, (window.innerHeight - 160) / 640); // 160px: 옵션+버튼+패딩 여유
+      const scaleH = Math.min(1, (window.innerHeight - 160) / 640);
       setCardScale(Math.min(scaleW, scaleH));
     };
     update();
@@ -57,7 +56,6 @@ export default function StoryCardPreviewModal({
   const displayScore = useAvgScore && avgScore != null ? avgScore : score;
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
-  // iOS Safari 감지 (a.download 미지원)
   const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
 
   const canShare = (() => {
@@ -84,12 +82,23 @@ export default function StoryCardPreviewModal({
     });
 
   const prepareCapture = async (): Promise<Blob | null> => {
-    // transform이 없는 숨김 카드(captureRef)로 캡처 — 스케일 부모로 인한 콘텐츠 잘림 방지
-    const el = captureRef.current;
+    const el = cardRef.current;
     if (!el) return null;
+
     await waitForImages(el);
     if (document.fonts?.ready) await document.fonts.ready;
-    return captureToBlob(el, "#1a1817", 360, 640);
+
+    // 캡처 직전에만 transform 제거 — html2canvas가 1:1 크기(360×640)로 정확히 인식
+    // scrollX/scrollY: 0 은 capture.ts에서 처리
+    const scaleWrapper = el.parentElement as HTMLElement | null;
+    const origTransform = scaleWrapper?.style.transform ?? "";
+    if (scaleWrapper) scaleWrapper.style.transform = "none";
+
+    try {
+      return await captureToBlob(el, "#1a1817", 360, 640);
+    } finally {
+      if (scaleWrapper) scaleWrapper.style.transform = origTransform;
+    }
   };
 
   const handleSave = async () => {
@@ -99,7 +108,6 @@ export default function StoryCardPreviewModal({
       const blob = await prepareCapture();
       if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
 
-      // iOS는 a.download 미지원 → share API로 대체
       if (isIOS && canShare) {
         const file = new File([blob], filename, { type: "image/png" });
         try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 — 모달 유지 */ }
@@ -173,26 +181,6 @@ export default function StoryCardPreviewModal({
         ✕
       </button>
 
-      {/* 캡처 전용 카드 — transform 없이 fixed 위치에 숨김, html2canvas가 정확한 1:1 크기로 캡처
-           opacity: 0 사용 금지 (html2canvas가 투명하게 캡처함) — zIndex: -1로 backdrop 뒤에 숨김 */}
-      <div
-        aria-hidden="true"
-        style={{ position: "fixed", top: 0, left: 0, width: 360, height: 640, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}
-      >
-        <StoryCard
-          containerRef={captureRef}
-          title={title}
-          artist={artist}
-          coverUrl={coverUrl}
-          score={displayScore}
-          review={includeReview ? (review ?? null) : null}
-          genre={genre}
-          userName={userName}
-          spotifyId={spotifyId}
-          likedTracks={includeTracks ? likedTracks : undefined}
-        />
-      </div>
-
       {/* 카드 미리보기 — 뷰포트 좁을 때 scale 축소 */}
       <div
         onClick={(e) => e.stopPropagation()}
@@ -206,18 +194,18 @@ export default function StoryCardPreviewModal({
         }}
       >
         <div style={{ transform: `scale(${cardScale})`, transformOrigin: "top left", width: 360, height: 640 }}>
-        <StoryCard
-          containerRef={cardRef}
-          title={title}
-          artist={artist}
-          coverUrl={coverUrl}
-          score={displayScore}
-          review={includeReview ? (review ?? null) : null}
-          genre={genre}
-          userName={userName}
-          spotifyId={spotifyId}
-          likedTracks={includeTracks ? likedTracks : undefined}
-        />
+          <StoryCard
+            containerRef={cardRef}
+            title={title}
+            artist={artist}
+            coverUrl={coverUrl}
+            score={displayScore}
+            review={includeReview ? (review ?? null) : null}
+            genre={genre}
+            userName={userName}
+            spotifyId={spotifyId}
+            likedTracks={includeTracks ? likedTracks : undefined}
+          />
         </div>
       </div>
 

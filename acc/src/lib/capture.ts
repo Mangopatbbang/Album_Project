@@ -16,7 +16,8 @@ export async function captureToBlob(el: HTMLElement, bg = "#1a1817", width?: num
     allowTaint: false,
     scale: 3,
     logging: false,
-    // transform 부모로 인해 getBoundingClientRect가 축소 값을 반환할 수 있으므로 명시적 지정
+    scrollX: 0,
+    scrollY: 0,
     ...(width !== undefined && { width }),
     ...(height !== undefined && { height }),
   });
