@@ -133,6 +133,7 @@ export default function StoryCard({
                 WebkitLineClamp: 4,
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
+                maxHeight: "77px", // html2canvas fallback: 4줄 × 12px × 1.6
               }}
             >
               &ldquo;{review}&rdquo;
@@ -191,6 +192,7 @@ export default function StoryCard({
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
+              maxHeight: "48px", // html2canvas fallback: 2줄 × 19px × 1.25
             }}
           >
             {title}

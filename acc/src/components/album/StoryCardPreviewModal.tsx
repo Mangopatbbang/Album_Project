@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import StoryCard from "@/components/album/StoryCard";
 import { captureToBlob, downloadBlob } from "@/lib/capture";
+import { useToast } from "@/components/ui/Toast";
 
 type Props = {
   title: string;
@@ -36,6 +37,7 @@ export default function StoryCardPreviewModal({
   const [includeReview, setIncludeReview] = useState(true);
   const [includeTracks, setIncludeTracks] = useState(true);
   const [cardScale, setCardScale] = useState(1);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const update = () => setCardScale(Math.min(1, (window.innerWidth - 32) / 360));
@@ -45,6 +47,18 @@ export default function StoryCardPreviewModal({
   }, []);
 
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
+
+  // iOS Safari 감지 (a.download 미지원)
+  const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+  const canShare = (() => {
+    if (typeof navigator === "undefined" || typeof navigator.canShare !== "function") return false;
+    try {
+      return navigator.canShare({ files: [new File([], "test.png", { type: "image/png" })] });
+    } catch {
+      return false;
+    }
+  })();
 
   const waitForImages = () =>
     new Promise<void>((resolve) => {
@@ -61,41 +75,55 @@ export default function StoryCardPreviewModal({
       setTimeout(resolve, 3000);
     });
 
+  const prepareCapture = async (): Promise<Blob | null> => {
+    if (!cardRef.current) return null;
+    await waitForImages();
+    // 웹폰트 로딩 대기
+    if (document.fonts?.ready) await document.fonts.ready;
+    return captureToBlob(cardRef.current);
+  };
+
   const handleSave = async () => {
     if (!cardRef.current || capturing) return;
     setCapturing(true);
-    await waitForImages();
-    const blob = await captureToBlob(cardRef.current);
-    if (blob) downloadBlob(blob, filename);
-    setCapturing(false);
-    onClose();
+    try {
+      const blob = await prepareCapture();
+      if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
+
+      // iOS는 a.download 미지원 → share API로 대체
+      if (isIOS && canShare) {
+        const file = new File([blob], filename, { type: "image/png" });
+        try { await navigator.share({ files: [file] }); } catch { /* 취소 */ }
+      } else {
+        downloadBlob(blob, filename);
+        onClose();
+      }
+    } catch {
+      showToast("이미지 생성에 실패했어요", "error");
+    } finally {
+      setCapturing(false);
+    }
   };
 
   const handleShare = async () => {
     if (!cardRef.current || capturing) return;
     setCapturing(true);
-    await waitForImages();
-    const blob = await captureToBlob(cardRef.current);
-    if (blob) {
+    try {
+      const blob = await prepareCapture();
+      if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
       const file = new File([blob], filename, { type: "image/png" });
       try {
         await navigator.share({ files: [file] });
+        onClose();
       } catch {
-        // 사용자 취소 무시
+        // 사용자 취소 — 모달 유지
       }
-    }
-    setCapturing(false);
-    onClose();
-  };
-
-  const canShare = (() => {
-    if (typeof navigator === "undefined" || typeof navigator.canShare !== "function") return false;
-    try {
-      return navigator.canShare({ files: [new File([], "test.png", { type: "image/png" })] });
     } catch {
-      return false;
+      showToast("이미지 생성에 실패했어요", "error");
+    } finally {
+      setCapturing(false);
     }
-  })();
+  };
 
   return (
     <div
@@ -231,7 +259,7 @@ export default function StoryCardPreviewModal({
               opacity: capturing ? 0.5 : 1,
             }}
           >
-            {capturing ? "처리 중…" : "저장"}
+            {capturing ? "처리 중…" : (isIOS && canShare) ? "공유 / 저장" : "저장"}
           </button>
         </div>
       </div>
