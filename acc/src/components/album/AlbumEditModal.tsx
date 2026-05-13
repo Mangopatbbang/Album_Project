@@ -44,6 +44,7 @@ type Props = {
   };
   onClose: () => void;
   onSaved: () => void;
+  isAdmin?: boolean;
 };
 
 function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selected: SpotifyCandidate | null; onSelect: (c: SpotifyCandidate) => void }) {
@@ -75,9 +76,10 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
   );
 }
 
-export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
+export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Props) {
   const { showToast } = useToast();
   const [title, setTitle] = useState(album.title);
+  const [artist, setArtist] = useState(album.artist);
   const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
   const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
   const [genre, setGenre] = useState(koGenre(album.genre ?? ""));
@@ -200,6 +202,7 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: title.trim(),
+        ...(isAdmin && artist.trim() !== album.artist ? { artist: artist.trim() } : {}),
         extra_artists: extraArtists.trim() || null,
         release_date: releaseDate || null,
         year: releaseDate ? releaseDate.slice(0, 4) : null,
@@ -279,11 +282,16 @@ export default function AlbumEditModal({ album, onClose, onSaved }: Props) {
             />
           </div>
           <div>
-            <label style={labelStyle}>아티스트 (Spotify 정식명 — 변경 불가)</label>
+            <label style={labelStyle}>
+              아티스트{isAdmin ? " (어드민 전용 수정)" : " (변경 불가)"}
+            </label>
             <input
-              style={{ ...inputStyle, color: "var(--text-muted)", cursor: "default" }}
-              value={album.artist}
-              readOnly
+              style={isAdmin
+                ? inputStyle
+                : { ...inputStyle, color: "var(--text-muted)", cursor: "default" }}
+              value={isAdmin ? artist : album.artist}
+              onChange={isAdmin ? (e) => setArtist(e.target.value) : undefined}
+              readOnly={!isAdmin}
             />
             {/* 별칭(한글명) 또는 개별 아티스트명 토글 */}
             {(variantName || extraArtists.trim()) && (

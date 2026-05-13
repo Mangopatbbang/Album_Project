@@ -1152,6 +1152,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
       {editing && (
         <AlbumEditModal
+          isAdmin={profile?.role === "admin"}
           album={{
             id: album.id,
             title: data.title,

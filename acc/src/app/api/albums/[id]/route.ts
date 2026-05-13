@@ -16,7 +16,7 @@ export async function PATCH(
   if (!authed) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
   const body = await req.json();
-  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
