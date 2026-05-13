@@ -174,7 +174,7 @@ export default function Header() {
                               <>관리자로부터 <span style={{ fontWeight: 600 }}>경고</span>가 발송됐습니다</>
                             );
                             if (n.type === "moderation_ban_temp") return (
-                              <><span style={{ fontWeight: 600 }}>{n.reviewerId}일 이용 정지</span> 처리됐습니다</>
+                              <><span style={{ fontWeight: 600 }}>{n.reviewerId ?? "?"}일 이용 정지</span> 처리됐습니다</>
                             );
                             if (n.type === "moderation_ban_permanent") return (
                               <><span style={{ fontWeight: 600 }}>영구 이용 정지</span> 처리됐습니다</>
