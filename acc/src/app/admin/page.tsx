@@ -120,14 +120,18 @@ export default function AdminPage() {
     setReportsLoading(false);
   }
 
-  async function handleReportAction(reportId: string, status: string, banUserId?: string) {
-    if (banUserId && !confirm(`@${banUserId} 을(를) 밴하시겠습니까?`)) return;
-    const body: Record<string, string> = { reportId, status };
-    if (banUserId) body.banUserId = banUserId;
+  async function handleReportAction(reportId: string, action: "dismiss" | "warn" | "ban_7d" | "ban_14d" | "ban_permanent") {
+    const confirmMessages: Record<string, string> = {
+      warn: "경고를 발송하시겠습니까?",
+      ban_7d: "7일 이용 정지 처리하시겠습니까?",
+      ban_14d: "14일 이용 정지 처리하시겠습니까?",
+      ban_permanent: "영구 이용 정지 처리하시겠습니까?",
+    };
+    if (confirmMessages[action] && !confirm(confirmMessages[action])) return;
     const res = await adminFetch("/api/admin/reports", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ reportId, action }),
     });
     if (res.ok) loadReports(reportsStatusFilter !== "all" ? reportsStatusFilter : undefined);
   }
@@ -1363,7 +1367,7 @@ export default function AdminPage() {
         {activeTab === "reports" && (<>
           {/* 필터 + 불러오기 */}
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
-            {(["pending", "reviewed", "dismissed", "all"] as const).map((s) => (
+            {(["pending", "warned", "banned_7d", "banned_14d", "banned", "dismissed", "all"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => { setReportsStatusFilter(s); loadReports(s !== "all" ? s : undefined); }}
@@ -1374,7 +1378,7 @@ export default function AdminPage() {
                   color: reportsStatusFilter === s ? "var(--bg)" : "var(--text-muted)",
                 }}
               >
-                {{ pending: "대기 중", reviewed: "처리됨", dismissed: "기각됨", all: "전체" }[s]}
+                {{ pending: "대기 중", warned: "경고", banned_7d: "7일밴", banned_14d: "14일밴", banned: "영구밴", dismissed: "기각됨", all: "전체" }[s]}
               </button>
             ))}
             {reports === null && !reportsLoading && (
@@ -1440,31 +1444,43 @@ export default function AdminPage() {
                   {r.status === "pending" && (
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button
-                        onClick={() => handleReportAction(r.id, "reviewed")}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
-                      >
-                        확인 처리
-                      </button>
-                      <button
-                        onClick={() => handleReportAction(r.id, "dismissed")}
+                        onClick={() => handleReportAction(r.id, "dismiss")}
                         style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
                       >
                         기각
                       </button>
                       <button
-                        onClick={() => handleReportAction(r.id, "reviewed", r.reported_user_id)}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.4)", backgroundColor: "rgba(224,80,80,0.1)", color: "#e05050" }}
+                        onClick={() => handleReportAction(r.id, "warn")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid rgba(224,160,48,0.5)", backgroundColor: "rgba(224,160,48,0.1)", color: "#e0a030" }}
                       >
-                        밴
+                        경고
+                      </button>
+                      <button
+                        onClick={() => handleReportAction(r.id, "ban_7d")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.3)", backgroundColor: "rgba(224,80,80,0.07)", color: "#e05050" }}
+                      >
+                        7일 정지
+                      </button>
+                      <button
+                        onClick={() => handleReportAction(r.id, "ban_14d")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.5)", backgroundColor: "rgba(224,80,80,0.12)", color: "#e05050" }}
+                      >
+                        14일 정지
+                      </button>
+                      <button
+                        onClick={() => handleReportAction(r.id, "ban_permanent")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.7)", backgroundColor: "rgba(224,80,80,0.18)", color: "#e05050" }}
+                      >
+                        영구 정지
                       </button>
                     </div>
                   )}
-                  {r.status === "reviewed" && (
+                  {(r.status === "banned_7d" || r.status === "banned_14d" || r.status === "banned" || r.status === "warned") && (
                     <button
                       onClick={() => handleUnban(r.reported_user_id)}
                       style={{ alignSelf: "flex-start", padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
                     >
-                      밴 해제
+                      제재 해제
                     </button>
                   )}
                 </div>

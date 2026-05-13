@@ -5,7 +5,10 @@ import { validateUser } from "@/lib/validateUser";
 export type NotificationItem = {
   id: string;
   userId: string;
-  type: "comment" | "like" | "report_reviewed" | "report_ban";
+  type:
+    | "comment" | "like"
+    | "report_reviewed" | "report_ban"
+    | "moderation_warning" | "moderation_ban_temp" | "moderation_ban_permanent";
   fromUserId: string | null;
   albumId: string | null;
   albumTitle?: string;

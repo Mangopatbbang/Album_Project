@@ -153,45 +153,67 @@ export default function Header() {
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
                         notifications.map((n) => {
-                          const isReport = n.type === "report_reviewed" || n.type === "report_ban";
-                          const fromUser = isReport ? null : getUserById(n.fromUserId ?? "");
+                          const isSystemNotif = n.type !== "comment" && n.type !== "like";
+                          const fromUser = isSystemNotif ? null : getUserById(n.fromUserId ?? "");
                           const nd = new Date(n.createdAt);
                           const ndStr = `${String(nd.getMonth() + 1).padStart(2, "0")}.${String(nd.getDate()).padStart(2, "0")}`;
+
+                          const systemIcon =
+                            n.type === "report_reviewed" || n.type === "report_ban" ? "⚖️"
+                            : n.type === "moderation_warning" ? "⚠️"
+                            : "🚫";
+
+                          const systemText = () => {
+                            if (n.type === "report_reviewed") return (
+                              <>신고가 <span style={{ fontWeight: 600 }}>확인 처리</span>됐습니다{n.reviewerId && <> — @{n.reviewerId}</>}</>
+                            );
+                            if (n.type === "report_ban") return (
+                              <>신고 <span style={{ fontWeight: 600 }}>처리 완료</span>{n.reviewerId && <> — <span style={{ color: "#e05050" }}>@{n.reviewerId}</span> 제재됨</>}</>
+                            );
+                            if (n.type === "moderation_warning") return (
+                              <>관리자로부터 <span style={{ fontWeight: 600 }}>경고</span>가 발송됐습니다</>
+                            );
+                            if (n.type === "moderation_ban_temp") return (
+                              <><span style={{ fontWeight: 600 }}>{n.reviewerId}일 이용 정지</span> 처리됐습니다</>
+                            );
+                            if (n.type === "moderation_ban_permanent") return (
+                              <><span style={{ fontWeight: 600 }}>영구 이용 정지</span> 처리됐습니다</>
+                            );
+                            return null;
+                          };
+
+                          const leftBarColor =
+                            n.type === "moderation_warning" ? "#e0a030"
+                            : n.type === "moderation_ban_temp" || n.type === "moderation_ban_permanent" ? "#e05050"
+                            : isSystemNotif ? "var(--accent)"
+                            : "var(--accent)";
+
                           return (
                             <div
                               key={n.id}
                               onClick={() => {
                                 setShowNotif(false);
-                                if (!isReport && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
+                                if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
                               }}
                               style={{
                                 padding: "10px 16px",
                                 borderBottom: "1px solid var(--border)",
                                 backgroundColor: n.read ? "transparent" : "rgba(var(--accent-rgb), 0.05)",
-                                borderLeft: n.read ? "2px solid transparent" : `2px solid ${isReport ? "var(--error, #e05050)" : "var(--accent)"}`,
+                                borderLeft: n.read ? "2px solid transparent" : `2px solid ${leftBarColor}`,
                                 display: "flex", alignItems: "flex-start", gap: 8,
-                                cursor: isReport ? "default" : "pointer",
+                                cursor: isSystemNotif ? "default" : "pointer",
                               }}
-                              className={isReport ? "" : "hover:bg-[var(--bg-elevated)] transition-colors"}
+                              className={isSystemNotif ? "" : "hover:bg-[var(--bg-elevated)] transition-colors"}
                             >
-                              <span style={{ flexShrink: 0, fontSize: 16, lineHeight: "16px", marginTop: 1 }}>
-                                {isReport ? "⚖️" : (
+                              <span style={{ flexShrink: 0, fontSize: 14, lineHeight: "16px", marginTop: 1 }}>
+                                {isSystemNotif ? systemIcon : (
                                   <UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} />
                                 )}
                               </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                {isReport ? (
+                                {isSystemNotif ? (
                                   <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
-                                    {n.type === "report_ban"
-                                      ? <>
-                                          <span style={{ fontWeight: 600 }}>신고 처리 완료</span>
-                                          {n.reviewerId && <> — <span style={{ color: "var(--error, #e05050)" }}>@{n.reviewerId}</span> 가 제재됐습니다</>}
-                                        </>
-                                      : <>
-                                          <span style={{ fontWeight: 600 }}>신고가 확인 처리됐습니다</span>
-                                          {n.reviewerId && <> — <span style={{ color: "var(--text-muted)" }}>@{n.reviewerId}</span></>}
-                                        </>
-                                    }
+                                    {systemText()}
                                   </p>
                                 ) : (
                                   <>
