@@ -402,6 +402,32 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
         </div>
 
+        {/* 입고 워크플로 안내 — Spotify 연결 전에만 표시 */}
+        {!selectedCandidate && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 8,
+            backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+            display: "flex", flexDirection: "column", gap: 6,
+          }}>
+            <p style={{ color: "var(--text-sub)", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 2 }}>입고 방법</p>
+            {[
+              ["1", "아티스트명과 음반 제목 입력 → Spotify 검색"],
+              ["2", "결과 목록에서 앨범 선택 → 커버·트랙리스트·제목·아티스트 자동 입력"],
+              ["3", "제목은 한글로 바꾸고 싶으면 자유롭게 수정 가능"],
+              ["4", "발매일이 iTunes/Spotify 간 다를 경우 둘 중 하나 선택"],
+              ["5", "장르와 국내/해외는 직접 선택 (필수 아님)"],
+            ].map(([n, text]) => (
+              <div key={n} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <span style={{
+                  color: "var(--accent)", fontSize: 10, fontWeight: 700,
+                  minWidth: 14, lineHeight: "18px",
+                }}>{n}</span>
+                <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: "18px" }}>{text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* 제목 + 아티스트 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
@@ -411,7 +437,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
-              placeholder="음반 제목 입력 후 Enter 또는 Spotify 검색"
+              placeholder="예: GNX, MTTE, 기상도"
             />
             {/* 중복 경고 */}
             {duplicates.length > 0 && (
@@ -438,7 +464,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               onChange={(e) => { setArtist(e.target.value); setSearchDone(false); checkDuplicates(title, e.target.value); }}
               onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
               onBlur={handleArtistBlur}
-              placeholder="Spotify 등록명 (예: The Weeknd, BTS)"
+              placeholder="예: Kendrick Lamar, NewJeans, 이소라"
             />
           </div>
 
