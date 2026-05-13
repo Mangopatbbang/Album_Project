@@ -173,10 +173,11 @@ export default function StoryCardPreviewModal({
         ✕
       </button>
 
-      {/* 캡처 전용 카드 — transform 없이 fixed 위치에 숨김, html2canvas가 정확한 1:1 크기로 캡처 */}
+      {/* 캡처 전용 카드 — transform 없이 fixed 위치에 숨김, html2canvas가 정확한 1:1 크기로 캡처
+           opacity: 0 사용 금지 (html2canvas가 투명하게 캡처함) — zIndex: -1로 backdrop 뒤에 숨김 */}
       <div
         aria-hidden="true"
-        style={{ position: "fixed", top: 0, left: 0, width: 360, height: 640, opacity: 0, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}
+        style={{ position: "fixed", top: 0, left: 0, width: 360, height: 640, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}
       >
         <StoryCard
           containerRef={captureRef}
