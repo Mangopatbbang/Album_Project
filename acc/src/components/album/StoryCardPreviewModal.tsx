@@ -33,6 +33,7 @@ export default function StoryCardPreviewModal({
   onClose,
 }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const captureRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const [capturing, setCapturing] = useState(false);
@@ -68,10 +69,9 @@ export default function StoryCardPreviewModal({
     }
   })();
 
-  const waitForImages = () =>
+  const waitForImages = (el: HTMLElement) =>
     new Promise<void>((resolve) => {
-      if (!cardRef.current) { resolve(); return; }
-      const imgs = cardRef.current.querySelectorAll("img");
+      const imgs = el.querySelectorAll("img");
       const pending = Array.from(imgs).filter((img) => !img.complete);
       if (pending.length === 0) { resolve(); return; }
       let loaded = 0;
@@ -84,11 +84,12 @@ export default function StoryCardPreviewModal({
     });
 
   const prepareCapture = async (): Promise<Blob | null> => {
-    if (!cardRef.current) return null;
-    await waitForImages();
-    // 웹폰트 로딩 대기
+    // transform이 없는 숨김 카드(captureRef)로 캡처 — 스케일 부모로 인한 콘텐츠 잘림 방지
+    const el = captureRef.current;
+    if (!el) return null;
+    await waitForImages(el);
     if (document.fonts?.ready) await document.fonts.ready;
-    return captureToBlob(cardRef.current, "#1a1817", 360, 640);
+    return captureToBlob(el, "#1a1817", 360, 640);
   };
 
   const handleSave = async () => {
@@ -171,6 +172,25 @@ export default function StoryCardPreviewModal({
       >
         ✕
       </button>
+
+      {/* 캡처 전용 카드 — transform 없이 fixed 위치에 숨김, html2canvas가 정확한 1:1 크기로 캡처 */}
+      <div
+        aria-hidden="true"
+        style={{ position: "fixed", top: 0, left: 0, width: 360, height: 640, opacity: 0, pointerEvents: "none", zIndex: -1, overflow: "hidden" }}
+      >
+        <StoryCard
+          containerRef={captureRef}
+          title={title}
+          artist={artist}
+          coverUrl={coverUrl}
+          score={displayScore}
+          review={includeReview ? (review ?? null) : null}
+          genre={genre}
+          userName={userName}
+          spotifyId={spotifyId}
+          likedTracks={includeTracks ? likedTracks : undefined}
+        />
+      </div>
 
       {/* 카드 미리보기 — 뷰포트 좁을 때 scale 축소 */}
       <div
