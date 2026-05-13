@@ -32,6 +32,11 @@ export default function StoryCard({
     : null;
 
   const color = scoreColor(score);
+  const isSpecial = score >= 8;
+  const isDecimal = !Number.isInteger(score);
+  const scoreLabel = isDecimal ? score.toFixed(1) : String(score);
+  const scoreFontSize = isDecimal ? 50 : 64;
+  const reviewTopMargin = isDecimal ? 34 : 44;
 
   return (
     <div
@@ -100,25 +105,25 @@ export default function StoryCard({
 
         {/* 점수 + 한줄평 */}
         <div style={{ width: "100%", display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: score === 8 ? 3 : 5, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: isSpecial ? 3 : 5, flexShrink: 0 }}>
             <span
               style={{
-                fontSize: 64,
+                fontSize: scoreFontSize,
                 fontWeight: 900,
                 lineHeight: 1,
                 color,
                 letterSpacing: "-0.05em",
                 textShadow:
-                  score === 8
+                  isSpecial
                     ? `0 0 48px ${color}ee, 0 0 24px ${color}bb, 0 0 80px ${color}55`
                     : score >= 7
                     ? `0 0 28px ${color}99, 0 0 10px ${color}55`
                     : "none",
               }}
             >
-              {score}
+              {scoreLabel}
             </span>
-            {score === 8 ? (
+            {isSpecial ? (
               <span
                 style={{
                   fontSize: 30,
@@ -140,7 +145,7 @@ export default function StoryCard({
             <p
               style={{
                 flex: 1,
-                margin: "44px 0 0",
+                margin: `${reviewTopMargin}px 0 0`,
                 fontSize: 12,
                 fontStyle: "italic",
                 color: "rgba(255,255,255,0.62)",
@@ -151,7 +156,7 @@ export default function StoryCard({
                 WebkitLineClamp: 4,
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
-                maxHeight: "77px", // html2canvas fallback: 4줄 × 12px × 1.6
+                maxHeight: "77px",
               }}
             >
               &ldquo;{review}&rdquo;
