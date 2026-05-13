@@ -27,9 +27,15 @@ export async function GET(req: NextRequest) {
 
   if (r1.error && r2.error) return NextResponse.json({ error: r1.error.message, albums: [], avg: null }, { status: 500 });
 
+  // extra_artists는 "A;B;C" 형태 — 부분 문자열 오매칭 방지를 위해 토큰 단위 정확 매칭
+  const nameLower = name.toLowerCase();
+  const extraFiltered = (r2.data ?? []).filter((a) =>
+    (a.extra_artists ?? "").split(";").some((t: string) => t.trim().toLowerCase() === nameLower)
+  );
+
   // 병합 + id 기준 dedup + release_date 내림차순 재정렬 (null은 맨 뒤)
   const seen = new Set<string>();
-  const merged = [...(r1.data ?? []), ...(r2.data ?? [])]
+  const merged = [...(r1.data ?? []), ...extraFiltered]
     .filter((a) => (seen.has(a.id) ? false : (seen.add(a.id), true)))
     .sort((a, b) => {
       const da = a.release_date ?? "";
