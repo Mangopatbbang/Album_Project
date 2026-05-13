@@ -57,6 +57,7 @@ export default function AlbumList({
 
   const [search, setSearch] = useState(urlSearch);
   const [genre, setGenre] = useState("");
+  const [region, setRegion] = useState("");
   const [sort, setSort] = useState("newest");
   const [unrated, setUnrated] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(urlScore);
@@ -71,10 +72,11 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     : BASE_SORT_OPTIONS;
 
   const fetchAlbums = useCallback(
-    async (params: { search: string; genre: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number }) => {
+    async (params: { search: string; genre: string; region: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number }) => {
       const q = new URLSearchParams();
       if (params.search) q.set("search", params.search);
       if (params.genre) q.set("genre", params.genre);
+      if (params.region) q.set("region", params.region);
       q.set("sort", params.sort);
       if (params.unrated && profile) {
         q.set("unrated", "true");
@@ -104,11 +106,11 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   );
 
   const handleFilter = useCallback(
-    async (newSearch: string, newGenre: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
+    async (newSearch: string, newGenre: string, newRegion: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
       setLoading(true);
       setFilterLoading(true);
       try {
-        const data = await fetchAlbums({ search: newSearch, genre: newGenre, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId });
+        const data = await fetchAlbums({ search: newSearch, genre: newGenre, region: newRegion, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId });
         setAlbums(data.items ?? []);
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
@@ -121,14 +123,14 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
         setFilterLoading(false);
       }
     },
-    [fetchAlbums, scoreUserId]
+    [fetchAlbums, region, scoreUserId]
   );
 
   const handleLoadMore = useCallback(async () => {
     if (!hasMore || loading) return;
     setLoading(true);
     try {
-      const data = await fetchAlbums({ search, genre, sort, unrated, myScore, scoreUserId, offset: nextOffset ?? 0 });
+      const data = await fetchAlbums({ search, genre, region, sort, unrated, myScore, scoreUserId, offset: nextOffset ?? 0 });
       if (!data.items) return;
       setAlbums((prev) => {
         const existingIds = new Set(prev.map((a) => a.id));
@@ -142,14 +144,14 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     } finally {
       setLoading(false);
     }
-  }, [hasMore, loading, fetchAlbums, search, genre, sort, unrated, myScore, scoreUserId, nextOffset]);
+  }, [hasMore, loading, fetchAlbums, search, genre, region, sort, unrated, myScore, scoreUserId, nextOffset]);
 
   // URL params에 초기 필터 적용
   useEffect(() => {
     if (urlSearch) {
-      handleFilter(urlSearch, "", "newest", false, null);
+      handleFilter(urlSearch, "", "", "newest", false, null);
     } else if (urlScore && urlScoreUserId) {
-      handleFilter("", "", "newest", false, urlScore, urlScoreUserId);
+      handleFilter("", "", "", "newest", false, urlScore, urlScoreUserId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -179,7 +181,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     setSearch(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      handleFilter(val, genre, sort, unrated, myScore);
+      handleFilter(val, genre, region, sort, unrated, myScore);
       const q = new URLSearchParams();
       if (val) q.set("search", val);
       router.replace(q.toString() ? `${pathname}?${q.toString()}` : pathname, { scroll: false });
@@ -188,12 +190,18 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 
   const handleGenreChange = (val: string) => {
     setGenre(val);
-    handleFilter(search, val, sort, unrated, myScore);
+    handleFilter(search, val, region, sort, unrated, myScore);
+  };
+
+  const handleRegionChange = (val: string) => {
+    const next = region === val ? "" : val;
+    setRegion(next);
+    handleFilter(search, genre, next, sort, unrated, myScore);
   };
 
   const handleSortChange = (val: string) => {
     setSort(val);
-    handleFilter(search, genre, val, unrated, myScore);
+    handleFilter(search, genre, region, val, unrated, myScore);
   };
 
   const handleUnratedToggle = () => {
@@ -202,7 +210,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     setUnrated(next);
     if (next) setMyScore(null); // 미평가 켜면 점수필터 해제
     if (nextSort !== sort) setSort(nextSort);
-    handleFilter(search, genre, nextSort, next, null);
+    handleFilter(search, genre, region, nextSort, next, null);
   };
 
   const handleScoreFilter = (score: number) => {
@@ -210,7 +218,7 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     setMyScore(next);
     if (next === null) setScoreUserId(null); // 점수필터 해제 시 scoreUserId도 초기화
     setUnrated(false); // 점수필터 켜면 미평가 해제
-    handleFilter(search, genre, sort, false, next, next === null ? null : scoreUserId);
+    handleFilter(search, genre, region, sort, false, next, next === null ? null : scoreUserId);
   };
 
 return (
@@ -280,6 +288,22 @@ return (
           ))}
         </select>
 
+        {/* 국내/해외 필터 */}
+        {(["국내", "해외"] as const).map((r) => (
+          <button
+            key={r}
+            onClick={() => handleRegionChange(r)}
+            style={{
+              backgroundColor: region === r ? "var(--accent)" : "var(--bg-card)",
+              border: `1px solid ${region === r ? "var(--accent)" : "var(--border)"}`,
+              color: region === r ? "var(--bg)" : "var(--text)",
+              borderRadius: 6, padding: "6px 12px", fontSize: 13,
+              cursor: "pointer", fontWeight: region === r ? 600 : 400,
+              whiteSpace: "nowrap",
+            }}
+          >{r}</button>
+        ))}
+
         {/* 모바일 내 평점 필터 */}
         {profile && (
           <select
@@ -289,7 +313,7 @@ return (
               setMyScore(v);
               if (!v) setScoreUserId(null);
               setUnrated(false);
-              handleFilter(search, genre, sort, false, v, v === null ? null : scoreUserId);
+              handleFilter(search, genre, region, sort, false, v, v === null ? null : scoreUserId);
             }}
             style={{
               backgroundColor: "var(--bg-card)",
@@ -410,7 +434,7 @@ return (
         <div className="text-center py-20 flex flex-col items-center gap-3">
           <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오지 못했어요</p>
           <button
-            onClick={() => handleFilter(search, genre, sort, unrated, myScore)}
+            onClick={() => handleFilter(search, genre, region, sort, unrated, myScore)}
             style={{
               backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-sub)",
               borderRadius: 6, padding: "7px 16px", fontSize: 13, cursor: "pointer",
@@ -479,7 +503,7 @@ return (
       {showAddModal && (
         <AlbumAddModal
           onClose={() => setShowAddModal(false)}
-          onAdded={() => handleFilter(search, genre, sort, unrated, myScore)}
+          onAdded={() => handleFilter(search, genre, region, sort, unrated, myScore)}
           initialSearch={albums.length === 0 && search ? search : undefined}
         />
       )}

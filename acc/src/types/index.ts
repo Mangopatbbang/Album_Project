@@ -19,6 +19,7 @@ export type Album = {
   spotify_id?: string;
   soundcloud_url?: string | null;
   cover_url?: string;
+  created_at?: string | null;
 };
 
 export type Rating = {

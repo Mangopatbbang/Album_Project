@@ -8,7 +8,7 @@ import { getRawGenreValues } from "@/lib/bio";
 import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 
 const LIMIT = 30;
-const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, soundcloud_url, ratings(user_id, score)";
+const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
 
 // PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거
 function escapeSearch(s: string) {
@@ -45,16 +45,17 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId")?.trim();
   const unrated = searchParams.get("unrated") === "true";
   const myScore = searchParams.get("myScore") ? Number(searchParams.get("myScore")) : null;
+  const regionFilter = searchParams.get("region")?.trim() || null;
 
   // 검색어가 있으면 alias two-step 미리 처리
   const aliasMatches = search ? await findArtistsByVariant(search) : [];
   const safeSearch = search ? escapeSearch(search) : null;
 
   if (sort === "avg_desc" || sort === "avg_asc") {
-    return handleAvgSort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId, unrated });
+    return handleAvgSort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId, unrated, region: regionFilter });
   }
   if ((sort === "my_desc" || sort === "my_asc") && userId) {
-    return handleMySort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId });
+    return handleMySort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId, region: regionFilter });
   }
 
   // 특정 점수 필터
@@ -68,6 +69,7 @@ export async function GET(req: NextRequest) {
     let q = supabaseServer.from("albums").select(SELECT).in("id", scoreIds);
     if (safeSearch) q = q.or(buildSearchOr(safeSearch, aliasMatches));
     if (genre) { const raws = getRawGenreValues(genre); q = raws.length === 1 ? q.eq("genre", raws[0]) : q.in("genre", raws); }
+    if (regionFilter) q = q.eq("region", regionFilter);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
   let query = supabaseServer.from("albums").select(SELECT).range(offset, offset + limit);
   if (safeSearch) query = query.or(buildSearchOr(safeSearch, aliasMatches));
   if (genre) { const raws = getRawGenreValues(genre); query = raws.length === 1 ? query.eq("genre", raws[0]) : query.in("genre", raws); }
+  if (regionFilter) query = query.eq("region", regionFilter);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
   if (sort === "oldest") {
@@ -116,15 +119,16 @@ export async function GET(req: NextRequest) {
 
 async function handleMySort(params: {
   limit: number; offset: number; search?: string | null;
-  aliasMatches: string[]; genre?: string; sort: string; userId: string;
+  aliasMatches: string[]; genre?: string; sort: string; userId: string; region?: string | null;
 }) {
-  const { limit, offset, search, aliasMatches, genre, sort, userId } = params;
+  const { limit, offset, search, aliasMatches, genre, sort, userId, region } = params;
   const { data: myRatings } = await supabaseServer.from("ratings").select("album_id, score").eq("user_id", userId);
   const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches));
   if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
+  if (region) albumQuery = albumQuery.eq("region", region);
   const { data: allAlbums } = await albumQuery;
 
   const sorted = (allAlbums ?? [])
@@ -147,9 +151,9 @@ async function handleMySort(params: {
 
 async function handleAvgSort(params: {
   limit: number; offset: number; search?: string | null;
-  aliasMatches: string[]; genre?: string; sort: string; userId?: string; unrated?: boolean;
+  aliasMatches: string[]; genre?: string; sort: string; userId?: string; unrated?: boolean; region?: string | null;
 }) {
-  const { limit, offset, search, aliasMatches, genre, sort, userId, unrated } = params;
+  const { limit, offset, search, aliasMatches, genre, sort, userId, unrated, region } = params;
 
   // 캐시된 전체 앨범+평점 데이터에서 평균 맵 구성 (DB 풀스캔 대신 캐시 재활용)
   const cachedAlbums = await fetchAllAlbumsWithRatings();
@@ -169,6 +173,7 @@ async function handleAvgSort(params: {
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches));
   if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
+  if (region) albumQuery = albumQuery.eq("region", region);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
   const { data: filteredAlbums } = await albumQuery;
 
@@ -255,6 +260,7 @@ function mapAlbum(album: {
   use_artist_variant?: boolean | null;
   year?: string | null; release_date?: string | null;
   genre?: string | null; cover_url?: string | null; spotify_id?: string | null;
+  created_at?: string | null;
   ratings?: { user_id: string; score: number }[];
 }) {
   const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
@@ -267,6 +273,7 @@ function mapAlbum(album: {
     use_artist_variant: album.use_artist_variant ?? false,
     year: album.year, release_date: album.release_date ?? null,
     genre: album.genre, cover_url: album.cover_url, spotify_id: album.spotify_id,
+    created_at: album.created_at ?? null,
     ratings, avg,
   };
 }

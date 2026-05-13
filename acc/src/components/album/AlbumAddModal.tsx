@@ -100,6 +100,8 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [error, setError] = useState("");
   const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
   const [showSoundCloud, setShowSoundCloud] = useState(false);
+  const [addedAlbumId, setAddedAlbumId] = useState<string | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -287,11 +289,26 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       return;
     }
 
+    const data = await res.json();
     setSaving(false);
     showToast(`${title} 입고 완료`);
     onAdded();
+    setAddedAlbumId(data.id);
+  };
+
+  const handlePostRating = async (score: number) => {
+    if (!addedAlbumId) return;
+    setRatingLoading(true);
+    await apiFetch("/api/ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: addedAlbumId, score }),
+    });
+    setRatingLoading(false);
     onClose();
   };
+
+  const handleSkipRating = () => onClose();
 
   const inputStyle = {
     backgroundColor: "var(--bg-elevated)",
@@ -312,6 +329,54 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     marginBottom: 6,
     display: "block" as const,
   };
+
+  if (addedAlbumId) {
+    return (
+      <div
+        style={{
+          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
+          zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+        }}
+      >
+        <div style={{
+          backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 14, width: "100%", maxWidth: 440,
+          display: "flex", flexDirection: "column", gap: 20, padding: 32,
+        }}>
+          <div>
+            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 17, marginBottom: 6 }}>입고 완료</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              &ldquo;{title}&rdquo; — 지금 평점을 매겨볼까요?
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+              <button
+                key={s}
+                onClick={() => handlePostRating(s)}
+                disabled={ratingLoading}
+                style={{
+                  flex: "1 1 40px", height: 44, borderRadius: 8,
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--bg-elevated)", color: "var(--text)",
+                  fontSize: 15, fontWeight: 600, cursor: ratingLoading ? "not-allowed" : "pointer",
+                  opacity: ratingLoading ? 0.5 : 1,
+                }}
+              >{s}</button>
+            ))}
+          </div>
+          <button
+            onClick={handleSkipRating}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", textDecorationStyle: "dotted",
+            }}
+          >나중에</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -346,7 +411,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
-              placeholder="음반 제목"
+              placeholder="음반 제목 입력 후 Enter 또는 Spotify 검색"
             />
             {/* 중복 경고 */}
             {duplicates.length > 0 && (
@@ -373,7 +438,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               onChange={(e) => { setArtist(e.target.value); setSearchDone(false); checkDuplicates(title, e.target.value); }}
               onKeyDown={(e) => { if (e.key === "Enter") handleSpotifySearch(); }}
               onBlur={handleArtistBlur}
-              placeholder="아티스트"
+              placeholder="Spotify 등록명 (예: The Weeknd, BTS)"
             />
           </div>
 

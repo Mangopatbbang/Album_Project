@@ -35,6 +35,10 @@ export default function AlbumCard({ album, onClick }: Props) {
     return [...mine, ...others].slice(0, 5);
   }, [album.id, profile?.id, users]);
 
+  const isNew = album.created_at
+    ? Date.now() - new Date(album.created_at).getTime() < 24 * 60 * 60 * 1000
+    : false;
+
   return (
     <>
     <button
@@ -51,7 +55,7 @@ export default function AlbumCard({ album, onClick }: Props) {
     >
       {/* 커버 이미지 */}
       <div
-        style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}
+        style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1", position: "relative" }}
         className="w-full flex items-center justify-center overflow-hidden"
       >
         {album.cover_url && !imgError ? (
@@ -67,6 +71,15 @@ export default function AlbumCard({ album, onClick }: Props) {
             <span style={{ color: "var(--text-muted)", fontSize: 28 }}>♪</span>
             <span style={{ color: "var(--text-muted)" }} className="text-xs">커버 없음</span>
           </div>
+        )}
+        {isNew && (
+          <span style={{
+            position: "absolute", top: 6, left: 6,
+            backgroundColor: "var(--accent)", color: "var(--bg)",
+            fontSize: 9, fontWeight: 800, letterSpacing: "0.08em",
+            padding: "2px 5px", borderRadius: 4,
+            pointerEvents: "none",
+          }}>NEW</span>
         )}
       </div>
 
