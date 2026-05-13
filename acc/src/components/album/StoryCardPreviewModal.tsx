@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import StoryCard from "@/components/album/StoryCard";
 import { captureToBlob, downloadBlob } from "@/lib/capture";
 
@@ -35,6 +35,14 @@ export default function StoryCardPreviewModal({
   const [capturing, setCapturing] = useState(false);
   const [includeReview, setIncludeReview] = useState(true);
   const [includeTracks, setIncludeTracks] = useState(true);
+  const [cardScale, setCardScale] = useState(1);
+
+  useEffect(() => {
+    const update = () => setCardScale(Math.min(1, (window.innerWidth - 32) / 360));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   const filename = `${title.replace(/[<>:"/\\|?*]/g, "")}_card.png`;
 
@@ -80,8 +88,14 @@ export default function StoryCardPreviewModal({
     onClose();
   };
 
-  const canShare =
-    typeof navigator !== "undefined" && typeof navigator.canShare === "function";
+  const canShare = (() => {
+    if (typeof navigator === "undefined" || typeof navigator.canShare !== "function") return false;
+    try {
+      return navigator.canShare({ files: [new File([], "test.png", { type: "image/png" })] });
+    } catch {
+      return false;
+    }
+  })();
 
   return (
     <div
@@ -122,11 +136,19 @@ export default function StoryCardPreviewModal({
         ✕
       </button>
 
-      {/* 카드 미리보기 */}
+      {/* 카드 미리보기 — 뷰포트 좁을 때 scale 축소 */}
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.85)", borderRadius: 12, flexShrink: 0 }}
+        style={{
+          flexShrink: 0,
+          width: 360 * cardScale,
+          height: 640 * cardScale,
+          overflow: "hidden",
+          borderRadius: 12,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.85)",
+        }}
       >
+        <div style={{ transform: `scale(${cardScale})`, transformOrigin: "top left", width: 360, height: 640 }}>
         <StoryCard
           containerRef={cardRef}
           title={title}
@@ -139,6 +161,7 @@ export default function StoryCardPreviewModal({
           spotifyId={spotifyId}
           likedTracks={includeTracks ? likedTracks : undefined}
         />
+        </div>
       </div>
 
       {/* 옵션 + 버튼 */}

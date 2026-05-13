@@ -178,7 +178,7 @@ export default function StoryCard({
         </div>
 
         {/* 제목 + 아티스트 · 장르 */}
-        <div style={{ marginTop: 14, textAlign: "center" }}>
+        <div style={{ marginTop: 14, textAlign: "center", width: "100%" }}>
           <p
             style={{
               fontSize: 19,
@@ -187,6 +187,10 @@ export default function StoryCard({
               lineHeight: 1.25,
               letterSpacing: "-0.025em",
               wordBreak: "break-word",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {title}
@@ -197,6 +201,9 @@ export default function StoryCard({
               color: "rgba(255,255,255,0.55)",
               marginTop: 4,
               letterSpacing: "-0.01em",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {artist}
@@ -217,7 +224,7 @@ export default function StoryCard({
                 <span style={{ fontSize: 10, color: "rgba(255,255,255,0.32)", width: 18, textAlign: "right", flexShrink: 0 }}>
                   {t.index}
                 </span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {t.name}
                 </span>
               </div>
