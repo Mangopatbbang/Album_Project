@@ -88,16 +88,23 @@ export default function StoryCardPreviewModal({
     await waitForImages(el);
     if (document.fonts?.ready) await document.fonts.ready;
 
-    // 캡처 직전에만 transform 제거 — html2canvas가 1:1 크기(360×640)로 정확히 인식
-    // scrollX/scrollY: 0 은 capture.ts에서 처리
+    // transform 제거 + overflow:hidden 클립 래퍼도 360×640으로 확장
+    // 둘 다 안 하면 클립 래퍼(scaled 크기)가 콘텐츠를 잘라냄
     const scaleWrapper = el.parentElement as HTMLElement | null;
+    const clipWrapper = scaleWrapper?.parentElement as HTMLElement | null;
+
     const origTransform = scaleWrapper?.style.transform ?? "";
+    const origWidth = clipWrapper?.style.width ?? "";
+    const origHeight = clipWrapper?.style.height ?? "";
+
     if (scaleWrapper) scaleWrapper.style.transform = "none";
+    if (clipWrapper) { clipWrapper.style.width = "360px"; clipWrapper.style.height = "640px"; }
 
     try {
       return await captureToBlob(el, "#1a1817", 360, 640);
     } finally {
       if (scaleWrapper) scaleWrapper.style.transform = origTransform;
+      if (clipWrapper) { clipWrapper.style.width = origWidth; clipWrapper.style.height = origHeight; }
     }
   };
 
