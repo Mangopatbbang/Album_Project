@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import AlbumCard from "./AlbumCard";
 import AlbumModal from "./AlbumModal";
 import AlbumAddModal from "./AlbumAddModal";
@@ -40,6 +40,8 @@ export default function AlbumList({
 }: Props) {
   const { profile } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // URL params로 초기 필터 지원
   const urlSearch = searchParams.get("search") ?? "";
@@ -164,10 +166,24 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     return () => observer.disconnect();
   }, [handleLoadMore]);
 
+  // bfcache로 복원될 때 검색어 초기화
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setSearch("");
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   const handleSearchChange = (val: string) => {
     setSearch(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => handleFilter(val, genre, sort, unrated, myScore), 300);
+    debounceRef.current = setTimeout(() => {
+      handleFilter(val, genre, sort, unrated, myScore);
+      const q = new URLSearchParams();
+      if (val) q.set("search", val);
+      router.replace(q.toString() ? `${pathname}?${q.toString()}` : pathname, { scroll: false });
+    }, 300);
   };
 
   const handleGenreChange = (val: string) => {

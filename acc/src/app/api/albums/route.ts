@@ -211,9 +211,18 @@ export async function POST(req: NextRequest) {
     .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, region: region || null, cover_url, tracklist, spotify_id: spotify_id || null, soundcloud_url: soundcloud_url || null, added_by: added_by || null })
     .select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const { count: artistAlbumCount } = await supabaseServer
+    .from("albums")
+    .select("id", { count: "exact", head: true })
+    .ilike("artist", artist.trim())
+    .neq("id", data.id);
+  const isNewArtist = (artistAlbumCount ?? 0) === 0;
+
   await logActivity({
     userId: added_by ?? null, action: "album_add",
     albumId: data.id, albumTitle: data.title, albumArtist: data.artist,
+    details: isNewArtist ? { new_artist: true } : undefined,
   });
   revalidatePath("/");
   revalidatePath("/best");

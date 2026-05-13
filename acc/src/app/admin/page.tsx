@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
+import AlbumModal from "@/components/album/AlbumModal";
+import { AlbumWithRatings } from "@/types";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -68,6 +70,7 @@ export default function AdminPage() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsAction, setLogsAction] = useState<string>("");
   const [logsClearLoading, setLogsClearLoading] = useState(false);
+  const [logAlbumModal, setLogAlbumModal] = useState<AlbumWithRatings | null>(null);
 
   async function loadLogs(action?: string) {
     setLogsLoading(true);
@@ -676,6 +679,7 @@ export default function AdminPage() {
   const secDesc: React.CSSProperties = { color: "var(--text-muted)", fontSize: 12, marginBottom: 20, lineHeight: 1.6 };
 
   return (
+    <>
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "40px 24px" }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
 
@@ -867,12 +871,20 @@ export default function AdminPage() {
                         <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, backgroundColor: actionInfo.bg, color: actionInfo.fg, width: 72, textAlign: "center" }}>{actionInfo.label}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {log.album_title && (
-                            <p style={{ fontSize: 12, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {log.album_title}{log.album_artist && <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>· {log.album_artist}</span>}
+                            <p
+                              style={{ fontSize: 12, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: log.album_id ? "pointer" : "default" }}
+                              onClick={() => {
+                                if (!log.album_id) return;
+                                setLogAlbumModal({ id: log.album_id, title: log.album_title!, artist: log.album_artist ?? "", ratings: [] });
+                              }}
+                            >
+                              {log.album_id && <span style={{ color: "var(--text-muted)", fontSize: 10, marginRight: 4 }}>↗</span>}
+                              {log.album_title}
+                              {log.album_artist && <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>· {log.album_artist}</span>}
+                              {log.details?.new_artist === true && (
+                                <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, backgroundColor: "rgba(255,165,0,0.15)", color: "#ffa500", letterSpacing: "0.06em" }}>NEW ARTIST</span>
+                              )}
                             </p>
-                          )}
-                          {log.details && Object.keys(log.details).length > 0 && (
-                            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{JSON.stringify(log.details)}</p>
                           )}
                         </div>
                         <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.user_id ?? "–"}</span>
@@ -1278,5 +1290,9 @@ export default function AdminPage() {
 
       </div>
     </div>
+    {logAlbumModal && (
+      <AlbumModal album={logAlbumModal} onClose={() => setLogAlbumModal(null)} zIndex={200} />
+    )}
+    </>
   );
 }
