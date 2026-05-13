@@ -26,6 +26,7 @@ export default function Header() {
     { href: "/reviews", label: "청음평", tour: "nav-reviews" },
     { href: "/members", label: "청음인", tour: "nav-members" },
     ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile" }] : []),
+    ...(profile?.role === "admin" ? [{ href: "/admin", label: "Admin", tour: undefined }] : []),
   ];
 
   useEffect(() => {
@@ -78,26 +79,31 @@ export default function Header() {
 
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
-          {navItems.map(({ href, label, tour }) => (
-            <Link
-              key={href}
-              href={href}
-              onMouseEnter={() => setHoveredNav(href)}
-              onMouseLeave={() => setHoveredNav(null)}
-              {...(tour ? { "data-tour": tour } : {})}
-              style={{
-                color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
-                backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
-                fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
-                padding: "0 12px", height: 52,
-                display: "flex", alignItems: "center",
-                textTransform: "uppercase",
-                transition: "color 0.15s, background-color 0.15s",
-              }}
-            >
-              {label}
-            </Link>
-          ))}
+          {navItems.map(({ href, label, tour }) => {
+            const isAdmin = href === "/admin";
+            return (
+              <Link
+                key={href}
+                href={href}
+                onMouseEnter={() => setHoveredNav(href)}
+                onMouseLeave={() => setHoveredNav(null)}
+                {...(tour ? { "data-tour": tour } : {})}
+                style={{
+                  color: isAdmin
+                    ? (hoveredNav === href ? "var(--accent)" : "rgba(var(--accent-rgb), 0.6)")
+                    : (hoveredNav === href ? "var(--text)" : "var(--text-sub)"),
+                  backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
+                  fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
+                  padding: "0 12px", height: 52,
+                  display: "flex", alignItems: "center",
+                  textTransform: "uppercase",
+                  transition: "color 0.15s, background-color 0.15s",
+                }}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* 유저 + 알림 */}

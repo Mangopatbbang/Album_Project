@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { openOnboarding } from "@/components/ui/OnboardingTutorial";
+import { useAuth } from "@/context/AuthContext";
 
 type Announcement = {
   id: number;
@@ -103,6 +104,7 @@ function AnnouncementsSheet({
 
 export default function FloatingActions() {
   const pathname = usePathname();
+  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -161,6 +163,22 @@ export default function FloatingActions() {
         {/* 펼쳐지는 버튼들 */}
         {open && (
           <>
+            {/* 어드민 */}
+            {profile?.role === "admin" && pathname !== "/admin" && (
+              <Link
+                href="/admin"
+                style={{ ...btnStyle, color: "var(--accent)", borderColor: "rgba(var(--accent-rgb), 0.4)" }}
+                onClick={() => setOpen(false)}
+                className="active:opacity-60 hover:opacity-80"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                  <path d="M18 3l1.5 1.5M21 6l-1.5-1.5" opacity="0.5"/>
+                </svg>
+                어드민
+              </Link>
+            )}
+
             {/* 공지사항 */}
             <button
               onClick={() => { setShowNotices(true); setOpen(false); }}
