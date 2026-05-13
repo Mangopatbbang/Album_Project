@@ -16,17 +16,19 @@ export async function GET(req: NextRequest) {
 
   const { data: albumData, error: albumErr } = await supabaseServer
     .from("albums")
-    .select("artist, use_artist_variant")
-    .in("artist", names);
+    .select("artist, use_artist_variant");
   if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
 
-  // Group by lowercase to handle case mismatches between albums.artist and artist_aliases.spotify_name
+  // Case-insensitive match: alias spotify_name vs albums.artist
+  const namesLowerSet = new Set(names.map((n) => n.toLowerCase()));
   const lcToCanonical: Record<string, string> = {};
   for (const n of names) lcToCanonical[n.toLowerCase()] = n;
 
   const stats: Record<string, { total: number; using: number }> = {};
   for (const row of albumData ?? []) {
-    const key = lcToCanonical[row.artist.toLowerCase()] ?? row.artist;
+    const lc = row.artist.toLowerCase();
+    if (!namesLowerSet.has(lc)) continue;
+    const key = lcToCanonical[lc] ?? row.artist;
     const s = stats[key] ?? { total: 0, using: 0 };
     s.total++;
     if (row.use_artist_variant) s.using++;
@@ -47,7 +49,7 @@ export async function PATCH(req: NextRequest) {
   const { data, error } = await supabaseServer
     .from("albums")
     .update({ use_artist_variant: use_variant })
-    .eq("artist", spotify_name.trim())
+    .filter("artist", "ilike", spotify_name.trim())
     .select("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   revalidatePath("/");

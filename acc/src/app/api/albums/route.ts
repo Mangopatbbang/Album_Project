@@ -21,8 +21,7 @@ function buildSearchOr(s: string, aliasMatches: string[]): string {
   for (const a of aliasMatches) {
     const safe = escapeSearch(a);
     if (safe) {
-      parts.push(`artist.ilike.${safe}`);           // 주 아티스트 exact match
-      parts.push(`extra_artists.ilike.%${safe}%`);  // 참여 아티스트 포함 검색
+      parts.push(`artist.ilike.${safe}`);  // 주 아티스트 exact match
     }
   }
   return parts.join(",");

@@ -13,9 +13,10 @@ const _fetchAliasEntries = unstable_cache(
   { tags: ["artist-aliases"], revalidate: 86400 }
 );
 
-/** artist_aliases 테이블 전체를 Map으로 반환 (캐시됨) */
+/** artist_aliases 테이블 전체를 Map으로 반환 (캐시됨, 키는 소문자 정규화) */
 export async function fetchAliasMap(): Promise<Map<string, string>> {
-  return new Map(await _fetchAliasEntries());
+  const entries = await _fetchAliasEntries();
+  return new Map(entries.map(([k, v]) => [k.toLowerCase(), v]));
 }
 
 type HasArtist = {
@@ -31,7 +32,7 @@ export function applyArtistDisplay<T extends HasArtist>(
 ): (T & { artist_display: string })[] {
   return albums.map((a) => {
     if (a.use_artist_variant) {
-      const alias = aliasMap.get(a.artist);
+      const alias = aliasMap.get(a.artist.toLowerCase());
       if (alias) return { ...a, artist_display: alias };
       // alias 없고 extra_artists 있으면 개별 이름으로 분리 표시
       if (a.extra_artists) {
