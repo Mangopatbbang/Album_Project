@@ -62,9 +62,19 @@ type LogRow = {
   details: Record<string, unknown> | null;
 };
 
+type ReportRow = {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: string;
+  detail: string | null;
+  status: string;
+  created_at: string;
+};
+
 export default function AdminPage() {
   const { profile, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "albums" | "artists" | "migration">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "albums" | "artists" | "migration" | "reports">("overview");
 
   // --- 활동 로그 ---
   const [logs, setLogs] = useState<LogRow[] | null>(null);
@@ -93,6 +103,43 @@ export default function AdminPage() {
       alert(`${data.deleted ?? 0}건 삭제됨`);
       if (logs !== null) loadLogs(logsAction || undefined);
     }
+  }
+
+  // --- 신고 관리 ---
+  const [reports, setReports] = useState<ReportRow[] | null>(null);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsStatusFilter, setReportsStatusFilter] = useState<string>("pending");
+
+  async function loadReports(status?: string) {
+    setReportsLoading(true);
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.set("status", status);
+    const res = await adminFetch(`/api/admin/reports?${params}`);
+    const data = await res.json();
+    setReports(data.reports ?? []);
+    setReportsLoading(false);
+  }
+
+  async function handleReportAction(reportId: string, status: string, banUserId?: string) {
+    if (banUserId && !confirm(`@${banUserId} 을(를) 밴하시겠습니까?`)) return;
+    const body: Record<string, string> = { reportId, status };
+    if (banUserId) body.banUserId = banUserId;
+    const res = await adminFetch("/api/admin/reports", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) loadReports(reportsStatusFilter !== "all" ? reportsStatusFilter : undefined);
+  }
+
+  async function handleUnban(userId: string) {
+    if (!confirm(`@${userId} 밴을 해제하시겠습니까?`)) return;
+    await adminFetch("/api/admin/reports", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unbanUserId: userId }),
+    });
+    loadReports(reportsStatusFilter !== "all" ? reportsStatusFilter : undefined);
   }
 
   // --- 통계 ---
@@ -727,6 +774,7 @@ export default function AdminPage() {
             { key: "albums", label: "앨범 교정" },
             { key: "artists", label: "아티스트" },
             { key: "migration", label: "마이그레이션" },
+            { key: "reports", label: "신고 관리" },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -1309,6 +1357,120 @@ export default function AdminPage() {
             </div>
             {trackLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{trackLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
           </div>
+        </>)}
+
+        {/* ════ 신고 관리 탭 ════ */}
+        {activeTab === "reports" && (<>
+          {/* 필터 + 불러오기 */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+            {(["pending", "reviewed", "dismissed", "all"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => { setReportsStatusFilter(s); loadReports(s !== "all" ? s : undefined); }}
+                style={{
+                  padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  border: `1px solid ${reportsStatusFilter === s ? "var(--accent)" : "var(--border)"}`,
+                  backgroundColor: reportsStatusFilter === s ? "var(--accent)" : "var(--bg-elevated)",
+                  color: reportsStatusFilter === s ? "var(--bg)" : "var(--text-muted)",
+                }}
+              >
+                {{ pending: "대기 중", reviewed: "처리됨", dismissed: "기각됨", all: "전체" }[s]}
+              </button>
+            ))}
+            {reports === null && !reportsLoading && (
+              <button
+                onClick={() => loadReports("pending")}
+                style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", backgroundColor: "var(--accent)", color: "var(--bg)" }}
+              >
+                불러오기
+              </button>
+            )}
+          </div>
+
+          {reportsLoading && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>로딩 중...</p>}
+
+          {reports !== null && !reportsLoading && reports.length === 0 && (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>신고 내역이 없습니다.</p>
+          )}
+
+          {reports !== null && reports.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {reports.map((r) => (
+                <div
+                  key={r.id}
+                  style={{
+                    backgroundColor: "var(--bg-elevated)", borderRadius: 10,
+                    border: `1px solid ${r.status === "pending" ? "rgba(224,80,80,0.3)" : "var(--border)"}`,
+                    padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  {/* 헤더 행 */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        신고자 <span style={{ color: "var(--text)", fontWeight: 600 }}>@{r.reporter_id}</span>
+                      </span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        피신고자 <span style={{ color: "#e05050", fontWeight: 600 }}>@{r.reported_user_id}</span>
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {new Date(r.created_at).toLocaleString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                      backgroundColor: r.status === "pending" ? "rgba(224,80,80,0.15)" : r.status === "reviewed" ? "rgba(var(--accent-rgb),0.15)" : "var(--bg-card)",
+                      color: r.status === "pending" ? "#e05050" : r.status === "reviewed" ? "var(--accent)" : "var(--text-muted)",
+                    }}>
+                      {{ pending: "대기 중", reviewed: "처리됨", dismissed: "기각됨" }[r.status] ?? r.status}
+                    </span>
+                  </div>
+
+                  {/* 사유 */}
+                  <div>
+                    <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 600, marginBottom: r.detail ? 4 : 0 }}>
+                      {r.reason}
+                    </p>
+                    {r.detail && (
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{r.detail}</p>
+                    )}
+                  </div>
+
+                  {/* 액션 버튼 */}
+                  {r.status === "pending" && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleReportAction(r.id, "reviewed")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
+                      >
+                        확인 처리
+                      </button>
+                      <button
+                        onClick={() => handleReportAction(r.id, "dismissed")}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
+                      >
+                        기각
+                      </button>
+                      <button
+                        onClick={() => handleReportAction(r.id, "reviewed", r.reported_user_id)}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.4)", backgroundColor: "rgba(224,80,80,0.1)", color: "#e05050" }}
+                      >
+                        밴
+                      </button>
+                    </div>
+                  )}
+                  {r.status === "reviewed" && (
+                    <button
+                      onClick={() => handleUnban(r.reported_user_id)}
+                      style={{ alignSelf: "flex-start", padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "var(--bg-card)", color: "var(--text-muted)" }}
+                    >
+                      밴 해제
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </>)}
 
       </div>

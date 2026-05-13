@@ -15,3 +15,9 @@ export async function validateUser(req: NextRequest): Promise<AuthedUser | null>
     .single();
   return profile ?? null;
 }
+
+export async function validateAdmin(req: NextRequest): Promise<AuthedUser | null> {
+  const authed = await validateUser(req);
+  if (!authed || authed.role !== "admin") return null;
+  return authed;
+}

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { openOnboarding } from "@/components/ui/OnboardingTutorial";
 import { useAuth } from "@/context/AuthContext";
+import ReportModal from "@/components/ui/ReportModal";
 
 type Announcement = {
   id: number;
@@ -109,6 +110,7 @@ export default function FloatingActions() {
   const [hasNew, setHasNew] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNotices, setShowNotices] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -226,6 +228,22 @@ export default function FloatingActions() {
               가이드
             </button>
 
+            {/* 신고 (로그인 시만) */}
+            {profile && (
+              <button
+                onClick={() => { setShowReport(true); setOpen(false); }}
+                style={{ ...btnStyle, color: "var(--error, #e05050)", borderColor: "rgba(224,80,80,0.3)" }}
+                className="active:opacity-60 hover:opacity-80"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                신고
+              </button>
+            )}
+
             {/* 문의 */}
             {pathname !== "/board" && (
               <Link
@@ -285,6 +303,10 @@ export default function FloatingActions() {
           items={announcements}
           onClose={() => setShowNotices(false)}
         />
+      )}
+
+      {showReport && (
+        <ReportModal onClose={() => setShowReport(false)} />
       )}
     </>
   );
