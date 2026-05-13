@@ -10,10 +10,11 @@ export async function validateUser(req: NextRequest): Promise<AuthedUser | null>
   if (error || !user) return null;
   const { data: profile } = await supabaseServer
     .from("users")
-    .select("id, role")
+    .select("id, role, banned_at")
     .eq("auth_id", user.id)
     .single();
-  return profile ?? null;
+  if (!profile || profile.banned_at) return null;
+  return { id: profile.id, role: profile.role };
 }
 
 export async function validateAdmin(req: NextRequest): Promise<AuthedUser | null> {

@@ -5,11 +5,11 @@ import { validateUser } from "@/lib/validateUser";
 export type NotificationItem = {
   id: string;
   userId: string;
-  type: "comment" | "like";
-  fromUserId: string;
-  albumId: string;
+  type: "comment" | "like" | "report_reviewed" | "report_ban";
+  fromUserId: string | null;
+  albumId: string | null;
   albumTitle?: string;
-  reviewerId: string;
+  reviewerId: string | null;
   read: boolean;
   createdAt: string;
 };
@@ -33,11 +33,11 @@ export async function GET(req: NextRequest) {
   const notifications: NotificationItem[] = (data ?? []).map((r) => ({
     id: r.id,
     userId: r.user_id,
-    type: r.type,
-    fromUserId: r.from_user_id,
-    albumId: r.album_id,
+    type: r.type as NotificationItem["type"],
+    fromUserId: r.from_user_id ?? null,
+    albumId: r.album_id ?? null,
     albumTitle: (r.albums as { title?: string } | null)?.title,
-    reviewerId: r.reviewer_id,
+    reviewerId: r.reviewer_id ?? null,
     read: r.read,
     createdAt: r.created_at,
   }));

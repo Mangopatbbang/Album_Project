@@ -153,9 +153,8 @@ export default function Header() {
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
                         notifications.map((n) => {
-                          const fromUser = getUserById(n.fromUserId);
-                          const typeIcon = n.type === "comment" ? "💬" : "♥";
-                          const label = n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요";
+                          const isReport = n.type === "report_reviewed" || n.type === "report_ban";
+                          const fromUser = isReport ? null : getUserById(n.fromUserId ?? "");
                           const nd = new Date(n.createdAt);
                           const ndStr = `${String(nd.getMonth() + 1).padStart(2, "0")}.${String(nd.getDate()).padStart(2, "0")}`;
                           return (
@@ -163,29 +162,50 @@ export default function Header() {
                               key={n.id}
                               onClick={() => {
                                 setShowNotif(false);
-                                router.push(`/reviews?albumId=${n.albumId}`);
+                                if (!isReport && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
                               }}
                               style={{
                                 padding: "10px 16px",
                                 borderBottom: "1px solid var(--border)",
                                 backgroundColor: n.read ? "transparent" : "rgba(var(--accent-rgb), 0.05)",
-                                borderLeft: n.read ? "2px solid transparent" : "2px solid var(--accent)",
+                                borderLeft: n.read ? "2px solid transparent" : `2px solid ${isReport ? "var(--error, #e05050)" : "var(--accent)"}`,
                                 display: "flex", alignItems: "flex-start", gap: 8,
-                                cursor: "pointer",
+                                cursor: isReport ? "default" : "pointer",
                               }}
-                              className="hover:bg-[var(--bg-elevated)] transition-colors"
+                              className={isReport ? "" : "hover:bg-[var(--bg-elevated)] transition-colors"}
                             >
-                              <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} /></span>
+                              <span style={{ flexShrink: 0, fontSize: 16, lineHeight: "16px", marginTop: 1 }}>
+                                {isReport ? "⚖️" : (
+                                  <UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} />
+                                )}
+                              </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginBottom: 2 }}>
-                                  <span style={{ marginRight: 4 }}>{typeIcon}</span>
-                                  <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
-                                  {" "}님이 {label}
-                                </p>
-                                {n.albumTitle && (
-                                  <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    {n.albumTitle}
+                                {isReport ? (
+                                  <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
+                                    {n.type === "report_ban"
+                                      ? <>
+                                          <span style={{ fontWeight: 600 }}>신고 처리 완료</span>
+                                          {n.reviewerId && <> — <span style={{ color: "var(--error, #e05050)" }}>@{n.reviewerId}</span> 가 제재됐습니다</>}
+                                        </>
+                                      : <>
+                                          <span style={{ fontWeight: 600 }}>신고가 확인 처리됐습니다</span>
+                                          {n.reviewerId && <> — <span style={{ color: "var(--text-muted)" }}>@{n.reviewerId}</span></>}
+                                        </>
+                                    }
                                   </p>
+                                ) : (
+                                  <>
+                                    <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginBottom: 2 }}>
+                                      <span style={{ marginRight: 4 }}>{n.type === "comment" ? "💬" : "♥"}</span>
+                                      <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
+                                      {" "}님이 {n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요"}
+                                    </p>
+                                    {n.albumTitle && (
+                                      <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {n.albumTitle}
+                                      </p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                               <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{ndStr}</span>
