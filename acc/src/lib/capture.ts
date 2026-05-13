@@ -9,13 +9,16 @@ export function downloadBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function captureToBlob(el: HTMLElement, bg = "#1a1817"): Promise<Blob | null> {
+export async function captureToBlob(el: HTMLElement, bg = "#1a1817", width?: number, height?: number): Promise<Blob | null> {
   const canvas = await html2canvas(el, {
     backgroundColor: bg,
     useCORS: true,
     allowTaint: false,
     scale: 3,
     logging: false,
+    // transform 부모로 인해 getBoundingClientRect가 축소 값을 반환할 수 있으므로 명시적 지정
+    ...(width !== undefined && { width }),
+    ...(height !== undefined && { height }),
   });
   return new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/png");

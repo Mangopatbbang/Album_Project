@@ -84,7 +84,7 @@ export default function StoryCardPreviewModal({
     await waitForImages();
     // 웹폰트 로딩 대기
     if (document.fonts?.ready) await document.fonts.ready;
-    return captureToBlob(cardRef.current);
+    return captureToBlob(cardRef.current, "#1a1817", 360, 640);
   };
 
   const handleSave = async () => {
