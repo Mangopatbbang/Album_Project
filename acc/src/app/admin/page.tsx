@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { useAuth } from "@/context/AuthContext";
@@ -102,6 +102,62 @@ export default function AdminPage() {
     if (res.ok) {
       alert(`${data.deleted ?? 0}건 삭제됨`);
       if (logs !== null) loadLogs(logsAction || undefined);
+    }
+  }
+
+  // --- 아티스트 사진 관리 ---
+  const [artistPhotoList, setArtistPhotoList] = useState<string[] | null>(null);
+  const [artistPhotoOverrides, setArtistPhotoOverrides] = useState<Record<string, string>>({});
+  const [artistPhotoListLoading, setArtistPhotoListLoading] = useState(false);
+  const [editingArtistPhoto, setEditingArtistPhoto] = useState<string | null>(null);
+  const [artistPhotoInput, setArtistPhotoInput] = useState("");
+  const [artistPhotoMsg, setArtistPhotoMsg] = useState("");
+
+  async function loadArtistPhotoSection() {
+    setArtistPhotoListLoading(true);
+    const [r1, r2] = await Promise.all([
+      adminFetch("/api/admin/artist-aliases?distinct=true"),
+      adminFetch("/api/admin/artist-images"),
+    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    setArtistPhotoList(d1.artists ?? []);
+    const overrideMap: Record<string, string> = {};
+    for (const o of (d2.overrides ?? []) as { artist_name: string; image_url: string }[]) {
+      overrideMap[o.artist_name] = o.image_url;
+    }
+    setArtistPhotoOverrides(overrideMap);
+    setArtistPhotoListLoading(false);
+  }
+
+  async function handleSaveArtistPhoto(artistName: string) {
+    if (!artistPhotoInput.trim()) return;
+    const res = await adminFetch("/api/admin/artist-images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artist_name: artistName, image_url: artistPhotoInput.trim() }),
+    });
+    if (res.ok) {
+      setArtistPhotoOverrides((prev) => ({ ...prev, [artistName]: artistPhotoInput.trim() }));
+      setArtistPhotoMsg(`✅ "${artistName}" 사진 저장됨`);
+      setEditingArtistPhoto(null);
+      setArtistPhotoInput("");
+    } else {
+      const d = await res.json();
+      setArtistPhotoMsg(`❌ ${d.error}`);
+    }
+  }
+
+  async function handleDeleteArtistPhoto(artistName: string) {
+    const res = await adminFetch("/api/admin/artist-images", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artist_name: artistName }),
+    });
+    if (res.ok) {
+      setArtistPhotoOverrides((prev) => { const n = { ...prev }; delete n[artistName]; return n; });
+      setArtistPhotoMsg(`✅ "${artistName}" 오버라이드 삭제됨 (Spotify 자동으로 복귀)`);
+      setEditingArtistPhoto(null);
+      setArtistPhotoInput("");
     }
   }
 
@@ -1304,6 +1360,103 @@ export default function AdminPage() {
             {listMode === "unaliased" && !unaliasedLoading && unaliasedArtists.length === 0 && <p style={{ fontSize: 12, color: "var(--accent)", marginTop: 8 }}>✅ 모든 아티스트에 별칭이 있습니다</p>}
           </div>
 
+          {/* 아티스트 사진 관리 */}
+          <div style={card}>
+            <p style={secTitle}>아티스트 사진</p>
+            <p style={secDesc}>Spotify 자동 매칭이 잘못된 아티스트의 사진을 직접 지정합니다. 오버라이드된 항목은 파란 테두리로 표시됩니다.</p>
+
+            {artistPhotoList === null ? (
+              <button
+                onClick={loadArtistPhotoSection}
+                disabled={artistPhotoListLoading}
+                style={{ padding: "7px 18px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              >
+                {artistPhotoListLoading ? "로딩..." : "사진 목록 불러오기"}
+              </button>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    총 {artistPhotoList.length}명 · 오버라이드 {Object.keys(artistPhotoOverrides).length}건
+                  </span>
+                  <button
+                    onClick={loadArtistPhotoSection}
+                    style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)", cursor: "pointer" }}
+                  >
+                    새로고침
+                  </button>
+                </div>
+
+                {artistPhotoMsg && (
+                  <p style={{ fontSize: 12, color: artistPhotoMsg.startsWith("✅") ? "var(--accent)" : "#e05050", marginBottom: 12 }}>
+                    {artistPhotoMsg}
+                  </p>
+                )}
+
+                {/* 인라인 편집 패널 */}
+                {editingArtistPhoto && (
+                  <div style={{ border: "1px solid var(--accent)", borderRadius: 8, padding: "14px 16px", marginBottom: 16, backgroundColor: "rgba(var(--accent-rgb),0.04)" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 10 }}>{editingArtistPhoto} — 사진 URL 수정</p>
+                    {artistPhotoOverrides[editingArtistPhoto] && (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={artistPhotoOverrides[editingArtistPhoto]} alt="" style={{ width: 56, height: 56, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>현재 오버라이드</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        value={artistPhotoInput}
+                        onChange={(e) => setArtistPhotoInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveArtistPhoto(editingArtistPhoto); }}
+                        placeholder="이미지 URL 붙여넣기..."
+                        style={{ flex: 1, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 6, padding: "7px 12px", fontSize: 12 }}
+                      />
+                      <button
+                        onClick={() => handleSaveArtistPhoto(editingArtistPhoto)}
+                        disabled={!artistPhotoInput.trim()}
+                        style={{ padding: "7px 14px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: !artistPhotoInput.trim() ? 0.4 : 1 }}
+                      >
+                        저장
+                      </button>
+                      {artistPhotoOverrides[editingArtistPhoto] && (
+                        <button
+                          onClick={() => handleDeleteArtistPhoto(editingArtistPhoto)}
+                          style={{ padding: "7px 12px", borderRadius: 6, border: "1px solid rgba(224,80,80,0.4)", backgroundColor: "transparent", color: "#e05050", fontSize: 12, cursor: "pointer" }}
+                        >
+                          삭제
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setEditingArtistPhoto(null); setArtistPhotoInput(""); }}
+                        style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8 }}>
+                  {artistPhotoList.map((name) => (
+                    <ArtistPhotoCard
+                      key={name}
+                      name={name}
+                      overrideUrl={artistPhotoOverrides[name]}
+                      isEditing={editingArtistPhoto === name}
+                      onClick={() => {
+                        if (editingArtistPhoto === name) { setEditingArtistPhoto(null); setArtistPhotoInput(""); return; }
+                        setEditingArtistPhoto(name);
+                        setArtistPhotoInput(artistPhotoOverrides[name] ?? "");
+                        setArtistPhotoMsg("");
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {/* 아티스트 정규명 직접 변경 */}
           <div style={{ ...card, borderColor: "rgba(192,57,43,0.35)" }}>
             <p style={secTitle}>아티스트 정규명 직접 변경</p>
@@ -1495,5 +1648,70 @@ export default function AdminPage() {
       <AlbumModal album={logAlbumModal} onClose={() => setLogAlbumModal(null)} zIndex={200} />
     )}
     </>
+  );
+}
+
+function ArtistPhotoCard({
+  name, overrideUrl, isEditing, onClick,
+}: {
+  name: string;
+  overrideUrl?: string;
+  isEditing: boolean;
+  onClick: () => void;
+}) {
+  const [photo, setPhoto] = useState<string | null>(overrideUrl ?? null);
+  const [fetchDone, setFetchDone] = useState(!!overrideUrl);
+
+  useEffect(() => {
+    setPhoto(overrideUrl ?? null);
+    setFetchDone(!!overrideUrl);
+  }, [overrideUrl]);
+
+  const handleVisible = () => {
+    if (fetchDone) return;
+    setFetchDone(true);
+    fetch(`/api/spotify/artist?name=${encodeURIComponent(name)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.image_url) setPhoto(d.image_url); })
+      .catch(() => {});
+  };
+
+  return (
+    <button
+      onClick={() => { handleVisible(); onClick(); }}
+      onMouseEnter={handleVisible}
+      style={{
+        background: "none", padding: 0, cursor: "pointer", textAlign: "left",
+        border: `2px solid ${isEditing ? "var(--accent)" : overrideUrl ? "rgba(var(--accent-rgb),0.5)" : "var(--border)"}`,
+        borderRadius: 8, overflow: "hidden",
+        transition: "border-color 0.15s",
+      }}
+    >
+      <div style={{ width: "100%", aspectRatio: "1", backgroundColor: "var(--bg-elevated)", position: "relative", overflow: "hidden" }}>
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "var(--border-light)", fontSize: 18 }}>♪</span>
+          </div>
+        )}
+        {overrideUrl && (
+          <div style={{
+            position: "absolute", top: 4, right: 4,
+            width: 8, height: 8, borderRadius: "50%",
+            backgroundColor: "var(--accent)",
+            boxShadow: "0 0 4px rgba(0,0,0,0.5)",
+          }} />
+        )}
+      </div>
+      <p style={{
+        padding: "4px 5px", fontSize: 10, color: "var(--text-sub)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        lineHeight: 1.3,
+      }}>
+        {name}
+      </p>
+    </button>
   );
 }

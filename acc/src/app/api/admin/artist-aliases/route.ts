@@ -23,6 +23,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ alias: data ?? null });
   }
 
+  if (url.searchParams.get("distinct") === "true") {
+    const { data, error } = await supabaseServer.from("albums").select("artist");
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const all = [...new Set((data ?? []).map((a: { artist: string }) => a.artist))].sort();
+    return NextResponse.json({ artists: all });
+  }
+
   if (unaliased) {
     const { data: albumData, error: albumErr } = await supabaseServer
       .from("albums")

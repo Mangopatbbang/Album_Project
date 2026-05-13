@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/spotify";
+import { supabaseServer } from "@/lib/supabase";
 
 // 아티스트 이름으로 Spotify에서 사진 + 장르 태그 반환
 export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get("name")?.trim() ?? "";
   if (!name) return NextResponse.json({ image_url: null, genres: [] });
+
+  // DB 오버라이드 우선 확인
+  const { data: override } = await supabaseServer
+    .from("artist_images")
+    .select("image_url")
+    .eq("artist_name", name)
+    .maybeSingle();
+  if (override?.image_url) return NextResponse.json({ image_url: override.image_url, genres: [] });
 
   try {
     const token = await getAccessToken();
