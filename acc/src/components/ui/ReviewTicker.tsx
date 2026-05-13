@@ -25,7 +25,7 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
 
   if (items.length === 0) return null;
 
-  const repeat = Math.max(4, Math.ceil(24 / items.length));
+  const repeat = Math.max(2, Math.ceil(12 / items.length));
   const track = Array.from({ length: repeat }, () => items).flat();
   const duration = Math.min(200, Math.max(30, items.length * 5.5));
 

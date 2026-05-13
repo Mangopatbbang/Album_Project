@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { openTutorial } from "@/components/ui/TutorialModal";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -685,7 +686,24 @@ export default function AdminPage() {
 
         {/* ── 헤더 ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>Admin</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Link
+              href="/"
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+                textDecoration: "none", padding: "5px 10px",
+                border: "1px solid var(--border)", borderRadius: 7,
+                backgroundColor: "var(--bg-elevated)",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              홈
+            </Link>
+            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>Admin</p>
+          </div>
           <button
             onClick={openTutorial}
             style={{
