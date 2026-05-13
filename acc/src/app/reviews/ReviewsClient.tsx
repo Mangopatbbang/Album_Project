@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
@@ -22,6 +23,7 @@ type AlbumModalData = {
 const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function ReviewsClient() {
+  const searchParams = useSearchParams();
   const { profile } = useAuth();
   const { users, getUserById } = useUsers();
   const [items, setItems] = useState<ReviewItem[]>([]);
@@ -31,8 +33,9 @@ export default function ReviewsClient() {
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
+  const initAlbumId = searchParams.get("albumId") ?? "";
   const [filterUser, setFilterUser] = useState("");
-  const [filterAlbumId, setFilterAlbumId] = useState("");
+  const [filterAlbumId, setFilterAlbumId] = useState(initAlbumId);
   const [filterAlbumTitle, setFilterAlbumTitle] = useState("");
   const [minScore, setMinScore] = useState(1);
   const [maxScore, setMaxScore] = useState(8);
@@ -78,6 +81,14 @@ export default function ReviewsClient() {
     fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // filterAlbumTitle 자동 세팅 (URL로 albumId가 온 경우)
+  useEffect(() => {
+    if (filterAlbumId && !filterAlbumTitle && items.length > 0) {
+      const match = items.find((i) => i.albumId === filterAlbumId);
+      if (match) setFilterAlbumTitle(match.albumTitle);
+    }
+  }, [items, filterAlbumId, filterAlbumTitle]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -187,7 +198,6 @@ export default function ReviewsClient() {
       if (res.ok) {
         setCommentInput("");
         await fetchComments(item.albumId, item.userId);
-        // 댓글 카운트 +1
         setItems((prev) => prev.map((r) =>
           r.albumId === item.albumId && r.userId === item.userId
             ? { ...r, commentCount: (r.commentCount ?? 0) + 1 }
@@ -198,6 +208,20 @@ export default function ReviewsClient() {
       setSubmitting(false);
     }
   };
+
+  // 앨범별 그룹 보기: 기본 정렬 + 유저/앨범 필터 없을 때
+  const isGroupedView = sort === "latest" && filterUser === "" && filterAlbumId === "";
+
+  const albumGroups = useMemo(() => {
+    if (!isGroupedView) return [];
+    const map = new Map<string, ReviewItem[]>();
+    for (const item of items) {
+      const group = map.get(item.albumId) ?? [];
+      group.push(item);
+      map.set(item.albumId, group);
+    }
+    return [...map.entries()].map(([, reviews]) => reviews);
+  }, [items, isGroupedView]);
 
   const isFiltered = filterUser !== "" || filterAlbumId !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
   const scoreActive = minScore !== 1 || maxScore !== 8;
@@ -292,7 +316,61 @@ export default function ReviewsClient() {
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
+      ) : isGroupedView ? (
+        /* 앨범별 그룹 뷰 */
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {albumGroups.map((reviews) => {
+            const rep = reviews[0];
+            return (
+              <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
+                {/* 앨범 헤더 */}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                  className="hover:bg-[var(--bg-elevated)] transition-colors"
+                  onClick={() => handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
+                >
+                  {rep.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={rep.coverUrl} alt={rep.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rep.albumTitle}</p>
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{rep.artistDisplay || rep.artist}</p>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{reviews.length}개의 소감</span>
+                </div>
+                {/* 리뷰 목록 */}
+                {reviews.map((item, idx) => {
+                  const key = `${item.albumId}-${item.userId}`;
+                  return (
+                    <ReviewRow
+                      key={key}
+                      item={item}
+                      myId={profile?.id ?? null}
+                      liking={liking === key}
+                      expanded={expandedKey === key}
+                      rowComments={comments[key]}
+                      commentInput={expandedKey === key ? commentInput : ""}
+                      submitting={submitting}
+                      onLike={() => handleLike(item)}
+                      onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
+                      onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
+                      onToggleExpand={() => toggleExpand(key, item.albumId, item.userId)}
+                      onCommentInput={setCommentInput}
+                      onCommentSubmit={() => handleComment(item)}
+                      isLast={idx === reviews.length - 1}
+                      hideAlbumInfo
+                    />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* 기본 평별 플랫 뷰 */
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
           {items.map((item, idx) => {
             const key = `${item.albumId}-${item.userId}`;
@@ -337,7 +415,7 @@ export default function ReviewsClient() {
 
 function ReviewRow({
   item, myId, liking, expanded, rowComments, commentInput, submitting,
-  onLike, onAlbumClick, onFilterByAlbum, onToggleExpand, onCommentInput, onCommentSubmit, isLast,
+  onLike, onAlbumClick, onFilterByAlbum, onToggleExpand, onCommentInput, onCommentSubmit, isLast, hideAlbumInfo,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -353,6 +431,7 @@ function ReviewRow({
   onCommentInput: (v: string) => void;
   onCommentSubmit: () => void;
   isLast: boolean;
+  hideAlbumInfo?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const avatarMap = useUserAvatars();
@@ -372,18 +451,20 @@ function ReviewRow({
         style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
         className="hover:bg-[var(--bg-elevated)]"
       >
-        {/* 커버 → 앨범 모달 */}
-        <button
-          onClick={onAlbumClick}
-          style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
-          className="hover:opacity-75 transition-opacity"
-        >
-          {item.coverUrl && !imgError
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
-            : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
-          }
-        </button>
+        {/* 커버 → 앨범 모달 (앨범 정보 숨길 때는 유저 아바타만) */}
+        {!hideAlbumInfo && (
+          <button
+            onClick={onAlbumClick}
+            style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
+            className="hover:opacity-75 transition-opacity"
+          >
+            {item.coverUrl && !imgError
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
+              : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
+            }
+          </button>
+        )}
 
         {/* 점수 pill */}
         <span style={{
@@ -399,24 +480,26 @@ function ReviewRow({
         {/* 소감 + 앨범정보 */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 소감 텍스트 — 메인 */}
-          <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3, lineHeight: 1.4 }}>
+          <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.4 }}>
             {item.review}
           </p>
-          {/* 앨범명(클릭→필터) · 아티스트 */}
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <button
-              onClick={onFilterByAlbum}
-              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 600, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}
-              className="hover:underline"
-            >
-              {item.albumTitle}
-            </button>
-            {item.artistDisplay && (
-              <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
-                {item.artistDisplay}
-              </span>
-            )}
-          </div>
+          {/* 앨범명(클릭→필터) · 아티스트 — 그룹 뷰에서는 숨김 */}
+          {!hideAlbumInfo && (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+              <button
+                onClick={onFilterByAlbum}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 600, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}
+                className="hover:underline"
+              >
+                {item.albumTitle}
+              </button>
+              {item.artistDisplay && (
+                <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+                  {item.artistDisplay}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 우측 메타 */}

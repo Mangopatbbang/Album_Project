@@ -109,7 +109,17 @@ export async function GET(
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
     : null;
 
-  return NextResponse.json({ ...resolved, ratings, avg }, {
+  // 리뷰어별 댓글 수
+  const { data: commentRows } = await supabaseServer
+    .from("comments")
+    .select("reviewer_id")
+    .eq("album_id", id);
+  const commentCounts: Record<string, number> = {};
+  for (const row of commentRows ?? []) {
+    commentCounts[row.reviewer_id] = (commentCounts[row.reviewer_id] ?? 0) + 1;
+  }
+
+  return NextResponse.json({ ...resolved, ratings, avg, commentCounts }, {
     headers: { "Cache-Control": "no-store" },
   });
 }

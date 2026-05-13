@@ -51,6 +51,7 @@ type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   region?: string | null;
   added_by?: string | null;
   ratings: RatingWithLikes[];
+  commentCounts?: Record<string, number>;
 };
 
 type Props = {
@@ -685,8 +686,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
               const isExpanded = expandedReviews.has(user.id);
               const iLikedReview = myLikedReviews.has(user.id);
               const likedByUsers = users.filter((u) => r?.liked_by?.split(",").includes(u.id));
-              const canLikeReview = !!profile && !!ratings.find((rt) => rt.user_id === profile.id) && user.id !== profile.id && !!review;
+              const canLikeReview = !!profile && user.id !== profile.id && !!review;
               const showReviewHeart = canLikeReview && (hoveredReview === user.id || iLikedReview);
+              const commentCount = (full as FullAlbum)?.commentCounts?.[user.id] ?? 0;
               return (
                 <div
                   key={user.id}
@@ -726,6 +728,26 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
                         <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, letterSpacing: "0.05em" }}>
                           {likedByUsers.map((u) => u.emoji).join("")}
                         </span>
+                      )}
+
+                      {/* 댓글 수 → 청음평 링크 */}
+                      {(commentCount > 0 || hoveredReview === user.id) && (
+                        <Link
+                          href={`/reviews?albumId=${album.id}`}
+                          onClick={doClose}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 2,
+                            fontSize: 11, color: commentCount > 0 ? "var(--text-sub)" : "var(--text-muted)",
+                            textDecoration: "none", flexShrink: 0,
+                            opacity: commentCount > 0 ? 1 : 0.35,
+                          }}
+                          className="hover:text-[var(--accent)] transition-colors"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          {commentCount > 0 && <span>{commentCount}</span>}
+                        </Link>
                       )}
 
                       {/* 리뷰 하트 */}

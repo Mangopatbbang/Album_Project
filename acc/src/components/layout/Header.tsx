@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
@@ -13,6 +14,7 @@ export default function Header() {
   const { profile, loading, signOut } = useAuth();
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
+  const router = useRouter();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -26,7 +28,6 @@ export default function Header() {
     { href: "/reviews", label: "청음평", tour: "nav-reviews" },
     { href: "/members", label: "청음인", tour: "nav-members" },
     ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile" }] : []),
-    ...(profile?.role === "admin" ? [{ href: "/admin", label: "Admin", tour: undefined }] : []),
   ];
 
   useEffect(() => {
@@ -80,7 +81,6 @@ export default function Header() {
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
           {navItems.map(({ href, label, tour }) => {
-            const isAdmin = href === "/admin";
             return (
               <Link
                 key={href}
@@ -89,9 +89,7 @@ export default function Header() {
                 onMouseLeave={() => setHoveredNav(null)}
                 {...(tour ? { "data-tour": tour } : {})}
                 style={{
-                  color: isAdmin
-                    ? (hoveredNav === href ? "var(--accent)" : "rgba(var(--accent-rgb), 0.6)")
-                    : (hoveredNav === href ? "var(--text)" : "var(--text-sub)"),
+                  color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
                   backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
                   fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
                   padding: "0 12px", height: 52,
@@ -163,21 +161,32 @@ export default function Header() {
                           return (
                             <div
                               key={n.id}
+                              onClick={() => {
+                                setShowNotif(false);
+                                router.push(`/reviews?albumId=${n.albumId}`);
+                              }}
                               style={{
                                 padding: "10px 16px",
                                 borderBottom: "1px solid var(--border)",
                                 backgroundColor: n.read ? "transparent" : "rgba(var(--accent-rgb), 0.05)",
                                 borderLeft: n.read ? "2px solid transparent" : "2px solid var(--accent)",
                                 display: "flex", alignItems: "flex-start", gap: 8,
+                                cursor: "pointer",
                               }}
+                              className="hover:bg-[var(--bg-elevated)] transition-colors"
                             >
                               <span style={{ flexShrink: 0 }}><UserAvatar avatarUrl={n.fromUserId ? avatarMap[n.fromUserId] : null} size={16} /></span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
+                                <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginBottom: 2 }}>
                                   <span style={{ marginRight: 4 }}>{typeIcon}</span>
                                   <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
                                   {" "}님이 {label}
                                 </p>
+                                {n.albumTitle && (
+                                  <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {n.albumTitle}
+                                  </p>
+                                )}
                               </div>
                               <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{ndStr}</span>
                             </div>

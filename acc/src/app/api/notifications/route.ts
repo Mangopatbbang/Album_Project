@@ -8,6 +8,7 @@ export type NotificationItem = {
   type: "comment" | "like";
   fromUserId: string;
   albumId: string;
+  albumTitle?: string;
   reviewerId: string;
   read: boolean;
   createdAt: string;
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from("notifications")
-    .select("id, user_id, type, from_user_id, album_id, reviewer_id, read, created_at")
+    .select("id, user_id, type, from_user_id, album_id, reviewer_id, read, created_at, albums(title)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(30);
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
     type: r.type,
     fromUserId: r.from_user_id,
     albumId: r.album_id,
+    albumTitle: (r.albums as { title?: string } | null)?.title,
     reviewerId: r.reviewer_id,
     read: r.read,
     createdAt: r.created_at,
