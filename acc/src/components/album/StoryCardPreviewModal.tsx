@@ -40,7 +40,11 @@ export default function StoryCardPreviewModal({
   const { showToast } = useToast();
 
   useEffect(() => {
-    const update = () => setCardScale(Math.min(1, (window.innerWidth - 32) / 360));
+    const update = () => {
+      const scaleW = Math.min(1, (window.innerWidth - 32) / 360);
+      const scaleH = Math.min(1, (window.innerHeight - 160) / 640); // 160px: 옵션+버튼+패딩 여유
+      setCardScale(Math.min(scaleW, scaleH));
+    };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -93,7 +97,7 @@ export default function StoryCardPreviewModal({
       // iOS는 a.download 미지원 → share API로 대체
       if (isIOS && canShare) {
         const file = new File([blob], filename, { type: "image/png" });
-        try { await navigator.share({ files: [file] }); } catch { /* 취소 */ }
+        try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 — 모달 유지 */ }
       } else {
         downloadBlob(blob, filename);
         onClose();

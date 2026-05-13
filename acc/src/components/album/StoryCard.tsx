@@ -92,7 +92,7 @@ export default function StoryCard({
             ACHA
           </span>
           {userName && (
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", letterSpacing: "0.02em" }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", letterSpacing: "0.02em", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {userName}
             </span>
           )}
