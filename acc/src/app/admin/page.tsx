@@ -196,7 +196,9 @@ export default function AdminPage() {
       body: JSON.stringify({ spotify_name: newSpotifyName.trim(), variant_name: newVariantName.trim() }),
     });
     if (res.ok) {
-      setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
+      const d = await res.json();
+      const n = d.auto_applied ?? 0;
+      setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨${n > 0 ? ` (앨범 ${n}개 자동 적용)` : " (일치 앨범 없음)"}`);
       setNewSpotifyName(""); setNewVariantName("");
       await refreshCurrentList(listMode);
     } else {
@@ -230,7 +232,7 @@ export default function AdminPage() {
       body: JSON.stringify({ spotify_name }),
     });
     if (res.ok) {
-      setAliasMsg(`✅ ${spotify_name} 삭제됨`);
+      setAliasMsg(`✅ ${spotify_name} 삭제됨 (앨범 원래이름으로 복원)`);
       await refreshCurrentList(listMode);
     } else {
       const d = await res.json();

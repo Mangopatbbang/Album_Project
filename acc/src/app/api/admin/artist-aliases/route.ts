@@ -61,13 +61,21 @@ export async function POST(req: NextRequest) {
     .from("artist_aliases")
     .upsert({ spotify_name: spotify_name.trim(), variant_name: variant_name.trim() }, { onConflict: "spotify_name" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 별칭 등록 시 해당 아티스트 앨범 전체에 use_artist_variant 자동 활성화
+  const { data: updated } = await supabaseServer
+    .from("albums")
+    .update({ use_artist_variant: true })
+    .filter("artist", "ilike", spotify_name.trim())
+    .select("id");
+
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
   revalidateTag("artist-aliases", { expire: 0 });
   revalidateTag("all-albums-with-ratings", { expire: 0 });
   revalidateTag("profile-ratings", { expire: 0 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, auto_applied: updated?.length ?? 0 });
 }
 
 // DELETE /api/admin/artist-aliases
@@ -83,6 +91,13 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq("spotify_name", spotify_name.trim());
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 별칭 삭제 시 해당 아티스트 앨범 전체에 use_artist_variant 자동 비활성화
+  await supabaseServer
+    .from("albums")
+    .update({ use_artist_variant: false })
+    .filter("artist", "ilike", spotify_name.trim());
+
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
