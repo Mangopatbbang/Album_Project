@@ -219,10 +219,21 @@ export async function POST(req: NextRequest) {
     .neq("id", data.id);
   const isNewArtist = (artistAlbumCount ?? 0) === 0;
 
+  const missingFields: string[] = [];
+  if (!cover_url) missingFields.push("커버");
+  if (!genre) missingFields.push("장르");
+  if (!region) missingFields.push("지역");
+  if (!release_date) missingFields.push("발매일");
+  if (!tracklist) missingFields.push("트랙리스트");
+
+  const logDetails: Record<string, unknown> = {};
+  if (isNewArtist) logDetails.new_artist = true;
+  if (missingFields.length > 0) logDetails.missing = missingFields;
+
   await logActivity({
     userId: added_by ?? null, action: "album_add",
     albumId: data.id, albumTitle: data.title, albumArtist: data.artist,
-    details: isNewArtist ? { new_artist: true } : undefined,
+    details: Object.keys(logDetails).length > 0 ? logDetails : undefined,
   });
   revalidatePath("/");
   revalidatePath("/best");

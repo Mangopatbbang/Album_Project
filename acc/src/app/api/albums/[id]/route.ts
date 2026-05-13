@@ -57,14 +57,24 @@ export async function PATCH(
     .from("albums")
     .update(update)
     .eq("id", id)
-    .select("id, title, artist, tracklist, spotify_id");
+    .select("id, title, artist, tracklist, spotify_id, cover_url, genre, region, release_date");
   if (error) return NextResponse.json({ error: error.message, id, update }, { status: 500 });
 
   const updatedRow = updateData?.[0];
+  const editMissing: string[] = [];
+  if (!updatedRow?.cover_url) editMissing.push("커버");
+  if (!updatedRow?.genre) editMissing.push("장르");
+  if (!updatedRow?.region) editMissing.push("지역");
+  if (!updatedRow?.release_date) editMissing.push("발매일");
+  if (!updatedRow?.tracklist) editMissing.push("트랙리스트");
+
   await logActivity({
     userId: authed.id, action: "album_edit",
     albumId: id, albumTitle: updatedRow?.title, albumArtist: updatedRow?.artist,
-    details: { updated_fields: Object.keys(update) },
+    details: {
+      updated_fields: Object.keys(update),
+      ...(editMissing.length > 0 ? { missing: editMissing } : {}),
+    },
   });
 
   revalidatePath("/");

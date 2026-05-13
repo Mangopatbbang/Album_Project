@@ -886,6 +886,11 @@ export default function AdminPage() {
                               )}
                             </p>
                           )}
+                          {Array.isArray(log.details?.missing) && (log.details.missing as string[]).length > 0 && (
+                            <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                              미입력: {(log.details.missing as string[]).join(" · ")}
+                            </p>
+                          )}
                         </div>
                         <span style={{ flexShrink: 0, fontSize: 10, color: "var(--text-muted)", maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.user_id ?? "–"}</span>
                       </div>

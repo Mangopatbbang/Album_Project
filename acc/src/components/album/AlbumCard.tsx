@@ -33,8 +33,7 @@ export default function AlbumCard({ album, onClick }: Props) {
       [others[i], others[j]] = [others[j], others[i]];
     }
     return [...mine, ...others].slice(0, 5);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [album.id, profile?.id]);
+  }, [album.id, profile?.id, users]);
 
   return (
     <>
