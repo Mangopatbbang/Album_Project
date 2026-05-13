@@ -17,7 +17,14 @@ function escapeSearch(s: string) {
 
 // 검색어 + alias 매칭된 spotify_names 로 OR 조건 문자열 생성
 function buildSearchOr(s: string, aliasMatches: string[]): string {
-  const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, `extra_artists.ilike.%${s}%`];
+  // extra_artists는 "A;B;C" 세미콜론 구분 — 토큰 단위 정확 매칭 4패턴
+  const extraParts = [
+    `extra_artists.ilike.${s}`,        // 단독
+    `extra_artists.ilike.${s};%`,      // 앞에서 시작
+    `extra_artists.ilike.%;${s};%`,    // 중간
+    `extra_artists.ilike.%;${s}`,      // 끝
+  ];
+  const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, ...extraParts];
   for (const a of aliasMatches) {
     const safe = escapeSearch(a);
     if (safe) {

@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseServer
     .from("ratings")
-    .select("user_id, score, one_line_review, liked_by, updated_at, albums(id, title, artist, use_artist_variant, cover_url, genre)")
+    .select("user_id, score, one_line_review, liked_by, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, cover_url, genre)")
     .not("one_line_review", "is", null)
     .neq("one_line_review", "")
     .gte("score", minScore)
@@ -44,14 +44,18 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error || !data) return NextResponse.json({ items: [], hasMore: false }, { status: 500 });
 
-  type AlbumRow = { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null; genre: string | null };
-  const albumObjects = data
+  // hasMore는 null 앨범 필터 전 raw 개수로 판단 (삭제된 앨범 참조 시 오판 방지)
+  const hasMore = data.length === LIMIT + 1;
+  const pageData = data.slice(0, LIMIT);
+
+  type AlbumRow = { id: string; title: string; artist: string; use_artist_variant: boolean | null; extra_artists: string | null; cover_url: string | null; genre: string | null };
+  const albumObjects = pageData
     .map((r) => (r.albums as unknown) as AlbumRow | null)
     .filter((a): a is AlbumRow => a != null);
   const resolved = await resolveArtistDisplay(albumObjects);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
 
-  let items: ReviewItem[] = data
+  let items: ReviewItem[] = pageData
     .map((r) => {
       const album = (r.albums as unknown) as AlbumRow | null;
       if (!album) return null;
@@ -75,5 +79,5 @@ export async function GET(req: NextRequest) {
     items = items.sort((a, b) => b.likedBy.length - a.likedBy.length);
   }
 
-  return NextResponse.json({ items, hasMore: items.length === LIMIT + 1 });
+  return NextResponse.json({ items, hasMore });
 }
