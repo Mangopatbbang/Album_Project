@@ -63,7 +63,7 @@ export default function StoryCard({
             backgroundImage: `url(${proxiedCover})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            filter: "blur(40px) saturate(1.8) brightness(0.45)",
+            filter: "blur(32px) saturate(1.6) brightness(0.55)",
             transform: "scale(1.15)",
           }}
         />
@@ -269,6 +269,7 @@ export default function StoryCard({
               fontWeight: 700,
               color: "rgba(255,255,255,0.28)",
               letterSpacing: "0.07em",
+              whiteSpace: "nowrap",
             }}
           >
             아차청음사
