@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import StoryCard from "@/components/album/StoryCard";
-import { captureToBlob, downloadBlob } from "@/lib/capture";
+import { captureToBlob, downloadBlob, prerenderBlur } from "@/lib/capture";
 import { useToast } from "@/components/ui/Toast";
 
 type Props = {
@@ -87,13 +87,36 @@ export default function StoryCardPreviewModal({
     });
 
   const prepareCapture = async (): Promise<Blob | null> => {
-    // captureCardRef: document.body 직속 portal — 모달/transform/overflow 부모 없음
-    // DOM 조작 불필요, html2canvas가 순수 360×640으로 캡처
     const el = captureCardRef.current;
     if (!el) return null;
     await waitForImages(el);
     if (document.fonts?.ready) await document.fonts.ready;
-    return captureToBlob(el, "#1a1817", 360, 640);
+
+    // html2canvas는 CSS filter(blur/brightness 등) 미지원 → canvas 2D로 미리 렌더링
+    const blurDataUrl = coverUrl
+      ? await prerenderBlur(`/api/image-proxy?url=${encodeURIComponent(coverUrl)}`)
+      : null;
+
+    return captureToBlob(el, "#1a1817", 360, 640, (doc, clonedEl) => {
+      // 모달 백드롭(zIndex:200)이 포털 카드(zIndex:-1)를 가리므로 클론에서 숨김
+      doc.querySelectorAll("[data-no-capture]").forEach((node) => {
+        (node as HTMLElement).style.display = "none";
+      });
+      const wrapper = clonedEl.parentElement;
+      if (wrapper) wrapper.style.zIndex = "9999";
+
+      // blur 배경을 canvas로 미리 렌더링한 데이터 URL로 교체
+      if (blurDataUrl) {
+        const blurBg = clonedEl.querySelector("[data-blur-bg]") as HTMLElement | null;
+        if (blurBg) {
+          blurBg.style.backgroundImage = `url("${blurDataUrl}")`;
+          blurBg.style.backgroundSize = "cover";
+          blurBg.style.backgroundPosition = "center";
+          blurBg.style.filter = "none";
+          blurBg.style.transform = "none";
+        }
+      }
+    });
   };
 
   const handleSave = async () => {
@@ -170,6 +193,7 @@ export default function StoryCardPreviewModal({
 
       <div
         ref={backdropRef}
+        data-no-capture
         style={{
           position: "fixed",
           inset: 0,

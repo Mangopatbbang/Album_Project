@@ -9,20 +9,51 @@ export function downloadBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function captureToBlob(el: HTMLElement, bg = "#1a1817", width?: number, height?: number): Promise<Blob | null> {
+export async function captureToBlob(
+  el: HTMLElement,
+  bg = "#1a1817",
+  width?: number,
+  height?: number,
+  onclone?: (doc: Document, clonedEl: HTMLElement) => void,
+): Promise<Blob | null> {
   const canvas = await html2canvas(el, {
     backgroundColor: bg,
     useCORS: true,
     allowTaint: false,
     scale: 3,
     logging: false,
-    scrollX: 0,
-    scrollY: 0,
+    ...(onclone && { onclone }),
     ...(width !== undefined && { width }),
     ...(height !== undefined && { height }),
   });
   return new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => resolve(blob), "image/png");
+  });
+}
+
+// html2canvas는 CSS filter(blur, brightness 등)를 지원하지 않으므로
+// canvas 2D API로 blur 배경을 미리 렌더링해 data URL로 반환
+export function prerenderBlur(proxiedUrl: string, width = 360, height = 640): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(null); return; }
+      const scale = 1.15;
+      const sw = width * scale;
+      const sh = height * scale;
+      const sx = (width - sw) / 2;
+      const sy = (height - sh) / 2;
+      ctx.filter = "blur(40px) saturate(1.8) brightness(0.45)";
+      ctx.drawImage(img, sx, sy, sw, sh);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(null);
+    img.src = proxiedUrl;
   });
 }
 

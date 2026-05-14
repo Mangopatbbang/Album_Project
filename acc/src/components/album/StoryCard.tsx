@@ -55,6 +55,7 @@ export default function StoryCard({
       {/* 블러 배경 */}
       {proxiedCover && (
         <div
+          data-blur-bg
           style={{
             position: "absolute",
             inset: 0,
