@@ -63,7 +63,7 @@ export default function StoryCard({
             backgroundImage: `url(${proxiedCover})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            filter: "blur(32px) saturate(1.6) brightness(0.55)",
+            filter: "blur(28px) saturate(1.8) brightness(0.68)",
             transform: "scale(1.15)",
           }}
         />
