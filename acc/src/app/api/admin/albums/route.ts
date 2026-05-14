@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (filter === "no_tracklist") query = (query as any).is("tracklist", null);
   if (title) {
-    const safeTitle = title.replace(/[-]/g, " ").replace(/%/g, "\\%").replace(/_/g, "\\_");
+    // 원래 동작 유지: - _ 모두 공백으로 (단어 구분자 처리), % 만 SQL 와일드카드 이스케이프
+    const safeTitle = title.replace(/[-_]/g, " ").replace(/%/g, "\\%");
     query = query.ilike("title", `%${safeTitle}%`);
   }
 

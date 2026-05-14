@@ -149,7 +149,9 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     } catch {
       // 네트워크 오류 시 현재 목록 유지
     } finally {
-      setLoading(false);
+      // stale 응답이면 loading 해제를 handleFilter에 맡김
+      // (여기서 해제하면 handleFilter 진행 중에 loading=false → loadMore 재발동 위험)
+      if (filterGenRef.current === gen) setLoading(false);
     }
   }, [hasMore, loading, fetchAlbums, search, genre, region, sort, unrated, myScore, scoreUserId, nextOffset]);
 
