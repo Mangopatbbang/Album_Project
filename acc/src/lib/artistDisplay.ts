@@ -60,18 +60,36 @@ export async function resolveArtistDisplay<T extends HasArtist>(
 export async function findArtistsByVariant(search: string): Promise<string[]> {
   if (!search.trim()) return [];
   const esc = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
-  const [{ data: displayData }, { data: searchData }] = await Promise.all([
-    supabaseServer
-      .from("artist_aliases")
-      .select("spotify_name")
-      .ilike("variant_name", `%${esc}%`),
-    supabaseServer
-      .from("artist_search_aliases")
-      .select("spotify_name")
-      .ilike("alias", `%${esc}%`),
-  ]);
+
+  // 공백 정규화 변형: 공백 없으면 삽입, 공백 있으면 제거 (에픽하이 ↔ 에픽 하이)
+  const spaceVariants: string[] = [];
+  if (!search.includes(' ') && search.length > 1) {
+    for (let i = 1; i < search.length; i++) {
+      spaceVariants.push(search.slice(0, i) + ' ' + search.slice(i));
+    }
+  } else if (search.includes(' ')) {
+    spaceVariants.push(search.replace(/\s+/g, ''));
+  }
+
+  const queries = [
+    supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${esc}%`),
+    supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${esc}%`),
+    ...spaceVariants.map(v => {
+      const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
+      return supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${ev}%`);
+    }),
+    ...spaceVariants.map(v => {
+      const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
+      return supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${ev}%`);
+    }),
+  ];
+
+  const results = await Promise.all(queries);
   const names = new Set<string>();
-  (displayData ?? []).forEach((r: { spotify_name: string }) => names.add(r.spotify_name));
-  (searchData ?? []).forEach((r: { spotify_name: string }) => names.add(r.spotify_name));
+  for (const r of results) {
+    for (const a of (r.data ?? []) as { spotify_name: string }[]) {
+      names.add(a.spotify_name);
+    }
+  }
   return [...names];
 }

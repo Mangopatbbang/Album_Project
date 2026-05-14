@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     spaceVariants.push(q.replace(/\s+/g, ''));
   }
 
-  const [mainRes, spaceResults] = await Promise.all([
+  const [[r1, r2, r3, aliasMap], spaceAlbumResults, spaceAliasResults] = await Promise.all([
     Promise.all([
       supabaseServer.from("albums").select("artist").ilike("artist", `%${esc}%`).limit(60),
       supabaseServer.from("artist_aliases").select("spotify_name, variant_name").ilike("variant_name", `%${esc}%`).limit(20),
@@ -30,30 +30,41 @@ export async function GET(req: NextRequest) {
       const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
       return supabaseServer.from("albums").select("artist").ilike("artist", `%${ev}%`).limit(20);
     })),
+    Promise.all(spaceVariants.map(v => {
+      const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
+      return supabaseServer.from("artist_aliases").select("spotify_name, variant_name").ilike("variant_name", `%${ev}%`).limit(10);
+    })),
   ]);
 
-  const [r1, r2, r3, aliasMap] = mainRes;
-
-  // Map<spotify_name, display_name> — 우선순위: r2(variant_name 직접 매칭) > r1 = r3 = spaceResults
+  // Map<spotify_name, display_name> — 우선순위: r2(직접) > spaceAliasResults > r1 = r3 = spaceAlbumResults
   const displayMap = new Map<string, string>();
 
   for (const a of (r1.data ?? []) as { artist: string }[]) {
     displayMap.set(a.artist, aliasMap.get(a.artist.toLowerCase()) ?? a.artist);
   }
-  for (const a of (r2.data ?? []) as { spotify_name: string; variant_name: string }[]) {
-    displayMap.set(a.spotify_name, a.variant_name);
+  for (const r of spaceAlbumResults) {
+    for (const a of (r.data ?? []) as { artist: string }[]) {
+      if (!displayMap.has(a.artist)) {
+        displayMap.set(a.artist, aliasMap.get(a.artist.toLowerCase()) ?? a.artist);
+      }
+    }
   }
   for (const a of (r3.data ?? []) as { spotify_name: string }[]) {
     if (!displayMap.has(a.spotify_name)) {
       displayMap.set(a.spotify_name, aliasMap.get(a.spotify_name.toLowerCase()) ?? a.spotify_name);
     }
   }
-  for (const r of spaceResults) {
-    for (const a of (r.data ?? []) as { artist: string }[]) {
-      if (!displayMap.has(a.artist)) {
-        displayMap.set(a.artist, aliasMap.get(a.artist.toLowerCase()) ?? a.artist);
+  // 공백 정규화로 찾은 variant_name alias (r2보다 낮은 우선순위)
+  for (const r of spaceAliasResults) {
+    for (const a of (r.data ?? []) as { spotify_name: string; variant_name: string }[]) {
+      if (!displayMap.has(a.spotify_name)) {
+        displayMap.set(a.spotify_name, a.variant_name);
       }
     }
+  }
+  // r2: variant_name 직접 매칭 — 최고 우선순위로 덮어씀
+  for (const a of (r2.data ?? []) as { spotify_name: string; variant_name: string }[]) {
+    displayMap.set(a.spotify_name, a.variant_name);
   }
 
   return NextResponse.json([...displayMap.values()].slice(0, 10));
