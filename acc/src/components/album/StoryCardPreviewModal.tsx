@@ -38,6 +38,7 @@ export default function StoryCardPreviewModal({
   const [capturing, setCapturing] = useState(false);
   const [includeReview, setIncludeReview] = useState(true);
   const [includeTracks, setIncludeTracks] = useState(true);
+  const [includeUserName, setIncludeUserName] = useState(true);
   const [useAvgScore, setUseAvgScore] = useState(false);
   const [cardScale, setCardScale] = useState(1);
   const { showToast } = useToast();
@@ -110,7 +111,7 @@ export default function StoryCardPreviewModal({
     score: displayScore,
     review: includeReview ? (review ?? null) : null,
     genre,
-    userName,
+    userName: includeUserName ? userName : undefined,
     spotifyId,
     likedTracks: includeTracks ? likedTracks : undefined,
   };
@@ -176,35 +177,79 @@ export default function StoryCardPreviewModal({
         onClick={(e) => e.stopPropagation()}
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, flexShrink: 0 }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           {avgScore != null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(255,255,255,0.18)", borderRadius: 8, overflow: "hidden", fontSize: 12, fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, overflow: "hidden", fontSize: 12, fontWeight: 600 }}>
               <button
                 onClick={() => setUseAvgScore(false)}
-                style={{ padding: "6px 14px", background: !useAvgScore ? "rgba(255,255,255,0.18)" : "none", color: !useAvgScore ? "#fff" : "rgba(255,255,255,0.45)", border: "none", cursor: "pointer" }}
+                style={{ padding: "6px 16px", background: !useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: !useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "all 0.15s" }}
               >
                 내 점수
               </button>
               <button
                 onClick={() => setUseAvgScore(true)}
-                style={{ padding: "6px 14px", background: useAvgScore ? "rgba(255,255,255,0.18)" : "none", color: useAvgScore ? "#fff" : "rgba(255,255,255,0.45)", border: "none", cursor: "pointer" }}
+                style={{ padding: "6px 16px", background: useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "all 0.15s" }}
               >
                 평균 점수
               </button>
             </div>
           )}
-          {review && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "rgba(255,255,255,0.55)", fontSize: 13, userSelect: "none" }}>
-              <input type="checkbox" checked={includeReview} onChange={(e) => setIncludeReview(e.target.checked)} style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }} />
-              한줄 평 포함
-            </label>
-          )}
-          {likedTracks && likedTracks.length > 0 && (
-            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", color: "rgba(255,255,255,0.55)", fontSize: 13, userSelect: "none" }}>
-              <input type="checkbox" checked={includeTracks} onChange={(e) => setIncludeTracks(e.target.checked)} style={{ width: 15, height: 15, accentColor: "#fff", cursor: "pointer" }} />
-              Best Tracks 포함
-            </label>
-          )}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+            {review && (
+              <button
+                onClick={() => setIncludeReview((v) => !v)}
+                style={{
+                  padding: "5px 13px",
+                  borderRadius: 20,
+                  border: `1px solid ${includeReview ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.1)"}`,
+                  background: includeReview ? "rgba(255,255,255,0.14)" : "none",
+                  color: includeReview ? "#fff" : "rgba(255,255,255,0.3)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                한줄평
+              </button>
+            )}
+            {likedTracks && likedTracks.length > 0 && (
+              <button
+                onClick={() => setIncludeTracks((v) => !v)}
+                style={{
+                  padding: "5px 13px",
+                  borderRadius: 20,
+                  border: `1px solid ${includeTracks ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.1)"}`,
+                  background: includeTracks ? "rgba(255,255,255,0.14)" : "none",
+                  color: includeTracks ? "#fff" : "rgba(255,255,255,0.3)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                Best Tracks
+              </button>
+            )}
+            {userName && (
+              <button
+                onClick={() => setIncludeUserName((v) => !v)}
+                style={{
+                  padding: "5px 13px",
+                  borderRadius: 20,
+                  border: `1px solid ${includeUserName ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.1)"}`,
+                  background: includeUserName ? "rgba(255,255,255,0.14)" : "none",
+                  color: includeUserName ? "#fff" : "rgba(255,255,255,0.3)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                닉네임
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
