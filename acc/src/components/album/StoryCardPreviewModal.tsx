@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import StoryCard from "@/components/album/StoryCard";
-import { captureToBlob, downloadBlob, prerenderBlur } from "@/lib/capture";
+import { captureToBlob, downloadBlob } from "@/lib/capture";
 import { useToast } from "@/components/ui/Toast";
 
 type Props = {
@@ -67,90 +67,11 @@ export default function StoryCardPreviewModal({
     }
   })();
 
-  const waitForImages = (el: HTMLElement) =>
-    new Promise<void>((resolve) => {
-      const imgs = el.querySelectorAll("img");
-      const pending = Array.from(imgs).filter((img) => !img.complete);
-      if (pending.length === 0) { resolve(); return; }
-      let loaded = 0;
-      const onLoad = () => { if (++loaded >= pending.length) resolve(); };
-      pending.forEach((img) => {
-        img.addEventListener("load", onLoad, { once: true });
-        img.addEventListener("error", onLoad, { once: true });
-      });
-      setTimeout(resolve, 3000);
-    });
-
-  const prepareCapture = async (): Promise<Blob | null> => {
-    // 사용자가 실제로 보는 프리뷰 카드를 캡처 대상으로 사용
-    // onclone에서만 scale 제거 → 실제 DOM 변경 없어서 UI 깜빡임 없음
-    const el = cardRef.current;
-    if (!el) return null;
-    await waitForImages(el);
-    if (document.fonts?.ready) await document.fonts.ready;
-
-    // html2canvas는 CSS filter(blur/brightness 등) 미지원 → canvas 2D로 미리 렌더링
-    const blurDataUrl = coverUrl
-      ? await prerenderBlur(`/api/image-proxy?url=${encodeURIComponent(coverUrl)}`)
-      : null;
-
-    return captureToBlob(el, "#1a1817", 360, 640, (doc, clonedEl) => {
-      // clonedEl = StoryCard 루트
-      // scaleWrapper = transform:scale 래퍼
-      // clipWrapper  = overflow:hidden 클립 래퍼 (모달 내 카드 미리보기 외곽)
-      const scaleWrapper = clonedEl.parentElement;
-      const clipWrapper = scaleWrapper?.parentElement;
-      const backdrop = clipWrapper?.parentElement;
-
-      // scale 제거: 클론에서만 → 실제 UI 변경 없음
-      if (scaleWrapper) scaleWrapper.style.transform = "none";
-
-      // 클립 래퍼를 viewport (0,0)에 360×640으로 고정
-      // html2canvas는 클론의 요소 위치로 캡처 영역을 결정하므로
-      // 이렇게 하면 정확히 360×640 카드만 캡처됨
-      if (clipWrapper) {
-        Object.assign(clipWrapper.style, {
-          position: "fixed",
-          top: "0px",
-          left: "0px",
-          width: "360px",
-          height: "640px",
-          overflow: "hidden",
-          transform: "none",
-          borderRadius: "0px",
-          boxShadow: "none",
-        });
-      }
-
-      // 모달 배경 제거 + 카드 외 UI(닫기 버튼, 옵션, 저장 버튼 등) 숨김
-      if (backdrop) {
-        backdrop.style.backgroundColor = "transparent";
-        Array.from(backdrop.children).forEach((child) => {
-          if (child !== clipWrapper) {
-            (child as HTMLElement).style.visibility = "hidden";
-          }
-        });
-      }
-
-      // blur 배경을 canvas로 미리 렌더링한 데이터 URL로 교체
-      if (blurDataUrl) {
-        const blurBg = clonedEl.querySelector("[data-blur-bg]") as HTMLElement | null;
-        if (blurBg) {
-          blurBg.style.backgroundImage = `url("${blurDataUrl}")`;
-          blurBg.style.backgroundSize = "cover";
-          blurBg.style.backgroundPosition = "center";
-          blurBg.style.filter = "none";
-          blurBg.style.transform = "none";
-        }
-      }
-    });
-  };
-
   const handleSave = async () => {
     if (!cardRef.current || capturing) return;
     setCapturing(true);
     try {
-      const blob = await prepareCapture();
+      const blob = await captureToBlob(cardRef.current);
       if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
 
       if (isIOS && canShare) {
@@ -171,7 +92,7 @@ export default function StoryCardPreviewModal({
     if (!cardRef.current || capturing) return;
     setCapturing(true);
     try {
-      const blob = await prepareCapture();
+      const blob = await captureToBlob(cardRef.current);
       if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
       const file = new File([blob], filename, { type: "image/png" });
       try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 — 모달 유지 */ }
