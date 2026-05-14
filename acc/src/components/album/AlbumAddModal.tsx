@@ -32,6 +32,7 @@ type DuplicateAlbum = {
   id: string;
   title: string;
   artist: string;
+  cover_url?: string | null;
 };
 
 type Props = {
@@ -123,7 +124,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   }, [onClose]);
 
   // 제목+아티스트 입력 시 중복 체크 (debounce 500ms)
-  const checkDuplicates = (titleVal: string, artistVal: string) => {
+  const checkDuplicates = (titleVal: string, artistVal: string, coverUrlVal?: string) => {
     if (dupCheckRef.current) clearTimeout(dupCheckRef.current);
     setDuplicates([]);
     if (titleVal.trim().length < 2) return;
@@ -134,13 +135,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       const titleLower = titleVal.trim().toLowerCase();
       const artistLower = artistVal.trim().toLowerCase();
       const matches = (data.items ?? []).filter((a: DuplicateAlbum) => {
-        const aTitleLower = a.title.toLowerCase();
-        // 동일하거나, DB 제목이 입력값을 포함하면서 길이 차이가 10% 이내일 때만 중복 판정
-        // (P.O.E.M II ↔ P.O.E.M IV, Maiden Voyage ↔ Maiden Voyage II 같은 오탐 방지)
-        const titleMatch = aTitleLower === titleLower ||
-          (aTitleLower.includes(titleLower) && titleLower.length / aTitleLower.length >= 0.9);
-        const artistMatch = artistLower.length < 2 || a.artist.toLowerCase().includes(artistLower);
-        return titleMatch && artistMatch;
+        const exactTitle = a.title.toLowerCase() === titleLower;
+        const exactArtist = artistLower.length < 2 || a.artist.toLowerCase() === artistLower;
+        const coverMatch = !!coverUrlVal && !!a.cover_url && a.cover_url === coverUrlVal;
+        return (exactTitle && exactArtist) || coverMatch;
       });
       setDuplicates(matches.slice(0, 3));
     }, 500);
@@ -231,7 +229,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);
     setSpotifyId(c.spotify_id);
-    checkDuplicates(c.name, c.artist); // Spotify 정확한 제목으로 중복 재검사
+    checkDuplicates(c.name, c.artist, c.cover_url); // Spotify 정확한 제목 + 커버 URL로 중복 재검사
     setLoadingTracklist(true);
 
     const trackRes = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
