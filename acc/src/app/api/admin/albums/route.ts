@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
   if (filter === "no_spotify") query = query.is("spotify_id", null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (filter === "no_tracklist") query = (query as any).is("tracklist", null);
-  if (title) query = query.ilike("title", `%${title.replace(/[-_]/g, " ")}%`);
+  if (title) {
+    const safeTitle = title.replace(/[-]/g, " ").replace(/%/g, "\\%").replace(/_/g, "\\_");
+    query = query.ilike("title", `%${safeTitle}%`);
+  }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -13,7 +13,7 @@ const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, rele
 // PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거 + SQL LIKE 와일드카드 이스케이프
 function escapeSearch(s: string) {
   return s
-    .replace(/[(),"]/g, " ")
+    .replace(/[(),"{}[\]]/g, " ")
     .replace(/%/g, "\\%")
     .replace(/_/g, "\\_")
     .replace(/\s+/g, " ")
@@ -38,25 +38,29 @@ function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): s
   const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, ...extraParts];
 
   // 원본 검색어에 특수문자가 있으면 따옴표로 감싼 패턴도 추가
+  // rawSearch 안의 % _ 는 quoteOrValue 전에 이스케이프 (SQL 와일드카드 방지)
   if (rawSearch && rawSearch !== s) {
+    const r = rawSearch.replace(/%/g, "\\%").replace(/_/g, "\\_");
     parts.push(
-      `title.ilike.${quoteOrValue(`%${rawSearch}%`)}`,
-      `artist.ilike.${quoteOrValue(`%${rawSearch}%`)}`,
-      `extra_artists.ilike.${quoteOrValue(rawSearch)}`,
-      `extra_artists.ilike.${quoteOrValue(`${rawSearch};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${rawSearch};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${rawSearch}`)}`,
+      `title.ilike.${quoteOrValue(`%${r}%`)}`,
+      `artist.ilike.${quoteOrValue(`%${r}%`)}`,
+      `extra_artists.ilike.${quoteOrValue(r)}`,
+      `extra_artists.ilike.${quoteOrValue(`${r};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${r};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${r}`)}`,
     );
   }
 
   // alias 매칭된 spotify_name — 콤마 포함 이름도 따옴표 처리로 보존
+  // % _ 이스케이프로 spotify_name 안의 와일드카드 방지
   for (const a of aliasMatches) {
+    const ea = a.replace(/%/g, "\\%").replace(/_/g, "\\_");
     parts.push(
-      `artist.ilike.${quoteOrValue(a)}`,
-      `extra_artists.ilike.${quoteOrValue(a)}`,
-      `extra_artists.ilike.${quoteOrValue(`${a};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${a};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${a}`)}`,
+      `artist.ilike.${quoteOrValue(ea)}`,
+      `extra_artists.ilike.${quoteOrValue(ea)}`,
+      `extra_artists.ilike.${quoteOrValue(`${ea};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${ea};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${ea}`)}`,
     );
   }
   return parts.join(",");

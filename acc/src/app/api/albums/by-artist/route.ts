@@ -8,8 +8,10 @@ export async function GET(req: NextRequest) {
   const name = new URL(req.url).searchParams.get("name")?.trim();
   if (!name) return NextResponse.json({ error: "name 파라미터 필수", albums: [], avg: null }, { status: 400 });
 
-  // 두 쿼리를 병렬 실행 — .eq() / .ilike()는 Supabase 클라이언트가 내부적으로
-  // 파라미터 바인딩하므로 콤마·괄호 등 특수문자 포함 아티스트명도 안전하게 처리됨
+  // SQL LIKE 와일드카드 이스케이프 (% _ 를 리터럴로 처리)
+  const safeName = name.replace(/%/g, "\\%").replace(/_/g, "\\_");
+
+  // 두 쿼리를 병렬 실행
   const [r1, r2] = await Promise.all([
     supabaseServer
       .from("albums")
@@ -20,7 +22,7 @@ export async function GET(req: NextRequest) {
     supabaseServer
       .from("albums")
       .select(SELECT)
-      .ilike("extra_artists", `%${name}%`)
+      .ilike("extra_artists", `%${safeName}%`)
       .order("release_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
   ]);

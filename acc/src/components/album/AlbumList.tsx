@@ -66,6 +66,8 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   const [filterLoading, setFilterLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // 필터 변경 시 진행 중인 loadMore 응답을 폐기하기 위한 세대 카운터
+  const filterGenRef = useRef(0);
 
   const sortOptions = profile
     ? [...BASE_SORT_OPTIONS, ...MY_SORT_OPTIONS]
@@ -107,6 +109,8 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 
   const handleFilter = useCallback(
     async (newSearch: string, newGenre: string, newRegion: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
+      // 세대 증가로 진행 중인 loadMore 응답을 무효화
+      filterGenRef.current += 1;
       setLoading(true);
       setFilterLoading(true);
       try {
@@ -128,9 +132,12 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 
   const handleLoadMore = useCallback(async () => {
     if (!hasMore || loading) return;
+    const gen = filterGenRef.current;
     setLoading(true);
     try {
       const data = await fetchAlbums({ search, genre, region, sort, unrated, myScore, scoreUserId, offset: nextOffset ?? 0 });
+      // 필터가 변경되었으면 이 응답은 구버전 — 무시
+      if (filterGenRef.current !== gen) return;
       if (!data.items) return;
       setAlbums((prev) => {
         const existingIds = new Set(prev.map((a) => a.id));

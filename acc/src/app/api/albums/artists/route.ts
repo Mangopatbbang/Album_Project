@@ -6,11 +6,14 @@ export async function GET(req: NextRequest) {
   const q = new URL(req.url).searchParams.get("q")?.trim();
   if (!q || q.length < 1) return NextResponse.json([]);
 
+  // SQL LIKE 와일드카드 이스케이프 (% → \%, _ → \_)
+  const esc = q.replace(/%/g, "\\%").replace(/_/g, "\\_");
+
   // 네 쿼리 병렬: artist 직접 검색 + alias variant_name 검색 + search alias 검색 + alias 전체맵
   const [r1, r2, r3, aliasMap] = await Promise.all([
-    supabaseServer.from("albums").select("artist").ilike("artist", `%${q}%`).limit(60),
-    supabaseServer.from("artist_aliases").select("spotify_name, variant_name").ilike("variant_name", `%${q}%`).limit(20),
-    supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${q}%`).limit(20),
+    supabaseServer.from("albums").select("artist").ilike("artist", `%${esc}%`).limit(60),
+    supabaseServer.from("artist_aliases").select("spotify_name, variant_name").ilike("variant_name", `%${esc}%`).limit(20),
+    supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${esc}%`).limit(20),
     fetchAliasMap(),
   ]);
 

@@ -59,15 +59,16 @@ export async function resolveArtistDisplay<T extends HasArtist>(
  */
 export async function findArtistsByVariant(search: string): Promise<string[]> {
   if (!search.trim()) return [];
+  const esc = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
   const [{ data: displayData }, { data: searchData }] = await Promise.all([
     supabaseServer
       .from("artist_aliases")
       .select("spotify_name")
-      .ilike("variant_name", `%${search}%`),
+      .ilike("variant_name", `%${esc}%`),
     supabaseServer
       .from("artist_search_aliases")
       .select("spotify_name")
-      .ilike("alias", `%${search}%`),
+      .ilike("alias", `%${esc}%`),
   ]);
   const names = new Set<string>();
   (displayData ?? []).forEach((r: { spotify_name: string }) => names.add(r.spotify_name));
