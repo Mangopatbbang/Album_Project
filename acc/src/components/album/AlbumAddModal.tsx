@@ -102,6 +102,12 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [showSoundCloud, setShowSoundCloud] = useState(false);
   const [addedAlbumId, setAddedAlbumId] = useState<string | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [aliasCheckDone, setAliasCheckDone] = useState(false);
+  const [aliasExists, setAliasExists] = useState(false);
+  const [aliasSuggestions, setAliasSuggestions] = useState<string[]>([]);
+  const [aliasInput, setAliasInput] = useState("");
+  const [aliasSaving, setAliasSaving] = useState(false);
+  const [aliasSaved, setAliasSaved] = useState(false);
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -294,6 +300,26 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     showToast(`${title} 입고 완료`);
     onAdded();
     setAddedAlbumId(data.id);
+
+    const normFn = (s: string) => s.toLowerCase().replace(/[\s\(\)\-\.\',]/g, "").replace(/[^a-z0-9가-힣]/g, "");
+    const artistNorm = normFn(artist.trim());
+    Promise.all([
+      apiFetch(`/api/admin/artist-aliases?artist=${encodeURIComponent(artist.trim())}`).then((r) => r.json()),
+      apiFetch("/api/admin/artist-aliases").then((r) => r.json()),
+    ]).then(([aliasData, allData]) => {
+      if (aliasData.alias) {
+        setAliasExists(true);
+      } else {
+        const suggestions: string[] = (allData.aliases ?? [])
+          .filter((a: { spotify_name: string; variant_name: string }) =>
+            normFn(a.spotify_name) === artistNorm || normFn(a.variant_name) === artistNorm
+          )
+          .map((a: { variant_name: string }) => a.variant_name)
+          .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i);
+        setAliasSuggestions(suggestions);
+      }
+      setAliasCheckDone(true);
+    }).catch(() => setAliasCheckDone(true));
   };
 
   const handlePostRating = async (score: number) => {
@@ -366,6 +392,53 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               >{s}</button>
             ))}
           </div>
+          {aliasCheckDone && !aliasExists && (
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>
+                <span style={{ color: "#e8a53a" }}>⚠</span> &ldquo;{artist}&rdquo; 표시 이름이 없어요
+              </p>
+              {aliasSaved ? (
+                <p style={{ color: "var(--accent)", fontSize: 12 }}>✅ 표시 이름 설정 완료</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {aliasSuggestions.length > 0 && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {aliasSuggestions.map((s) => (
+                        <button key={s} onClick={() => setAliasInput(s)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, border: "1px solid #e8a53a", background: "rgba(232,165,58,0.1)", color: "#e8a53a", cursor: "pointer" }}>
+                          💡 {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      value={aliasInput}
+                      onChange={(e) => setAliasInput(e.target.value)}
+                      placeholder={`${artist} 표시 이름 (예: 한글명)`}
+                      style={{ flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none" }}
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!aliasInput.trim()) return;
+                        setAliasSaving(true);
+                        await apiFetch("/api/admin/artist-aliases", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
+                        });
+                        setAliasSaving(false);
+                        setAliasSaved(true);
+                      }}
+                      disabled={!aliasInput.trim() || aliasSaving}
+                      style={{ padding: "7px 14px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer", opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1 }}
+                    >
+                      {aliasSaving ? "..." : "설정"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={handleSkipRating}
             style={{

@@ -10,26 +10,54 @@ import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 const LIMIT = 30;
 const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
 
-// PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거
+// PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거 + SQL LIKE 와일드카드 이스케이프
 function escapeSearch(s: string) {
-  return s.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
+  return s
+    .replace(/[(),"]/g, " ")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// PostgREST OR 파서에서 콤마·괄호를 값으로 보존하기 위해 큰따옴표로 감싸기
+function quoteOrValue(val: string) {
+  return '"' + val.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
 }
 
 // 검색어 + alias 매칭된 spotify_names 로 OR 조건 문자열 생성
-function buildSearchOr(s: string, aliasMatches: string[]): string {
+// rawSearch: 원본 검색어 (이스케이프 전), 콤마 포함 아티스트명 직접 검색 지원
+function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): string {
   // extra_artists는 "A;B;C" 세미콜론 구분 — 토큰 단위 정확 매칭 4패턴
   const extraParts = [
-    `extra_artists.ilike.${s}`,        // 단독
-    `extra_artists.ilike.${s};%`,      // 앞에서 시작
-    `extra_artists.ilike.%;${s};%`,    // 중간
-    `extra_artists.ilike.%;${s}`,      // 끝
+    `extra_artists.ilike.${s}`,
+    `extra_artists.ilike.${s};%`,
+    `extra_artists.ilike.%;${s};%`,
+    `extra_artists.ilike.%;${s}`,
   ];
   const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, ...extraParts];
+
+  // 원본 검색어에 특수문자가 있으면 따옴표로 감싼 패턴도 추가
+  if (rawSearch && rawSearch !== s) {
+    parts.push(
+      `title.ilike.${quoteOrValue(`%${rawSearch}%`)}`,
+      `artist.ilike.${quoteOrValue(`%${rawSearch}%`)}`,
+      `extra_artists.ilike.${quoteOrValue(rawSearch)}`,
+      `extra_artists.ilike.${quoteOrValue(`${rawSearch};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${rawSearch};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${rawSearch}`)}`,
+    );
+  }
+
+  // alias 매칭된 spotify_name — 콤마 포함 이름도 따옴표 처리로 보존
   for (const a of aliasMatches) {
-    const safe = escapeSearch(a);
-    if (safe) {
-      parts.push(`artist.ilike.${safe}`);  // 주 아티스트 exact match
-    }
+    parts.push(
+      `artist.ilike.${quoteOrValue(a)}`,
+      `extra_artists.ilike.${quoteOrValue(a)}`,
+      `extra_artists.ilike.${quoteOrValue(`${a};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${a};%`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%;${a}`)}`,
+    );
   }
   return parts.join(",");
 }
@@ -52,10 +80,10 @@ export async function GET(req: NextRequest) {
   const safeSearch = search ? escapeSearch(search) : null;
 
   if (sort === "avg_desc" || sort === "avg_asc") {
-    return handleAvgSort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId, unrated, region: regionFilter });
+    return handleAvgSort({ limit, offset, search: safeSearch, rawSearch: search ?? null, aliasMatches, genre, sort, userId, unrated, region: regionFilter });
   }
   if ((sort === "my_desc" || sort === "my_asc") && userId) {
-    return handleMySort({ limit, offset, search: safeSearch, aliasMatches, genre, sort, userId, region: regionFilter });
+    return handleMySort({ limit, offset, search: safeSearch, rawSearch: search ?? null, aliasMatches, genre, sort, userId, region: regionFilter });
   }
 
   // 특정 점수 필터
@@ -67,7 +95,7 @@ export async function GET(req: NextRequest) {
     if (scoreIds.length === 0) return NextResponse.json({ items: [], nextOffset: null, hasMore: false });
 
     let q = supabaseServer.from("albums").select(SELECT).in("id", scoreIds);
-    if (safeSearch) q = q.or(buildSearchOr(safeSearch, aliasMatches));
+    if (safeSearch) q = q.or(buildSearchOr(safeSearch, aliasMatches, search ?? undefined));
     if (genre) { const raws = getRawGenreValues(genre); q = raws.length === 1 ? q.eq("genre", raws[0]) : q.in("genre", raws); }
     if (regionFilter) q = q.eq("region", regionFilter);
     q = q.order("created_at", { ascending: false });
@@ -85,7 +113,7 @@ export async function GET(req: NextRequest) {
   }
 
   let query = supabaseServer.from("albums").select(SELECT).range(offset, offset + limit);
-  if (safeSearch) query = query.or(buildSearchOr(safeSearch, aliasMatches));
+  if (safeSearch) query = query.or(buildSearchOr(safeSearch, aliasMatches, search ?? undefined));
   if (genre) { const raws = getRawGenreValues(genre); query = raws.length === 1 ? query.eq("genre", raws[0]) : query.in("genre", raws); }
   if (regionFilter) query = query.eq("region", regionFilter);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
@@ -118,15 +146,15 @@ export async function GET(req: NextRequest) {
 }
 
 async function handleMySort(params: {
-  limit: number; offset: number; search?: string | null;
+  limit: number; offset: number; search?: string | null; rawSearch?: string | null;
   aliasMatches: string[]; genre?: string; sort: string; userId: string; region?: string | null;
 }) {
-  const { limit, offset, search, aliasMatches, genre, sort, userId, region } = params;
+  const { limit, offset, search, rawSearch, aliasMatches, genre, sort, userId, region } = params;
   const { data: myRatings } = await supabaseServer.from("ratings").select("album_id, score").eq("user_id", userId);
   const myScoreMap = new Map((myRatings ?? []).map((r) => [r.album_id, r.score]));
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches));
+  if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches, rawSearch ?? undefined));
   if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
   if (region) albumQuery = albumQuery.eq("region", region);
   const { data: allAlbums } = await albumQuery;
@@ -150,10 +178,10 @@ async function handleMySort(params: {
 }
 
 async function handleAvgSort(params: {
-  limit: number; offset: number; search?: string | null;
+  limit: number; offset: number; search?: string | null; rawSearch?: string | null;
   aliasMatches: string[]; genre?: string; sort: string; userId?: string; unrated?: boolean; region?: string | null;
 }) {
-  const { limit, offset, search, aliasMatches, genre, sort, userId, unrated, region } = params;
+  const { limit, offset, search, rawSearch, aliasMatches, genre, sort, userId, unrated, region } = params;
 
   // 캐시된 전체 앨범+평점 데이터에서 평균 맵 구성 (DB 풀스캔 대신 캐시 재활용)
   const cachedAlbums = await fetchAllAlbumsWithRatings();
@@ -171,7 +199,7 @@ async function handleAvgSort(params: {
   }
 
   let albumQuery = supabaseServer.from("albums").select("id");
-  if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches));
+  if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches, rawSearch ?? undefined));
   if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
   if (region) albumQuery = albumQuery.eq("region", region);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);

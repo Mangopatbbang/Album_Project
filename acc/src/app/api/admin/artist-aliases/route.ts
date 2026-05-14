@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
+import { validateUser } from "@/lib/validateUser";
 
 // GET /api/admin/artist-aliases
 // - ?artist=xxx      → 특정 아티스트 alias 조회 { alias: { spotify_name, variant_name } | null }
 // - ?unaliased=true  → alias 없는 아티스트 목록 반환 { artists: string[] }
 // - (no param)       → 전체 alias 목록 반환 { aliases: { spotify_name, variant_name }[] }
 export async function GET(req: NextRequest) {
-  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateUser(req))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
   const url = new URL(req.url);
   const artist = url.searchParams.get("artist")?.trim();
   const unaliased = url.searchParams.get("unaliased") === "true";
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/artist-aliases
 // body: { spotify_name, variant_name }
 export async function POST(req: NextRequest) {
-  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+  if (!(await validateUser(req))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
   const { spotify_name, variant_name } = await req.json();
   if (!spotify_name?.trim() || !variant_name?.trim()) {
     return NextResponse.json({ error: "spotify_name과 variant_name 필수" }, { status: 400 });
