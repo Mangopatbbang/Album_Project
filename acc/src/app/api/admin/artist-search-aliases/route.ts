@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
 
-// GET /api/admin/artist-search-aliases?artist=xxx
+// GET /api/admin/artist-search-aliases?artist=xxx   → 특정 아티스트 alias 목록
+// GET /api/admin/artist-search-aliases?all=true     → 전체 alias 목록 (id, spotify_name, alias)
 export async function GET(req: NextRequest) {
   if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const artist = req.nextUrl.searchParams.get("artist")?.trim();
+
   if (!artist) {
-    return NextResponse.json({ error: "artist 파라미터 필수" }, { status: 400 });
+    if (req.nextUrl.searchParams.get("all") === "true") {
+      const { data, error } = await supabaseServer
+        .from("artist_search_aliases")
+        .select("id, spotify_name, alias")
+        .order("alias", { ascending: true });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ aliases: data ?? [] });
+    }
+    return NextResponse.json({ error: "artist 또는 all 파라미터 필수" }, { status: 400 });
   }
+
   const { data, error } = await supabaseServer
     .from("artist_search_aliases")
     .select("id, alias")

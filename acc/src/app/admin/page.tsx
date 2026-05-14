@@ -382,21 +382,9 @@ export default function AdminPage() {
     setVariantStats(data.stats ?? {});
   }
 
-  async function toggleSearchAliases(spotify_name: string) {
-    if (expandedAlias === spotify_name) {
-      setExpandedAlias(null);
-      setSearchAliasInput("");
-      return;
-    }
-    setExpandedAlias(spotify_name);
+  function toggleSearchAliases(spotify_name: string) {
+    setExpandedAlias(expandedAlias === spotify_name ? null : spotify_name);
     setSearchAliasInput("");
-    if (!searchAliasMap[spotify_name]) {
-      setSearchAliasLoading(true);
-      const res = await adminFetch(`/api/admin/artist-search-aliases?artist=${encodeURIComponent(spotify_name)}`);
-      const data = await res.json();
-      setSearchAliasMap((prev) => ({ ...prev, [spotify_name]: data.aliases ?? [] }));
-      setSearchAliasLoading(false);
-    }
   }
 
   async function handleAddSearchAlias(spotify_name: string) {
@@ -455,11 +443,12 @@ export default function AdminPage() {
   async function loadUnifiedTable() {
     setUnifiedLoading(true);
     setUnifiedMsg("");
-    const [r1, r2] = await Promise.all([
+    const [r1, r2, r3] = await Promise.all([
       adminFetch("/api/admin/artist-aliases?distinct=true"),
       adminFetch("/api/admin/artist-aliases"),
+      adminFetch("/api/admin/artist-search-aliases?all=true"),
     ]);
-    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    const [d1, d2, d3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
     const allArtists: string[] = d1.artists ?? [];
     const aliasMap = new Map<string, string>((d2.aliases ?? []).map((a: AliasRow) => [a.spotify_name, a.variant_name]));
 
@@ -482,8 +471,18 @@ export default function AdminPage() {
       return a.spotify_name.localeCompare(b.spotify_name);
     });
 
+    // 검색 alias 전체 pre-load
+    const allSA: { id: number; spotify_name: string; alias: string }[] = d3.aliases ?? [];
+    const newSAMap: Record<string, { id: number; alias: string }[]> = {};
+    for (const sa of allSA) {
+      if (!newSAMap[sa.spotify_name]) newSAMap[sa.spotify_name] = [];
+      newSAMap[sa.spotify_name].push({ id: sa.id, alias: sa.alias });
+    }
+    setSearchAliasMap(newSAMap);
+
     setUnifiedRows(rows);
     setUnifiedPending({});
+    setExpandedAlias(null);
     setUnifiedLoading(false);
   }
 
@@ -1332,8 +1331,13 @@ export default function AdminPage() {
               if (unifiedFilter === "aliased") rows = rows.filter((r) => r.variant_name);
               if (unifiedFilter === "unaliased") rows = rows.filter((r) => !r.variant_name);
               if (unifiedSearch.trim()) {
-                const q = unifiedSearch.trim().toLowerCase();
-                rows = rows.filter((r) => r.spotify_name.toLowerCase().includes(q) || (r.variant_name ?? "").toLowerCase().includes(q));
+                const norm = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+                const q = norm(unifiedSearch.trim());
+                rows = rows.filter((r) =>
+                  norm(r.spotify_name).includes(q) ||
+                  norm(r.variant_name ?? "").includes(q) ||
+                  (searchAliasMap[r.spotify_name] ?? []).some((sa) => norm(sa.alias).includes(q))
+                );
               }
               const dirtyCount = Object.entries(unifiedPending).filter(([k, v]) => v.trim() !== (unifiedRows.find((r) => r.spotify_name === k)?.variant_name ?? "")).length;
 
@@ -1343,7 +1347,7 @@ export default function AdminPage() {
                     <input
                       value={unifiedSearch}
                       onChange={(e) => setUnifiedSearch(e.target.value)}
-                      placeholder="검색..."
+                      placeholder="이름·표시명·검색alias 검색..."
                       style={{ flex: 1, minWidth: 120, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none" }}
                     />
                     {(["all", "aliased", "unaliased"] as const).map((f) => (
@@ -1351,9 +1355,19 @@ export default function AdminPage() {
                         {f === "all" ? `전체 ${unifiedRows.length}` : f === "aliased" ? `설정됨 ${unifiedRows.filter((r) => r.variant_name).length}` : `미설정 ${unifiedRows.filter((r) => !r.variant_name).length}`}
                       </button>
                     ))}
+                    <button onClick={loadUnifiedTable} disabled={unifiedLoading} title="새로고침" style={{ marginLeft: "auto", padding: "4px 9px", borderRadius: 5, fontSize: 13, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)" }}>
+                      {unifiedLoading ? "…" : "↺"}
+                    </button>
                   </div>
 
                   <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", maxHeight: 500, overflowY: "auto" }}>
+                    {/* 열 헤더 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 12px 4px", backgroundColor: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+                      <span style={{ width: 6, flexShrink: 0 }} />
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", width: 180, flexShrink: 0 }}>Spotify 원본명</span>
+                      <span style={{ width: 10, flexShrink: 0 }} />
+                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>표시명 <span style={{ opacity: 0.6 }}>(비어있으면 원본명이 표시됨)</span></span>
+                    </div>
                     {rows.length === 0 ? (
                       <p style={{ padding: "16px 14px", color: "var(--text-muted)", fontSize: 12 }}>항목 없음</p>
                     ) : rows.map((row, i) => {
@@ -1372,7 +1386,7 @@ export default function AdminPage() {
                             <input
                               value={displayVal}
                               onChange={(e) => setUnifiedPending((prev) => ({ ...prev, [row.spotify_name]: e.target.value }))}
-                              placeholder="표시 이름 없음"
+                              placeholder="비어있으면 Spotify 원본명이 표시됨"
                               style={{ flex: 1, minWidth: 0, padding: "3px 8px", borderRadius: 4, border: `1px solid ${isDirty ? "var(--accent)" : "var(--border)"}`, backgroundColor: "var(--bg-elevated)", color: row.variant_name || isDirty ? "var(--text)" : "var(--text-muted)", fontSize: 12, outline: "none" }}
                             />
                             {suggestions.length > 0 && pendingVal === undefined && suggestions.map((s) => (
@@ -1380,36 +1394,47 @@ export default function AdminPage() {
                                 💡 {s}
                               </button>
                             ))}
-                            {row.variant_name && (
-                              <button onClick={() => toggleSearchAliases(row.spotify_name)} style={{ flexShrink: 0, background: "none", border: `1px solid ${expandedAlias === row.spotify_name ? "var(--accent)" : "var(--border)"}`, color: expandedAlias === row.spotify_name ? "var(--accent)" : "var(--text-muted)", borderRadius: 4, padding: "2px 7px", fontSize: 10, cursor: "pointer", whiteSpace: "nowrap" }}>
-                                검색alias{(searchAliasMap[row.spotify_name]?.length ?? 0) > 0 && <span style={{ marginLeft: 3, backgroundColor: "var(--accent)", color: "var(--bg)", borderRadius: 8, padding: "0 4px", fontSize: 9 }}>{searchAliasMap[row.spotify_name].length}</span>}
-                              </button>
-                            )}
                             {row.variant_name && pendingVal === undefined && (
                               <button onClick={() => handleDeleteFromUnified(row.spotify_name)} style={{ flexShrink: 0, background: "none", border: "none", color: "#e05050", cursor: "pointer", fontSize: 11, padding: "0 2px" }}>삭제</button>
                             )}
                           </div>
-                          {expandedAlias === row.spotify_name && (
-                            <div style={{ padding: "8px 14px 12px 36px", borderTop: "1px solid var(--border)", backgroundColor: "var(--bg-card)" }}>
-                              <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 7 }}>검색 ALIAS</p>
-                              {searchAliasLoading ? <p style={{ fontSize: 11, color: "var(--text-muted)" }}>로딩...</p> : (
+                          {/* 검색 alias 인라인 — 항상 표시 */}
+                          {((searchAliasMap[row.spotify_name]?.length ?? 0) > 0 || expandedAlias === row.spotify_name) && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", padding: "3px 12px 7px 30px" }}>
+                              <span style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.08em", marginRight: 2, flexShrink: 0 }}>검색alias</span>
+                              {(searchAliasMap[row.spotify_name] ?? []).map((sa) => (
+                                <span key={sa.id} style={{ display: "inline-flex", alignItems: "center", gap: 3, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "1px 6px 1px 8px", fontSize: 10, color: "var(--text-sub)" }}>
+                                  {sa.alias}
+                                  <button onClick={() => handleDeleteSearchAlias(row.spotify_name, sa.id)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 11, lineHeight: 1, padding: 0 }}>×</button>
+                                </span>
+                              ))}
+                              <button onClick={() => toggleSearchAliases(row.spotify_name)} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: `1px dashed ${expandedAlias === row.spotify_name ? "var(--accent)" : "var(--border)"}`, background: "none", color: expandedAlias === row.spotify_name ? "var(--accent)" : "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}>
+                                {expandedAlias === row.spotify_name ? "닫기" : "+ 추가"}
+                              </button>
+                              {expandedAlias === row.spotify_name && (
                                 <>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7 }}>
-                                    {(searchAliasMap[row.spotify_name] ?? []).length === 0 && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>없음</span>}
-                                    {(searchAliasMap[row.spotify_name] ?? []).map((sa) => (
-                                      <span key={sa.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 12, padding: "2px 8px 2px 10px", fontSize: 11, color: "var(--text-sub)" }}>
-                                        {sa.alias}
-                                        <button onClick={() => handleDeleteSearchAlias(row.spotify_name, sa.id)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}>×</button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                    <input value={searchAliasInput} onChange={(e) => setSearchAliasInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddSearchAlias(row.spotify_name); }} placeholder="검색 alias 추가" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 160, outline: "none" }} />
-                                    <button onClick={() => handleAddSearchAlias(row.spotify_name)} disabled={!searchAliasInput.trim()} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "4px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: !searchAliasInput.trim() ? 0.4 : 1 }}>추가</button>
-                                  </div>
-                                  {searchAliasMsg[row.spotify_name] && <p style={{ fontSize: 11, color: "#e05050", marginTop: 4 }}>{searchAliasMsg[row.spotify_name]}</p>}
+                                  <input value={searchAliasInput} onChange={(e) => setSearchAliasInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddSearchAlias(row.spotify_name); }} placeholder="검색 alias" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 4, padding: "2px 7px", fontSize: 11, width: 130, outline: "none" }} />
+                                  <button onClick={() => handleAddSearchAlias(row.spotify_name)} disabled={!searchAliasInput.trim()} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "2px 9px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: !searchAliasInput.trim() ? 0.4 : 1 }}>추가</button>
+                                  {searchAliasMsg[row.spotify_name] && <span style={{ fontSize: 10, color: "#e05050" }}>{searchAliasMsg[row.spotify_name]}</span>}
                                 </>
                               )}
+                            </div>
+                          )}
+                          {/* alias 없고 expand도 아닌 경우 — + 추가 버튼만 */}
+                          {(searchAliasMap[row.spotify_name]?.length ?? 0) === 0 && expandedAlias !== row.spotify_name && (
+                            <div style={{ padding: "1px 12px 6px 30px" }}>
+                              <button onClick={() => toggleSearchAliases(row.spotify_name)} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: "1px dashed var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer" }}>
+                                + 검색alias 추가
+                              </button>
+                            </div>
+                          )}
+                          {(searchAliasMap[row.spotify_name]?.length ?? 0) === 0 && expandedAlias === row.spotify_name && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center", padding: "3px 12px 7px 30px" }}>
+                              <span style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.08em", marginRight: 2 }}>검색alias</span>
+                              <button onClick={() => toggleSearchAliases(row.spotify_name)} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: "1px dashed var(--accent)", background: "none", color: "var(--accent)", cursor: "pointer" }}>닫기</button>
+                              <input value={searchAliasInput} onChange={(e) => setSearchAliasInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAddSearchAlias(row.spotify_name); }} placeholder="검색 alias" style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 4, padding: "2px 7px", fontSize: 11, width: 130, outline: "none" }} />
+                              <button onClick={() => handleAddSearchAlias(row.spotify_name)} disabled={!searchAliasInput.trim()} style={{ backgroundColor: "var(--accent)", border: "none", color: "var(--bg)", borderRadius: 4, padding: "2px 9px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: !searchAliasInput.trim() ? 0.4 : 1 }}>추가</button>
+                              {searchAliasMsg[row.spotify_name] && <span style={{ fontSize: 10, color: "#e05050" }}>{searchAliasMsg[row.spotify_name]}</span>}
                             </div>
                           )}
                         </div>
