@@ -6,6 +6,7 @@ import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import { AlbumWithRatings } from "@/types";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+import { apiFetch } from "@/lib/apiFetch";
 
 type WatchlistAlbum = {
   id: string;
@@ -50,12 +51,19 @@ export default function WatchlistSection({ userId }: Props) {
   if (!isOwner) return null;
 
   const handleRemove = async (albumId: string) => {
-    await fetch("/api/watchlist", {
+    setItems((prev) => prev.filter((i) => i.album_id !== albumId));
+    const res = await apiFetch("/api/watchlist", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, albumId }),
+      body: JSON.stringify({ albumId }),
     });
-    setItems((prev) => prev.filter((i) => i.album_id !== albumId));
+    if (!res.ok) {
+      // 실패 시 목록 복구
+      fetch(`/api/watchlist?userId=${userId}`)
+        .then((r) => r.json())
+        .then((data) => { if (data.items) setItems(data.items); })
+        .catch(() => {});
+    }
   };
 
   return (
