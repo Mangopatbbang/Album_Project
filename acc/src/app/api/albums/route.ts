@@ -63,6 +63,30 @@ function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): s
       `extra_artists.ilike.${quoteOrValue(`%;${ea}`)}`,
     );
   }
+
+  // 공백 정규화: 공백 없는 검색어 → 한 칸씩 공백 삽입 시도 (에픽하이 → 에픽 하이)
+  //             공백 있는 검색어 → 공백 제거 버전 추가 (에픽 하이 → 에픽하이)
+  if (rawSearch) {
+    if (!rawSearch.includes(' ') && rawSearch.length > 1) {
+      for (let i = 1; i < rawSearch.length; i++) {
+        const sp = rawSearch.slice(0, i) + ' ' + rawSearch.slice(i);
+        const r = sp.replace(/%/g, "\\%").replace(/_/g, "\\_");
+        parts.push(
+          `title.ilike.${quoteOrValue(`%${r}%`)}`,
+          `artist.ilike.${quoteOrValue(`%${r}%`)}`,
+        );
+      }
+    } else if (rawSearch.includes(' ')) {
+      const noSp = rawSearch.replace(/\s+/g, '').replace(/%/g, "\\%").replace(/_/g, "\\_");
+      if (noSp.length > 1) {
+        parts.push(
+          `title.ilike.${quoteOrValue(`%${noSp}%`)}`,
+          `artist.ilike.${quoteOrValue(`%${noSp}%`)}`,
+        );
+      }
+    }
+  }
+
   return parts.join(",");
 }
 
