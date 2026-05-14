@@ -98,7 +98,6 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [region, setRegion] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [dateConflict, setDateConflict] = useState<{ itunesDate: string; spotifyDate: string } | null>(null);
   const [showSoundCloud, setShowSoundCloud] = useState(false);
   const [addedAlbumId, setAddedAlbumId] = useState<string | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
@@ -229,24 +228,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     if (c.release_date) setReleaseDate(c.release_date);
     setSpotifyId(c.spotify_id);
     setLoadingTracklist(true);
-    setDateConflict(null);
 
-    // Spotify 트랙리스트 + iTunes 보완(장르·발매일 교차검증) 병렬 fetch
-    const [trackRes, itunesRes] = await Promise.all([
-      fetch(`/api/spotify/tracks?id=${c.spotify_id}`),
-      fetch(`/api/itunes/search?title=${encodeURIComponent(c.name)}&artist=${encodeURIComponent(c.artist)}`),
-    ]);
+    const trackRes = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
     const trackData = await trackRes.json();
     setTracklist(trackData.tracklist ?? "");
-
-    const itunesData = await itunesRes.json();
-    const itunesMatch = itunesData.candidates?.[0];
-    if (itunesMatch) {
-      if (c.release_date && itunesMatch.release_date &&
-          c.release_date.slice(0, 4) !== itunesMatch.release_date.slice(0, 4)) {
-        setDateConflict({ itunesDate: itunesMatch.release_date, spotifyDate: c.release_date });
-      }
-    }
     setLoadingTracklist(false);
   };
 
@@ -702,43 +687,9 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             <input
               style={inputStyle}
               value={releaseDate}
-              onChange={(e) => { setReleaseDate(e.target.value); setDateConflict(null); }}
+              onChange={(e) => setReleaseDate(e.target.value)}
               placeholder="YYYY-MM-DD"
             />
-            {dateConflict && (
-              <div style={{
-                marginTop: 8, padding: "10px 12px", borderRadius: 6,
-                backgroundColor: "rgba(232,213,163,0.08)", border: "1px solid rgba(232,213,163,0.35)",
-              }}>
-                <p style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600, marginBottom: 8 }}>
-                  ⚠ iTunes · Spotify 발매일이 달라요
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <button
-                    type="button"
-                    onClick={() => { setReleaseDate(dateConflict.itunesDate); setDateConflict(null); }}
-                    style={{
-                      textAlign: "left", background: releaseDate === dateConflict.itunesDate ? "rgba(232,213,163,0.15)" : "none",
-                      border: "1px solid var(--border)", borderRadius: 5, padding: "5px 10px",
-                      color: "var(--text)", fontSize: 12, cursor: "pointer",
-                    }}
-                  >
-                    iTunes  {dateConflict.itunesDate}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setReleaseDate(dateConflict.spotifyDate); setDateConflict(null); }}
-                    style={{
-                      textAlign: "left", background: releaseDate === dateConflict.spotifyDate ? "rgba(232,213,163,0.15)" : "none",
-                      border: "1px solid var(--border)", borderRadius: 5, padding: "5px 10px",
-                      color: "var(--text)", fontSize: 12, cursor: "pointer",
-                    }}
-                  >
-                    Spotify  {dateConflict.spotifyDate}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
