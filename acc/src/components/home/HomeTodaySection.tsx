@@ -19,7 +19,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [streamingOpen, setStreamingOpen] = useState(false);
-  const [trackExpanded, setTrackExpanded] = useState(false);
+  const [trackHover, setTrackHover] = useState(false);
 
   const openStreaming = (service: "spotify" | "apple" | "youtube") => {
     const query = encodeURIComponent(`${album?.title ?? ""} ${album?.artist_display ?? album?.artist ?? ""}`);
@@ -100,7 +100,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           backgroundColor: "var(--bg-card)",
           border: `1px solid ${glowBorder(avg)}`,
           borderRadius: 12,
-          overflow: "hidden",
           boxShadow: glowShadow(avg),
         }}
       >
@@ -130,16 +129,19 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
           {/* 우측: 기본 정보 + 트랙리스트 */}
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
-            {/* 타이틀 + 메타 태그 우측 상단 */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
-              <p style={{ flex: 1, color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
-                {album.title}
+            {/* 타이틀 */}
+            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 5 }} className="line-clamp-2">
+              {album.title}
+            </p>
+
+            {/* 아티스트 + 메타 태그 한 줄 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <p style={{ color: "var(--text-sub)", fontSize: 12, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {album.artist_display ?? album.artist}
               </p>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
-                <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                  {year && <span style={tagStyle}>{year}</span>}
-                  {album.genre && <span style={tagStyle}>{album.genre}</span>}
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                {year && <span style={tagStyle}>{year}</span>}
+                {album.genre && <span style={tagStyle}>{album.genre}</span>}
                 {avg !== null ? (
                   <span style={{ fontSize: 10, color: scoreColor(avg), fontWeight: 700, backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
                     {avg} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({scores.length})</span>
@@ -150,18 +152,18 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               </div>
             </div>
 
-            {/* 아티스트 */}
-            <p style={{ color: "var(--text-sub)", fontSize: 12 }} className="truncate">
-              {album.artist_display ?? album.artist}
-            </p>
-
             {/* 트랙리스트 — 데스크탑 전용 */}
             {tracks.length > 0 && (
-              <div className="hidden sm:block" style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+              <div
+                className="hidden sm:block"
+                style={{ position: "relative", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}
+                onMouseEnter={() => setTrackHover(true)}
+                onMouseLeave={() => setTrackHover(false)}
+              >
                 <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
                   Tracklist
                 </p>
-                {(trackExpanded ? tracks : tracks.slice(0, COLLAPSED_SHOW)).map((track, i) => (
+                {tracks.slice(0, COLLAPSED_SHOW).map((track, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
                     <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
                       {i + 1}
@@ -172,13 +174,39 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   </div>
                 ))}
                 {tracks.length > COLLAPSED_SHOW && (
-                  <button
-                    onClick={() => setTrackExpanded(!trackExpanded)}
-                    style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", padding: "5px 0 0", letterSpacing: "0.02em" }}
-                    className="hover:text-[var(--text)] transition-colors"
-                  >
-                    {trackExpanded ? "접기 ↑" : `+${tracks.length - COLLAPSED_SHOW}곡 더 보기 ↓`}
-                  </button>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
+                    +{tracks.length - COLLAPSED_SHOW}곡 더
+                  </p>
+                )}
+
+                {/* 호버 시 전체 트랙 오버레이 */}
+                {trackHover && tracks.length > COLLAPSED_SHOW && (
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    zIndex: 20,
+                    boxShadow: "0 8px 28px rgba(0,0,0,0.4)",
+                  }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
+                      Tracklist
+                    </p>
+                    {tracks.map((track, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                        <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
+                          {i + 1}
+                        </span>
+                        <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                          {track}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
