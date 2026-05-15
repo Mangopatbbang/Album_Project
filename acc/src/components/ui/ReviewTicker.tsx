@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
 import AlbumModal from "@/components/album/AlbumModal";
@@ -22,6 +22,16 @@ export type TickerItem = {
 export default function ReviewTicker({ items, inline }: { items: TickerItem[]; inline?: boolean }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const { getUserById } = useUsers();
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    const anim = trackRef.current?.getAnimations()[0];
+    if (anim) anim.playbackRate = 0.3;
+  };
+  const handleMouseLeave = () => {
+    const anim = trackRef.current?.getAnimations()[0];
+    if (anim) anim.playbackRate = 1;
+  };
 
   if (items.length === 0) return null;
 
@@ -77,6 +87,9 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
 
         {/* 마퀴 트랙 */}
         <div
+          ref={trackRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           style={{
             display: "flex",
             alignItems: "center",
@@ -134,7 +147,6 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
         </div>
 
         <style>{`
-          .ticker-track:hover { animation-play-state: paused; }
           .ticker-item:hover .ticker-item-title { text-decoration: underline; }
           @keyframes ticker-scroll {
             0%   { transform: translateX(0); }
