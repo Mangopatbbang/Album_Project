@@ -19,6 +19,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [streamingOpen, setStreamingOpen] = useState(false);
+  const [trackExpanded, setTrackExpanded] = useState(false);
 
   const openStreaming = (service: "spotify" | "apple" | "youtube") => {
     const query = encodeURIComponent(`${album?.title ?? ""} ${album?.artist_display ?? album?.artist ?? ""}`);
@@ -89,7 +90,8 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   const year = album.release_date?.slice(0, 4) ?? album.year ?? null;
   const tracks = parseTracklist(album.tracklist);
-  const SHOW = 6;
+  const COLLAPSED_SHOW = 4;
+  const tagStyle = { fontSize: 10, color: "var(--text-muted)" as const, backgroundColor: "var(--bg-elevated)" as const, borderRadius: 4, padding: "2px 7px", fontWeight: 600 };
 
   return (
     <>
@@ -127,38 +129,31 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           </div>
 
           {/* 우측: 기본 정보 + 트랙리스트 */}
-          <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column", gap: 0 }}>
-            {/* 타이틀 */}
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 2 }} className="line-clamp-2">
-              {album.title}
-            </p>
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
+            {/* 타이틀 + 메타 태그 우측 상단 */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+              <p style={{ flex: 1, color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
+                {album.title}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  {year && <span style={tagStyle}>{year}</span>}
+                  {album.genre && <span style={tagStyle}>{album.genre}</span>}
+                </div>
+                {avg !== null ? (
+                  <span style={{ fontSize: 10, color: scoreColor(avg), fontWeight: 700, backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
+                    {avg} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({scores.length})</span>
+                  </span>
+                ) : (
+                  <span style={tagStyle}>평가 없음</span>
+                )}
+              </div>
+            </div>
+
             {/* 아티스트 */}
-            <p style={{ color: "var(--text-sub)", fontSize: 12, marginBottom: 8 }} className="truncate">
+            <p style={{ color: "var(--text-sub)", fontSize: 12 }} className="truncate">
               {album.artist_display ?? album.artist}
             </p>
-
-            {/* 메타 + 평점 한 줄 */}
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 0 }}>
-              {year && (
-                <span style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px", fontWeight: 600 }}>
-                  {year}
-                </span>
-              )}
-              {album.genre && (
-                <span style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px", fontWeight: 600 }}>
-                  {album.genre}
-                </span>
-              )}
-              {avg !== null ? (
-                <span style={{ fontSize: 10, color: scoreColor(avg), fontWeight: 700, backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
-                  {avg} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({scores.length})</span>
-                </span>
-              ) : (
-                <span style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
-                  평가 없음
-                </span>
-              )}
-            </div>
 
             {/* 트랙리스트 — 데스크탑 전용 */}
             {tracks.length > 0 && (
@@ -166,7 +161,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
                   Tracklist
                 </p>
-                {tracks.slice(0, SHOW).map((track, i) => (
+                {(trackExpanded ? tracks : tracks.slice(0, COLLAPSED_SHOW)).map((track, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
                     <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
                       {i + 1}
@@ -176,10 +171,14 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                     </span>
                   </div>
                 ))}
-                {tracks.length > SHOW && (
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
-                    +{tracks.length - SHOW}곡 더
-                  </p>
+                {tracks.length > COLLAPSED_SHOW && (
+                  <button
+                    onClick={() => setTrackExpanded(!trackExpanded)}
+                    style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", padding: "5px 0 0", letterSpacing: "0.02em" }}
+                    className="hover:text-[var(--text)] transition-colors"
+                  >
+                    {trackExpanded ? "접기 ↑" : `+${tracks.length - COLLAPSED_SHOW}곡 더 보기 ↓`}
+                  </button>
                 )}
               </div>
             )}
