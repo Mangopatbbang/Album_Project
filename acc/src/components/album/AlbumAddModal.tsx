@@ -97,11 +97,12 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [spotifyId, setSpotifyId] = useState<string | null>(null);
   const [extraArtists, setExtraArtists] = useState<string>("");
   const [region, setRegion] = useState("");
+  const [score, setScore] = useState<number | null>(null);
+  const [oneLineReview, setOneLineReview] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showSoundCloud, setShowSoundCloud] = useState(false);
   const [addedAlbumId, setAddedAlbumId] = useState<string | null>(null);
-  const [ratingLoading, setRatingLoading] = useState(false);
   const [aliasCheckDone, setAliasCheckDone] = useState(false);
   const [aliasExists, setAliasExists] = useState(false);
   const [aliasSuggestions, setAliasSuggestions] = useState<string[]>([]);
@@ -284,6 +285,15 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     }
 
     const data = await res.json();
+
+    if (score !== null) {
+      await apiFetch("/api/ratings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId: data.id, score, one_line_review: oneLineReview || undefined }),
+      });
+    }
+
     setSaving(false);
     showToast(`${title} 입고 완료`);
     onAdded();
@@ -307,22 +317,11 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         setAliasSuggestions(suggestions);
       }
       setAliasCheckDone(true);
-    }).catch(() => setAliasCheckDone(true));
-  };
-
-  const handlePostRating = async (score: number) => {
-    if (!addedAlbumId) return;
-    setRatingLoading(true);
-    await apiFetch("/api/ratings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: addedAlbumId, score }),
+    }).catch(() => {
+      setAliasCheckDone(true);
     });
-    setRatingLoading(false);
-    onClose();
   };
 
-  const handleSkipRating = () => onClose();
 
   const inputStyle = {
     backgroundColor: "var(--bg-elevated)",
@@ -344,7 +343,12 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     display: "block" as const,
   };
 
-  if (addedAlbumId) {
+  // alias 체크 완료 후 alias 있으면 바로 닫기
+  useEffect(() => {
+    if (addedAlbumId && aliasCheckDone && aliasExists) onClose();
+  }, [addedAlbumId, aliasCheckDone, aliasExists, onClose]);
+
+  if (addedAlbumId && aliasCheckDone && !aliasExists) {
     return (
       <div
         style={{
@@ -356,79 +360,56 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         <div style={{
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 14, width: "100%", maxWidth: 440,
-          display: "flex", flexDirection: "column", gap: 20, padding: 32,
+          display: "flex", flexDirection: "column", gap: 16, padding: 32,
         }}>
           <div>
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 17, marginBottom: 6 }}>입고 완료</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              &ldquo;{title}&rdquo; — 지금 평점을 매겨볼까요?
+            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 17, marginBottom: 4 }}>입고 완료</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
+              <span style={{ color: "#e8a53a" }}>⚠</span> &ldquo;{artist}&rdquo; 표시 이름이 없어요
             </p>
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <button
-                key={s}
-                onClick={() => handlePostRating(s)}
-                disabled={ratingLoading}
-                style={{
-                  flex: "1 1 40px", height: 44, borderRadius: 8,
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--bg-elevated)", color: "var(--text)",
-                  fontSize: 15, fontWeight: 600, cursor: ratingLoading ? "not-allowed" : "pointer",
-                  opacity: ratingLoading ? 0.5 : 1,
-                }}
-              >{s}</button>
-            ))}
-          </div>
-          {aliasCheckDone && !aliasExists && (
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>
-                <span style={{ color: "#e8a53a" }}>⚠</span> &ldquo;{artist}&rdquo; 표시 이름이 없어요
-              </p>
-              {aliasSaved ? (
-                <p style={{ color: "var(--accent)", fontSize: 12 }}>✅ 표시 이름 설정 완료</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {aliasSuggestions.length > 0 && (
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {aliasSuggestions.map((s) => (
-                        <button key={s} onClick={() => setAliasInput(s)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, border: "1px solid #e8a53a", background: "rgba(232,165,58,0.1)", color: "#e8a53a", cursor: "pointer" }}>
-                          💡 {s}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      value={aliasInput}
-                      onChange={(e) => setAliasInput(e.target.value)}
-                      placeholder={`${artist} 표시 이름 (예: 한글명)`}
-                      style={{ flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none" }}
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!aliasInput.trim()) return;
-                        setAliasSaving(true);
-                        await apiFetch("/api/admin/artist-aliases", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
-                        });
-                        setAliasSaving(false);
-                        setAliasSaved(true);
-                      }}
-                      disabled={!aliasInput.trim() || aliasSaving}
-                      style={{ padding: "7px 14px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer", opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1 }}
-                    >
-                      {aliasSaving ? "..." : "설정"}
+          {aliasSaved ? (
+            <p style={{ color: "var(--accent)", fontSize: 12 }}>✅ 표시 이름 설정 완료</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {aliasSuggestions.length > 0 && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {aliasSuggestions.map((s) => (
+                    <button key={s} onClick={() => setAliasInput(s)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, border: "1px solid #e8a53a", background: "rgba(232,165,58,0.1)", color: "#e8a53a", cursor: "pointer" }}>
+                      💡 {s}
                     </button>
-                  </div>
+                  ))}
                 </div>
               )}
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  placeholder={`${artist} 표시 이름 (예: 한글명)`}
+                  style={{ flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none" }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!aliasInput.trim()) return;
+                    setAliasSaving(true);
+                    await apiFetch("/api/admin/artist-aliases", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
+                    });
+                    setAliasSaving(false);
+                    setAliasSaved(true);
+                  }}
+                  disabled={!aliasInput.trim() || aliasSaving}
+                  style={{ padding: "7px 14px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer", opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1 }}
+                >
+                  {aliasSaving ? "..." : "설정"}
+                </button>
+              </div>
             </div>
           )}
           <button
-            onClick={handleSkipRating}
+            onClick={onClose}
             style={{
               background: "none", border: "none", cursor: "pointer",
               color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", textDecorationStyle: "dotted",
@@ -736,6 +717,36 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             onChange={(e) => setTracklist(e.target.value)}
             placeholder="자동 입력 또는 직접 입력 (트랙은 ; 로 구분)"
           />
+        </div>
+
+        {/* 평점 (선택) */}
+        <div>
+          <label style={labelStyle}>SCORE (선택)</label>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScore(score === s ? null : s)}
+                style={{
+                  flex: "1 1 36px", height: 40, borderRadius: 8,
+                  border: `1px solid ${score === s ? "var(--accent)" : "var(--border)"}`,
+                  backgroundColor: score === s ? "rgba(var(--accent-rgb),0.12)" : "var(--bg-elevated)",
+                  color: score === s ? "var(--accent)" : "var(--text)",
+                  fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  transition: "all 0.12s",
+                }}
+              >{s}</button>
+            ))}
+          </div>
+          {score !== null && (
+            <input
+              value={oneLineReview}
+              onChange={(e) => setOneLineReview(e.target.value.slice(0, 100))}
+              placeholder="한줄평 (선택, 최대 100자)"
+              style={{ ...inputStyle, marginTop: 8 }}
+            />
+          )}
         </div>
 
         {isSingle && (
