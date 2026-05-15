@@ -49,14 +49,7 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
 
   if (items.length === 0) {
     return (
-      <p
-        style={{
-          color: "var(--text-muted)",
-          fontSize: 13,
-          textAlign: "center",
-          padding: "40px 0",
-        }}
-      >
+      <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "40px 0" }}>
         아직 평가 기록이 없어요
       </p>
     );
@@ -64,7 +57,8 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
 
   return (
     <>
-      <div>
+      {/* 데스크탑: 2열 그리드 / 모바일: 1열 리스트 */}
+      <div className="sm:grid sm:grid-cols-2 sm:gap-x-5">
         {items.map((item, i) => {
           const user = getUserById(item.user_id);
           return (
@@ -76,13 +70,12 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                 alignItems: "flex-start",
                 gap: 10,
                 padding: "10px 0",
-                borderBottom:
-                  i < items.length - 1 ? "1px solid var(--border)" : "none",
+                borderBottom: "1px solid var(--border)",
                 cursor: "pointer",
               }}
               className="hover:opacity-75 transition-opacity"
             >
-              {/* 앨범 커버 썸네일 */}
+              {/* 앨범 커버 */}
               <div
                 style={{
                   flexShrink: 0,
@@ -101,17 +94,7 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "var(--text-muted)",
-                      fontSize: 14,
-                    }}
-                  >
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>
                     ♪
                   </div>
                 )}
@@ -119,72 +102,34 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
 
               {/* 내용 */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    marginBottom: 3,
-                  }}
-                >
-                  <UserAvatar avatarUrl={item.avatar_url ?? null} size={13} />
-                  <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                {/* 유저 + 점수 */}
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                  <UserAvatar avatarUrl={item.avatar_url ?? null} size={12} />
+                  <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
                     {user?.display_name ?? "익명"}
                   </span>
-                  <span
-                    style={{
-                      color: scoreColor(item.score),
-                      fontWeight: 700,
-                      fontSize: 12,
-                    }}
-                  >
+                  <span style={{ color: scoreColor(item.score), fontWeight: 700, fontSize: 11, marginLeft: 2 }}>
                     ★ {item.score}
                   </span>
+                  <span style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
+                    {relativeTime(item.updated_at)}
+                  </span>
                 </div>
-                <p
-                  style={{
-                    color: "var(--text)",
-                    fontWeight: 500,
-                    fontSize: 12,
-                    lineHeight: 1.3,
-                  }}
-                  className="truncate"
-                >
+                {/* 앨범명 */}
+                <p style={{ color: "var(--text)", fontWeight: 500, fontSize: 12, lineHeight: 1.3 }} className="truncate">
                   {item.album_title}
                 </p>
-                <p
-                  style={{ color: "var(--text-sub)", fontSize: 11 }}
-                  className="truncate"
-                >
+                {/* 아티스트 */}
+                <p style={{ color: "var(--text-sub)", fontSize: 11 }} className="truncate">
                   {item.album_artist_display}
                 </p>
+                {/* 한줄평 */}
                 {item.one_line_review && (
-                  <p
-                    style={{
-                      color: "var(--text-muted)",
-                      fontSize: 11,
-                      fontStyle: "italic",
-                      marginTop: 2,
-                    }}
-                    className="truncate"
-                  >
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, fontStyle: "italic", marginTop: 2 }} className="truncate">
                     &ldquo;{item.one_line_review}&rdquo;
                   </p>
                 )}
               </div>
-
-              {/* 시간 */}
-              <span
-                style={{
-                  color: "var(--text-muted)",
-                  fontSize: 10,
-                  flexShrink: 0,
-                  paddingTop: 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {relativeTime(item.updated_at)}
-              </span>
             </div>
           );
         })}

@@ -75,7 +75,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   const year = album.release_date?.slice(0, 4) ?? album.year ?? null;
   const tracks = parseTracklist(album.tracklist);
-  const SHOW = 6;
+  const SHOW = 8;
 
   return (
     <>
@@ -94,8 +94,8 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           <div
             style={{
               flexShrink: 0,
-              width: 110,
-              height: 110,
+              width: 140,
+              height: 140,
               borderRadius: 8,
               overflow: "hidden",
               backgroundColor: "var(--bg-elevated)",
@@ -222,37 +222,67 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 fontSize: 9,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                marginBottom: 6,
+                marginBottom: 8,
                 fontWeight: 700,
               }}
             >
               트랙리스트
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {/* 2열 그리드 */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                columnGap: 12,
+                rowGap: 0,
+              }}
+            >
               {tracks.slice(0, SHOW).map((track, i) => (
-                <p
+                <div
                   key={i}
                   style={{
-                    color: "var(--text-sub)",
-                    fontSize: 11,
-                    lineHeight: 1.5,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 5,
+                    padding: "3px 0",
+                    borderBottom: "1px solid var(--border)",
+                    minWidth: 0,
                   }}
                 >
-                  <span style={{ color: "var(--text-muted)", marginRight: 6, fontSize: 10 }}>
-                    {String(i + 1).padStart(2, "0")}
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      color: "var(--text-muted)",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      minWidth: 14,
+                    }}
+                  >
+                    {i + 1}
                   </span>
-                  {track}
-                </p>
+                  <span
+                    style={{
+                      color: "var(--text-sub)",
+                      fontSize: 11,
+                      lineHeight: 1.5,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {track}
+                  </span>
+                </div>
               ))}
-              {tracks.length > SHOW && (
-                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2 }}>
-                  +{tracks.length - SHOW}곡 더
-                </p>
-              )}
             </div>
+            {tracks.length > SHOW && (
+              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 6 }}>
+                +{tracks.length - SHOW}곡 더
+              </p>
+            )}
           </div>
         )}
 

@@ -253,13 +253,15 @@ export default async function HomePage() {
         </section>
 
         {/* 리뷰 티커 */}
-        <ReviewTicker items={tickerItems} />
+        <div style={{ ...containerStyle, padding: "0 24px" }}>
+          <ReviewTicker items={tickerItems} inline />
+        </div>
 
         {/* 메인 섹션 */}
         <div style={{ ...containerStyle, padding: "28px 24px 12px" }}>
-          <div className="sm:grid sm:grid-cols-5 sm:gap-6">
+          <div className="sm:grid sm:grid-cols-2 sm:gap-6">
             {/* 오늘의 인연 */}
-            <div className="sm:col-span-2 mb-8 sm:mb-0">
+            <div className="mb-8 sm:mb-0">
               <h2
                 style={{
                   color: "var(--text)",
@@ -275,7 +277,7 @@ export default async function HomePage() {
             </div>
 
             {/* 최근 평가 피드 */}
-            <div className="sm:col-span-3">
+            <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <h2
                   style={{
