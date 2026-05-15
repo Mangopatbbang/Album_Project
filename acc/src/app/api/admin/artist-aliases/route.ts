@@ -81,20 +81,13 @@ export async function POST(req: NextRequest) {
     .upsert({ spotify_name: spotify_name.trim(), variant_name: variant_name.trim() }, { onConflict: "spotify_name" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // 별칭 등록 시 해당 아티스트 앨범 전체에 use_artist_variant 자동 활성화
-  const { data: updated } = await supabaseServer
-    .from("albums")
-    .update({ use_artist_variant: true })
-    .filter("artist", "ilike", spotify_name.trim())
-    .select("id");
-
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
   revalidateTag("artist-aliases", { expire: 0 });
   revalidateTag("all-albums-with-ratings", { expire: 0 });
   revalidateTag("profile-ratings", { expire: 0 });
-  return NextResponse.json({ ok: true, auto_applied: updated?.length ?? 0 });
+  return NextResponse.json({ ok: true });
 }
 
 // DELETE /api/admin/artist-aliases

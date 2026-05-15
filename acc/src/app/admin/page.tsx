@@ -317,9 +317,7 @@ export default function AdminPage() {
       body: JSON.stringify({ spotify_name: newSpotifyName.trim(), variant_name: newVariantName.trim() }),
     });
     if (res.ok) {
-      const d = await res.json();
-      const n = d.auto_applied ?? 0;
-      setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨${n > 0 ? ` (앨범 ${n}개 자동 적용)` : " (일치 앨범 없음)"}`);
+      setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
       setNewSpotifyName(""); setNewVariantName("");
       await refreshCurrentList(listMode);
     } else {
@@ -448,6 +446,7 @@ export default function AdminPage() {
 
   async function loadUnifiedTable(markCurrentAsSeen = false) {
     const SEEN_KEY = "admin_seen_artists";
+    const VIEW_KEY = "admin_new_artist_views";
 
     setUnifiedLoading(true);
     setUnifiedMsg("");
@@ -459,6 +458,9 @@ export default function AdminPage() {
       const prev = new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
       for (const r of unifiedRows) prev.add(r.spotify_name);
       localStorage.setItem(SEEN_KEY, JSON.stringify([...prev]));
+      const vc: Record<string, number> = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}");
+      for (const r of unifiedRows) delete vc[r.spotify_name];
+      localStorage.setItem(VIEW_KEY, JSON.stringify(vc));
     }
 
     const [r1, r2, r3, r4] = await Promise.all([
@@ -480,6 +482,21 @@ export default function AdminPage() {
     } else {
       seenSet = new Set(JSON.parse(seenRaw) as string[]);
     }
+    // NEW 5번 노출 후 자동 소멸
+    const viewCounts: Record<string, number> = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}");
+    let seenUpdated = false;
+    for (const a of allArtists) {
+      if (!seenSet.has(a)) {
+        viewCounts[a] = (viewCounts[a] ?? 0) + 1;
+        if (viewCounts[a] >= 5) {
+          seenSet.add(a);
+          delete viewCounts[a];
+          seenUpdated = true;
+        }
+      }
+    }
+    if (seenUpdated) localStorage.setItem(SEEN_KEY, JSON.stringify([...seenSet]));
+    localStorage.setItem(VIEW_KEY, JSON.stringify(viewCounts));
 
     const normGroups = new Map<string, string[]>();
     for (const a of allArtists) {
