@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
@@ -117,7 +118,7 @@ async function getRecentFeed(): Promise<FeedItem[]> {
     .select("user_id, score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
     .not("score", "is", null)
     .order("updated_at", { ascending: false })
-    .limit(15);
+    .limit(6);
   if (!data) return [];
 
   const rows = (data as unknown as RecentFeedRow[]).filter((r) => r.albums);
@@ -221,35 +222,57 @@ export default async function HomePage() {
             아차청음사
           </h1>
 
-          {/* 통계 */}
+          {/* 통계 카드 */}
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              gap: 8,
               justifyContent: "center",
-              flexWrap: "wrap",
-              gap: 0,
-              marginBottom: 4,
+              margin: "0 auto 2px",
+              maxWidth: 340,
             }}
           >
-            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              <span style={{ color: "var(--text)", fontWeight: 700 }}>
-                <CountUp target={totalCount} />
-              </span>
-              {" "}앨범
-            </span>
-            <span style={{ color: "var(--border-light)", margin: "0 10px" }}>·</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              <span style={{ color: "var(--text)", fontWeight: 700 }}>
-                <CountUp target={ratingsCount} />
-              </span>
-              {" "}평가
-            </span>
-            <span style={{ color: "var(--border-light)", margin: "0 10px" }}>·</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-              <span style={{ color: "var(--text)", fontWeight: 700 }}>{membersCount}</span>
-              {" "}멤버
-            </span>
+            {([
+              { value: totalCount, label: "앨범" },
+              { value: ratingsCount, label: "평가" },
+              { value: membersCount, label: "멤버" },
+            ] as { value: number; label: string }[]).map(({ value, label }) => (
+              <div
+                key={label}
+                style={{
+                  flex: 1,
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "12px 8px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    color: "var(--text)",
+                    fontWeight: 800,
+                    fontSize: 22,
+                    lineHeight: 1,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  <CountUp target={value} />
+                </p>
+                <p
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: 10,
+                    marginTop: 5,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                  }}
+                >
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
 
           <HomeSearchBar />
@@ -280,17 +303,25 @@ export default async function HomePage() {
 
             {/* 최근 평가 피드 */}
             <div className="sm:col-span-3">
-              <h2
-                style={{
-                  color: "var(--text)",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  letterSpacing: "-0.02em",
-                  marginBottom: 12,
-                }}
-              >
-                최근 평가
-              </h2>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <h2
+                  style={{
+                    color: "var(--text)",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  최근 평가
+                </h2>
+                <Link
+                  href="/reviews"
+                  style={{ color: "var(--text-muted)", fontSize: 11 }}
+                  className="hover:text-[var(--accent)] transition-colors"
+                >
+                  더 보기 →
+                </Link>
+              </div>
               <HomeRecentFeed items={feedItems} />
             </div>
           </div>
