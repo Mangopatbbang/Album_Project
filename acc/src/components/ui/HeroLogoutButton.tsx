@@ -9,26 +9,20 @@ export default function HeroLogoutButton() {
   return (
     <button
       onClick={signOut}
-      className="sm:hidden"
+      className="sm:hidden active:opacity-60 transition-opacity"
       style={{
-        width: 80,
-        height: 80,
+        color: "var(--text-muted)",
+        fontSize: 11,
+        fontWeight: 600,
+        background: "none",
         border: "1px solid var(--border-light)",
-        backgroundColor: "var(--bg-card)",
-        borderRadius: 12,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
+        borderRadius: 8,
+        padding: "5px 11px",
         cursor: "pointer",
-        transition: "border-color 0.15s",
+        letterSpacing: "0.03em",
       }}
     >
-      <span style={{ fontSize: 26, lineHeight: 1 }}>🚪</span>
-      <span style={{ color: "var(--text)", fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
-        로그아웃
-      </span>
+      로그아웃
     </button>
   );
 }

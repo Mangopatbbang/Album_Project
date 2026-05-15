@@ -1,25 +1,58 @@
-import Link from "next/link";
 import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
-import RecentAlbumsSection from "@/components/album/RecentAlbumsSection";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
-import RandomButton from "@/components/album/RandomButton";
 import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
 import CountUp from "@/components/ui/CountUp";
 import MobileLoginHint from "@/components/ui/MobileLoginHint";
 import HomeSearchBar from "@/components/ui/HomeSearchBar";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import HomeTodaySection from "@/components/home/HomeTodaySection";
+import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
+import HomeActivitySection from "@/components/home/HomeActivitySection";
 
-async function getRecentAlbums() {
-  const { data } = await supabaseServer
+async function getTotalCount() {
+  const { count } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, use_artist_variant, year, genre, cover_url, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
-    .order("created_at", { ascending: false })
-    .limit(4);
-  if (!data) return [];
-  return resolveArtistDisplay(data);
+    .select("id", { count: "exact", head: true });
+  return count ?? 0;
+}
+
+async function getRatingsCount() {
+  const { count } = await supabaseServer
+    .from("ratings")
+    .select("id", { count: "exact", head: true });
+  return count ?? 0;
+}
+
+async function getMembersCount() {
+  const { count } = await supabaseServer
+    .from("users")
+    .select("id", { count: "exact", head: true });
+  return count ?? 0;
+}
+
+async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
+  const { count } = await supabaseServer
+    .from("albums")
+    .select("id", { count: "exact", head: true });
+  if (!count || count === 0) return null;
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const seed = dateStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const offset = seed % count;
+
+  const { data, error } = await supabaseServer
+    .from("albums")
+    .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+    .order("id")
+    .range(offset, offset)
+    .single();
+
+  if (error || !data) return null;
+  const resolved = await resolveArtistDisplay([data]);
+  return resolved[0] as unknown as AlbumWithRatings;
 }
 
 function serverShuffle<T>(arr: T[]): T[] {
@@ -47,7 +80,6 @@ async function getTickerReviews(): Promise<TickerItem[]> {
   }[]).filter((r) => r.albums);
 
   const shuffled = serverShuffle(rows).slice(0, 40);
-
   const albumObjs = shuffled.map((r) => r.albums!);
   const resolved = await resolveArtistDisplay(albumObjs);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
@@ -64,11 +96,51 @@ async function getTickerReviews(): Promise<TickerItem[]> {
   }));
 }
 
-async function getTotalCount() {
-  const { count } = await supabaseServer
-    .from("albums")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
+type RecentFeedRow = {
+  user_id: string;
+  score: number;
+  one_line_review: string | null;
+  updated_at: string;
+  albums: {
+    id: string;
+    title: string;
+    artist: string;
+    use_artist_variant: boolean | null;
+    cover_url: string | null;
+    artist_display?: string;
+  } | null;
+};
+
+async function getRecentFeed(): Promise<FeedItem[]> {
+  const { data } = await supabaseServer
+    .from("ratings")
+    .select("user_id, score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
+    .not("score", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(15);
+  if (!data) return [];
+
+  const rows = (data as unknown as RecentFeedRow[]).filter((r) => r.albums);
+  const albumObjs = rows.map((r) => r.albums!);
+  if (albumObjs.length > 0) {
+    const resolved = await resolveArtistDisplay(albumObjs);
+    const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+    for (const row of rows) {
+      if (row.albums) row.albums.artist_display = displayMap.get(row.albums.id);
+    }
+  }
+
+  return rows.map((r) => ({
+    user_id: r.user_id,
+    score: r.score,
+    one_line_review: r.one_line_review,
+    updated_at: r.updated_at,
+    album_id: r.albums!.id,
+    album_title: r.albums!.title,
+    album_artist: r.albums!.artist,
+    album_artist_display: r.albums!.artist_display ?? r.albums!.artist,
+    album_cover_url: r.albums!.cover_url,
+  }));
 }
 
 const containerStyle = {
@@ -78,13 +150,30 @@ const containerStyle = {
 };
 
 export default async function HomePage() {
-  const [recentAlbums, totalCount, tickerItemsRaw, avatarMap] = await Promise.all([
-    getRecentAlbums(),
+  const [
+    totalCount,
+    ratingsCount,
+    membersCount,
+    todayAlbum,
+    recentFeedRaw,
+    tickerItemsRaw,
+    avatarMap,
+  ] = await Promise.all([
     getTotalCount(),
+    getRatingsCount(),
+    getMembersCount(),
+    getTodayAlbum(),
+    getRecentFeed(),
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
   ]);
+
   const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
+    ...item,
+    avatar_url: avatarMap[item.user_id] ?? null,
+  }));
+
+  const feedItems: FeedItem[] = recentFeedRaw.map((item) => ({
     ...item,
     avatar_url: avatarMap[item.user_id] ?? null,
   }));
@@ -95,14 +184,28 @@ export default async function HomePage() {
 
       <main>
         {/* 히어로 */}
-        <section style={{ ...containerStyle, textAlign: "center", position: "relative", padding: "16px 24px 10px" }}>
-          <div style={{ position: "absolute", top: 16, left: 20 }}>
-            <RandomButton />
-          </div>
-          <div style={{ position: "absolute", top: 16, right: 20 }}>
+        <section
+          style={{
+            ...containerStyle,
+            textAlign: "center",
+            position: "relative",
+            padding: "22px 24px 14px",
+          }}
+        >
+          {/* 모바일 로그아웃 버튼 */}
+          <div style={{ position: "absolute", top: 18, right: 20 }}>
             <HeroLogoutButton />
           </div>
-          <p style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
+
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
             청음의 기록
           </p>
           <h1
@@ -111,44 +214,92 @@ export default async function HomePage() {
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: "-0.04em",
+              marginBottom: 14,
             }}
-            className="text-3xl sm:text-6xl mb-1"
+            className="text-2xl sm:text-4xl"
           >
             아차청음사
           </h1>
-          <p style={{ color: "var(--text-sub)", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 8 }} className="text-3xl sm:text-[48px]">
-            <CountUp target={totalCount} />
-          </p>
-          <MobileLoginHint />
-          <div style={{ marginTop: 8 }}>
-            <ReviewTicker items={tickerItems} inline />
-          </div>
-        </section>
 
-        {/* 검색바 */}
-        <section style={{ ...containerStyle, padding: "0 24px 12px" }}>
+          {/* 통계 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: 0,
+              marginBottom: 4,
+            }}
+          >
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              <span style={{ color: "var(--text)", fontWeight: 700 }}>
+                <CountUp target={totalCount} />
+              </span>
+              {" "}앨범
+            </span>
+            <span style={{ color: "var(--border-light)", margin: "0 10px" }}>·</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              <span style={{ color: "var(--text)", fontWeight: 700 }}>
+                <CountUp target={ratingsCount} />
+              </span>
+              {" "}평가
+            </span>
+            <span style={{ color: "var(--border-light)", margin: "0 10px" }}>·</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+              <span style={{ color: "var(--text)", fontWeight: 700 }}>{membersCount}</span>
+              {" "}멤버
+            </span>
+          </div>
+
           <HomeSearchBar />
+          <MobileLoginHint />
         </section>
 
-        {/* 최근 청음 */}
-        <section style={{ ...containerStyle, padding: "0 24px 12px" }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              style={{ color: "var(--text)", fontWeight: 600, letterSpacing: "-0.02em" }}
-              className="text-lg"
-            >
-              최근 청음
-            </h2>
-            <Link
-              href="/albums"
-              style={{ color: "var(--text-muted)" }}
-              className="text-xs hover:text-[var(--accent)] transition-colors"
-            >
-              전체보기 →
-            </Link>
+        {/* 리뷰 티커 */}
+        <ReviewTicker items={tickerItems} />
+
+        {/* 메인 섹션 */}
+        <div style={{ ...containerStyle, padding: "20px 24px 8px" }}>
+          <div className="sm:grid sm:grid-cols-5 sm:gap-6">
+            {/* 오늘의 인연 */}
+            <div className="sm:col-span-2 mb-8 sm:mb-0">
+              <h2
+                style={{
+                  color: "var(--text)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  letterSpacing: "-0.02em",
+                  marginBottom: 12,
+                }}
+              >
+                오늘의 인연
+              </h2>
+              <HomeTodaySection initialAlbum={todayAlbum} />
+            </div>
+
+            {/* 최근 평가 피드 */}
+            <div className="sm:col-span-3">
+              <h2
+                style={{
+                  color: "var(--text)",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  letterSpacing: "-0.02em",
+                  marginBottom: 12,
+                }}
+              >
+                최근 평가
+              </h2>
+              <HomeRecentFeed items={feedItems} />
+            </div>
           </div>
-          <RecentAlbumsSection albums={recentAlbums as AlbumWithRatings[]} />
-        </section>
+        </div>
+
+        {/* 내 최근 활동 */}
+        <div style={containerStyle}>
+          <HomeActivitySection />
+        </div>
       </main>
     </div>
   );
