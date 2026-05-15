@@ -46,7 +46,7 @@ async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+    .select("id, title, artist, use_artist_variant, year, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
     .order("id")
     .range(offset, offset)
     .single();
@@ -154,7 +154,6 @@ export default async function HomePage() {
   const [
     totalCount,
     ratingsCount,
-    membersCount,
     todayAlbum,
     recentFeedRaw,
     tickerItemsRaw,
@@ -162,7 +161,6 @@ export default async function HomePage() {
   ] = await Promise.all([
     getTotalCount(),
     getRatingsCount(),
-    getMembersCount(),
     getTodayAlbum(),
     getRecentFeed(),
     getTickerReviews(),
@@ -190,7 +188,7 @@ export default async function HomePage() {
             ...containerStyle,
             textAlign: "center",
             position: "relative",
-            padding: "22px 24px 14px",
+            padding: "44px 24px 20px",
           }}
         >
           {/* 모바일 로그아웃 버튼 */}
@@ -204,7 +202,7 @@ export default async function HomePage() {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              marginBottom: 6,
+              marginBottom: 10,
             }}
           >
             청음의 기록
@@ -215,64 +213,39 @@ export default async function HomePage() {
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: "-0.04em",
-              marginBottom: 14,
+              marginBottom: 22,
             }}
-            className="text-2xl sm:text-4xl"
+            className="text-3xl sm:text-5xl"
           >
             아차청음사
           </h1>
 
-          {/* 통계 카드 */}
+          {/* 통계 — 카드 없이 클린 타이포그래피 */}
           <div
             style={{
-              display: "flex",
-              gap: 8,
-              justifyContent: "center",
-              margin: "0 auto 2px",
-              maxWidth: 340,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 28,
+              marginBottom: 4,
             }}
           >
-            {([
-              { value: totalCount, label: "앨범" },
-              { value: ratingsCount, label: "평가" },
-              { value: membersCount, label: "멤버" },
-            ] as { value: number; label: string }[]).map(({ value, label }) => (
-              <div
-                key={label}
-                style={{
-                  flex: 1,
-                  backgroundColor: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "12px 8px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    color: "var(--text)",
-                    fontWeight: 800,
-                    fontSize: 22,
-                    lineHeight: 1,
-                    letterSpacing: "-0.03em",
-                  }}
-                >
-                  <CountUp target={value} />
-                </p>
-                <p
-                  style={{
-                    color: "var(--text-muted)",
-                    fontSize: 10,
-                    marginTop: 5,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
-                  {label}
-                </p>
-              </div>
-            ))}
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
+                <CountUp target={totalCount} />
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                앨범
+              </p>
+            </div>
+            <div style={{ width: 1, height: 32, backgroundColor: "var(--border)" }} />
+            <div style={{ textAlign: "center" }}>
+              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
+                <CountUp target={ratingsCount} />
+              </p>
+              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                평가
+              </p>
+            </div>
           </div>
 
           <HomeSearchBar />
@@ -283,7 +256,7 @@ export default async function HomePage() {
         <ReviewTicker items={tickerItems} />
 
         {/* 메인 섹션 */}
-        <div style={{ ...containerStyle, padding: "20px 24px 8px" }}>
+        <div style={{ ...containerStyle, padding: "28px 24px 12px" }}>
           <div className="sm:grid sm:grid-cols-5 sm:gap-6">
             {/* 오늘의 인연 */}
             <div className="sm:col-span-2 mb-8 sm:mb-0">

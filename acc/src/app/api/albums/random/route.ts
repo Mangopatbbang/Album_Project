@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, year, release_date, genre, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+    .select("id, title, artist, use_artist_variant, year, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
     .order("id")
     .range(offset, offset)
     .single();
