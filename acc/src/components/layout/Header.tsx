@@ -90,12 +90,15 @@ export default function Header() {
                 {...(tour ? { "data-tour": tour } : {})}
                 style={{
                   color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
-                  backgroundColor: hoveredNav === href ? "var(--border)" : "transparent",
+                  background: "transparent",
+                  boxShadow: hoveredNav === href
+                    ? "inset 0 0 40px 0 rgba(232,213,163,0.13)"
+                    : "inset 0 0 0px 0 rgba(232,213,163,0)",
                   fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
                   padding: "0 12px", height: 52,
                   display: "flex", alignItems: "center",
                   textTransform: "uppercase",
-                  transition: "color 0.15s, background-color 0.15s",
+                  transition: "color 0.2s ease, box-shadow 0.35s ease",
                 }}
               >
                 {label}
