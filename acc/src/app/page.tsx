@@ -187,7 +187,7 @@ export default async function HomePage() {
             ...containerStyle,
             textAlign: "center",
             position: "relative",
-            padding: "44px 24px 20px",
+            padding: "24px 24px 16px",
           }}
         >
           {/* 모바일 로그아웃 버튼 */}
@@ -296,7 +296,14 @@ export default async function HomePage() {
                   더 보기 →
                 </Link>
               </div>
-              <HomeRecentFeed items={feedItems} />
+              <div style={{
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+                padding: "4px 14px",
+              }}>
+                <HomeRecentFeed items={feedItems} />
+              </div>
             </div>
           </div>
         </div>
