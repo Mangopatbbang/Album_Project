@@ -11,7 +11,6 @@ import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
-import HomeActivitySection from "@/components/home/HomeActivitySection";
 
 async function getTotalCount() {
   const { count } = await supabaseServer
@@ -302,10 +301,6 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* 내 최근 활동 */}
-        <div style={containerStyle}>
-          <HomeActivitySection />
-        </div>
       </main>
     </div>
   );
