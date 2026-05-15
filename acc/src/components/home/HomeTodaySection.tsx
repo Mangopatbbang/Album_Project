@@ -103,7 +103,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           boxShadow: glowShadow(avg),
         }}
       >
-        {/* 커버 + 우측 정보 (트랙리스트 포함) */}
+        {/* 커버 + 우측 기본 정보 */}
         <div style={{ display: "flex", alignItems: "flex-start", padding: "14px 14px 0", gap: 14 }}>
 
           {/* 커버 */}
@@ -127,17 +127,12 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
             )}
           </div>
 
-          {/* 우측: 기본 정보 + 트랙리스트 */}
-          <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
-            {/* 타이틀 */}
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 5 }} className="line-clamp-2">
-              {album.title}
-            </p>
-
-            {/* 아티스트 + 메타 태그 한 줄 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <p style={{ color: "var(--text-sub)", fontSize: 12, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {album.artist_display ?? album.artist}
+          {/* 우측: 타이틀+태그 / 아티스트 */}
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+            {/* 타이틀 + 메타 태그 같은 줄 */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 5 }}>
+              <p style={{ flex: 1, color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
+                {album.title}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
                 {year && <span style={tagStyle}>{year}</span>}
@@ -151,67 +146,75 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 )}
               </div>
             </div>
+            {/* 아티스트 */}
+            <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {album.artist_display ?? album.artist}
+            </p>
+          </div>
+        </div>
 
-            {/* 트랙리스트 — 데스크탑 전용 */}
-            {tracks.length > 0 && (
-              <div
-                className="hidden sm:block"
-                style={{ position: "relative", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}
-                onMouseEnter={() => setTrackHover(true)}
-                onMouseLeave={() => setTrackHover(false)}
-              >
+        {/* 트랙리스트 — 전체 너비, 데스크탑 전용 */}
+        {tracks.length > 0 && (
+          <div
+            className="hidden sm:block"
+            style={{ position: "relative", margin: "12px 14px 0", paddingTop: 8, borderTop: "1px solid var(--border)" }}
+            onMouseEnter={() => setTrackHover(true)}
+            onMouseLeave={() => setTrackHover(false)}
+          >
+            <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
+              Tracklist
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+              {tracks.slice(0, COLLAPSED_SHOW * 2).map((track, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                  <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
+                    {i + 1}
+                  </span>
+                  <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                    {track}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {tracks.length > COLLAPSED_SHOW * 2 && (
+              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5 }}>
+                +{tracks.length - COLLAPSED_SHOW * 2}곡 더
+              </p>
+            )}
+
+            {/* 호버 시 전체 트랙 오버레이 */}
+            {trackHover && tracks.length > COLLAPSED_SHOW * 2 && (
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "10px 12px",
+                zIndex: 20,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.4)",
+              }}>
                 <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
                   Tracklist
                 </p>
-                {tracks.slice(0, COLLAPSED_SHOW).map((track, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
-                    <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
-                      {i + 1}
-                    </span>
-                    <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                      {track}
-                    </span>
-                  </div>
-                ))}
-                {tracks.length > COLLAPSED_SHOW && (
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
-                    +{tracks.length - COLLAPSED_SHOW}곡 더
-                  </p>
-                )}
-
-                {/* 호버 시 전체 트랙 오버레이 */}
-                {trackHover && tracks.length > COLLAPSED_SHOW && (
-                  <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    padding: "10px 12px",
-                    zIndex: 20,
-                    boxShadow: "0 8px 28px rgba(0,0,0,0.4)",
-                  }}>
-                    <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
-                      Tracklist
-                    </p>
-                    {tracks.map((track, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
-                        <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
-                          {i + 1}
-                        </span>
-                        <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                          {track}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+                  {tracks.map((track, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                      <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
+                        {i + 1}
+                      </span>
+                      <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                        {track}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
 
         {/* 버튼 */}
         <div style={{ padding: "12px 14px 14px" }}>
