@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (url.searchParams.get("distinct") === "true") {
-    const { data, error } = await supabaseServer.from("albums").select("artist");
+    const { data, error } = await supabaseServer.from("albums").select("artist").limit(10000);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     const all = [...new Set((data ?? []).map((a: { artist: string }) => a.artist))].sort();
     return NextResponse.json({ artists: all });
@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
   if (unaliased) {
     const { data: albumData, error: albumErr } = await supabaseServer
       .from("albums")
-      .select("artist");
+      .select("artist")
+      .limit(10000);
     if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
 
     const { data: aliasData, error: aliasErr } = await supabaseServer

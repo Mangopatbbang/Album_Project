@@ -50,7 +50,7 @@ type ItunesMismatch = {
 };
 
 type AliasRow = { spotify_name: string; variant_name: string };
-type UnifiedRow = { spotify_name: string; variant_name: string | null; fuzzyGroup?: string };
+type UnifiedRow = { spotify_name: string; variant_name: string | null; fuzzyGroup?: string; isNew?: boolean };
 
 type LogRow = {
   id: number;
@@ -385,6 +385,7 @@ export default function AdminPage() {
   function toggleSearchAliases(spotify_name: string) {
     setExpandedAlias(expandedAlias === spotify_name ? null : spotify_name);
     setSearchAliasInput("");
+    setSearchAliasMsg((prev) => ({ ...prev, [spotify_name]: "" }));
   }
 
   async function handleAddSearchAlias(spotify_name: string) {
@@ -408,11 +409,16 @@ export default function AdminPage() {
   }
 
   async function handleDeleteSearchAlias(spotify_name: string, id: number) {
-    await adminFetch("/api/admin/artist-search-aliases", {
+    const res = await adminFetch("/api/admin/artist-search-aliases", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (!res.ok) {
+      const d = await res.json();
+      setSearchAliasMsg((prev) => ({ ...prev, [spotify_name]: d.error ?? "삭제 실패" }));
+      return;
+    }
     setSearchAliasMap((prev) => ({
       ...prev,
       [spotify_name]: (prev[spotify_name] ?? []).filter((a) => a.id !== id),
@@ -440,9 +446,21 @@ export default function AdminPage() {
     return name.toLowerCase().replace(/[\s\(\)\-\.\',]/g, "").replace(/[^a-z0-9가-힣]/g, "");
   }
 
-  async function loadUnifiedTable() {
+  async function loadUnifiedTable(markCurrentAsSeen = false) {
+    const SEEN_KEY = "admin_seen_artists";
+
     setUnifiedLoading(true);
     setUnifiedMsg("");
+    setUnifiedFilter("all");
+    setSearchAliasMsg({});
+
+    // ↺ 클릭 시: 현재 목록 전체를 seen으로 저장한 뒤 새로고침
+    if (markCurrentAsSeen && unifiedRows) {
+      const prev = new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
+      for (const r of unifiedRows) prev.add(r.spotify_name);
+      localStorage.setItem(SEEN_KEY, JSON.stringify([...prev]));
+    }
+
     const [r1, r2, r3] = await Promise.all([
       adminFetch("/api/admin/artist-aliases?distinct=true"),
       adminFetch("/api/admin/artist-aliases"),
@@ -451,6 +469,16 @@ export default function AdminPage() {
     const [d1, d2, d3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
     const allArtists: string[] = d1.artists ?? [];
     const aliasMap = new Map<string, string>((d2.aliases ?? []).map((a: AliasRow) => [a.spotify_name, a.variant_name]));
+
+    // NEW 배지: 처음 로드면 전부 seen으로 저장(배지 없음), 이후엔 unseen만 NEW
+    const seenRaw = localStorage.getItem(SEEN_KEY);
+    let seenSet: Set<string>;
+    if (!seenRaw) {
+      seenSet = new Set(allArtists);
+      localStorage.setItem(SEEN_KEY, JSON.stringify(allArtists));
+    } else {
+      seenSet = new Set(JSON.parse(seenRaw) as string[]);
+    }
 
     const normGroups = new Map<string, string[]>();
     for (const a of allArtists) {
@@ -463,7 +491,10 @@ export default function AdminPage() {
       spotify_name: a,
       variant_name: aliasMap.get(a) ?? null,
       fuzzyGroup: (normGroups.get(normalizeForFuzzy(a))?.length ?? 0) > 1 ? normalizeForFuzzy(a) : undefined,
+      isNew: !seenSet.has(a),
     })).sort((a, b) => {
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
       if (a.fuzzyGroup && !b.fuzzyGroup) return -1;
       if (!a.fuzzyGroup && b.fuzzyGroup) return 1;
       if (!a.variant_name && b.variant_name) return -1;
@@ -1355,7 +1386,7 @@ export default function AdminPage() {
                         {f === "all" ? `전체 ${unifiedRows.length}` : f === "aliased" ? `설정됨 ${unifiedRows.filter((r) => r.variant_name).length}` : `미설정 ${unifiedRows.filter((r) => !r.variant_name).length}`}
                       </button>
                     ))}
-                    <button onClick={loadUnifiedTable} disabled={unifiedLoading} title="새로고침" style={{ marginLeft: "auto", padding: "4px 9px", borderRadius: 5, fontSize: 13, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)" }}>
+                    <button onClick={() => loadUnifiedTable(true)} disabled={unifiedLoading} title="새로고침 (현재 목록 확인 처리 후 갱신)" style={{ marginLeft: "auto", padding: "4px 9px", borderRadius: 5, fontSize: 13, cursor: "pointer", border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)" }}>
                       {unifiedLoading ? "…" : "↺"}
                     </button>
                   </div>
@@ -1381,7 +1412,10 @@ export default function AdminPage() {
                         <div key={row.spotify_name} style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", backgroundColor: isDirty ? "rgba(232,213,163,0.04)" : "transparent" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 12px" }}>
                             <span style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, backgroundColor: row.variant_name ? "var(--accent)" : (row.fuzzyGroup ? "#e8a53a" : "var(--border)") }} title={row.variant_name ? "설정됨" : row.fuzzyGroup ? "유사 아티스트 있음" : "미설정"} />
-                            <span style={{ fontSize: 12, color: "var(--text-muted)", width: 180, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.spotify_name}</span>
+                            <span style={{ fontSize: 12, color: "var(--text-muted)", width: 180, flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{row.spotify_name}</span>
+                              {row.isNew && <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 4px", borderRadius: 2, backgroundColor: "rgba(255,165,0,0.2)", color: "#ffa500", letterSpacing: "0.06em", flexShrink: 0 }}>NEW</span>}
+                            </span>
                             <span style={{ color: "var(--border)", fontSize: 10, flexShrink: 0 }}>→</span>
                             <input
                               value={displayVal}

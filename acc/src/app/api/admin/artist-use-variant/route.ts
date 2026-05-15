@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
 
   const { data: albumData, error: albumErr } = await supabaseServer
     .from("albums")
-    .select("artist, use_artist_variant");
+    .select("artist, use_artist_variant")
+    .limit(10000);
   if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
 
   // Case-insensitive match: alias spotify_name vs albums.artist
