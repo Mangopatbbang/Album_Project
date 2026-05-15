@@ -276,7 +276,7 @@ export default async function HomePage() {
             </div>
 
             {/* 최근 평가 피드 */}
-            <div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <h2
                   style={{
@@ -301,6 +301,7 @@ export default async function HomePage() {
                 border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "4px 14px",
+                flex: 1,
               }}>
                 <HomeRecentFeed items={feedItems} />
               </div>
