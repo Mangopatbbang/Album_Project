@@ -25,27 +25,37 @@ export async function GET(req: NextRequest) {
   }
 
   if (url.searchParams.get("distinct") === "true") {
-    const { data, error } = await supabaseServer.from("albums").select("artist").limit(10000);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const all = [...new Set((data ?? []).map((a: { artist: string }) => a.artist))].sort();
-    return NextResponse.json({ artists: all });
+    const artists = new Set<string>();
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseServer.from("albums").select("artist").range(from, from + 999);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!data?.length) break;
+      for (const r of data as { artist: string }[]) artists.add(r.artist);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
+    return NextResponse.json({ artists: [...artists].sort() });
   }
 
   if (unaliased) {
-    const { data: albumData, error: albumErr } = await supabaseServer
-      .from("albums")
-      .select("artist")
-      .limit(10000);
-    if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
-
+    const albumArtists = new Set<string>();
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseServer.from("albums").select("artist").range(from, from + 999);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!data?.length) break;
+      for (const r of data as { artist: string }[]) albumArtists.add(r.artist);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
     const { data: aliasData, error: aliasErr } = await supabaseServer
       .from("artist_aliases")
       .select("spotify_name");
     if (aliasErr) return NextResponse.json({ error: aliasErr.message }, { status: 500 });
 
     const aliasedSet = new Set((aliasData ?? []).map((a: { spotify_name: string }) => a.spotify_name.toLowerCase()));
-    const allArtists = [...new Set((albumData ?? []).map((a: { artist: string }) => a.artist))].sort();
-    const unaliasedArtists = allArtists.filter((a) => !aliasedSet.has(a.toLowerCase()));
+    const unaliasedArtists = [...albumArtists].sort().filter((a) => !aliasedSet.has(a.toLowerCase()));
 
     return NextResponse.json({ artists: unaliasedArtists });
   }

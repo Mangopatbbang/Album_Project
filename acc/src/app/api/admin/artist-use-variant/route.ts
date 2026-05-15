@@ -14,11 +14,17 @@ export async function GET(req: NextRequest) {
   const names = (aliasData ?? []).map((r: { spotify_name: string }) => r.spotify_name);
   if (names.length === 0) return NextResponse.json({ stats: {} });
 
-  const { data: albumData, error: albumErr } = await supabaseServer
-    .from("albums")
-    .select("artist, use_artist_variant")
-    .limit(10000);
-  if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
+  const albumRows: { artist: string; use_artist_variant: boolean }[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error: albumErr } = await supabaseServer
+      .from("albums").select("artist, use_artist_variant").range(from, from + 999);
+    if (albumErr) return NextResponse.json({ error: albumErr.message }, { status: 500 });
+    if (!data?.length) break;
+    albumRows.push(...(data as { artist: string; use_artist_variant: boolean }[]));
+    if (data.length < 1000) break;
+    from += 1000;
+  }
 
   // Case-insensitive match: alias spotify_name vs albums.artist
   const namesLowerSet = new Set(names.map((n) => n.toLowerCase()));
@@ -26,7 +32,7 @@ export async function GET(req: NextRequest) {
   for (const n of names) lcToCanonical[n.toLowerCase()] = n;
 
   const stats: Record<string, { total: number; using: number }> = {};
-  for (const row of albumData ?? []) {
+  for (const row of albumRows) {
     const lc = row.artist.toLowerCase();
     if (!namesLowerSet.has(lc)) continue;
     const key = lcToCanonical[lc] ?? row.artist;
