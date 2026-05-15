@@ -222,57 +222,27 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
         {/* 버튼 */}
         <div style={{ padding: "12px 14px 14px" }}>
-          {streamingOpen ? (
-            <div>
-              <p style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 7, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
-                어디서 들을까요?
-              </p>
-              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                <button
-                  onClick={() => openStreaming("spotify")}
-                  style={{ flex: 1, background: "#1DB954", color: "#000", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-                  className="active:opacity-70 transition-opacity"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                  </svg>
-                  Spotify
-                </button>
-                <button
-                  onClick={() => openStreaming("apple")}
-                  style={{ flex: 1, background: "#FC3C44", color: "#fff", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-                  className="active:opacity-70 transition-opacity"
-                >
-                  Apple Music
-                </button>
-                <button
-                  onClick={() => openStreaming("youtube")}
-                  style={{ flex: 1, background: "#FF0000", color: "#fff", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-                  className="active:opacity-70 transition-opacity"
-                >
-                  YouTube
-                </button>
-              </div>
-              <button
-                onClick={() => setStreamingOpen(false)}
-                style={{ width: "100%", background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "6px 0", fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}
-                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
-              >
-                취소
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ position: "relative", height: 36 }}>
+
+            {/* 기본 row: 감상하기 / 평가하기 / 다른 인연 */}
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", gap: 8,
+              opacity: streamingOpen ? 0 : 1,
+              transform: streamingOpen ? "translateX(-14px)" : "translateX(0)",
+              transition: "opacity 0.18s ease, transform 0.22s ease",
+              pointerEvents: streamingOpen ? "none" : "auto",
+            }}>
               <button
                 onClick={() => setStreamingOpen(true)}
-                style={{ flex: 1, backgroundColor: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em" }}
+                style={{ flex: 1, backgroundColor: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em" }}
                 className="hover:opacity-85 active:opacity-70 transition-opacity"
               >
                 감상하기 ↗
               </button>
               <button
                 onClick={() => setModalOpen(true)}
-                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
               >
                 평가하기
@@ -280,13 +250,56 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               <button
                 onClick={shuffle}
                 disabled={loading}
-                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", fontSize: 12, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
               >
                 {loading ? "···" : "다른 인연"}
               </button>
             </div>
-          )}
+
+            {/* 스트리밍 row: Spotify / Apple / YouTube / ✕ */}
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", gap: 6,
+              opacity: streamingOpen ? 1 : 0,
+              transform: streamingOpen ? "translateX(0)" : "translateX(14px)",
+              transition: "opacity 0.18s ease, transform 0.22s ease",
+              pointerEvents: streamingOpen ? "auto" : "none",
+            }}>
+              <button
+                onClick={() => openStreaming("spotify")}
+                style={{ flex: 1, background: "#1DB954", color: "#000", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                className="active:opacity-70 transition-opacity"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                </svg>
+                Spotify
+              </button>
+              <button
+                onClick={() => openStreaming("apple")}
+                style={{ flex: 1, background: "#FC3C44", color: "#fff", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                className="active:opacity-70 transition-opacity"
+              >
+                Apple
+              </button>
+              <button
+                onClick={() => openStreaming("youtube")}
+                style={{ flex: 1, background: "#FF0000", color: "#fff", border: "none", borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                className="active:opacity-70 transition-opacity"
+              >
+                YouTube
+              </button>
+              <button
+                onClick={() => setStreamingOpen(false)}
+                style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "0 11px", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
+              >
+                ✕
+              </button>
+            </div>
+
+          </div>
         </div>
       </div>
 
