@@ -453,13 +453,22 @@ export default function AdminPage() {
     setUnifiedFilter("all");
     setSearchAliasMsg({});
 
-    // ↺ 클릭 시: 현재 목록 전체를 seen으로 저장한 뒤 새로고침
+    // ↺ 클릭 시: NEW 아티스트 카운트 증가 → 5회 도달 시 자동 seen 처리
     if (markCurrentAsSeen && unifiedRows) {
-      const prev = new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
-      for (const r of unifiedRows) prev.add(r.spotify_name);
-      localStorage.setItem(SEEN_KEY, JSON.stringify([...prev]));
+      const seenEarly = new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
       const vc: Record<string, number> = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}");
-      for (const r of unifiedRows) delete vc[r.spotify_name];
+      let changed = false;
+      for (const r of unifiedRows) {
+        if (!seenEarly.has(r.spotify_name)) {
+          vc[r.spotify_name] = (vc[r.spotify_name] ?? 0) + 1;
+          if (vc[r.spotify_name] >= 5) {
+            seenEarly.add(r.spotify_name);
+            delete vc[r.spotify_name];
+            changed = true;
+          }
+        }
+      }
+      if (changed) localStorage.setItem(SEEN_KEY, JSON.stringify([...seenEarly]));
       localStorage.setItem(VIEW_KEY, JSON.stringify(vc));
     }
 
@@ -482,21 +491,6 @@ export default function AdminPage() {
     } else {
       seenSet = new Set(JSON.parse(seenRaw) as string[]);
     }
-    // NEW 5번 노출 후 자동 소멸
-    const viewCounts: Record<string, number> = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}");
-    let seenUpdated = false;
-    for (const a of allArtists) {
-      if (!seenSet.has(a)) {
-        viewCounts[a] = (viewCounts[a] ?? 0) + 1;
-        if (viewCounts[a] >= 5) {
-          seenSet.add(a);
-          delete viewCounts[a];
-          seenUpdated = true;
-        }
-      }
-    }
-    if (seenUpdated) localStorage.setItem(SEEN_KEY, JSON.stringify([...seenSet]));
-    localStorage.setItem(VIEW_KEY, JSON.stringify(viewCounts));
 
     const normGroups = new Map<string, string[]>();
     for (const a of allArtists) {
