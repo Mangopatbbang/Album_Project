@@ -16,18 +16,27 @@ export default function Header() {
   const { getUserById } = useUsers();
   const router = useRouter();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const navHoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNavEnter = (href: string) => {
+    if (navHoverTimeout.current) clearTimeout(navHoverTimeout.current);
+    setHoveredNav(href);
+  };
+  const handleNavLeave = () => {
+    navHoverTimeout.current = setTimeout(() => setHoveredNav(null), 120);
+  };
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
-    { href: "/albums", label: "음반고", tour: "nav-albums" },
-    { href: "/best", label: "청음감", tour: "nav-best" },
-    { href: "/themes", label: "청음집", tour: undefined },
-    { href: "/reviews", label: "청음평", tour: "nav-reviews" },
-    { href: "/members", label: "청음인", tour: "nav-members" },
-    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile" }] : []),
+    { href: "/albums", label: "음반고", tour: "nav-albums", desc: "보유한 모든 앨범 탐색" },
+    { href: "/best", label: "청음감", tour: "nav-best", desc: "멤버가 선정한 명반 순위" },
+    { href: "/themes", label: "청음집", tour: undefined, desc: "테마별로 엮은 컬렉션" },
+    { href: "/reviews", label: "청음평", tour: "nav-reviews", desc: "모든 한줄평 모아보기" },
+    { href: "/members", label: "청음인", tour: "nav-members", desc: "청음사 멤버 목록" },
+    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
   ];
 
   useEffect(() => {
@@ -80,13 +89,15 @@ export default function Header() {
 
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
-          {navItems.map(({ href, label, tour }) => {
-            return (
+          {navItems.map(({ href, label, tour, desc }) => (
+            <div
+              key={href}
+              style={{ position: "relative" }}
+              onMouseEnter={() => handleNavEnter(href)}
+              onMouseLeave={handleNavLeave}
+            >
               <Link
-                key={href}
                 href={href}
-                onMouseEnter={() => setHoveredNav(href)}
-                onMouseLeave={() => setHoveredNav(null)}
                 {...(tour ? { "data-tour": tour } : {})}
                 style={{
                   color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
@@ -103,9 +114,41 @@ export default function Header() {
               >
                 {label}
               </Link>
-            );
-          })}
+
+              {hoveredNav === href && (
+                <div style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "11px 16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  zIndex: 60,
+                  minWidth: 148,
+                  pointerEvents: "none",
+                  animation: "navDropIn 0.14s ease-out",
+                }}>
+                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.02em", marginBottom: 4 }}>
+                    {label}
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11, lineHeight: 1.5 }}>
+                    {desc}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
+
+        <style>{`
+          @keyframes navDropIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          }
+        `}</style>
 
         {/* 유저 + 알림 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
