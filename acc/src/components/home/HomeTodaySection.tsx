@@ -11,15 +11,30 @@ type Props = {
 
 function parseTracklist(raw: string | undefined): string[] {
   if (!raw) return [];
-  const lines = raw.split(/\n/).map((t) => t.trim()).filter(Boolean);
-  if (lines.length > 1) return lines.map((t) => t.replace(/^\d+[\.\)\s]+/, "").trim());
-  return raw.split(",").map((t) => t.trim()).filter(Boolean);
+  return raw.split("; ").map((t) => t.trim()).filter(Boolean);
 }
 
 export default function HomeTodaySection({ initialAlbum }: Props) {
   const [album, setAlbum] = useState<AlbumWithRatings | null>(initialAlbum);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [streamingOpen, setStreamingOpen] = useState(false);
+
+  const openStreaming = (service: "spotify" | "apple" | "youtube") => {
+    const query = encodeURIComponent(`${album?.title ?? ""} ${album?.artist_display ?? album?.artist ?? ""}`);
+    let url = "";
+    if (service === "spotify") {
+      url = album?.spotify_id
+        ? `https://open.spotify.com/album/${album.spotify_id}`
+        : `https://open.spotify.com/search/${query}`;
+    } else if (service === "apple") {
+      url = `https://music.apple.com/search?term=${query}`;
+    } else {
+      url = `https://music.youtube.com/search?q=${query}`;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+    setStreamingOpen(false);
+  };
 
   const shuffle = async () => {
     setLoading(true);
@@ -112,18 +127,18 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           </div>
 
           {/* 우측: 기본 정보 + 트랙리스트 */}
-          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column", gap: 0 }}>
             {/* 타이틀 */}
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 3 }} className="line-clamp-2">
+            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 2 }} className="line-clamp-2">
               {album.title}
             </p>
             {/* 아티스트 */}
-            <p style={{ color: "var(--text-sub)", fontSize: 12, marginBottom: 7 }} className="truncate">
+            <p style={{ color: "var(--text-sub)", fontSize: 12, marginBottom: 8 }} className="truncate">
               {album.artist_display ?? album.artist}
             </p>
 
-            {/* 메타 태그 */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 7 }}>
+            {/* 메타 + 평점 한 줄 */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 0 }}>
               {year && (
                 <span style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px", fontWeight: 600 }}>
                   {year}
@@ -134,36 +149,35 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   {album.genre}
                 </span>
               )}
+              {avg !== null ? (
+                <span style={{ fontSize: 10, color: scoreColor(avg), fontWeight: 700, backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
+                  {avg} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({scores.length})</span>
+                </span>
+              ) : (
+                <span style={{ fontSize: 10, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
+                  평가 없음
+                </span>
+              )}
             </div>
 
-            {/* 평점 */}
-            {avg !== null ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 0 }}>
-                <span style={{ color: scoreColor(avg), fontWeight: 700, fontSize: 13 }}>★ {avg}</span>
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{scores.length}명 평가</span>
-              </div>
-            ) : (
-              <p style={{ color: "var(--text-muted)", fontSize: 11 }}>아직 평가 없음</p>
-            )}
-
-            {/* 트랙리스트 — 데스크탑 전용, 커버 우측에 세로 나열 */}
+            {/* 트랙리스트 — 데스크탑 전용 */}
             {tracks.length > 0 && (
               <div className="hidden sm:block" style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
                 <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 5 }}>
-                  트랙리스트
+                  Tracklist
                 </p>
                 {tracks.slice(0, SHOW).map((track, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2px 0" }}>
-                    <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12 }}>
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                    <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
                       {i + 1}
                     </span>
-                    <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                    <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                       {track}
                     </span>
                   </div>
                 ))}
                 {tracks.length > SHOW && (
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
                     +{tracks.length - SHOW}곡 더
                   </p>
                 )}
@@ -173,22 +187,69 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         </div>
 
         {/* 버튼 */}
-        <div style={{ display: "flex", gap: 8, padding: "12px 14px 14px" }}>
-          <button
-            onClick={() => setModalOpen(true)}
-            style={{ flex: 1, backgroundColor: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em" }}
-            className="hover:opacity-85 active:opacity-70 transition-opacity"
-          >
-            감상하기
-          </button>
-          <button
-            onClick={shuffle}
-            disabled={loading}
-            style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
-            className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
-          >
-            {loading ? "···" : "다른 인연"}
-          </button>
+        <div style={{ padding: "12px 14px 14px" }}>
+          {streamingOpen ? (
+            <div>
+              <p style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 7, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>
+                어디서 들을까요?
+              </p>
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                <button
+                  onClick={() => openStreaming("spotify")}
+                  style={{ flex: 1, background: "#1DB954", color: "#000", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  className="active:opacity-70 transition-opacity"
+                >
+                  Spotify
+                </button>
+                <button
+                  onClick={() => openStreaming("apple")}
+                  style={{ flex: 1, background: "#FC3C44", color: "#fff", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  className="active:opacity-70 transition-opacity"
+                >
+                  Apple Music
+                </button>
+                <button
+                  onClick={() => openStreaming("youtube")}
+                  style={{ flex: 1, background: "#FF0000", color: "#fff", border: "none", borderRadius: 7, padding: "8px 0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                  className="active:opacity-70 transition-opacity"
+                >
+                  YouTube
+                </button>
+              </div>
+              <button
+                onClick={() => setStreamingOpen(false)}
+                style={{ width: "100%", background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "6px 0", fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
+              >
+                취소
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setStreamingOpen(true)}
+                style={{ flex: 1, backgroundColor: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 8, padding: "9px 0", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em" }}
+                className="hover:opacity-85 active:opacity-70 transition-opacity"
+              >
+                감상하기 ↗
+              </button>
+              <button
+                onClick={() => setModalOpen(true)}
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
+              >
+                평가하기
+              </button>
+              <button
+                onClick={shuffle}
+                disabled={loading}
+                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "9px 14px", fontSize: 12, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
+              >
+                {loading ? "···" : "다른 인연"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

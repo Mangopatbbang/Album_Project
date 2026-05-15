@@ -109,7 +109,7 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                     {user?.display_name ?? "익명"}
                   </span>
                   <span style={{ color: scoreColor(item.score), fontWeight: 700, fontSize: 11, marginLeft: 2 }}>
-                    ★ {item.score}
+                    {item.score}
                   </span>
                   <span style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
                     {relativeTime(item.updated_at)}
