@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("artist-aliases");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("profile-ratings");
+  revalidateTag("artist-aliases", "max");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("profile-ratings", "max");
   return NextResponse.json({ ok: true });
 }
 
@@ -113,8 +113,8 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("artist-aliases");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("profile-ratings");
+  revalidateTag("artist-aliases", "max");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("profile-ratings", "max");
   return NextResponse.json({ ok: true });
 }

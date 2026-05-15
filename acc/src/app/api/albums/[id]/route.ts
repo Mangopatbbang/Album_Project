@@ -80,9 +80,9 @@ export async function PATCH(
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("profile-ratings");
-  revalidateTag("albums-page-meta");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("profile-ratings", "max");
+  revalidateTag("albums-page-meta", "max");
   return NextResponse.json({ ok: true, tracklistSaved: !!update.tracklist, id, rowsUpdated: count, updatedRow: updateData });
 }
 
@@ -147,8 +147,8 @@ export async function DELETE(
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("profile-ratings");
-  revalidateTag("albums-page-meta");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("profile-ratings", "max");
+  revalidateTag("albums-page-meta", "max");
   return NextResponse.json({ ok: true });
 }

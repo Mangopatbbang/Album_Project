@@ -306,8 +306,8 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("albums-page-meta");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("albums-page-meta", "max");
   return NextResponse.json(data, { status: 201 });
 }
 

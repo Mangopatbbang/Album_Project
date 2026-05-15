@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings");
-  revalidateTag("profile-ratings");
+  revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("profile-ratings", "max");
   return NextResponse.json({ ok: true, updated: data?.length ?? 0 });
 }
