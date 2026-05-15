@@ -113,7 +113,7 @@ export default async function ProfilePage({
   const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
 
   // 일별 청음 (캘린더용 — 전체 기간)
-  const dailyData: Record<string, { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number }[]> = {};
+  const dailyData: Record<string, { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean }[]> = {};
   for (const r of validRatings) {
     const key = r.updated_at.slice(0, 10); // "YYYY-MM-DD"
     if (!dailyData[key]) dailyData[key] = [];
@@ -123,6 +123,7 @@ export default async function ProfilePage({
       artist_display: r.albums!.artist_display,
       cover_url: r.albums!.cover_url ?? null,
       score: r.score,
+      is_encounter: !!r.encounter_date,
     });
   }
 

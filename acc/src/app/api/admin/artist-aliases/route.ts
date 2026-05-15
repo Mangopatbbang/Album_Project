@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/artist-aliases
 // body: { spotify_name, variant_name }
 export async function POST(req: NextRequest) {
-  if (!(await validateUser(req))) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
   const { spotify_name, variant_name } = await req.json();
   if (!spotify_name?.trim() || !variant_name?.trim()) {
     return NextResponse.json({ error: "spotify_name과 variant_name 필수" }, { status: 400 });
@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("artist-aliases", { expire: 0 });
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
-  revalidateTag("profile-ratings", { expire: 0 });
+  revalidateTag("artist-aliases");
+  revalidateTag("all-albums-with-ratings");
+  revalidateTag("profile-ratings");
   return NextResponse.json({ ok: true });
 }
 
@@ -113,8 +113,8 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("artist-aliases", { expire: 0 });
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
-  revalidateTag("profile-ratings", { expire: 0 });
+  revalidateTag("artist-aliases");
+  revalidateTag("all-albums-with-ratings");
+  revalidateTag("profile-ratings");
   return NextResponse.json({ ok: true });
 }

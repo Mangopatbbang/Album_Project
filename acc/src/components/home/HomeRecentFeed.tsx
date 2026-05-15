@@ -104,8 +104,8 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 {/* 유저 + 점수 */}
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-                  <UserAvatar avatarUrl={item.avatar_url ?? null} size={12} />
-                  <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                  <UserAvatar avatarUrl={item.avatar_url ?? null} size={14} />
+                  <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
                     {user?.display_name ?? "익명"}
                   </span>
                   <span style={{ color: scoreColor(item.score), fontWeight: 700, fontSize: 11, marginLeft: 2 }}>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
-  revalidateTag("profile-ratings", { expire: 0 });
+  revalidateTag("all-albums-with-ratings");
+  revalidateTag("profile-ratings");
   return NextResponse.json({ ok: true });
 }

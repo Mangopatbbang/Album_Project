@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { logActivity } from "@/lib/activityLog";
@@ -39,10 +39,11 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { albumId, score, one_line_review } = body as {
+  const { albumId, score, one_line_review, is_encounter } = body as {
     albumId: string;
     score: number;
     one_line_review?: string;
+    is_encounter?: boolean;
   };
   const userId = authed.id;
 
@@ -64,12 +65,21 @@ export async function POST(req: NextRequest) {
   ]);
   const prevScore = existing?.score ?? null;
 
+  const upsertData: {
+    album_id: string;
+    user_id: string;
+    score: number;
+    one_line_review: string | null;
+    encounter_date?: string;
+  } = { album_id: albumId, user_id: userId, score, one_line_review: one_line_review ?? null };
+  if (is_encounter) {
+    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    upsertData.encounter_date = kst.toISOString().slice(0, 10);
+  }
+
   const { data, error } = await supabaseServer
     .from("ratings")
-    .upsert(
-      { album_id: albumId, user_id: userId, score, one_line_review: one_line_review ?? null },
-      { onConflict: "album_id,user_id" }
-    )
+    .upsert(upsertData, { onConflict: "album_id,user_id" })
     .select()
     .single();
 
@@ -91,8 +101,8 @@ export async function POST(req: NextRequest) {
 
   revalidatePath("/");
   revalidatePath("/best");
-  revalidateTag("profile-ratings", { expire: 0 });
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
+  revalidateTag("profile-ratings");
+  revalidateTag("all-albums-with-ratings");
   return NextResponse.json({ ok: true, rating: data });
 }
 
@@ -205,7 +215,7 @@ export async function DELETE(req: NextRequest) {
 
   revalidatePath("/");
   revalidatePath("/best");
-  revalidateTag("profile-ratings", { expire: 0 });
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
+  revalidateTag("profile-ratings");
+  revalidateTag("all-albums-with-ratings");
   return NextResponse.json({ ok: true });
 }

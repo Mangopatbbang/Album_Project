@@ -441,7 +441,7 @@ return (
           <Spinner size={22} />
         </div>
       ) : fetchError ? (
-        <div className="text-center py-20 flex flex-col items-center gap-3">
+        <div className="text-center py-10 sm:py-20 flex flex-col items-center gap-3">
           <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오지 못했어요</p>
           <button
             onClick={() => handleFilter(search, genre, region, sort, unrated, myScore)}
@@ -454,7 +454,7 @@ return (
           </button>
         </div>
       ) : albums.length === 0 ? (
-        <div className="text-center py-20 flex flex-col items-center gap-3">
+        <div className="text-center py-10 sm:py-20 flex flex-col items-center gap-3">
           <p style={{ color: "var(--text-muted)", fontSize: 13 }}>인연 닿는 음반이 없습니다</p>
           {search && profile && (
             <button

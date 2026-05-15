@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay, findArtistsByVariant } from "@/lib/artistDisplay";
@@ -306,8 +306,8 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");
-  revalidateTag("all-albums-with-ratings", { expire: 0 });
-  revalidateTag("albums-page-meta", { expire: 0 });
+  revalidateTag("all-albums-with-ratings");
+  revalidateTag("albums-page-meta");
   return NextResponse.json(data, { status: 201 });
 }
 

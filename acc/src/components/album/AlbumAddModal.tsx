@@ -360,8 +360,8 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         <div style={{
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 14, width: "100%", maxWidth: 440,
-          display: "flex", flexDirection: "column", gap: 16, padding: 32,
-        }}>
+          display: "flex", flexDirection: "column", gap: 16,
+        }} className="p-5 sm:p-8">
           <div>
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 17, marginBottom: 4 }}>입고 완료</p>
             <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
@@ -436,8 +436,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 720, maxHeight: "90vh",
         overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
-        padding: 32,
-      }}>
+      }} className="p-5 sm:p-8">
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>음반 입고</p>

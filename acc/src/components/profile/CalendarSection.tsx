@@ -4,7 +4,7 @@ import { useState } from "react";
 import { scoreColor } from "@/lib/score";
 
 type MonthItem = { key: string; label: string; count: number };
-type DayAlbum = { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number };
+type DayAlbum = { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean };
 type DailyAlbums = Record<string, DayAlbum[]>; // "YYYY-MM-DD" → albums
 
 // ── 월별 바차트 ──────────────────────────────────────────
@@ -90,12 +90,13 @@ function MonthCalendar({
           const intensity = count > 0 ? Math.max(0.3, count / monthMax) : 0;
           const col = (firstDay + day - 1) % 7;
           const dayColor = col === 0 ? "var(--color-sunday)" : col === 6 ? "var(--color-saturday)" : "var(--text-sub)";
+          const hasEncounter = albums.some((a) => a.is_encounter);
 
           return (
             <div
               key={key}
               onClick={() => count > 0 && !isFuture && onDayClick(key)}
-              title={count > 0 ? `${month + 1}월 ${day}일 — ${count}장 청음` : `${month + 1}월 ${day}일`}
+              title={count > 0 ? `${month + 1}월 ${day}일 — ${count}장 청음${hasEncounter ? " · 인연의 날" : ""}` : `${month + 1}월 ${day}일`}
               style={{
                 aspectRatio: "1/1",
                 borderRadius: 5,
@@ -109,7 +110,9 @@ function MonthCalendar({
                   : "var(--bg-elevated)",
                 border: isToday
                   ? "1.5px solid var(--accent)"
-                  : count > 0 ? "1px solid rgba(232,213,163,0.25)" : "1px solid transparent",
+                  : hasEncounter
+                    ? "1.5px solid rgba(232,213,163,0.7)"
+                    : count > 0 ? "1px solid rgba(232,213,163,0.25)" : "1px solid transparent",
                 opacity: isFuture ? 0.25 : 1,
                 cursor: count > 0 && !isFuture ? "pointer" : "default",
               }}
@@ -167,7 +170,12 @@ function DayAlbumPanel({ dateKey, albums, onClose }: { dateKey: string; albums: 
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{a.title}</p>
+                {a.is_encounter && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", backgroundColor: "rgba(232,213,163,0.12)", border: "1px solid rgba(232,213,163,0.35)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>인연</span>
+                )}
+              </div>
               <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist_display ?? a.artist}</p>
             </div>
             <span style={{ color: scoreColor(a.score), fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{a.score}</span>
@@ -279,6 +287,10 @@ function CalendarPopup({ dailyAlbums, onClose }: { dailyAlbums: DailyAlbums; onC
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "rgba(232,213,163,0.5)", border: "1px solid rgba(232,213,163,0.25)" }} />
             <span style={{ color: "var(--text-muted)", fontSize: 10 }}>청음한 날</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "rgba(232,213,163,0.5)", border: "1.5px solid rgba(232,213,163,0.7)" }} />
+            <span style={{ color: "var(--text-muted)", fontSize: 10 }}>인연의 날</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, border: "1.5px solid var(--accent)" }} />

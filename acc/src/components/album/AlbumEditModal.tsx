@@ -263,8 +263,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "90vh",
         overflowY: "auto", display: "flex", flexDirection: "column", gap: 20,
-        padding: 28,
-      }}>
+      }} className="p-5 sm:p-7">
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>앨범 수정</p>

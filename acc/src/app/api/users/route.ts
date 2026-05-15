@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
@@ -86,8 +86,8 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (avatar_url !== undefined) revalidateTag("user-avatars", { expire: 0 });
-  if (display_name !== undefined || emoji !== undefined) revalidateTag("all-users", { expire: 0 });
+  if (avatar_url !== undefined) revalidateTag("user-avatars");
+  if (display_name !== undefined || emoji !== undefined) revalidateTag("all-users");
   return NextResponse.json({ ok: true, user: data });
 }
 

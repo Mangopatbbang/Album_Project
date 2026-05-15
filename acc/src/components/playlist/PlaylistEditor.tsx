@@ -167,8 +167,8 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 640, maxHeight: "92vh",
-        overflowY: "auto", padding: 32, display: "flex", flexDirection: "column", gap: 24,
-      }}>
+        overflowY: "auto", display: "flex", flexDirection: "column", gap: 24,
+      }} className="p-5 sm:p-8">
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
@@ -340,9 +340,9 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
 
         {entries.length === 0 && (
           <div style={{
-            border: "1px dashed var(--border)", borderRadius: 10, padding: 32,
+            border: "1px dashed var(--border)", borderRadius: 10,
             textAlign: "center", color: "var(--text-muted)", fontSize: 13,
-          }}>
+          }} className="p-5 sm:p-8">
             위에서 앨범을 검색해서 추가하세요
           </div>
         )}

@@ -5,6 +5,7 @@ import { AlbumWithRatings } from "@/types";
 import AlbumModal from "@/components/album/AlbumModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
+import { useAuth } from "@/context/AuthContext";
 
 type Props = {
   initialAlbum: AlbumWithRatings | null;
@@ -16,6 +17,7 @@ function parseTracklist(raw: string | undefined): string[] {
 }
 
 export default function HomeTodaySection({ initialAlbum }: Props) {
+  const { profile } = useAuth();
   const [album, setAlbum] = useState<AlbumWithRatings | null>(initialAlbum);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,7 +43,10 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const shuffle = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/albums/random");
+      const url = profile?.id
+        ? `/api/albums/random?userId=${profile.id}`
+        : "/api/albums/random";
+      const res = await fetch(url);
       const data = await res.json();
       if (data.id) setAlbum(data as AlbumWithRatings);
     } finally {
@@ -130,12 +135,12 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
           {/* 우측: 타이틀+태그 / 아티스트 / 트랙리스트 */}
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
-            {/* 타이틀 + 메타 태그 같은 줄 */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 5 }}>
-              <p style={{ flex: 1, color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
+            {/* 타이틀 + 메타 태그: 모바일은 세로 스택, 데스크탑은 가로 한 줄 */}
+            <div className="sm:flex sm:items-start sm:gap-2" style={{ marginBottom: 5 }}>
+              <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 4 }} className="line-clamp-2 sm:flex-1 sm:mb-0">
                 {album.title}
               </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }} className="sm:flex-shrink-0 sm:flex-nowrap">
                 {year && <span style={tagStyle}>{year}</span>}
                 {album.genre && <span style={tagStyle}>{album.genre}</span>}
                 {avg !== null ? (
@@ -149,7 +154,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
             </div>
 
             {/* 아티스트 */}
-            <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 0 }}>
+            <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {album.artist_display ?? album.artist}
             </p>
 
@@ -308,6 +313,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           album={album}
           onClose={() => setModalOpen(false)}
           source="home_today"
+          isEncounter={true}
           onSaved={async (albumId) => {
             const res = await fetch(`/api/albums/${albumId}`);
             if (!res.ok) return;

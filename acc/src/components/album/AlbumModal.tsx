@@ -61,12 +61,10 @@ type Props = {
   onSaved?: (albumId: string) => void;
   zIndex?: number;
   source?: string;
+  isEncounter?: boolean;
 };
 
-// 세션 내 앨범 상세 캐시 (같은 앨범 재오픈 시 즉시 표시)
-const albumCache = new Map<string, FullAlbum>();
-
-export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source }: Props) {
+export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source, isEncounter }: Props) {
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
@@ -200,12 +198,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
   useEffect(() => {
     if (source) trackAlbumVisit(album.id, source);
-    albumCache.delete(album.id);
     fetch(`/api/albums/${album.id}`, { cache: "no-store" })
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
-        albumCache.set(album.id, data);
         setFull(data);
         if (profile) {
           const myRating = data.ratings?.find(
@@ -320,11 +316,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: album.id }),
       });
-      albumCache.delete(album.id);
       const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
       if (refreshed.ok) {
         const data = await refreshed.json();
-        if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
+        if (data && Array.isArray(data.ratings)) setFull(data);
       } else {
         setFull(null);
       }
@@ -348,17 +343,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         albumId: album.id,
         score: myScore,
         one_line_review: myReview || null,
+        ...(isEncounter ? { is_encounter: true } : {}),
       }),
     });
 
     setSaving(false);
     if (!res.ok) return;
-    // 저장 후 최신 데이터로 갱신 (캐시 무효화)
-    albumCache.delete(album.id);
     const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
     if (refreshed.ok) {
       const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) { albumCache.set(album.id, data); setFull(data); }
+      if (data && Array.isArray(data.ratings)) setFull(data);
     }
     // 평점 저장 시 찜 자동 해제
     if (isWatchlisted) {
@@ -616,7 +610,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     </span>
                   )}
                 </p>
-                <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", rowGap: 4 }}>
                   <SpotifyAttribution spotifyId={data.spotify_id} size="md" />
                   {data.soundcloud_url && (
                     <a
@@ -751,7 +745,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 
         {/* 멤버 평점 */}
-        <div style={{ paddingLeft: 32, paddingRight: 32 }}>
+        <div className="px-5 sm:px-8">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             청음단 평점
           </p>
@@ -879,7 +873,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 
         {/* 내 평점 입력 */}
-        <div style={{ paddingLeft: 32, paddingRight: 32 }}>
+        <div className="px-5 sm:px-8">
           {profile ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: showGuide ? 10 : 12 }}>
@@ -968,8 +962,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     <button
                       key={n}
                       onClick={() => setMyScore(n)}
+                      className="flex-1 sm:flex-none sm:w-9"
                       style={{
-                        width: 36,
                         height: 36,
                         borderRadius: 6,
                         border: selected ? `2px solid ${color}` : `1px solid ${color}44`,
@@ -1090,7 +1084,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         {full !== null && tracklist.length === 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 0 }}>
+            <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 8 }}>수록곡</p>
               <p style={{ color: "var(--text-muted)", fontSize: 12 }}>트랙리스트 정보가 없어요</p>
             </div>
@@ -1099,7 +1093,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         {tracklist.length > 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <div style={{ paddingLeft: 32, paddingRight: 32, paddingBottom: 0 }}>
+            <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
                 수록곡
               </p>
@@ -1181,7 +1175,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           </>
         )}
         {/* 문의 링크 */}
-        <div style={{ textAlign: "center", padding: "20px 32px 28px" }}>
+        <div className="px-5 sm:px-8" style={{ textAlign: "center", paddingTop: 20, paddingBottom: 28 }}>
           <Link
             href="/board"
             onClick={handleClose}

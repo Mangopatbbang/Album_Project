@@ -154,8 +154,8 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 14, width: "100%", maxWidth: 680, maxHeight: "90vh",
           overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
-          opacity: 0.9, padding: 32,
-        }}>
+          opacity: 0.9,
+        }} className="p-5 sm:p-8">
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
