@@ -156,7 +156,7 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="ticker" />
       )}
     </>
   );

@@ -9,6 +9,7 @@ import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { koGenre } from "@/lib/bio";
 import Spinner from "@/components/ui/Spinner";
+import { trackSearch } from "@/lib/track";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -476,7 +477,7 @@ return (
               className={albums.length <= 10 ? "animate-stagger" : ""}
               style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
             >
-              <AlbumCard album={album} onClick={setSelectedAlbum} />
+              <AlbumCard album={album} onClick={(a) => { if (search) trackSearch(search, albums.length); setSelectedAlbum(a); }} />
             </div>
           ))}
         </div>
@@ -494,6 +495,7 @@ return (
         <AlbumModal
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
+          source="search"
           onSaved={async (albumId) => {
             const res = await fetch(`/api/albums/${albumId}`);
             if (!res.ok) {

@@ -75,6 +75,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
         <AlbumModal
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
+          source="home_feed"
           onSaved={async (albumId) => {
             const res = await fetch(`/api/albums/${albumId}`);
             if (!res.ok) return;
@@ -83,7 +84,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
           }}
         />
       )}
-      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} source="home_feed" />}
     </>
   );
 }

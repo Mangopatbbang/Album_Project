@@ -612,6 +612,7 @@ export default function BestPageClient({
         <AlbumModal
           album={toAlbumWithRatings(selectedAlbum)}
           onClose={() => setSelectedAlbum(null)}
+          source="best"
         />
       )}
 
@@ -630,6 +631,7 @@ export default function BestPageClient({
           displayName={artistModal.display}
           onClose={() => setArtistModal(null)}
           onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display ?? album.artist, year: album.year ?? null, release_date: null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, spotify_id: album.spotify_id ?? null, avg: parseFloat(album.avg ?? "0"), count: album.ratings.length, variance: 0 }); }}
+          source="best"
         />
       )}
     </>

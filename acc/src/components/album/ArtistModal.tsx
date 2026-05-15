@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackArtistVisit } from "@/lib/track";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
 import { scoreColor, glowBorder, glowShadow } from "@/lib/score";
@@ -13,9 +14,10 @@ type Props = {
   displayName?: string;
   onClose: () => void;
   onAlbumClick?: (album: AlbumWithRatings) => void;
+  source?: string;
 };
 
-export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick }: Props) {
+export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
@@ -28,6 +30,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
   const mouseDownOnBackdrop = useRef(false);
 
   useEffect(() => {
+    if (source) trackArtistVisit(artistName, source);
     setFetchError(false);
 
     fetch(`/api/albums/by-artist?name=${encodeURIComponent(artistName)}`)

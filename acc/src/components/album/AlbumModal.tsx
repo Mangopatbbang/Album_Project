@@ -9,6 +9,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { apiFetch } from "@/lib/apiFetch";
+import { trackAlbumVisit } from "@/lib/track";
 import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -59,12 +60,13 @@ type Props = {
   onClose: () => void;
   onSaved?: (albumId: string) => void;
   zIndex?: number;
+  source?: string;
 };
 
 // 세션 내 앨범 상세 캐시 (같은 앨범 재오픈 시 즉시 표시)
 const albumCache = new Map<string, FullAlbum>();
 
-export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Props) {
+export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source }: Props) {
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
@@ -197,6 +199,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
 
   // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
   useEffect(() => {
+    if (source) trackAlbumVisit(album.id, source);
     albumCache.delete(album.id);
     fetch(`/api/albums/${album.id}`, { cache: "no-store" })
       .then((r) => { if (!r.ok) return null; return r.json(); })
@@ -1198,6 +1201,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           displayName={artistModal.display}
           onClose={() => setArtistModal(null)}
           onAlbumClick={(a) => { setArtistModal(null); setNestedAlbum(a); }}
+          source="album_modal"
         />
       )}
 
@@ -1207,6 +1211,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100 }: Pr
           onClose={() => setNestedAlbum(null)}
           onSaved={onSaved}
           zIndex={120}
+          source="artist_modal"
         />
       )}
 

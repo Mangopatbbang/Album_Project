@@ -251,13 +251,14 @@ export default function WatchlistSection({ userId }: Props) {
         <AlbumModal
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
+          source="watchlist"
           onSaved={(albumId) => {
             setItems((prev) => prev.filter((i) => i.album_id !== albumId));
             setSelectedAlbum(null);
           }}
         />
       )}
-      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} source="watchlist" />}
     </>
   );
 }

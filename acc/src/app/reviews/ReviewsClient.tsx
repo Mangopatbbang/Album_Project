@@ -407,7 +407,7 @@ export default function ReviewsClient() {
       )}
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="reviews" />
       )}
     </div>
   );

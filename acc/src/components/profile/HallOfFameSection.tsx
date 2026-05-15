@@ -87,7 +87,7 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
     return (
       <>
         {grid}
-        {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} />}
+        {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_hof" />}
       </>
     );
   }
@@ -108,7 +108,7 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
         </p>
         {grid}
       </div>
-      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} />}
+      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_hof" />}
     </>
   );
 }

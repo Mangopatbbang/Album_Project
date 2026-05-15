@@ -51,7 +51,7 @@ export default function RandomButton() {
         </span>
       </button>
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="random" />
       )}
     </>
   );

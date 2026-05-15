@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
     .upsert({ user_id: authed.id, album_id: albumId });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await supabaseServer.from("watchlist_events").insert({ user_id: authed.id, album_id: albumId, event_type: "add" });
   return NextResponse.json({ ok: true });
 }
 
@@ -59,5 +61,7 @@ export async function DELETE(req: NextRequest) {
     .eq("album_id", albumId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await supabaseServer.from("watchlist_events").insert({ user_id: authed.id, album_id: albumId, event_type: "remove" });
   return NextResponse.json({ ok: true });
 }
