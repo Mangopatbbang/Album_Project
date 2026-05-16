@@ -13,6 +13,7 @@ import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
 import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
+import EncounterSection, { type EncounterAlbum } from "@/components/profile/EncounterSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
 import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import CalendarSection from "@/components/profile/CalendarSection";
@@ -171,6 +172,21 @@ export default async function ProfilePage({
 
   // 상위 2 장르명
   const topGenres = genreList.slice(0, 2).map(({ genre }) => koGenre(genre));
+
+  // 인연으로 만난 앨범
+  const encounterAlbums: EncounterAlbum[] = validRatings
+    .filter((r) => r.encounter_date)
+    .map((r) => ({
+      id: r.albums!.id,
+      title: r.albums!.title,
+      artist: r.albums!.artist,
+      artist_display: r.albums!.artist_display,
+      year: r.albums!.year ?? null,
+      genre: r.albums!.genre ?? null,
+      cover_url: r.albums!.cover_url ?? null,
+      score: r.score,
+      encounter_date: r.encounter_date!,
+    }));
 
   // 명예의 전당 (8점)
   const hallOfFame = validRatings.filter((r) => r.score === 8);
@@ -343,6 +359,27 @@ export default async function ProfilePage({
           )}
         </div>
       </div>
+
+      {/* ── 인연으로 만난 앨범 ── */}
+      {encounterAlbums.length > 0 && (
+        <div style={{ borderRadius: 12, marginBottom: 16, overflow: "hidden", border: "1px solid var(--border)" }}>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(160,140,200,0.1) 0%, rgba(160,140,200,0.03) 100%)",
+            borderBottom: "1px solid var(--border)",
+            padding: "14px 24px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ color: "var(--text-sub)", fontSize: 15 }}>◇</span>
+              <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>인연으로 만난 앨범</span>
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{encounterAlbums.length}장</span>
+            </div>
+          </div>
+          <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
+            <EncounterSection albums={encounterAlbums} />
+          </div>
+        </div>
+      )}
 
       {/* ── 점수 분포 + 청음 캘린더 ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
