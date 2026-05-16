@@ -597,9 +597,6 @@ export default function BestPageClient({
 
   return (
     <>
-      {/* 미발견 명반 — 얇은 바 (hover 시 팝업) */}
-      <HiddenGemsBar gems={hiddenGems} onAlbumClick={(a) => setSelectedAlbum(a)} />
-
       {/* 모바일 필터: select 2개 */}
       <div data-tour="best-tabs" className="sm:hidden flex gap-2 mb-5">
         <select
@@ -723,6 +720,9 @@ export default function BestPageClient({
           ))}
         </div>
       )}
+
+      {/* 미발견 명반 — 얇은 바 (hover 시 팝업) */}
+      <HiddenGemsBar gems={hiddenGems} onAlbumClick={(a) => setSelectedAlbum(a)} />
 
       {selectedAlbum && (
         <AlbumModal
