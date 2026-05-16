@@ -321,29 +321,34 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* ── 명반전 (상단 강조) ── */}
+      {/* ── 명반전 ── */}
       <div style={{
         borderRadius: 12,
         marginBottom: 16,
         overflow: "hidden",
-        border: "1px solid var(--border)",
+        border: "1px solid rgba(232,213,163,0.3)",
+        boxShadow: hallOfFame.length > 0 ? "0 2px 24px rgba(232,213,163,0.07)" : "none",
       }}>
-        {/* 헤더 배너 */}
+        {/* 황금 상단 라인 */}
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(232,213,163,0.7) 30%, rgba(232,213,163,0.9) 50%, rgba(232,213,163,0.7) 70%, transparent 100%)" }} />
+        {/* 헤더 */}
         <div style={{
-          background: "linear-gradient(135deg, rgba(232,213,163,0.12) 0%, rgba(232,213,163,0.04) 100%)",
-          borderBottom: "1px solid var(--border)",
+          background: "linear-gradient(180deg, rgba(232,213,163,0.09) 0%, rgba(232,213,163,0.03) 100%)",
+          borderBottom: "1px solid rgba(232,213,163,0.12)",
           padding: "14px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ color: "var(--accent)", fontSize: 16 }}>★</span>
-            <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>명반전</span>
-            {hallOfFame.length > 0 && (
-              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>8점 · {hallOfFame.length}장</span>
-            )}
-          </div>
+          <span style={{ color: "var(--text)", fontWeight: 800, fontSize: 15, letterSpacing: "0.04em" }}>명반전</span>
+          <span style={{
+            fontSize: 11, fontWeight: 600,
+            color: hallOfFame.length >= 12 ? "var(--accent)" : "var(--text-muted)",
+            backgroundColor: "rgba(232,213,163,0.08)",
+            border: "1px solid rgba(232,213,163,0.2)",
+            borderRadius: 4, padding: "1px 8px",
+            letterSpacing: "0.02em",
+          }}>
+            {hallOfFame.length} / 12
+          </span>
         </div>
         <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
           {hallOfFame.length > 0 ? (
@@ -353,7 +358,7 @@ export default async function ProfilePage({
               inline
             />
           ) : (
-            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "8px 0" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
               아직 8점을 준 앨범이 없어요
             </p>
           )}

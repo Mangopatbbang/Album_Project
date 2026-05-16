@@ -104,11 +104,13 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   return (
     <>
       <div
+        key={album.id}
         style={{
           backgroundColor: "var(--bg-card)",
           border: `1px solid ${glowBorder(avg)}`,
           borderRadius: 12,
           boxShadow: glowShadow(avg),
+          animation: "encounterFadeIn 1.6s ease-out",
         }}
       >
         {/* 커버 + 우측 정보 */}
@@ -306,10 +308,29 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               <button
                 onClick={shuffle}
                 disabled={loading}
-                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", fontSize: 12, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                title="다른 인연"
+                style={{
+                  backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
+                  border: "1px solid var(--border)", borderRadius: "50%",
+                  width: 36, height: 36, flexShrink: 0,
+                  cursor: loading ? "default" : "pointer",
+                  opacity: loading ? 0.4 : 1,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.15s",
+                }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
               >
-                {loading ? "···" : "다른 인연"}
+                {loading ? (
+                  <span style={{ fontSize: 14 }}>···</span>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                    <circle cx="12" cy="12" r="2.2"/>
+                    <ellipse cx="12" cy="6.5" rx="2" ry="3" opacity="0.65"/>
+                    <ellipse cx="12" cy="17.5" rx="2" ry="3" opacity="0.65"/>
+                    <ellipse cx="6.5" cy="12" rx="3" ry="2" opacity="0.65"/>
+                    <ellipse cx="17.5" cy="12" rx="3" ry="2" opacity="0.65"/>
+                  </svg>
+                )}
               </button>
             </div>
 
@@ -358,6 +379,13 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes encounterFadeIn {
+          0%   { opacity: 0; transform: translateY(6px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
       {modalOpen && (
         <AlbumModal
