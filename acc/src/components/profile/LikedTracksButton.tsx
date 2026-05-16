@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { LikedTrackItem } from "@/app/api/liked-tracks/route";
 import Spinner from "@/components/ui/Spinner";
+import AlbumModal from "@/components/album/AlbumModal";
+import type { AlbumWithRatings } from "@/types";
 
 type SortKey = "album" | "artist";
 
@@ -22,6 +24,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [sort, setSort] = useState<SortKey>("album");
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -78,6 +81,14 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
 
   return (
     <>
+      {selectedAlbum && (
+        <AlbumModal
+          album={selectedAlbum}
+          onClose={() => setSelectedAlbum(null)}
+          source="liked_tracks"
+          zIndex={300}
+        />
+      )}
       <button
         onClick={handleOpen}
         style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "var(--text-muted)", fontSize: 12 }}
@@ -162,8 +173,19 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
               ) : (
                 grouped.map((group) => (
                   <div key={group.albumId} style={{ marginBottom: 4 }}>
-                    {/* 앨범 헤더 */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 20px", backgroundColor: "var(--bg-elevated)" }}>
+                    {/* 앨범 헤더 — 클릭 시 앨범 모달 */}
+                    <button
+                      onClick={() => setSelectedAlbum({
+                        id: group.albumId,
+                        title: group.albumTitle,
+                        artist: group.artistDisplay,
+                        artist_display: group.artistDisplay,
+                        cover_url: group.coverUrl ?? undefined,
+                        ratings: [],
+                      } as unknown as AlbumWithRatings)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 20px", backgroundColor: "var(--bg-elevated)", width: "100%", border: "none", cursor: "pointer", textAlign: "left", transition: "opacity 0.12s" }}
+                      className="hover:opacity-75 active:opacity-60"
+                    >
                       {group.coverUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={group.coverUrl} alt={group.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
@@ -179,7 +201,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                         </p>
                       </div>
                       <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{group.tracks.length}곡</span>
-                    </div>
+                    </button>
 
                     {/* 트랙 목록 */}
                     {group.tracks.map((t) => (
