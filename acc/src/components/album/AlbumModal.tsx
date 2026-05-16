@@ -1171,7 +1171,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       animation: saved ? "savedPop 0.5s ease-out" : undefined,
                     }}
                   >
-                    {saved ? "✓ 기록됨" : saving ? "기록 중…" : "청음 기록"}
+                    {saved ? "✓ 기록됨" : saving ? "기록 중…" : "기록"}
                   </button>
                 </div>
               </div>
