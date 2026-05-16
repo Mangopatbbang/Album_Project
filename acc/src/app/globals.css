@@ -290,6 +290,21 @@ main {
   margin: -10px;
 }
 
+/* 오늘의 인연 커버: 터치 기기에서만 active opacity */
+@media (hover: none) {
+  .today-cover:active { opacity: 0.75; }
+}
+
+/* 미발견 명반 hover 팝업: 터치 기기에서 숨김 */
+@media (hover: none) {
+  .hgem-popup { display: none !important; }
+}
+/* 미발견 명반 / 인연 앨범 모바일 라벨: 데스크탑에서 숨김 */
+@media (hover: hover) {
+  .hgem-label { display: none !important; }
+  .encounter-label { display: none !important; }
+}
+
 /* 인풋 포커스 상태 */
 input:focus,
 textarea:focus,

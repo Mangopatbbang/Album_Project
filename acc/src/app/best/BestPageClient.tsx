@@ -47,7 +47,7 @@ function HiddenGemsBar({
           return (
             <div
               key={album.id}
-              style={{ position: "relative", flexShrink: 0, zIndex: isHovered ? 20 : 1 }}
+              style={{ position: "relative", flexShrink: 0, zIndex: isHovered ? 20 : 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
             >
@@ -59,6 +59,7 @@ function HiddenGemsBar({
                   cursor: "pointer", backgroundColor: "var(--bg-elevated)",
                   border: `1px solid ${isHovered ? "rgba(232,213,163,0.6)" : "var(--border)"}`,
                   transition: "border-color 0.12s",
+                  flexShrink: 0,
                 }}
               >
                 {album.cover_url ? (
@@ -79,9 +80,18 @@ function HiddenGemsBar({
                 )}
               </div>
 
-              {/* hover 팝업 */}
+              {/* 모바일 전용: 커버 아래 제목 텍스트 (데스크탑에서 hidden) */}
+              <span className="hgem-label" style={{
+                fontSize: 8, color: "var(--text-muted)", fontWeight: 500,
+                maxWidth: 34, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                lineHeight: 1, textAlign: "center",
+              }}>
+                {album.title}
+              </span>
+
+              {/* hover 팝업 (터치 기기에서 CSS로 숨김) */}
               {isHovered && (
-                <div style={{
+                <div className="hgem-popup" style={{
                   position: "absolute",
                   bottom: "calc(100% + 8px)",
                   ...popupLeft,

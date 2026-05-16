@@ -105,7 +105,7 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                 opacity: visible ? 1 : 0,
                 animationDelay: visible ? `${Math.min(i, 9) * 0.04}s` : "0s",
               }}
-              className={visible ? "feed-item-in hover:opacity-75 transition-opacity" : ""}
+              className={visible ? "feed-item-in hover:opacity-75 active:opacity-65 transition-opacity" : ""}
             >
               {/* 앨범 커버 */}
               <div

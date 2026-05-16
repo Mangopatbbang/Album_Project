@@ -49,63 +49,74 @@ export default function EncounterSection({ albums }: { albums: EncounterAlbum[] 
             className="active:scale-[0.92] transition-transform"
             title={`${a.title} — ${a.artist_display ?? a.artist}`}
           >
-            <div style={{
-              width: 80, height: 80, borderRadius: 8, overflow: "hidden",
-              backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-              position: "relative",
-            }}>
-              {a.cover_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ color: "var(--text-muted)", fontSize: 22 }}>♪</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: 8, overflow: "hidden",
+                backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                position: "relative",
+              }}>
+                {a.cover_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: 22 }}>♪</span>
+                  </div>
+                )}
+
+                {/* 점수 뱃지 */}
+                <div style={{
+                  position: "absolute", bottom: 4, right: 4,
+                  backgroundColor: "rgba(0,0,0,0.72)",
+                  borderRadius: 4, padding: "1px 5px",
+                  fontSize: 10, fontWeight: 700,
+                  color: scoreColor(a.score),
+                  lineHeight: 1.5,
+                }}>
+                  {a.score}
                 </div>
-              )}
 
-              {/* 점수 뱃지 */}
-              <div style={{
-                position: "absolute", bottom: 4, right: 4,
-                backgroundColor: "rgba(0,0,0,0.72)",
-                borderRadius: 4, padding: "1px 5px",
-                fontSize: 10, fontWeight: 700,
-                color: scoreColor(a.score),
-                lineHeight: 1.5,
-              }}>
-                {a.score}
+                {/* 데스크탑 hover 오버레이 */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  backgroundColor: "rgba(0,0,0,0.80)",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  padding: "8px 6px", gap: 3,
+                  opacity: hoveredId === a.id ? 1 : 0,
+                  transition: "opacity 0.18s ease",
+                  pointerEvents: "none",
+                }}>
+                  <span style={{
+                    color: "#fff", fontSize: 10, fontWeight: 700,
+                    textAlign: "center", lineHeight: 1.35,
+                    overflow: "hidden", display: "-webkit-box",
+                    WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                    width: "100%",
+                  }}>
+                    {a.title}
+                  </span>
+                  <span style={{
+                    color: scoreColor(a.score), fontSize: 14, fontWeight: 800, marginTop: 1,
+                  }}>
+                    {a.score}점
+                  </span>
+                  <span style={{
+                    color: "rgba(255,255,255,0.38)", fontSize: 9, marginTop: 1, letterSpacing: "0.03em",
+                  }}>
+                    {formatDate(a.encounter_date)}
+                  </span>
+                </div>
               </div>
 
-              {/* 호버 오버레이 */}
-              <div style={{
-                position: "absolute", inset: 0,
-                backgroundColor: "rgba(0,0,0,0.80)",
-                display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                padding: "8px 6px", gap: 3,
-                opacity: hoveredId === a.id ? 1 : 0,
-                transition: "opacity 0.18s ease",
-                pointerEvents: "none",
+              {/* 모바일 전용: 커버 아래 제목 텍스트 (데스크탑에서 hidden) */}
+              <span className="encounter-label" style={{
+                fontSize: 9, color: "var(--text-muted)", fontWeight: 500,
+                maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                lineHeight: 1, textAlign: "center",
               }}>
-                <span style={{
-                  color: "#fff", fontSize: 10, fontWeight: 700,
-                  textAlign: "center", lineHeight: 1.35,
-                  overflow: "hidden", display: "-webkit-box",
-                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                  width: "100%",
-                }}>
-                  {a.title}
-                </span>
-                <span style={{
-                  color: scoreColor(a.score), fontSize: 14, fontWeight: 800, marginTop: 1,
-                }}>
-                  {a.score}점
-                </span>
-                <span style={{
-                  color: "rgba(255,255,255,0.38)", fontSize: 9, marginTop: 1, letterSpacing: "0.03em",
-                }}>
-                  {formatDate(a.encounter_date)}
-                </span>
-              </div>
+                {a.title}
+              </span>
             </div>
           </button>
         ))}

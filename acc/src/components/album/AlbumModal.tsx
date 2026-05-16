@@ -72,6 +72,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [glowingScore, setGlowingScore] = useState<number | null>(null);
+  const [pressedScore, setPressedScore] = useState<number | null>(null);
+  const [pressedEvictScore, setPressedEvictScore] = useState<number | null>(null);
 
   const handleSetMyScore = (n: number) => {
     setMyScore(n);
@@ -106,6 +108,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [evictScore, setEvictScore] = useState<number | null>(null);
   const [evicting, setEvicting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const pendingDeleteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deletedScoreRef = useRef<number | null>(null);
@@ -113,6 +116,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const initialReviewRef = useRef<string>("");
   const isDirtyRef = useRef(false);
   const touchStartY = useRef(0);
+  const isDraggingRef = useRef(false);
 
   const handleDeleteAlbum = async () => {
     if (!profile) return;
@@ -496,6 +500,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     <>
     <style>{`@keyframes savedPop { 0%{transform:scale(1)} 45%{transform:scale(1.07)} 100%{transform:scale(1)} }`}</style>
     <div
+      ref={backdropRef}
       style={{
         position: "fixed",
         inset: 0,
@@ -524,10 +529,49 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         }}
         className="rounded-t-2xl sm:rounded-xl max-h-[85dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
-        onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
+        onTouchStart={(e) => {
+          if ((cardRef.current?.scrollTop ?? 0) > 5) return;
+          touchStartY.current = e.touches[0].clientY;
+          isDraggingRef.current = false;
+        }}
+        onTouchMove={(e) => {
+          const card = cardRef.current;
+          if (!card || (card.scrollTop ?? 0) > 5) return;
+          const delta = e.touches[0].clientY - touchStartY.current;
+          if (delta <= 0) return;
+          isDraggingRef.current = true;
+          card.style.animation = "none";
+          card.style.transform = `translateY(${delta}px)`;
+          card.style.transition = "none";
+          // backdrop 투명도 드래그 깊이에 따라 연동 (최대 80px 기준)
+          if (backdropRef.current) {
+            const opacity = Math.max(0.1, 0.75 * (1 - delta / 240));
+            backdropRef.current.style.backgroundColor = `rgba(0,0,0,${opacity})`;
+          }
+        }}
         onTouchEnd={(e) => {
+          const card = cardRef.current;
+          if (!card) return;
           const delta = e.changedTouches[0].clientY - touchStartY.current;
-          if (delta > 80 && (cardRef.current?.scrollTop ?? 0) < 5) handleClose();
+          if (isDraggingRef.current && delta > 80) {
+            // 드래그 현재 위치에서 이어서 내려가며 닫기
+            card.style.transition = "transform 0.22s cubic-bezier(0.4, 0, 1, 1)";
+            card.style.transform = "translateY(100%)";
+            if (backdropRef.current) {
+              backdropRef.current.style.transition = "background-color 0.22s ease";
+              backdropRef.current.style.backgroundColor = "rgba(0,0,0,0)";
+            }
+            setTimeout(onClose, 220);
+          } else if (isDraggingRef.current) {
+            // 80px 미만이면 spring-back
+            card.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
+            card.style.transform = "translateY(0)";
+            if (backdropRef.current) {
+              backdropRef.current.style.transition = "background-color 0.32s ease";
+              backdropRef.current.style.backgroundColor = "rgba(0,0,0,0.75)";
+            }
+          }
+          isDraggingRef.current = false;
         }}
       >
         {/* 모바일 드래그 핸들 */}
@@ -1065,10 +1109,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                 {[1,2,3,4,5,6,7,8].map((n) => {
                   const color = SCORE_COLORS[n];
                   const selected = myScore === n;
+                  const pressed = pressedScore === n;
                   return (
                     <button
                       key={n}
                       onClick={() => handleSetMyScore(n)}
+                      onTouchStart={() => setPressedScore(n)}
+                      onTouchEnd={() => setPressedScore(null)}
+                      onTouchCancel={() => setPressedScore(null)}
                       className={["flex-1 sm:flex-none sm:w-9", glowingScore === n ? "score-glow" : ""].join(" ")}
                       style={{
                         height: 36,
@@ -1080,7 +1128,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         fontSize: 14,
                         cursor: "pointer",
                         transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1), background-color 0.12s, border-color 0.12s, color 0.12s, opacity 0.12s",
-                        transform: selected ? "scale(1.1)" : "scale(1)",
+                        transform: pressed ? "scale(0.90)" : selected ? "scale(1.1)" : "scale(1)",
                         boxShadow: selected ? `0 0 10px ${color}55` : "none",
                         opacity: selected ? 1 : 0.65,
                         ["--glow" as string]: `${color}88`,
@@ -1263,14 +1311,17 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                             <button
                               key={n}
                               onClick={() => setEvictScore(n)}
+                              onTouchStart={() => setPressedEvictScore(n)}
+                              onTouchEnd={() => setPressedEvictScore(null)}
+                              onTouchCancel={() => setPressedEvictScore(null)}
                               style={{
                                 flex: 1, height: 34, borderRadius: 6,
                                 border: sel ? `2px solid ${color}` : `1px solid ${color}44`,
                                 backgroundColor: sel ? color : `${color}18`,
                                 color: sel ? ([3,4,5].includes(n) ? "var(--bg)" : "#fff") : color,
                                 fontWeight: sel ? 800 : 500, fontSize: 13,
-                                cursor: "pointer", transition: "all 0.12s",
-                                transform: sel ? "scale(1.08)" : "scale(1)",
+                                cursor: "pointer", transition: "transform 0.12s, background-color 0.12s, border-color 0.12s",
+                                transform: pressedEvictScore === n ? "scale(0.90)" : sel ? "scale(1.08)" : "scale(1)",
                               }}
                             >
                               {n}

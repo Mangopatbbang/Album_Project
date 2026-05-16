@@ -137,8 +137,8 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
           {/* 커버 */}
           <div
-            style={{ flexShrink: 0, borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer" }}
-            className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] group relative"
+            style={{ flexShrink: 0, borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer", transition: "opacity 0.1s" }}
+            className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] group relative today-cover"
             onClick={() => setModalOpen(true)}
           >
             {album.cover_url ? (
@@ -281,19 +281,30 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           </div>
         </div>
 
-        {/* 모바일 트랙리스트 패널 (sm:hidden) */}
-        {tracklistOpen && tracks.length > 0 && (
-          <div className="sm:hidden" style={{ borderTop: "1px solid var(--border)", padding: "10px 14px 12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Tracklist</p>
-              <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
-            </div>
-            {tracks.map((track, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
-                <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>{i + 1}</span>
-                <span style={{ color: "var(--text-sub)", fontSize: 12, lineHeight: 1.4 }}>{track}</span>
+        {/* 모바일 트랙리스트 패널 (sm:hidden) — max-height 슬라이드 */}
+        {tracks.length > 0 && (
+          <div
+            className="sm:hidden"
+            style={{
+              overflow: "hidden",
+              maxHeight: tracklistOpen ? 500 : 0,
+              transition: tracklistOpen
+                ? "max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1)"
+                : "max-height 0.22s cubic-bezier(0.4, 0, 1, 1)",
+            }}
+          >
+            <div style={{ borderTop: "1px solid var(--border)", padding: "10px 14px 12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Tracklist</p>
+                <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
               </div>
-            ))}
+              {tracks.map((track, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                  <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>{i + 1}</span>
+                  <span style={{ color: "var(--text-sub)", fontSize: 12, lineHeight: 1.4 }}>{track}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
