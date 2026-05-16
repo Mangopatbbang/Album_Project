@@ -93,6 +93,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [showGuide, setShowGuide] = useState(false);
   const [tracklistExpanded, setTracklistExpanded] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [hofLimitAlbums, setHofLimitAlbums] = useState<{ id: string; title: string; artist: string; cover_url: string | null }[] | null>(null);
+  const [evictAlbumId, setEvictAlbumId] = useState<string | null>(null);
+  const [evictScore, setEvictScore] = useState<number | null>(null);
+  const [evicting, setEvicting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const pendingDeleteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -328,50 +332,87 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }, 5000);
   };
 
-  const handleSave = async () => {
-    if (!profile) return;
-    if (myScore === null) {
-      showToast("점수를 먼저 선택해주세요", "info");
-      return;
-    }
-    setSaving(true);
-
-    const res = await apiFetch("/api/ratings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        albumId: album.id,
-        score: myScore,
-        one_line_review: myReview || null,
-        ...(isEncounter ? { is_encounter: true } : {}),
-      }),
-    });
-
-    setSaving(false);
-    if (!res.ok) return;
+  const afterSaveSuccess = async () => {
     const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
     if (refreshed.ok) {
       const data = await refreshed.json();
       if (data && Array.isArray(data.ratings)) setFull(data);
     }
-    // 평점 저장 시 찜 자동 해제
     if (isWatchlisted) {
-      apiFetch("/api/watchlist", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ albumId: album.id }),
-      });
+      apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
       setIsWatchlisted(false);
     }
     setSaved(true);
-    showToast("평점을 저장했어요");
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
-    // 이력 갱신
-    fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((d: { score: number; createdAt: string }[]) => setMyHistory(d))
-      .catch(() => {});
+    if (profile) {
+      fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((d: { score: number; createdAt: string }[]) => setMyHistory(d))
+        .catch(() => {});
+    }
+  };
+
+  const handleSave = async () => {
+    if (!profile) return;
+    if (myScore === null) { showToast("점수를 먼저 선택해주세요", "info"); return; }
+    setSaving(true);
+
+    const res = await apiFetch("/api/ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: album.id, score: myScore, one_line_review: myReview || null, ...(isEncounter ? { is_encounter: true } : {}) }),
+    });
+
+    setSaving(false);
+
+    if (res.status === 409) {
+      const data = await res.json();
+      if (data.code === "HOF_LIMIT_REACHED") {
+        setHofLimitAlbums(data.albums);
+        return;
+      }
+    }
+    if (!res.ok) return;
+    showToast("평점을 저장했어요");
+    await afterSaveSuccess();
+  };
+
+  const handleEvict = async () => {
+    if (!profile || !evictAlbumId || evictScore === null) return;
+    setEvicting(true);
+
+    // 1. 밀어낼 앨범 점수 변경
+    const evictRes = await apiFetch("/api/ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: evictAlbumId, score: evictScore }),
+    });
+
+    if (!evictRes.ok) {
+      setEvicting(false);
+      showToast("점수 변경에 실패했어요. 다시 시도해주세요.", "info");
+      return;
+    }
+
+    // 2. 현재 앨범 8점 저장
+    const saveRes = await apiFetch("/api/ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: album.id, score: myScore, one_line_review: myReview || null, ...(isEncounter ? { is_encounter: true } : {}) }),
+    });
+
+    setEvicting(false);
+    if (!saveRes.ok) {
+      showToast("저장에 실패했어요. 다시 시도해주세요.", "info");
+      return;
+    }
+
+    setHofLimitAlbums(null);
+    setEvictAlbumId(null);
+    setEvictScore(null);
+    showToast("명반전에 추가됐어요");
+    await afterSaveSuccess();
   };
 
   const data = full ?? album;
@@ -1031,7 +1072,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   )}
                   <button
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || hofLimitAlbums !== null}
                     style={{
                       backgroundColor: saved ? "var(--bg-elevated)" : "var(--accent)",
                       color: saved ? "var(--text-sub)" : "var(--bg)",
@@ -1039,8 +1080,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       fontSize: 13,
                       padding: "6px 16px",
                       borderRadius: 6,
-                      cursor: saving ? "default" : "pointer",
-                      opacity: saving ? 0.4 : 1,
+                      cursor: saving || hofLimitAlbums !== null ? "default" : "pointer",
+                      opacity: saving || hofLimitAlbums !== null ? 0.4 : 1,
                       transition: "all 0.2s",
                       border: "none",
                     }}
@@ -1049,6 +1090,136 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   </button>
                 </div>
               </div>
+              {/* 명반전 상한 초과 — 밀어내기 UI */}
+              {hofLimitAlbums !== null && (
+                <div style={{
+                  marginTop: 12, padding: "16px",
+                  backgroundColor: "rgba(var(--accent-rgb), 0.05)",
+                  border: "1px solid rgba(var(--accent-rgb), 0.25)",
+                  borderRadius: 10,
+                  animation: "fadeUp 0.18s ease-out",
+                }}>
+                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, marginBottom: 3 }}>
+                    명반전이 가득 찼어요 <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: 11 }}>12 / 12</span>
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 14 }}>
+                    밀어낼 앨범을 선택하고, 새로 줄 점수를 정해주세요.
+                  </p>
+
+                  {/* 명반전 12장 커버 그리드 */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                    {hofLimitAlbums.map((a) => {
+                      const isSelected = evictAlbumId === a.id;
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => { setEvictAlbumId(isSelected ? null : a.id); setEvictScore(null); }}
+                          title={`${a.title} — ${a.artist}`}
+                          style={{ padding: 0, background: "none", border: "none", cursor: "pointer", position: "relative" }}
+                          className="active:scale-[0.92] transition-transform"
+                        >
+                          <div style={{
+                            width: 56, height: 56, borderRadius: 6, overflow: "hidden",
+                            backgroundColor: "var(--bg-elevated)",
+                            border: `2px solid ${isSelected ? "var(--error)" : "var(--border)"}`,
+                            opacity: evictAlbumId && !isSelected ? 0.45 : 1,
+                            transition: "border-color 0.15s, opacity 0.15s",
+                          }}>
+                            {a.cover_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "var(--text-muted)", fontSize: 18 }}>♪</span></div>
+                            }
+                          </div>
+                          {isSelected && (
+                            <div style={{
+                              position: "absolute", inset: 0, borderRadius: 6,
+                              backgroundColor: "rgba(var(--error-rgb), 0.18)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              pointerEvents: "none",
+                            }}>
+                              <span style={{ fontSize: 18, color: "var(--error)" }}>✕</span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 선택된 앨범 이름 */}
+                  {evictAlbumId && (() => {
+                    const sel = hofLimitAlbums.find((a) => a.id === evictAlbumId);
+                    return sel ? (
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
+                        선택:{" "}
+                        <span style={{ color: "var(--text)", fontWeight: 600 }}>{sel.title}</span>
+                        <span style={{ color: "var(--text-muted)" }}> — {sel.artist}</span>
+                      </p>
+                    ) : null;
+                  })()}
+
+                  {/* 밀어낸 앨범 새 점수 선택 */}
+                  {evictAlbumId && (
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontWeight: 600, letterSpacing: "0.04em" }}>밀어낸 앨범에 줄 새 점수</p>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[1,2,3,4,5,6,7].map((n) => {
+                          const color = SCORE_COLORS[n];
+                          const sel = evictScore === n;
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => setEvictScore(n)}
+                              style={{
+                                flex: 1, height: 34, borderRadius: 6,
+                                border: sel ? `2px solid ${color}` : `1px solid ${color}44`,
+                                backgroundColor: sel ? color : `${color}18`,
+                                color: sel ? "#fff" : color,
+                                fontWeight: sel ? 800 : 500, fontSize: 13,
+                                cursor: "pointer", transition: "all 0.12s",
+                                transform: sel ? "scale(1.08)" : "scale(1)",
+                              }}
+                            >
+                              {n}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 확인 / 취소 */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => { setHofLimitAlbums(null); setEvictAlbumId(null); setEvictScore(null); }}
+                      style={{
+                        flex: 1, padding: "8px 0", borderRadius: 6,
+                        backgroundColor: "transparent", border: "1px solid var(--border)",
+                        color: "var(--text-muted)", fontSize: 13, cursor: "pointer",
+                      }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleEvict}
+                      disabled={!evictAlbumId || evictScore === null || evicting}
+                      style={{
+                        flex: 2, padding: "8px 0", borderRadius: 6,
+                        backgroundColor: evictAlbumId && evictScore !== null ? "var(--accent)" : "var(--bg-elevated)",
+                        border: "none",
+                        color: evictAlbumId && evictScore !== null ? "var(--bg)" : "var(--text-muted)",
+                        fontWeight: 600, fontSize: 13,
+                        cursor: evictAlbumId && evictScore !== null && !evicting ? "pointer" : "not-allowed",
+                        opacity: evicting ? 0.5 : 1,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {evicting ? "저장 중…" : "확인"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 평점 이력 타임라인 */}
               {myHistory.length > 1 && (
                 <div style={{ marginTop: 12, padding: "10px 12px", backgroundColor: "var(--bg-elevated)", borderRadius: 8, border: "1px solid var(--border)" }}>

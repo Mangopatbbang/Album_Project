@@ -65,6 +65,28 @@ export async function POST(req: NextRequest) {
   ]);
   const prevScore = existing?.score ?? null;
 
+  // 8점 상한 체크 (12장) — 새로 8점을 주는 경우에만
+  if (score === 8 && prevScore !== 8) {
+    const { data: hofRatings } = await supabaseServer
+      .from("ratings")
+      .select("album_id, albums(id, title, artist, cover_url)")
+      .eq("user_id", userId)
+      .eq("score", 8);
+
+    if ((hofRatings ?? []).length >= 12) {
+      const albums = (hofRatings ?? []).map((r) => {
+        const a = (r.albums as unknown) as { id: string; title: string; artist: string; cover_url: string | null } | null;
+        return {
+          id: a?.id ?? (r.album_id as string),
+          title: a?.title ?? "",
+          artist: a?.artist ?? "",
+          cover_url: a?.cover_url ?? null,
+        };
+      });
+      return NextResponse.json({ code: "HOF_LIMIT_REACHED", error: "명반전이 가득 찼어요 (최대 12장)", albums }, { status: 409 });
+    }
+  }
+
   const upsertData: {
     album_id: string;
     user_id: string;
