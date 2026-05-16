@@ -55,7 +55,7 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
                 style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
                 className="transition-opacity hover:opacity-80"
               >
-                <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
                   {a.cover_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
