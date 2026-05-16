@@ -3,6 +3,70 @@ import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { koGenre } from "@/lib/bio";
 
+export type YearlyRecap = {
+  year: number;
+  total: number;
+  avg: string;
+  topGenre: string | null;
+  topArtist: string | null;
+  hofCount: number;
+  firstAlbum: { title: string; artist: string; date: string } | null;
+  lastAlbum: { title: string; artist: string; date: string } | null;
+};
+
+export function computeYearlyRecap(ratings: ProfileRatingRow[]): YearlyRecap[] {
+  const byYear = new Map<number, ProfileRatingRow[]>();
+  for (const r of ratings) {
+    if (!r.albums) continue;
+    const year = parseInt(r.updated_at.slice(0, 4), 10);
+    if (!byYear.has(year)) byYear.set(year, []);
+    byYear.get(year)!.push(r);
+  }
+
+  const allYears = [...byYear.keys()].sort((a, b) => a - b);
+  const recentYears = allYears.slice(-3);
+
+  return recentYears.map((year) => {
+    const rows = byYear.get(year)!;
+    const total = rows.length;
+    const avgNum = rows.reduce((s, r) => s + r.score, 0) / total;
+    const avg = avgNum.toFixed(2);
+
+    // 장르 집계
+    const genreCount = new Map<string, number>();
+    for (const r of rows) {
+      const g = koGenre(r.albums?.genre ?? "기타");
+      genreCount.set(g, (genreCount.get(g) ?? 0) + 1);
+    }
+    const topGenre = [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    // 아티스트 집계
+    const artistCount = new Map<string, number>();
+    for (const r of rows) {
+      const a = r.albums?.artist_display ?? r.albums?.artist ?? "기타";
+      artistCount.set(a, (artistCount.get(a) ?? 0) + 1);
+    }
+    const topArtist = [...artistCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    // 8점 앨범 수
+    const hofCount = rows.filter((r) => r.score === 8).length;
+
+    // 날짜순 정렬
+    const sorted = [...rows].sort((a, b) => a.updated_at.localeCompare(b.updated_at));
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    const firstAlbum = first?.albums
+      ? { title: first.albums.title, artist: first.albums.artist_display ?? first.albums.artist, date: first.updated_at.slice(0, 10) }
+      : null;
+    const lastAlbum = last?.albums && last !== first
+      ? { title: last.albums.title, artist: last.albums.artist_display ?? last.albums.artist, date: last.updated_at.slice(0, 10) }
+      : null;
+
+    return { year, total, avg, topGenre, topArtist, hofCount, firstAlbum, lastAlbum };
+  });
+}
+
 export type ProfileRatingRow = {
   score: number;
   one_line_review: string | null;
@@ -255,6 +319,18 @@ export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
 // 통합 랭킹: 평균 점수 내림차순 상위 50개 (평점 2명 이상)
 export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
   return validAlbums(albums).sort((a, b) => b.avg - a.avg).slice(0, 50);
+}
+
+// 미발견 명반: 평점 1~2명이지만 최고 점수 >= 7인 앨범 (발굴 대기 중)
+export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
+  return albums
+    .filter((a) => {
+      const scores = a.ratings.map((r) => r.score);
+      return scores.length >= 1 && scores.length <= 2 && Math.max(...scores) >= 7;
+    })
+    .map(toStat)
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 8);
 }
 
 // 서버사이드: DB에서 전체 유저 목록 조회

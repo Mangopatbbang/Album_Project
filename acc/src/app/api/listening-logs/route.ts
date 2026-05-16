@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
+
+// GET /api/listening-logs?userId=X
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get("userId");
+
+  if (!userId) {
+    return NextResponse.json({ error: "userId 필수" }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseServer
+    .from("listening_logs")
+    .select("id, listened_at, context, note, created_at, albums(id, title, artist, cover_url)")
+    .eq("user_id", userId)
+    .order("listened_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ logs: data ?? [] });
+}
+
+// POST /api/listening-logs
+// body: { albumId, note?, context? }
+export async function POST(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const body = await req.json();
+  const { albumId, note, context } = body as {
+    albumId: string;
+    note?: string;
+    context?: string;
+  };
+
+  if (!albumId) {
+    return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
+  }
+
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const listenedAt = kst.toISOString().slice(0, 10);
+
+  const { data, error } = await supabaseServer
+    .from("listening_logs")
+    .insert({
+      user_id: authed.id,
+      album_id: albumId,
+      listened_at: listenedAt,
+      note: note ?? null,
+      context: context ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, log: data });
+}
+
+// DELETE /api/listening-logs?id=X
+export async function DELETE(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "id 필수" }, { status: 400 });
+  }
+
+  const { error } = await supabaseServer
+    .from("listening_logs")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", authed.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

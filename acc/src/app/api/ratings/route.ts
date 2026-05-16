@@ -16,9 +16,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "albumId 또는 userId 필수" }, { status: 400 });
   }
 
+  // private_note는 본인 인증 시에만 포함
+  const authed = await validateUser(req);
+  const isOwnRequest = authed && userId && authed.id === userId;
+  const selectCols = isOwnRequest
+    ? "id, album_id, user_id, score, one_line_review, private_note, created_at, updated_at"
+    : "id, album_id, user_id, score, one_line_review, created_at, updated_at";
+
   let query = supabaseServer
     .from("ratings")
-    .select("id, album_id, user_id, score, one_line_review, created_at, updated_at");
+    .select(selectCols);
 
   if (albumId) query = query.eq("album_id", albumId);
   if (userId) query = query.eq("user_id", userId);
@@ -39,11 +46,13 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { albumId, score, one_line_review, is_encounter } = body as {
+  const { albumId, score, one_line_review, is_encounter, discovery_source, private_note } = body as {
     albumId: string;
     score: number;
     one_line_review?: string;
     is_encounter?: boolean;
+    discovery_source?: string;
+    private_note?: string;
   };
   const userId = authed.id;
 
@@ -57,6 +66,10 @@ export async function POST(req: NextRequest) {
 
   if (one_line_review && one_line_review.length > 100) {
     return NextResponse.json({ error: "한줄평은 100자 이하여야 합니다" }, { status: 400 });
+  }
+
+  if (private_note && private_note.length > 500) {
+    return NextResponse.json({ error: "메모는 500자 이하여야 합니다" }, { status: 400 });
   }
 
   const [{ data: existing }, { data: albumData }] = await Promise.all([
@@ -92,11 +105,21 @@ export async function POST(req: NextRequest) {
     user_id: string;
     score: number;
     one_line_review: string | null;
+    private_note?: string | null;
     encounter_date?: string;
+    discovery_source?: string;
   } = { album_id: albumId, user_id: userId, score, one_line_review: one_line_review ?? null };
   if (is_encounter) {
     const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
     upsertData.encounter_date = kst.toISOString().slice(0, 10);
+  }
+  // 첫 평가일 때만 기록 — 재평가 시 덮어쓰지 않음
+  if (prevScore === null && discovery_source) {
+    upsertData.discovery_source = discovery_source;
+  }
+  // private_note는 재평가 시에도 덮어쓰기 허용
+  if (private_note !== undefined) {
+    upsertData.private_note = private_note || null;
   }
 
   const { data, error } = await supabaseServer

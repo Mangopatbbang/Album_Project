@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
-import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, getRankedAll, AlbumStat } from "@/lib/stats";
+import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, getRankedAll, getHiddenGems, AlbumStat } from "@/lib/stats";
 import BestPageClient from "./BestPageClient";
 
 export const metadata: Metadata = {
@@ -29,6 +29,7 @@ export default async function BestPage({
   const allRanked = getRankedAll(albums);
   const domesticRanked = getRankedAll(albums.filter((a) => a.region === "국내"));
   const foreignRanked = getRankedAll(albums.filter((a) => a.region === "해외"));
+  const hiddenGems = getHiddenGems(albums);
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -43,6 +44,7 @@ export default async function BestPage({
           allRanked={allRanked}
           domesticRanked={domesticRanked}
           foreignRanked={foreignRanked}
+          hiddenGems={hiddenGems}
           view={view}
         />
       </main>

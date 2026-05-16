@@ -18,7 +18,8 @@ import ComparisonSection from "@/components/profile/ComparisonSection";
 import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
-import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, type ProfileRatingRow } from "@/lib/stats";
+import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
+import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -57,13 +58,25 @@ export default async function ProfilePage({
   const avatarUrl = (dbUser as { avatar_url?: string | null })?.avatar_url ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const [allRawRatings, allUserTopGenres, allUserAvatarUrls]: [RatingRow[], Record<string, string[]>, Record<string, string | null>] = await Promise.all([
+  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, allCommunityAlbums, listeningLogsResult] = await Promise.all([
     fetchProfileRatings(userId),
     fetchAllUserGenreEmojis(),
     fetchAllUserAvatarUrls(),
+    fetchAllAlbumsWithRatings(),
+    supabaseServer
+      .from("listening_logs")
+      .select("id, listened_at, context, note, albums(id, title, artist, cover_url)")
+      .eq("user_id", userId)
+      .order("listened_at", { ascending: false })
+      .limit(20),
   ]);
 
+  type LogAlbum = { id: string; title: string; artist: string; cover_url: string | null };
+  type ListeningLog = { id: string; listened_at: string; context: string | null; note: string | null; albums: LogAlbum | null };
+  const listeningLogs: ListeningLog[] = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
+
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
+  const yearlyRecap = computeYearlyRecap(validRatings);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
@@ -187,6 +200,37 @@ export default async function ProfilePage({
       score: r.score,
       encounter_date: r.encounter_date!,
     }));
+
+  // 커뮤니티 데이터 맵 (albumId → community info)
+  const communityMap = new Map(allCommunityAlbums.map((a) => {
+    const commScores = a.ratings.filter((r) => r.user_id !== userId).map((r) => r.score);
+    const commAvg = commScores.length > 0 ? commScores.reduce((s, n) => s + n, 0) / commScores.length : null;
+    return [a.id, { commCount: commScores.length, commAvg }];
+  }));
+
+  // 이견 앨범: |내 점수 - 커뮤니티 평균| >= 2.0, 커뮤니티 평가자 >= 2명
+  type InsightAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; commAvg: number; diff: number };
+  const disagreeAlbums: InsightAlbum[] = validRatings
+    .flatMap((r) => {
+      const comm = communityMap.get(r.albums!.id);
+      if (!comm || comm.commCount < 2 || comm.commAvg === null) return [];
+      const diff = r.score - comm.commAvg;
+      if (Math.abs(diff) < 2.0) return [];
+      const item: InsightAlbum = { id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist, artist_display: r.albums!.artist_display, cover_url: r.albums!.cover_url ?? null, score: r.score, commAvg: comm.commAvg, diff };
+      return [item];
+    })
+    .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+    .slice(0, 6);
+
+  // 숨은 명반 (개인): 내 점수 >= 7, 커뮤니티 평가자 <= 1명
+  type HiddenGemAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number };
+  const personalHiddenGems: HiddenGemAlbum[] = validRatings
+    .filter((r) => {
+      const comm = communityMap.get(r.albums!.id);
+      return r.score >= 7 && (comm === undefined || comm.commCount <= 1);
+    })
+    .map((r) => ({ id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist, artist_display: r.albums!.artist_display, cover_url: r.albums!.cover_url ?? null, score: r.score }))
+    .slice(0, 8);
 
   // 명예의 전당 (8점)
   const hallOfFame = validRatings.filter((r) => r.score === 8);
@@ -453,6 +497,9 @@ export default async function ProfilePage({
             }))} />
           </div>
 
+          {/* 재청음 기록 */}
+          <ListeningLogsSection logs={listeningLogs} />
+
           {/* 최근 한줄 소감 */}
           {recentReviews.length > 0 && (
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
@@ -551,8 +598,130 @@ export default async function ProfilePage({
             </div>
           </div>
 
+          {/* 이견 앨범 */}
+          {disagreeAlbums.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+              <div style={{ marginBottom: 14 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>이견 앨범</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>내 평가와 커뮤니티 평균이 2점 이상 차이나는 앨범</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {disagreeAlbums.map((a) => (
+                  <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                      {a.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12, color: "var(--text-muted)" }}>♪</span></div>
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist_display ?? a.artist}</p>
+                    </div>
+                    <div style={{ flexShrink: 0, textAlign: "right" }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: scoreColor(a.score) }}>{a.score}점</p>
+                      <p style={{ fontSize: 10, color: "var(--text-muted)" }}>평균 {a.commAvg.toFixed(1)}</p>
+                    </div>
+                    <div style={{ flexShrink: 0, width: 28, textAlign: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: a.diff > 0 ? "var(--accent)" : "#e05050" }}>
+                        {a.diff > 0 ? "▲" : "▼"}{Math.abs(a.diff).toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 숨은 명반 (개인) */}
+          {personalHiddenGems.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+              <div style={{ marginBottom: 14 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>내 숨은 명반</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>7점 이상이지만 아직 발굴되지 않은 앨범</p>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {personalHiddenGems.map((a) => (
+                  <div key={a.id} style={{ width: 52, flexShrink: 0 }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 5, overflow: "hidden", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                      {a.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 16, color: "var(--text-muted)" }}>♪</span></div>
+                      }
+                    </div>
+                    <p style={{ color: scoreColor(a.score), fontSize: 10, fontWeight: 700, textAlign: "center", marginTop: 3 }}>{a.score}점</p>
+                    <p style={{ color: "var(--text)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{a.title}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 취향 궁합 + 멤버 비교 */}
           <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />
+
+          {/* 연도별 청음 리캡 */}
+          {yearlyRecap.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+                연도별 청음
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {yearlyRecap.map((recap) => (
+                  <div key={recap.year}>
+                    <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
+                      {recap.year}년
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                        총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{recap.total}장</span>
+                      </span>
+                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                        평균 <span style={{ color: scoreColor(recap.avg), fontWeight: 600 }}>{recap.avg}점</span>
+                      </span>
+                      {recap.topGenre && (
+                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                          장르 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{recap.topGenre}</span>
+                        </span>
+                      )}
+                      {recap.topArtist && (
+                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                          아티스트 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{recap.topArtist}</span>
+                        </span>
+                      )}
+                      {recap.hofCount > 0 && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 700,
+                          color: "rgba(232,213,163,0.9)",
+                          backgroundColor: "rgba(232,213,163,0.08)",
+                          border: "1px solid rgba(232,213,163,0.25)",
+                          borderRadius: 4, padding: "1px 7px",
+                        }}>
+                          명반 {recap.hofCount}장
+                        </span>
+                      )}
+                    </div>
+                    {(recap.firstAlbum || recap.lastAlbum) && (
+                      <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                        {recap.firstAlbum && (
+                          <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                            첫 청음: <span style={{ color: "var(--text-sub)" }}>{recap.firstAlbum.title}</span> {recap.firstAlbum.date}
+                          </span>
+                        )}
+                        {recap.lastAlbum && (
+                          <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                            마지막: <span style={{ color: "var(--text-sub)" }}>{recap.lastAlbum.title}</span> {recap.lastAlbum.date}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </div>

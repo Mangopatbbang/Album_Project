@@ -72,6 +72,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [myReview, setMyReview] = useState("");
+  const [myPrivateNote, setMyPrivateNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -232,6 +233,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       .catch(() => {});
   }, [album.id, profile]);
 
+  // private_note 별도 fetch (인증 헤더 포함, 본인만 반환됨)
+  useEffect(() => {
+    if (!profile) return;
+    apiFetch(`/api/ratings?albumId=${album.id}&userId=${profile.id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.ratings?.length) return;
+        const myR = data.ratings[0] as { private_note?: string | null };
+        setMyPrivateNote(myR.private_note ?? "");
+      })
+      .catch(() => {});
+  }, [album.id, profile]);
+
   // 평점 이력 fetch
   useEffect(() => {
     if (!profile) return;
@@ -361,7 +375,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     const res = await apiFetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, score: myScore, one_line_review: myReview || null, ...(isEncounter ? { is_encounter: true } : {}) }),
+      body: JSON.stringify({
+        albumId: album.id,
+        score: myScore,
+        one_line_review: myReview || null,
+        private_note: myPrivateNote || null,
+        ...(isEncounter ? { is_encounter: true } : {}),
+        ...(source ? { discovery_source: source } : {}),
+      }),
     });
 
     setSaving(false);
@@ -399,7 +420,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     const saveRes = await apiFetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, score: myScore, one_line_review: myReview || null, ...(isEncounter ? { is_encounter: true } : {}) }),
+      body: JSON.stringify({ albumId: album.id, score: myScore, one_line_review: myReview || null, private_note: myPrivateNote || null, ...(isEncounter ? { is_encounter: true } : {}), ...(source ? { discovery_source: source } : {}) }),
     });
 
     setEvicting(false);
@@ -439,6 +460,30 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const tracklist = full?.tracklist
     ? full.tracklist.split(";").map((t) => t.trim()).filter(Boolean)
     : [];
+
+  const ratingScores = ratings.map((r) => r.score).filter(Boolean);
+  const controversyIndex = (() => {
+    if (ratingScores.length < 3) return null;
+    const mean = ratingScores.reduce((a, b) => a + b, 0) / ratingScores.length;
+    const variance = ratingScores.reduce((a, b) => a + (b - mean) ** 2, 0) / ratingScores.length;
+    return Math.sqrt(variance);
+  })();
+
+  const trackPopularity = new Map<number, number>();
+  for (const r of ratings) {
+    if (r.liked_tracks) {
+      r.liked_tracks.split(",").map(Number).forEach((idx) => {
+        trackPopularity.set(idx, (trackPopularity.get(idx) ?? 0) + 1);
+      });
+    }
+  }
+  const top3TrackIndices = new Set(
+    [...trackPopularity.entries()]
+      .filter(([, count]) => count >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([idx]) => idx)
+  );
 
   return (
     <>
@@ -776,10 +821,22 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             )}
 
             {/* 평균 점수 */}
-            <p style={{ fontWeight: 700, fontSize: 22, marginTop: 10, color: data.avg ? scoreColor(data.avg) : "var(--text-muted)" }}>
-              {data.avg ?? "–"}
-              <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 7</span>
-            </p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+              <p style={{ fontWeight: 700, fontSize: 22, color: data.avg ? scoreColor(data.avg) : "var(--text-muted)" }}>
+                {data.avg ?? "–"}
+                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 7</span>
+              </p>
+              {controversyIndex !== null && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
+                  color: controversyIndex >= 2 ? "#e05050" : controversyIndex >= 1.2 ? "#e0a030" : "var(--text-muted)",
+                  opacity: 0.85,
+                }}>
+                  {controversyIndex >= 2 ? "논란" : controversyIndex >= 1.2 ? "의견 분분" : "합의"}
+                  <span style={{ fontWeight: 400, opacity: 0.6, marginLeft: 3 }}>σ {controversyIndex.toFixed(1)}</span>
+                </span>
+              )}
+            </div>
           </div>
           </div>{/* end 정보 row */}
         </div>{/* end 블러 wrapper */}
@@ -1048,7 +1105,32 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   fontFamily: "inherit",
                 }}
               />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+              {/* 나만 보이는 메모 */}
+              <textarea
+                placeholder="나만 보이는 메모 (500자)"
+                value={myPrivateNote}
+                onChange={(e) => setMyPrivateNote(e.target.value.slice(0, 500))}
+                rows={2}
+                style={{
+                  width: "100%",
+                  backgroundColor: "var(--bg-elevated)",
+                  border: "1px dashed var(--border)",
+                  color: "var(--text-muted)",
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  fontSize: 12,
+                  resize: "none",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  marginTop: 6,
+                }}
+              />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, marginBottom: 4 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
+                  메모 {myPrivateNote.length}/500 · 나만 볼 수 있어요
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
                 <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{myReview.length}/100</span>
                 <div style={{ display: "flex", gap: 6 }}>
                   {ratings.find((r) => r.user_id === profile?.id) && (
@@ -1253,6 +1335,40 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           )}
         </div>
 
+        {/* 다시 들었어요 버튼 — 이미 평가한 앨범 */}
+        {profile && myScore !== null && (
+          <div className="px-5 sm:px-8" style={{ marginBottom: 0 }}>
+            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
+            <button
+              onClick={async () => {
+                const res = await apiFetch("/api/listening-logs", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ albumId: album.id }),
+                });
+                if (res.ok) {
+                  showToast("다시 들은 기록을 남겼어요");
+                } else {
+                  showToast("기록 실패. 다시 시도해주세요.", "info");
+                }
+              }}
+              style={{
+                background: "none",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                color: "var(--text-muted)",
+                fontSize: 12,
+                padding: "5px 12px",
+                cursor: "pointer",
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              className="hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
+            >
+              다시 들었어요
+            </button>
+          </div>
+        )}
+
         {/* 트랙리스트 */}
         {full !== null && tracklist.length === 0 && (
           <>
@@ -1267,9 +1383,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
             <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-                수록곡
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                  수록곡
+                </p>
+                {top3TrackIndices.size > 0 && (
+                  <span style={{ fontSize: 10, color: "var(--accent)", opacity: 0.7, letterSpacing: "0.04em" }}>
+                    인기 트랙 번호 강조
+                  </span>
+                )}
+              </div>
               <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 {(tracklistExpanded ? tracklist : tracklist.slice(0, 9)).map((track, i) => {
                   const othersWhoLiked = users.filter((u) => {
@@ -1286,7 +1409,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       onMouseEnter={() => setHoveredTrack(i)}
                       onMouseLeave={() => setHoveredTrack(null)}
                     >
-                      <span style={{ color: "var(--text-muted)", fontSize: 11, width: 20, textAlign: "right", flexShrink: 0 }}>
+                      <span style={{
+                        color: top3TrackIndices.has(i) ? "var(--accent)" : "var(--text-muted)",
+                        fontSize: 11, width: 20, textAlign: "right", flexShrink: 0,
+                        fontWeight: top3TrackIndices.has(i) ? 700 : 400,
+                      }}>
                         {i + 1}
                       </span>
                       {/* 트랙명 + 하트 인라인 */}
