@@ -29,6 +29,7 @@ function similarityLabel(pearson: number): string {
 export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
+  const [barWidths, setBarWidths] = useState<Record<string, number>>({});
   const loadedRef = useRef(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +46,15 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
             .then((data) => {
               if (data.comparisons) setComparisons(data.comparisons);
               if (data.bestMatch) setBestMatch(data.bestMatch);
+              // 바 그래프 fill 애니메이션: 0에서 시작 후 rAF로 실제 값 적용
+              const allItems: ComparisonItem[] = [...(data.comparisons ?? []), ...(data.bestMatch ? [data.bestMatch] : [])];
+              requestAnimationFrame(() => {
+                const widths: Record<string, number> = {};
+                allItems.forEach((item) => {
+                  widths[item.user.id] = Math.round(Math.max(0, item.pearson ?? 0) * 100);
+                });
+                setBarWidths(widths);
+              });
             })
             .catch(() => {});
         }
@@ -131,10 +141,10 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
                 <div style={{ height: 6, backgroundColor: "var(--bg-elevated)", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{
                     height: "100%",
-                    width: `${pct}%`,
+                    width: `${barWidths[bestMatch.user.id] ?? 0}%`,
                     backgroundColor: pct >= 80 ? "var(--accent)" : pct >= 60 ? "#a0c4ff" : "var(--text-muted)",
                     borderRadius: 4,
-                    transition: "width 0.6s ease-out",
+                    transition: "width 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
                   }} />
                 </div>
               </div>

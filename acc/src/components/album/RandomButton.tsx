@@ -6,9 +6,12 @@ import AlbumModal from "./AlbumModal";
 
 export default function RandomButton() {
   const [loading, setLoading] = useState(false);
+  const [spinning, setSpinning] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   const handleRandom = async () => {
+    setSpinning(true);
+    setTimeout(() => setSpinning(false), 500);
     setLoading(true);
     const res = await fetch("/api/albums/random");
     const data = await res.json();
@@ -45,7 +48,7 @@ export default function RandomButton() {
           (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--bg-card)";
         }}
       >
-        <span style={{ fontSize: 26, lineHeight: 1 }}>{loading ? "⏳" : "🎲"}</span>
+        <span style={{ fontSize: 26, lineHeight: 1, display: "inline-block" }} className={spinning ? "rotate-spin-once" : ""}>{loading ? "⏳" : "🎲"}</span>
         <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.02em" }}>
           {loading ? "찾는 중..." : "오늘의 인연"}
         </span>

@@ -183,6 +183,75 @@ body {
   to   { opacity: 1; }
 }
 
+/* 명반전/저장 팝 — spring 느낌 */
+@keyframes hofPop {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.22); }
+  68%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* 랜덤 버튼 한 바퀴 회전 */
+@keyframes rotateSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 뱃지 범례 / 툴팁 등장 */
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header 네비 드롭다운 */
+@keyframes navDropIn {
+  from { opacity: 0; transform: translateY(-6px) translateX(-50%); }
+  to   { opacity: 1; transform: translateY(0) translateX(-50%); }
+}
+
+/* 피드 아이템 등장 */
+@keyframes feedItemIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* BottomNav 탭 탭 bounce */
+@keyframes navBounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.82); }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* 이미지 로드 후 fade-in */
+@keyframes imgFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 점수 버튼 클릭 glow pulse */
+@keyframes scoreGlow {
+  0%   { box-shadow: 0 0 0px transparent; }
+  35%  { box-shadow: 0 0 18px var(--glow, rgba(232,213,163,0.55)); }
+  100% { box-shadow: 0 0 0px transparent; }
+}
+
+.hof-pop         { animation: hofPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.rotate-spin-once{ animation: rotateSpin 0.48s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.feed-item-in    { animation: feedItemIn 0.22s ease-out both; }
+.img-loaded      { animation: imgFadeIn 0.18s ease-out; }
+.score-glow      { animation: scoreGlow 0.38s ease-out; }
+.nav-bounce      { animation: navBounce 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* prefers-reduced-motion: 모든 애니메이션/전환 최소화 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 main {
   animation: fadeUp 0.22s ease-out;
 }

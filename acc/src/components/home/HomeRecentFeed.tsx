@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlbumWithRatings } from "@/types";
 import AlbumModal from "@/components/album/AlbumModal";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -32,9 +32,39 @@ function relativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
 }
 
+function CoverImage({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        className={loaded ? "img-loaded" : ""}
+        style={{ width: "100%", height: "100%", objectFit: "cover", opacity: loaded ? 1 : 0 }}
+      />
+    </>
+  );
+}
+
 export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+  const [visible, setVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { getUserById } = useUsers();
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const openAlbum = (item: FeedItem) => {
     setSelectedAlbum({
@@ -58,7 +88,7 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
   return (
     <>
       {/* 데스크탑: 2열 그리드 / 모바일: 1열 리스트 */}
-      <div className="sm:grid sm:grid-cols-2 sm:gap-x-5">
+      <div className="sm:grid sm:grid-cols-2 sm:gap-x-5" ref={containerRef}>
         {items.map((item, i) => {
           const user = getUserById(item.user_id);
           return (
@@ -72,8 +102,10 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                 padding: "10px 0",
                 borderBottom: "1px solid var(--border)",
                 cursor: "pointer",
+                opacity: visible ? 1 : 0,
+                animationDelay: visible ? `${Math.min(i, 9) * 0.04}s` : "0s",
               }}
-              className="hover:opacity-75 transition-opacity"
+              className={visible ? "feed-item-in hover:opacity-75 transition-opacity" : ""}
             >
               {/* 앨범 커버 */}
               <div
@@ -84,15 +116,11 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                   borderRadius: 6,
                   overflow: "hidden",
                   backgroundColor: "var(--bg-elevated)",
+                  position: "relative",
                 }}
               >
                 {item.album_cover_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.album_cover_url}
-                    alt={item.album_title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
+                  <CoverImage src={item.album_cover_url} alt={item.album_title} />
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>
                     ♪

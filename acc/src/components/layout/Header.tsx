@@ -81,9 +81,9 @@ export default function Header() {
       <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr minmax(max-content, auto)", alignItems: "center", height: 52, gap: 8 }}>
 
         {/* 로고 */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "var(--accent)", fontSize: 16, lineHeight: 1 }}>♪</span>
-          <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }} className="group">
+          <span style={{ color: "var(--accent)", fontSize: 16, lineHeight: 1, transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)", display: "inline-block" }} className="group-hover:scale-[1.2]">♪</span>
+          <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em", transition: "letter-spacing 0.2s ease, color 0.15s" }} className="group-hover:text-[var(--accent)]">
             아차청음사
           </span>
         </Link>
@@ -160,14 +160,21 @@ export default function Header() {
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                   </svg>
                   {unreadCount > 0 && (
-                    <span style={{
-                      position: "absolute", top: 1, right: 1,
-                      width: 14, height: 14, borderRadius: "50%",
-                      backgroundColor: "var(--accent)", color: "var(--bg)",
-                      fontSize: 9, fontWeight: 700,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {unreadCount > 9 ? "9+" : unreadCount}
+                    <span style={{ position: "absolute", top: 1, right: 1 }}>
+                      <span style={{
+                        position: "absolute", inset: 0, borderRadius: "50%",
+                        backgroundColor: "var(--accent)", opacity: 0.5,
+                        pointerEvents: "none",
+                      }} className="animate-ping" />
+                      <span style={{
+                        position: "relative",
+                        width: 14, height: 14, borderRadius: "50%",
+                        backgroundColor: "var(--accent)", color: "var(--bg)",
+                        fontSize: 9, fontWeight: 700,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
                     </span>
                   )}
                 </button>

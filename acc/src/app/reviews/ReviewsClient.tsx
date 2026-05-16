@@ -50,6 +50,7 @@ export default function ReviewsClient() {
   const [comments, setComments] = useState<Record<string, CommentItem[]>>({});
   const [commentInput, setCommentInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
 
   const fetchReviews = useCallback(async (params: {
     userId: string; albumId: string; minScore: number; maxScore: number; sort: string; offset: number;
@@ -66,7 +67,13 @@ export default function ReviewsClient() {
       const res = await fetch(`/api/reviews?${q}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setItems((prev) => append ? [...prev, ...data.items] : data.items);
+      if (append) {
+        setAppendStartIdx(params.offset);
+        setItems((prev) => [...prev, ...data.items]);
+      } else {
+        setAppendStartIdx(null);
+        setItems(data.items);
+      }
       setHasMore(data.hasMore);
       setOffset(params.offset + data.items.length);
       if (!append) setFetchError(false);
@@ -374,6 +381,8 @@ export default function ReviewsClient() {
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
           {items.map((item, idx) => {
             const key = `${item.albumId}-${item.userId}`;
+            const isNew = appendStartIdx !== null && idx >= appendStartIdx;
+            const newDelay = isNew ? Math.min(idx - appendStartIdx, 8) * 0.04 : 0;
             return (
               <ReviewRow
                 key={key}
@@ -391,6 +400,8 @@ export default function ReviewsClient() {
                 onCommentInput={setCommentInput}
                 onCommentSubmit={() => handleComment(item)}
                 isLast={idx === items.length - 1}
+                isNew={isNew}
+                newDelay={newDelay}
               />
             );
           })}
@@ -415,7 +426,7 @@ export default function ReviewsClient() {
 
 function ReviewRow({
   item, myId, liking, expanded, rowComments, commentInput, submitting,
-  onLike, onAlbumClick, onFilterByAlbum, onToggleExpand, onCommentInput, onCommentSubmit, isLast, hideAlbumInfo,
+  onLike, onAlbumClick, onFilterByAlbum, onToggleExpand, onCommentInput, onCommentSubmit, isLast, hideAlbumInfo, isNew, newDelay,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -432,6 +443,8 @@ function ReviewRow({
   onCommentSubmit: () => void;
   isLast: boolean;
   hideAlbumInfo?: boolean;
+  isNew?: boolean;
+  newDelay?: number;
 }) {
   const [imgError, setImgError] = useState(false);
   const avatarMap = useUserAvatars();
@@ -445,7 +458,12 @@ function ReviewRow({
   const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 
   return (
-    <div style={{ borderBottom: isLast && !expanded ? "none" : "1px solid var(--border)" }}>
+    <div
+      style={{
+        borderBottom: isLast && !expanded ? "none" : "1px solid var(--border)",
+        ...(isNew ? { animation: "feedItemIn 0.22s ease-out both", animationDelay: `${newDelay ?? 0}s` } : {}),
+      }}
+    >
       {/* 메인 행 */}
       <div
         style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}

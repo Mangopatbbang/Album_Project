@@ -294,7 +294,7 @@ function SectionGrid({
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[84px] sm:w-[90px]"
+            className="w-[84px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]"
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -303,9 +303,9 @@ function SectionGrid({
               backgroundColor: "var(--bg-elevated)",
               border: `1px solid ${glowBorder(album.avg)}`,
               boxShadow: glowShadow(album.avg),
-              transition: "opacity 0.15s",
+              transition: "box-shadow 0.15s",
             }}
-            className="w-[84px] h-[84px] sm:w-[90px] sm:h-[90px] transition-opacity hover:opacity-80"
+            className="w-[84px] h-[84px] sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element

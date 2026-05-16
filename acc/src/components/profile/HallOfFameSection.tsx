@@ -21,6 +21,13 @@ const INITIAL_LIMIT = 16;
 export default function HallOfFameSection({ albums, count, inline }: { albums: HallAlbum[]; count: number; inline?: boolean }) {
   const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [poppingId, setPoppingId] = useState<string | null>(null);
+
+  const openWithPop = (a: HallAlbum) => {
+    setPoppingId(a.id);
+    setTimeout(() => setPoppingId(null), 340);
+    open(a);
+  };
 
   const open = (a: HallAlbum) => {
     setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
@@ -37,10 +44,10 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
         {visible.map((a) => (
           <button
             key={a.id}
-            onClick={() => open(a)}
+            onClick={() => openWithPop(a)}
             title={`${a.title} — ${a.artist_display ?? a.artist}`}
             style={{ padding: 0, background: "none", border: "none", cursor: "pointer" }}
-            className="transition-transform active:scale-[0.92]"
+            className={poppingId === a.id ? "hof-pop" : "transition-transform active:scale-[0.92]"}
           >
             <div
               style={{

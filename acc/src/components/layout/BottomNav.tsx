@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -49,6 +50,12 @@ const ProfileIcon = () => (
 export default function BottomNav() {
   const { profile } = useAuth();
   const pathname = usePathname();
+  const [bouncingHref, setBouncingHref] = useState<string | null>(null);
+
+  const handleTap = (href: string) => {
+    setBouncingHref(href);
+    setTimeout(() => setBouncingHref(null), 240);
+  };
 
   const items = [
     { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
@@ -90,10 +97,13 @@ export default function BottomNav() {
               aria-label={label}
               aria-current={active ? "page" : undefined}
               {...(tour ? { "data-tour": tour } : {})}
+              onClick={() => handleTap(href)}
               style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-3 active:opacity-60"
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
             >
-              <Icon />
+              <span className={bouncingHref === href ? "nav-bounce" : ""} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon />
+              </span>
               <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.04em" }}>
                 {label}
               </span>

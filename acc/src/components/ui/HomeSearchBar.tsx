@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function HomeSearchBar() {
   const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
   const router = useRouter();
 
   const submit = () => {
@@ -25,16 +26,20 @@ export default function HomeSearchBar() {
         width: "100%",
         maxWidth: 560,
         backgroundColor: "var(--bg-card)",
-        border: "1px solid var(--border)",
+        border: `1px solid ${focused ? "var(--border-light)" : "var(--border)"}`,
         borderRadius: 999,
         padding: "0 6px 0 18px",
         gap: 4,
+        boxShadow: focused ? "0 0 0 3px rgba(var(--accent-rgb), 0.13)" : "none",
+        transition: "border-color 0.18s, box-shadow 0.18s",
       }}>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder="앨범·아티스트 검색"
           style={{
             flex: 1,

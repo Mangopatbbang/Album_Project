@@ -76,6 +76,7 @@ export default function BadgesWithTooltip({ badges }: { badges: string[] }) {
             border: "1px solid var(--border)",
             borderRadius: 8,
             padding: "12px 14px",
+            animation: "tooltipIn 0.14s ease-out",
           }}
         >
           <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>

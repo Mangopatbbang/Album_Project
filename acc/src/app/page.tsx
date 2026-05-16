@@ -264,7 +264,7 @@ export default async function HomePage() {
               <HomeTodaySection initialAlbum={todayAlbum} />
             </div>
 
-            {/* 최근 평가 피드 */}
+            {/* 최근 청음 피드 */}
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <h2
@@ -275,7 +275,7 @@ export default async function HomePage() {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  최근 평가
+                  최근 청음
                 </h2>
                 <Link
                   href="/reviews"

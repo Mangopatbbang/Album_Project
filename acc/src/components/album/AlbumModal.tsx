@@ -71,6 +71,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const { showToast, showToastWithUndo } = useToast();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
+  const [glowingScore, setGlowingScore] = useState<number | null>(null);
+
+  const handleSetMyScore = (n: number) => {
+    setMyScore(n);
+    setGlowingScore(n);
+    setTimeout(() => setGlowingScore(null), 400);
+  };
   const [myReview, setMyReview] = useState("");
   const [myPrivateNote, setMyPrivateNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1061,8 +1068,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   return (
                     <button
                       key={n}
-                      onClick={() => setMyScore(n)}
-                      className="flex-1 sm:flex-none sm:w-9"
+                      onClick={() => handleSetMyScore(n)}
+                      className={["flex-1 sm:flex-none sm:w-9", glowingScore === n ? "score-glow" : ""].join(" ")}
                       style={{
                         height: 36,
                         borderRadius: 6,
@@ -1072,10 +1079,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         fontWeight: selected ? 800 : 500,
                         fontSize: 14,
                         cursor: "pointer",
-                        transition: "all 0.12s",
+                        transition: "transform 0.15s cubic-bezier(0.34,1.56,0.64,1), background-color 0.12s, border-color 0.12s, color 0.12s, opacity 0.12s",
                         transform: selected ? "scale(1.1)" : "scale(1)",
                         boxShadow: selected ? `0 0 10px ${color}55` : "none",
                         opacity: selected ? 1 : 0.65,
+                        ["--glow" as string]: `${color}88`,
                       }}
                     >
                       {n}
