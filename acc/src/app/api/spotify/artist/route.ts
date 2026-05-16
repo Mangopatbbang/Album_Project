@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const token = await getAccessToken();
     const res = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` }, next: { revalidate: 3600 } }
     );
     if (!res.ok) return NextResponse.json({ image_url: null, genres: [] });
 

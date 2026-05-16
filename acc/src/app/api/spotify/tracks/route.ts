@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const token = await getAccessToken();
     const res = await fetch(
       `https://api.spotify.com/v1/albums/${id}/tracks?limit=50&market=KR`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` }, next: { revalidate: 3600 } }
     );
     if (!res.ok) return NextResponse.json({ tracklist: null });
     const data = await res.json();
