@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
-import { generateBadges, koGenre, GENRE_COLOR } from "@/lib/bio";
+import { koGenre, GENRE_COLOR } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
@@ -15,7 +15,6 @@ import AvatarWithLightbox from "@/components/profile/AvatarWithLightbox";
 import WatchlistSection from "@/components/profile/WatchlistSection";
 import EncounterSection, { type EncounterAlbum } from "@/components/profile/EncounterSection";
 import ComparisonSection from "@/components/profile/ComparisonSection";
-import BadgesWithTooltip from "@/components/profile/BadgesWithTooltip";
 import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
@@ -242,21 +241,6 @@ export default async function ProfilePage({
   // 최근 20개
   const recent = validRatings.slice(0, 20);
 
-  // 뱃지
-  const topGenreEntry = genreList[0];
-  const topArtistEntry = artistByCount[0];
-  const badges = generateBadges({
-    avg,
-    topGenre: topGenreEntry?.genre ?? null,
-    topGenreRatio: topGenreEntry ? topGenreEntry.count / Math.max(total, 1) : 0,
-    topArtist: topArtistEntry?.artist ?? null,
-    topArtistCount: topArtistEntry?.count ?? 0,
-    topArtistAvg: topArtistEntry ? parseFloat(topArtistEntry.avg) : 0,
-    eightCount: hallOfFame.length,
-    total,
-    reviewCount,
-  });
-
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
     <Header />
@@ -302,7 +286,7 @@ export default async function ProfilePage({
               )}
               <LikedTracksButton userId={userId} />
             </div>
-            {(topGenres.length > 0 || badges.length > 0) && (
+            {topGenres.length > 0 && (
               <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
                 {topGenres.map((g) => {
                   const gColor = GENRE_COLOR[g] ?? "#94a3b8";
@@ -315,7 +299,6 @@ export default async function ProfilePage({
                     }}>{g}</span>
                   );
                 })}
-                {badges.length > 0 && <BadgesWithTooltip badges={badges} />}
               </div>
             )}
           </div>
@@ -344,7 +327,7 @@ export default async function ProfilePage({
               )}
               <LikedTracksButton userId={userId} />
             </div>
-            {(topGenres.length > 0 || badges.length > 0) && (
+            {topGenres.length > 0 && (
               <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                 {topGenres.map((g) => {
                   const gColor = GENRE_COLOR[g] ?? "#94a3b8";
@@ -357,7 +340,6 @@ export default async function ProfilePage({
                     }}>{g}</span>
                   );
                 })}
-                {badges.length > 0 && <BadgesWithTooltip badges={badges} />}
               </div>
             )}
           </div>
