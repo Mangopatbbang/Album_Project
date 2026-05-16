@@ -313,7 +313,7 @@ export default async function ProfilePage({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start">
+          <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start sm:self-start">
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />

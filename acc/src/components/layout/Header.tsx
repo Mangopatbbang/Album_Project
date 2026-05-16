@@ -151,19 +151,6 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* 계절 라인 */}
-        <div style={{
-          height: 2,
-          background: (() => { const c = getSeasonLine(); return `linear-gradient(90deg, transparent 0%, ${c} 20%, ${c} 80%, transparent 100%)`; })(),
-        }} />
-
-        <style>{`
-          @keyframes navDropIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-          }
-        `}</style>
-
         {/* 유저 + 알림 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
           {!loading && profile && (
@@ -322,6 +309,17 @@ export default function Header() {
           )}
         </div>
       </div>
+      {/* 계절 라인 — grid 외부 */}
+      <div style={{
+        height: 2,
+        background: (() => { const c = getSeasonLine(); return `linear-gradient(90deg, transparent 0%, ${c} 20%, ${c} 80%, transparent 100%)`; })(),
+      }} />
+      <style>{`
+        @keyframes navDropIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </header>
   );
 }
