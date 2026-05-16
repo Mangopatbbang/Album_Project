@@ -20,6 +20,8 @@ import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
+import InsightSection from "@/components/profile/InsightSection";
+import type { DayAlbum } from "@/components/profile/CalendarSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -73,7 +75,8 @@ export default async function ProfilePage({
 
   type LogAlbum = { id: string; title: string; artist: string; cover_url: string | null };
   type ListeningLog = { id: string; listened_at: string; context: string | null; note: string | null; albums: LogAlbum | null };
-  const listeningLogs: ListeningLog[] = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
+  // ListeningLogsSection이 export한 타입과 구조가 동일 — as unknown을 통해 pass
+  const listeningLogs = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
   const yearlyRecap = computeYearlyRecap(validRatings);
@@ -127,11 +130,12 @@ export default async function ProfilePage({
   const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
 
   // 일별 청음 (캘린더용 — 전체 기간)
-  const dailyData: Record<string, { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean }[]> = {};
+  const dailyData: Record<string, DayAlbum[]> = {};
   for (const r of validRatings) {
     const key = r.updated_at.slice(0, 10); // "YYYY-MM-DD"
     if (!dailyData[key]) dailyData[key] = [];
     dailyData[key].push({
+      id: r.albums!.id,
       title: r.albums!.title,
       artist: r.albums!.artist,
       artist_display: r.albums!.artist_display,
@@ -469,9 +473,9 @@ export default async function ProfilePage({
       </div>
 
       {/* ── 메인 컨텐츠: 2컬럼 ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
 
-        {/* 왼쪽 */}
+        {/* 왼쪽 — 활동 내역 */}
         <div className="order-2 lg:order-none" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 아티스트 TOP 5 */}
@@ -500,6 +504,12 @@ export default async function ProfilePage({
           {/* 재청음 기록 */}
           <ListeningLogsSection logs={listeningLogs} />
 
+          {/* 이견 앨범 + 내 숨은 명반 (클라이언트 컴포넌트 — 클릭 시 모달) */}
+          <InsightSection
+            disagreeAlbums={disagreeAlbums}
+            personalHiddenGems={personalHiddenGems}
+          />
+
           {/* 최근 한줄 소감 */}
           {recentReviews.length > 0 && (
             <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
@@ -516,7 +526,7 @@ export default async function ProfilePage({
           )}
         </div>
 
-        {/* 오른쪽 */}
+        {/* 오른쪽 — 통계 & 분석 */}
         <div className="order-1 lg:order-none" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 나중에 들을 앨범 */}
@@ -597,67 +607,6 @@ export default async function ProfilePage({
               })}
             </div>
           </div>
-
-          {/* 이견 앨범 */}
-          {disagreeAlbums.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>이견 앨범</p>
-                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>내 평가와 커뮤니티 평균이 2점 이상 차이나는 앨범</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {disagreeAlbums.map((a) => (
-                  <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-                      {a.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12, color: "var(--text-muted)" }}>♪</span></div>
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
-                      <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist_display ?? a.artist}</p>
-                    </div>
-                    <div style={{ flexShrink: 0, textAlign: "right" }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: scoreColor(a.score) }}>{a.score}점</p>
-                      <p style={{ fontSize: 10, color: "var(--text-muted)" }}>평균 {a.commAvg.toFixed(1)}</p>
-                    </div>
-                    <div style={{ flexShrink: 0, width: 28, textAlign: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: a.diff > 0 ? "var(--accent)" : "#e05050" }}>
-                        {a.diff > 0 ? "▲" : "▼"}{Math.abs(a.diff).toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 숨은 명반 (개인) */}
-          {personalHiddenGems.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-              <div style={{ marginBottom: 14 }}>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>내 숨은 명반</p>
-                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>7점 이상이지만 아직 발굴되지 않은 앨범</p>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {personalHiddenGems.map((a) => (
-                  <div key={a.id} style={{ width: 52, flexShrink: 0 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 5, overflow: "hidden", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
-                      {a.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 16, color: "var(--text-muted)" }}>♪</span></div>
-                      }
-                    </div>
-                    <p style={{ color: scoreColor(a.score), fontSize: 10, fontWeight: 700, textAlign: "center", marginTop: 3 }}>{a.score}점</p>
-                    <p style={{ color: "var(--text)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{a.title}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 취향 궁합 + 멤버 비교 */}
           <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />

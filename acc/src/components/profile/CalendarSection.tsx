@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import AlbumModal from "@/components/album/AlbumModal";
+import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
 
 type MonthItem = { key: string; label: string; count: number };
-type DayAlbum = { title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean };
+export type DayAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean };
 type DailyAlbums = Record<string, DayAlbum[]>; // "YYYY-MM-DD" → albums
 
 // ── 월별 바차트 ──────────────────────────────────────────
@@ -144,8 +146,8 @@ function MonthCalendar({
 }
 
 // ── 날짜별 앨범 패널 ─────────────────────────────────────
-function DayAlbumPanel({ dateKey, albums, onClose }: { dateKey: string; albums: DayAlbum[]; onClose: () => void }) {
-  const [y, m, d] = dateKey.split("-").map(Number);
+function DayAlbumPanel({ dateKey, albums, onClose, onAlbumClick }: { dateKey: string; albums: DayAlbum[]; onClose: () => void; onAlbumClick: (a: DayAlbum) => void }) {
+  const [, m, d] = dateKey.split("-").map(Number);
   return (
     <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -156,7 +158,12 @@ function DayAlbumPanel({ dateKey, albums, onClose }: { dateKey: string; albums: 
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {albums.map((a, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            key={i}
+            onClick={() => onAlbumClick(a)}
+            style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+            className="transition-opacity hover:opacity-80"
+          >
             <div style={{
               width: 36, height: 36, flexShrink: 0, borderRadius: 4, overflow: "hidden",
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
@@ -187,7 +194,7 @@ function DayAlbumPanel({ dateKey, albums, onClose }: { dateKey: string; albums: 
 }
 
 // ── 팝업 모달 ────────────────────────────────────────────
-function CalendarPopup({ dailyAlbums, onClose }: { dailyAlbums: DailyAlbums; onClose: () => void }) {
+function CalendarPopup({ dailyAlbums, onClose, onAlbumClick }: { dailyAlbums: DailyAlbums; onClose: () => void; onAlbumClick: (a: DayAlbum) => void }) {
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
@@ -280,6 +287,7 @@ function CalendarPopup({ dailyAlbums, onClose }: { dailyAlbums: DailyAlbums; onC
             dateKey={selectedDay}
             albums={dailyAlbums[selectedDay]}
             onClose={() => setSelectedDay(null)}
+            onAlbumClick={(a) => { onClose(); onAlbumClick(a); }}
           />
         )}
         {/* 범례 */}
@@ -314,6 +322,11 @@ export default function CalendarSection({
   dailyData: DailyAlbums;
 }) {
   const [popupOpen, setPopupOpen] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+
+  const openAlbum = (a: DayAlbum) => {
+    setSelectedAlbum({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, cover_url: a.cover_url ?? undefined, ratings: [] });
+  };
 
   return (
     <>
@@ -342,7 +355,15 @@ export default function CalendarSection({
       </div>
 
       {popupOpen && (
-        <CalendarPopup dailyAlbums={dailyData} onClose={() => setPopupOpen(false)} />
+        <CalendarPopup
+          dailyAlbums={dailyData}
+          onClose={() => setPopupOpen(false)}
+          onAlbumClick={(a) => { setPopupOpen(false); openAlbum(a); }}
+        />
+      )}
+
+      {selectedAlbum && (
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="profile_calendar" />
       )}
     </>
   );
