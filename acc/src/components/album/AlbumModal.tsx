@@ -511,6 +511,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           width: "100%",
           maxWidth: 760,
           overflowY: "auto",
+          overscrollBehavior: "contain",
           textAlign: "left",
           animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}

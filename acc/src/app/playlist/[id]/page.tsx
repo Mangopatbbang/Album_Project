@@ -63,7 +63,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
 
-      <main id="playlist-card" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 96px" }}>
+      <main id="playlist-card" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         {/* 헤더 */}
         <div style={{ marginBottom: 40 }}>
           <Link

@@ -19,7 +19,7 @@ const Li = ({ children }: { children: React.ReactNode }) => (
 
 export default function TermsPage() {
   return (
-    <main style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "48px 24px 80px" }}>
+    <main style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "48px 24px calc(80px + env(safe-area-inset-bottom))" }}>
       <div style={{ maxWidth: 680, margin: "0 auto" }}>
         <Link href="/" style={{ fontSize: 12, color: "var(--text-muted)", textDecoration: "none", display: "inline-block", marginBottom: 32 }}>
           ← 아차청음사
