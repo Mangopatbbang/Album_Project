@@ -14,6 +14,117 @@ import { GENRE_COLOR, koGenre } from "@/lib/bio";
 const TOP_N = 5;
 const MEDAL = ["🥇", "🥈", "🥉"];
 
+function HiddenGemsBar({
+  gems,
+  onAlbumClick,
+}: {
+  gems: AlbumStat[];
+  onAlbumClick: (a: AlbumStat) => void;
+}) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  if (gems.length === 0) return null;
+
+  return (
+    <div style={{ position: "relative", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{
+        color: "var(--text-muted)", fontSize: 9, fontWeight: 700,
+        letterSpacing: "0.1em", flexShrink: 0, opacity: 0.55,
+        whiteSpace: "nowrap",
+      }}>
+        미발견 명반
+      </span>
+      <div style={{ display: "flex", gap: 3 }}>
+        {gems.map((album, i) => {
+          const isHovered = hoveredIdx === i;
+          const isFirst = i < 2;
+          const isLast = i >= gems.length - 2;
+          const popupLeft: React.CSSProperties =
+            isFirst ? { left: 0 } :
+            isLast  ? { right: 0 } :
+            { left: "50%", transform: "translateX(-50%)" };
+
+          return (
+            <div
+              key={album.id}
+              style={{ position: "relative", flexShrink: 0, zIndex: isHovered ? 20 : 1 }}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            >
+              {/* 커버 */}
+              <div
+                onClick={() => onAlbumClick(album)}
+                style={{
+                  width: 34, height: 34, borderRadius: 4, overflow: "hidden",
+                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
+                  border: `1px solid ${isHovered ? "rgba(232,213,163,0.6)" : "var(--border)"}`,
+                  transition: "border-color 0.12s",
+                }}
+              >
+                {album.cover_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={album.cover_url}
+                    alt={album.title}
+                    style={{
+                      width: "100%", height: "100%", objectFit: "cover",
+                      transition: "transform 0.2s ease",
+                      transform: isHovered ? "scale(1.18)" : "scale(1)",
+                    }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>♪</span>
+                  </div>
+                )}
+              </div>
+
+              {/* hover 팝업 */}
+              {isHovered && (
+                <div style={{
+                  position: "absolute",
+                  bottom: "calc(100% + 8px)",
+                  ...popupLeft,
+                  zIndex: 100,
+                  width: 116,
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  padding: 7,
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.4)",
+                  pointerEvents: "none",
+                  animation: "fadeIn 0.1s ease-out",
+                }}>
+                  <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)", marginBottom: 6 }}>
+                    {album.cover_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: 22, color: "var(--text-muted)" }}>♪</span>
+                      </div>
+                    )}
+                  </div>
+                  <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {album.title}
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
+                    {album.artist_display ?? album.artist}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5 }}>
+                    <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{album.count}명 평가</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
   return {
     id: a.id,
@@ -486,58 +597,8 @@ export default function BestPageClient({
 
   return (
     <>
-      {/* 미발견 명반 섹션 */}
-      {hiddenGems.length > 0 && (
-        <div style={{
-          marginBottom: 28,
-          padding: "14px 16px",
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-        }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
-            <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.02em" }}>미발견 명반</span>
-            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>아직 발굴되지 않은 고점 앨범</span>
-          </div>
-          <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
-            {hiddenGems.map((album) => (
-              <div
-                key={album.id}
-                onClick={() => setSelectedAlbum(album)}
-                style={{ flexShrink: 0, cursor: "pointer", width: 72 }}
-                className="transition-transform active:scale-[0.93]"
-              >
-                <div style={{
-                  width: 72, height: 72, borderRadius: 6, overflow: "hidden",
-                  backgroundColor: "var(--bg-elevated)",
-                  border: `1px solid ${glowBorder(album.avg)}`,
-                  boxShadow: glowShadow(album.avg),
-                }}
-                className="hover:opacity-80 transition-opacity"
-                >
-                  {album.cover_url
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
-                      </div>
-                  }
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
-                  <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{album.count}명</span>
-                  <span style={{ color: scoreColor(album.avg), fontSize: 10, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
-                </div>
-                <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {album.title}
-                </p>
-                <p style={{ color: "var(--text-muted)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {album.artist_display ?? album.artist}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 미발견 명반 — 얇은 바 (hover 시 팝업) */}
+      <HiddenGemsBar gems={hiddenGems} onAlbumClick={(a) => setSelectedAlbum(a)} />
 
       {/* 모바일 필터: select 2개 */}
       <div data-tour="best-tabs" className="sm:hidden flex gap-2 mb-5">
