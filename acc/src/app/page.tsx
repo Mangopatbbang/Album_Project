@@ -261,17 +261,6 @@ export default async function HomePage() {
           <div className="sm:grid sm:grid-cols-2 sm:gap-6">
             {/* 오늘의 인연 */}
             <div className="mb-8 sm:mb-0">
-              <h2
-                style={{
-                  color: "var(--text)",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  letterSpacing: "-0.02em",
-                  marginBottom: 12,
-                }}
-              >
-                오늘의 인연
-              </h2>
               <HomeTodaySection initialAlbum={todayAlbum} />
             </div>
 

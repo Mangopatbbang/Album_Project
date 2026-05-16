@@ -330,7 +330,8 @@ export default async function ProfilePage({
         boxShadow: hallOfFame.length > 0 ? "0 2px 24px rgba(232,213,163,0.07)" : "none",
       }}>
         {/* 황금 상단 라인 */}
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(232,213,163,0.7) 30%, rgba(232,213,163,0.9) 50%, rgba(232,213,163,0.7) 70%, transparent 100%)" }} />
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(232,213,163,0.7) 30%, rgba(232,213,163,0.9) 50%, rgba(232,213,163,0.7) 70%, transparent 100%)", animation: "hofLineDraw 1.2s ease-out" }} />
+        <style>{`@keyframes hofLineDraw { 0% { clip-path: inset(0 50% 0 50%); } 100% { clip-path: inset(0 0% 0 0%); } }`}</style>
         {/* 헤더 */}
         <div style={{
           background: "linear-gradient(180deg, rgba(232,213,163,0.09) 0%, rgba(232,213,163,0.03) 100%)",
@@ -359,7 +360,7 @@ export default async function ProfilePage({
             />
           ) : (
             <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "8px 0", fontStyle: "italic" }}>
-              아직 8점을 준 앨범이 없어요
+              아직 인연이 닿지 않았습니다
             </p>
           )}
         </div>

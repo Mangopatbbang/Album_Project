@@ -16,6 +16,15 @@ function parseTracklist(raw: string | undefined): string[] {
   return raw.split("; ").map((t) => t.trim()).filter(Boolean);
 }
 
+function getSectionLabel(): string {
+  const h = new Date().getHours();
+  if (h < 5)  return "새벽 청음";
+  if (h < 10) return "아침 인연";
+  if (h < 18) return "오늘의 인연";
+  if (h < 21) return "저녁 청음";
+  return "밤의 인연";
+}
+
 export default function HomeTodaySection({ initialAlbum }: Props) {
   const { profile } = useAuth();
   const [album, setAlbum] = useState<AlbumWithRatings | null>(initialAlbum);
@@ -56,8 +65,14 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
     }
   };
 
+  const sectionLabel = getSectionLabel();
+
   if (!album) {
     return (
+      <>
+        <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
+          {sectionLabel}
+        </h2>
       <div
         style={{
           display: "flex",
@@ -87,6 +102,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           {loading ? "찾는 중..." : "인연 찾기"}
         </button>
       </div>
+      </>
     );
   }
 
@@ -103,6 +119,9 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   return (
     <>
+      <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
+        {sectionLabel}
+      </h2>
       <div
         key={album.id}
         style={{

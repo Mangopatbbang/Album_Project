@@ -10,6 +10,14 @@ import type { NotificationItem } from "@/app/api/notifications/route";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
 
+function getSeasonLine(): string {
+  const m = new Date().getMonth() + 1;
+  if (m >= 3 && m <= 5)  return "rgba(180,220,160,0.6)";
+  if (m >= 6 && m <= 8)  return "rgba(100,180,200,0.6)";
+  if (m >= 9 && m <= 11) return "rgba(210,140,80,0.6)";
+  return "rgba(160,175,200,0.6)";
+}
+
 export default function Header() {
   const { profile, loading, signOut } = useAuth();
   const avatarMap = useUserAvatars();
@@ -142,6 +150,12 @@ export default function Header() {
             </div>
           ))}
         </nav>
+
+        {/* 계절 라인 */}
+        <div style={{
+          height: 2,
+          background: (() => { const c = getSeasonLine(); return `linear-gradient(90deg, transparent 0%, ${c} 20%, ${c} 80%, transparent 100%)`; })(),
+        }} />
 
         <style>{`
           @keyframes navDropIn {

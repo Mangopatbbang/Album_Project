@@ -305,7 +305,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     initialReviewRef.current = "";
     setMyLikedTracks(new Set());
     // undo 토스트 (5초)
-    showToastWithUndo("평점을 삭제했어요", () => {
+    showToastWithUndo("이 인연을 지웠어요", () => {
       if (pendingDeleteRef.current) { clearTimeout(pendingDeleteRef.current); pendingDeleteRef.current = null; }
       setMyScore(deletedScoreRef.current);
       setMyReview(deletedReviewRef.current);
@@ -374,7 +374,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       }
     }
     if (!res.ok) return;
-    showToast("평점을 저장했어요");
+    showToast("청음을 기록했어요");
     await afterSaveSuccess();
   };
 
@@ -442,6 +442,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
   return (
     <>
+    <style>{`@keyframes savedPop { 0%{transform:scale(1)} 45%{transform:scale(1.07)} 100%{transform:scale(1)} }`}</style>
     <div
       style={{
         position: "fixed",
@@ -1030,7 +1031,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                 </p>
               )}
               <textarea
-                placeholder="한줄 소감 (100자 이내)"
+                placeholder="청음기 (100자 이내)"
                 value={myReview}
                 onChange={(e) => setMyReview(e.target.value.slice(0, 100))}
                 rows={2}
@@ -1082,11 +1083,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       borderRadius: 6,
                       cursor: saving || hofLimitAlbums !== null ? "default" : "pointer",
                       opacity: saving || hofLimitAlbums !== null ? 0.4 : 1,
-                      transition: "all 0.2s",
+                      transition: "background-color 0.3s, color 0.3s",
                       border: "none",
+                      animation: saved ? "savedPop 0.5s ease-out" : undefined,
                     }}
                   >
-                    {saved ? "저장됨" : saving ? "저장 중…" : "저장"}
+                    {saved ? "✓ 기록됨" : saving ? "기록 중…" : "청음 기록"}
                   </button>
                 </div>
               </div>
