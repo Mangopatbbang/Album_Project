@@ -139,7 +139,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
 
             {/* 모바일 전용: 제목 → 아티스트 → 태그 → 트랙리스트 버튼 */}
-            <div className="sm:hidden" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div className="flex flex-col sm:hidden" style={{ gap: 4 }}>
               <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
                 {album.title}
               </p>

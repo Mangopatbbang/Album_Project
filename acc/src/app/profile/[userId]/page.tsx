@@ -209,7 +209,7 @@ export default async function ProfilePage({
         padding: "20px 24px",
       }}>
         {/* 모바일: 아바타+이름+버튼 한 줄, 스탯 한 줄, 뱃지 한 줄 */}
-        <div className="sm:hidden" style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div className="flex items-start sm:hidden" style={{ gap: 12 }}>
           <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
