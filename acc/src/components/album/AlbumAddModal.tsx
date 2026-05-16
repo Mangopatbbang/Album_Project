@@ -257,6 +257,9 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       showToast("Spotify 검색 후 연결해주세요", "info");
       return;
     }
+    if ((!genre || !region) && !confirm(`${!genre && !region ? "장르와 지역" : !genre ? "장르" : "지역"}이 선택되지 않았습니다. 그래도 등록하시겠습니까?`)) {
+      return;
+    }
     setSaving(true);
     setError("");
 
@@ -381,31 +384,52 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   ))}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 6 }}>
-                <input
-                  value={aliasInput}
-                  onChange={(e) => setAliasInput(e.target.value)}
-                  placeholder={`${artist} 표시 이름 (예: 한글명)`}
-                  style={{ flex: 1, padding: "7px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none" }}
-                />
-                <button
-                  onClick={async () => {
-                    if (!aliasInput.trim()) return;
-                    setAliasSaving(true);
-                    await apiFetch("/api/admin/artist-aliases", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
-                    });
-                    setAliasSaving(false);
-                    setAliasSaved(true);
-                  }}
-                  disabled={!aliasInput.trim() || aliasSaving}
-                  style={{ padding: "7px 14px", borderRadius: 6, border: "none", backgroundColor: "var(--accent)", color: "var(--bg)", fontSize: 12, fontWeight: 600, cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer", opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1 }}
-                >
-                  {aliasSaving ? "..." : "설정"}
-                </button>
-              </div>
+              <input
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key !== "Enter" || !aliasInput.trim() || aliasSaving) return;
+                  setAliasSaving(true);
+                  await apiFetch("/api/admin/artist-aliases", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
+                  });
+                  setAliasSaving(false);
+                  setAliasSaved(true);
+                  setTimeout(() => onClose(), 600);
+                }}
+                placeholder={`표시할 이름 입력 (예: 한글명)`}
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none", boxSizing: "border-box" }}
+              />
+              <button
+                onClick={async () => {
+                  if (!aliasInput.trim() || aliasSaving) return;
+                  setAliasSaving(true);
+                  await apiFetch("/api/admin/artist-aliases", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
+                  });
+                  setAliasSaving(false);
+                  setAliasSaved(true);
+                  setTimeout(() => onClose(), 600);
+                }}
+                disabled={!aliasInput.trim() || aliasSaving}
+                style={{
+                  width: "100%", padding: "9px 0", borderRadius: 6,
+                  border: `1px solid ${aliasInput.trim() ? "var(--accent)" : "var(--border)"}`,
+                  backgroundColor: aliasInput.trim() ? "rgba(var(--accent-rgb), 0.1)" : "var(--bg-elevated)",
+                  color: aliasInput.trim() ? "var(--accent)" : "var(--text-muted)",
+                  fontSize: 12, fontWeight: 600,
+                  cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer",
+                  opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1,
+                  transition: "all 0.15s",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                {aliasSaving ? "저장 중..." : <><span style={{ fontSize: 13 }}>✓</span> {aliasInput.trim() ? `"${aliasInput.trim()}"으로 표시하기` : "이 이름으로 표시하기"}</>}
+              </button>
             </div>
           )}
           <button

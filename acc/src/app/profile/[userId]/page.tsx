@@ -198,7 +198,7 @@ export default async function ProfilePage({
     <Header />
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
-      <div id="profile-card" style={{ backgroundColor: "var(--bg)" }}>
+      <div id="profile-card" className="flex flex-col" style={{ backgroundColor: "var(--bg)" }}>
 
       {/* ── 프로필 헤더 (압축) ── */}
       <div style={{
@@ -208,13 +208,62 @@ export default async function ProfilePage({
         marginBottom: 16,
         padding: "20px 24px",
       }}>
-        <div className="flex flex-wrap items-center gap-3">
+        {/* 모바일: 아바타+이름+버튼 한 줄, 스탯 한 줄, 뱃지 한 줄 */}
+        <div className="sm:hidden" style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
+              <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em", fontSize: 18, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {displayName}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <MobileLogoutButton userId={userId} />
+                <ProfileCaptureButton targetId="profile-card" />
+                <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
+              </div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 12px", marginTop: 5 }}>
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                청음 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장
+              </span>
+              {avg && (
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                  평균 <span style={{ color: scoreColor(avg), fontWeight: 600 }}>{avg}점</span>
+                </span>
+              )}
+              {reviewCount > 0 && (
+                <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                  소감 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{reviewCount}개</span>
+                </span>
+              )}
+              <LikedTracksButton userId={userId} />
+            </div>
+            {(topGenres.length > 0 || badges.length > 0) && (
+              <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+                {topGenres.map((g) => {
+                  const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                  return (
+                    <span key={g} style={{
+                      fontSize: 10, fontWeight: 600,
+                      backgroundColor: `${gColor}1a`, color: gColor,
+                      border: `1px solid ${gColor}40`,
+                      borderRadius: 4, padding: "2px 6px",
+                    }}>{g}</span>
+                  );
+                })}
+                {badges.length > 0 && <BadgesWithTooltip badges={badges} />}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 데스크탑: 기존 레이아웃 */}
+        <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <AvatarWithLightbox avatarUrl={avatarUrl} emoji={displayEmoji} displayName={displayName} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ color: "var(--text)", fontWeight: 700, letterSpacing: "-0.03em", fontSize: 20 }}>
               {displayName}
             </p>
-            {/* 인라인 스탯 */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", marginTop: 4 }}>
               <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
                 청음 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{total}</span>장
@@ -231,7 +280,6 @@ export default async function ProfilePage({
               )}
               <LikedTracksButton userId={userId} />
             </div>
-            {/* 뱃지 */}
             {(topGenres.length > 0 || badges.length > 0) && (
               <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                 {topGenres.map((g) => {
@@ -249,7 +297,6 @@ export default async function ProfilePage({
               </div>
             )}
           </div>
-          {/* 버튼: 모바일 full-width 우측 정렬, sm 이상은 자동 */}
           <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start">
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
@@ -338,7 +385,7 @@ export default async function ProfilePage({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
 
         {/* 왼쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="order-2 lg:order-none" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 아티스트 TOP 5 */}
           {artistByCount.length > 0 && (
@@ -380,7 +427,7 @@ export default async function ProfilePage({
         </div>
 
         {/* 오른쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="order-1 lg:order-none" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 나중에 들을 앨범 */}
           <WatchlistSection userId={userId} />

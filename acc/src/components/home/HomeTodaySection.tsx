@@ -23,6 +23,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [streamingOpen, setStreamingOpen] = useState(false);
   const [trackHover, setTrackHover] = useState(false);
+  const [tracklistOpen, setTracklistOpen] = useState(false);
 
   const openStreaming = (service: "spotify" | "apple" | "youtube") => {
     const query = encodeURIComponent(`${album?.title ?? ""} ${album?.artist_display ?? album?.artist ?? ""}`);
@@ -42,6 +43,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   const shuffle = async () => {
     setLoading(true);
+    setTracklistOpen(false);
     try {
       const url = profile?.id
         ? `/api/albums/random?userId=${profile.id}`
@@ -133,14 +135,18 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
             )}
           </div>
 
-          {/* 우측: 타이틀+태그 / 아티스트 / 트랙리스트 */}
+          {/* 우측: 타이틀 / 아티스트 / 태그 / 트랙리스트 */}
           <div style={{ flex: 1, minWidth: 0, paddingTop: 2, display: "flex", flexDirection: "column" }}>
-            {/* 타이틀 + 메타 태그: 모바일은 세로 스택, 데스크탑은 가로 한 줄 */}
-            <div className="sm:flex sm:items-start sm:gap-2" style={{ marginBottom: 5 }}>
-              <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35, marginBottom: 4 }} className="line-clamp-2 sm:flex-1 sm:mb-0">
+
+            {/* 모바일 전용: 제목 → 아티스트 → 태그 → 트랙리스트 버튼 */}
+            <div className="sm:hidden" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="line-clamp-2">
                 {album.title}
               </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }} className="sm:flex-shrink-0 sm:flex-nowrap">
+              <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {album.artist_display ?? album.artist}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
                 {year && <span style={tagStyle}>{year}</span>}
                 {album.genre && <span style={tagStyle}>{album.genre}</span>}
                 {avg !== null ? (
@@ -151,79 +157,124 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   <span style={tagStyle}>평가 없음</span>
                 )}
               </div>
+              {tracks.length > 0 && (
+                <button
+                  onClick={() => setTracklistOpen((v) => !v)}
+                  style={{
+                    background: "none", border: "1px solid var(--border)", borderRadius: 6,
+                    color: "var(--text-muted)", fontSize: 11, padding: "3px 10px",
+                    cursor: "pointer", alignSelf: "flex-start", marginTop: 2,
+                    transition: "border-color 0.15s",
+                  }}
+                >
+                  트랙리스트 {tracks.length}곡 {tracklistOpen ? "↑" : "↓"}
+                </button>
+              )}
             </div>
 
-            {/* 아티스트 */}
-            <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {album.artist_display ?? album.artist}
-            </p>
-
-            {/* 트랙리스트 — 데스크탑 전용 */}
-            {tracks.length > 0 && (
-              <div
-                className="hidden sm:block"
-                style={{ position: "relative", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}
-                onMouseEnter={() => setTrackHover(true)}
-                onMouseLeave={() => setTrackHover(false)}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
-                    Tracklist
-                  </p>
-                  <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
+            {/* 데스크탑 전용: 제목+태그 가로 줄 → 아티스트 → 트랙리스트 블록 */}
+            <div className="hidden sm:flex sm:flex-col">
+              <div className="sm:flex sm:items-start sm:gap-2" style={{ marginBottom: 5 }}>
+                <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, lineHeight: 1.35 }} className="sm:flex-1">
+                  {album.title}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }} className="sm:flex-shrink-0 sm:flex-nowrap">
+                  {year && <span style={tagStyle}>{year}</span>}
+                  {album.genre && <span style={tagStyle}>{album.genre}</span>}
+                  {avg !== null ? (
+                    <span style={{ fontSize: 10, color: scoreColor(avg), fontWeight: 700, backgroundColor: "var(--bg-elevated)", borderRadius: 4, padding: "2px 7px" }}>
+                      {avg} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({scores.length})</span>
+                    </span>
+                  ) : (
+                    <span style={tagStyle}>평가 없음</span>
+                  )}
                 </div>
-                {tracks.slice(0, COLLAPSED_SHOW).map((track, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
-                    <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
-                      {i + 1}
-                    </span>
-                    <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                      {track}
-                    </span>
-                  </div>
-                ))}
-                {tracks.length > COLLAPSED_SHOW && (
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
-                    +{tracks.length - COLLAPSED_SHOW}곡 더
-                  </p>
-                )}
-
-                {/* 호버 시 전체 트랙 오버레이 */}
-                {trackHover && tracks.length > COLLAPSED_SHOW && (
-                  <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    padding: "10px 12px",
-                    zIndex: 20,
-                    boxShadow: "0 8px 28px rgba(0,0,0,0.4)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
-                        Tracklist
-                      </p>
-                      <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
-                    </div>
-                    {tracks.map((track, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
-                        <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
-                          {i + 1}
-                        </span>
-                        <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                          {track}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-            )}
+              <p style={{ color: "var(--text-sub)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {album.artist_display ?? album.artist}
+              </p>
+              {tracks.length > 0 && (
+                <div
+                  className="hidden sm:block"
+                  style={{ position: "relative", marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}
+                  onMouseEnter={() => setTrackHover(true)}
+                  onMouseLeave={() => setTrackHover(false)}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
+                      Tracklist
+                    </p>
+                    <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
+                  </div>
+                  {tracks.slice(0, COLLAPSED_SHOW).map((track, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                      <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
+                        {i + 1}
+                      </span>
+                      <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                        {track}
+                      </span>
+                    </div>
+                  ))}
+                  {tracks.length > COLLAPSED_SHOW && (
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4 }}>
+                      +{tracks.length - COLLAPSED_SHOW}곡 더
+                    </p>
+                  )}
+
+                  {/* 호버 시 전체 트랙 오버레이 */}
+                  {trackHover && tracks.length > COLLAPSED_SHOW && (
+                    <div style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      padding: "10px 12px",
+                      zIndex: 20,
+                      boxShadow: "0 8px 28px rgba(0,0,0,0.4)",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                        <p style={{ color: "var(--text-muted)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
+                          Tracklist
+                        </p>
+                        <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
+                      </div>
+                      {tracks.map((track, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                          <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>
+                            {i + 1}
+                          </span>
+                          <span style={{ color: "var(--text-sub)", fontSize: 11, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                            {track}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* 모바일 트랙리스트 패널 (sm:hidden) */}
+        {tracklistOpen && tracks.length > 0 && (
+          <div className="sm:hidden" style={{ borderTop: "1px solid var(--border)", padding: "10px 14px 12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Tracklist</p>
+              <SpotifyAttribution spotifyId={album.spotify_id} size="sm" />
+            </div>
+            {tracks.map((track, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "2.5px 0" }}>
+                <span style={{ flexShrink: 0, color: "var(--text-muted)", fontSize: 9, fontWeight: 700, minWidth: 12, textAlign: "right" }}>{i + 1}</span>
+                <span style={{ color: "var(--text-sub)", fontSize: 12, lineHeight: 1.4 }}>{track}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* 버튼 */}
         <div style={{ padding: "12px 14px 14px" }}>

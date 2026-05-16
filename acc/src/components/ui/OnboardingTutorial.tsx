@@ -79,14 +79,15 @@ function S0() {
     <div style={{ textAlign: "center" }}>
       <p style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.8, marginBottom: 20 }}>
         소규모 음악 모임을 위한 앨범 평가 아카이브예요.<br />
-        앨범을 탐색하고, 점수와 한줄평을 남기고,<br />
+        오늘의 인연으로 새로운 앨범을 만나고,<br />
+        점수와 한줄평을 남기고,<br />
         멤버들의 취향을 비교해보세요.
       </p>
       <div style={{
         display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center",
         backgroundColor: "var(--bg-elevated)", borderRadius: 12, padding: "14px 16px", marginBottom: 20,
       }}>
-        {["음반고 탐색", "앨범 평가", "명반 랭킹", "한줄평 피드", "멤버 통계", "프로필"].map((label) => (
+        {["오늘의 인연", "음반고 탐색", "앨범 평가", "명반 랭킹", "한줄평 피드", "멤버 통계", "프로필"].map((label) => (
           <span key={label} style={{
             fontSize: 12, color: "var(--text-muted)",
             backgroundColor: "var(--bg-card)", borderRadius: 6,
@@ -108,13 +109,13 @@ function S1() {
   return (
     <>
       <Rows>
-        <Row>상단 <Btn>검색창</Btn>에 제목 또는 아티스트명 입력 → 실시간으로 결과가 필터링돼요.</Row>
-        <Row><Btn>장르</Btn> · <Btn>정렬</Btn> 드롭다운으로 필터를 자유롭게 조합할 수 있어요.</Row>
+        <Row>홈 상단에 멤버들의 최근 한줄평이 실시간으로 흘러가요<span style={{ color: "var(--text-muted)", fontSize: 12 }}>(평베이어벨트)</span>. 클릭하면 해당 앨범이 열려요.</Row>
+        <Row><Btn>오늘의 인연</Btn> 카드 — 아직 평가하지 않은 앨범을 랜덤으로 제안해요. <Btn>감상하기</Btn>로 스트리밍, <Btn>다른 인연</Btn>으로 교체할 수 있어요.</Row>
+        <Row><Btn>음반고</Btn>에서 검색창 · <Btn>장르</Btn> · <Btn>정렬</Btn> 드롭다운으로 필터를 자유롭게 조합해 탐색해요.</Row>
         <Row>로그인 후엔 <Btn>내 평점 높은순</Btn> · <Btn>미청음만 보기</Btn> · 점수 버튼 필터가 추가로 활성화돼요.</Row>
         <Row>앨범 카드 아래 아티스트 이름 클릭 → 해당 아티스트의 다른 앨범을 모아보는 모달이 열려요.</Row>
         <Row>카드 우측 하단 <Btn>Spotify</Btn> · <Btn>SC</Btn> 아이콘 → 해당 스트리밍 서비스로 바로 이동해요.</Row>
         <Row>목록 하단까지 스크롤하면 다음 앨범이 자동으로 불러와져요 <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(무한스크롤)</span>.</Row>
-        <Row>우측 상단 <Btn>입고</Btn> 버튼으로 새 앨범을 등록할 수 있어요.</Row>
       </Rows>
       <CautionBox items={[
         <>검색 결과가 없을 때 <Btn>바로 추가하기</Btn>를 누르면 해당 검색어가 입력된 채로 입고 창으로 이동해요.</>,

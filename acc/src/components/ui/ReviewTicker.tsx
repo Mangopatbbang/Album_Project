@@ -152,6 +152,9 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
             0%   { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
+          @media (max-width: 639px) {
+            .ticker-track { animation-duration: ${duration * 1.7}s !important; }
+          }
         `}</style>
       </div>
 
