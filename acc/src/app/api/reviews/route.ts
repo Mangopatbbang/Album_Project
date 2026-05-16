@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 export type ReviewItem = {
   albumId: string;
@@ -20,6 +21,9 @@ export type ReviewItem = {
 const LIMIT = 20;
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId")?.trim() || null;
   const albumId = searchParams.get("albumId")?.trim() || null;

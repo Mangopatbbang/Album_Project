@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
 import { getRawGenreValues } from "@/lib/bio";
 import { fetchAllAlbumsWithRatings } from "@/lib/stats";
+import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 const LIMIT = 30;
 const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
@@ -91,6 +92,9 @@ function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): s
 }
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
 
   const limit = Math.min(Number(searchParams.get("limit") ?? LIMIT), 100);

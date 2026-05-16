@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/spotify";
+import { spotifyLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 // 검색 결과 없을 때 Spotify 실제 아티스트명 힌트 반환
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(spotifyLimiter, getIP(req));
+  if (limited) return limited;
+
   const artist = req.nextUrl.searchParams.get("artist")?.trim() ?? "";
   if (!artist) return NextResponse.json({ hints: [] });
 

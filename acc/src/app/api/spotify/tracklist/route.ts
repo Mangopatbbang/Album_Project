@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/spotify";
+import { spotifyLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(spotifyLimiter, getIP(req));
+  if (limited) return limited;
+
   const spotifyId = new URL(req.url).searchParams.get("spotifyId");
   if (!spotifyId) return NextResponse.json({ error: "spotifyId 필요" }, { status: 400 });
 
