@@ -726,14 +726,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   {data.extra_artists && (() => {
                     const names = parseExtraArtistNames(data.extra_artists);
                     if (!names.length) return null;
+                    const displayNames: string[] = (data as { extra_artists_display?: string[] }).extra_artists_display ?? names;
                     // use_artist_variant ON + alias 없이 개별 이름 표시 중이면 중복 숨김
-                    const individualDisplay = names.join(", ");
+                    const individualDisplay = displayNames.join(", ");
                     if (data.use_artist_variant && data.artist_display === individualDisplay) return null;
                     return (
                       <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
                         {" · "}{names.map((name, i) => (
                           <span key={name}>
-                            <span className="hover:underline cursor-pointer" onClick={() => setArtistModal({ name, display: name })}>{name}</span>
+                            <span className="hover:underline cursor-pointer" onClick={() => setArtistModal({ name, display: displayNames[i] ?? name })}>{displayNames[i] ?? name}</span>
                             {i < names.length - 1 && ", "}
                           </span>
                         ))}

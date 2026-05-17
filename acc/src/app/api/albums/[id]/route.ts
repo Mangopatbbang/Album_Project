@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
-import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { resolveArtistDisplay, fetchAliasMap } from "@/lib/artistDisplay";
 import { logActivity } from "@/lib/activityLog";
 import { validateAdmin } from "@/lib/validateAdmin";
 import { validateUser } from "@/lib/validateUser";
@@ -117,6 +117,16 @@ export async function GET(
   }
 
   const [resolved] = await resolveArtistDisplay([data]);
+
+  // extra_artists 개별 이름도 alias 해상도 (fetchAliasMap은 캐시됨)
+  const aliasMap = await fetchAliasMap();
+  const extra_artists_display: string[] = resolved.extra_artists
+    ? resolved.extra_artists.split(";").map((s: string) => {
+        const t = s.trim();
+        return aliasMap.get(t.toLowerCase()) ?? t;
+      }).filter(Boolean)
+    : [];
+
   const ratings = (data.ratings ?? []) as { user_id: string; score: number; one_line_review: string | null; liked_tracks: string | null }[];
   const scores = ratings.map((r) => r.score);
   const avg = scores.length > 0
@@ -133,7 +143,7 @@ export async function GET(
     commentCounts[row.reviewer_id] = (commentCounts[row.reviewer_id] ?? 0) + 1;
   }
 
-  return NextResponse.json({ ...resolved, ratings, avg, commentCounts }, {
+  return NextResponse.json({ ...resolved, extra_artists_display, ratings, avg, commentCounts }, {
     headers: { "Cache-Control": "no-store" },
   });
 }
