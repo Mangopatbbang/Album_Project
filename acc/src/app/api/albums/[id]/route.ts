@@ -26,6 +26,20 @@ export async function PATCH(
     return NextResponse.json({ error: "업데이트할 필드 없음" }, { status: 400 });
   }
 
+  // artist 변경 시 새 아티스트의 use_artist_variant 설정 상속
+  if ("artist" in update && !("use_artist_variant" in update)) {
+    const newArtist = (update.artist as string).trim();
+    const { data: sibling } = await supabaseServer
+      .from("albums")
+      .select("use_artist_variant")
+      .ilike("artist", newArtist)
+      .neq("id", id)
+      .limit(1);
+    if (sibling?.[0]?.use_artist_variant) {
+      update.use_artist_variant = true;
+    }
+  }
+
   // release_date가 제공되면 year 자동 동기화 (year가 별도로 지정되지 않은 경우)
   if ("release_date" in update && !("year" in update)) {
     const rd = update.release_date as string | null;
