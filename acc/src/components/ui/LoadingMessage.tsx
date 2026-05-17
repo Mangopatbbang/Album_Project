@@ -6,7 +6,7 @@ export default function LoadingMessage() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 2500);
+    const t = setTimeout(() => setVisible(true), 2000);
     return () => clearTimeout(t);
   }, []);
 
