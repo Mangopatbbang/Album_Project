@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/layout/Header";
+import PageHeader from "@/components/layout/PageHeader";
 import { supabaseServer } from "@/lib/supabase";
 import ThemesPageClient, { type Playlist } from "./ThemesPageClient";
 
@@ -32,9 +33,7 @@ export default async function ThemesPage() {
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Header />
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em", marginBottom: 32 }}>
-          청음집
-        </p>
+        <PageHeader title="청음집" subtitle="테마별로 엮은 컬렉션" />
         <ThemesPageClient initialPlaylists={playlists as unknown as Playlist[]} />
       </main>
     </div>

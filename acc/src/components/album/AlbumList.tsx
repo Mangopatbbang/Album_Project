@@ -233,194 +233,224 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
 
 return (
     <>
-      {/* 필터 바 */}
-      <div data-tour="albums-filter" style={{ borderBottom: "1px solid var(--border)", marginBottom: 32 }} className="py-4 flex flex-col gap-3">
+      {/* ── 필터 바 ── sticky, 헤더(52px) 바로 아래 */}
+      <div
+        data-tour="albums-filter"
+        className="sticky top-0 sm:top-[52px] z-40 no-scrollbar"
+        style={{
+          backgroundColor: "var(--bg)",
+          borderBottom: "1px solid var(--border)",
+          marginBottom: 28,
+          paddingTop: 14,
+          paddingBottom: 12,
+        }}
+      >
+        {/* Row 1: 검색 + 정렬 + 입고 */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+          {/* 검색창 with icon */}
+          <div style={{ position: "relative", flex: "1 1 0", minWidth: 0 }}>
+            <svg
+              width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}
+            >
+              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="제목 / 아티스트 검색"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              style={{
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                color: "var(--text)",
+                borderRadius: 8,
+                padding: "7px 12px 7px 32px",
+                fontSize: 13,
+                width: "100%",
+              }}
+            />
+          </div>
 
-      {/* 필터 컨트롤: 데스크탑 1줄, 모바일 2줄 */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* 검색 */}
-        <input
-          type="text"
-          placeholder="제목 / 아티스트 검색"
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            color: "var(--text)",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontSize: 13,
-            outline: "none",
-            flex: "1 1 200px",
-          }}
-        />
-
-        {/* 모바일: 검색 아래 새 줄 강제 구분자 */}
-        <div className="basis-full sm:hidden" style={{ height: 0 }} />
-
-        {/* 장르 */}
-        <select
-          value={genre}
-          onChange={(e) => handleGenreChange(e.target.value)}
-          style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            color: "var(--text)",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          <option value="">전체 장르</option>
-          {genres.map((g) => (
-            <option key={g} value={g}>{koGenre(g)}</option>
-          ))}
-        </select>
-
-        {/* 정렬 */}
-        <select
-          value={sort}
-          onChange={(e) => handleSortChange(e.target.value)}
-          style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            color: "var(--text)",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
-          {sortOptions.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        {/* 국내/해외 필터 */}
-        {(["국내", "해외"] as const).map((r) => (
-          <button
-            key={r}
-            onClick={() => handleRegionChange(r)}
-            style={{
-              backgroundColor: region === r ? "var(--accent)" : "var(--bg-card)",
-              border: `1px solid ${region === r ? "var(--accent)" : "var(--border)"}`,
-              color: region === r ? "var(--bg)" : "var(--text)",
-              borderRadius: 6, padding: "6px 12px", fontSize: 13,
-              cursor: "pointer", fontWeight: region === r ? 600 : 400,
-              whiteSpace: "nowrap",
-            }}
-          >{r}</button>
-        ))}
-
-        {/* 모바일 내 평점 필터 */}
-        {profile && (
+          {/* 정렬 */}
           <select
-            value={myScore ?? ""}
-            onChange={(e) => {
-              const v = e.target.value ? Number(e.target.value) : null;
-              setMyScore(v);
-              if (!v) setScoreUserId(null);
-              setUnrated(false);
-              handleFilter(search, genre, region, sort, false, v, v === null ? null : scoreUserId);
-            }}
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value)}
             style={{
               backgroundColor: "var(--bg-card)",
-              border: `1px solid ${myScore ? "var(--accent)" : "var(--border)"}`,
-              color: myScore ? "var(--accent)" : "var(--text)",
-              borderRadius: 6,
-              padding: "6px 12px",
-              fontSize: 13,
+              border: "1px solid var(--border)",
+              color: "var(--text)",
+              borderRadius: 8,
+              padding: "7px 10px",
+              fontSize: 12,
               cursor: "pointer",
-              fontWeight: myScore ? 600 : 400,
+              flexShrink: 0,
             }}
-            className="sm:hidden"
           >
-            <option value="">내 평점</option>
-            {[1,2,3,4,5,6,7,8].map((s) => (
-              <option key={s} value={s}>{s}점</option>
+            {sortOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-        )}
 
-        {/* 미평가 토글 (로그인 시에만) */}
-        {profile && (
-          <button
-            onClick={handleUnratedToggle}
-            style={{
-              backgroundColor: unrated ? "var(--accent)" : "var(--bg-card)",
-              border: `1px solid ${unrated ? "var(--accent)" : "var(--border)"}`,
-              color: unrated ? "var(--bg)" : "var(--text)",
-              borderRadius: 6,
-              padding: "6px 12px",
-              fontSize: 13,
-              cursor: "pointer",
-              fontWeight: unrated ? 600 : 400,
-              whiteSpace: "nowrap",
-            }}
-          >
-            미청음만
-          </button>
-        )}
-
-        <span style={{ color: "var(--text-sub)", fontSize: 12, marginLeft: "auto" }}>
-          {albums.length}장{hasMore ? "+" : ""}
-        </span>
-
-        {/* 입고 버튼 */}
-        {profile && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-              backgroundColor: "var(--accent)",
-              border: "none",
-              color: "var(--bg)",
-              borderRadius: 6,
-              padding: "6px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            입고
-          </button>
-        )}
-      </div>
-
-      {/* 내 점수 필터 (로그인 시, 데스크탑만) */}
-      {profile && (
-        <div className="hidden sm:flex items-center gap-2 flex-wrap">
-          <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600 }}>내 평점</span>
-          {[1,2,3,4,5,6,7,8].map((s) => (
+          {/* 입고 버튼 */}
+          {profile && (
             <button
-              key={s}
-              onClick={() => handleScoreFilter(s)}
+              onClick={() => setShowAddModal(true)}
               style={{
-                width: 36, height: 36,
-                borderRadius: 6,
-                border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
-                backgroundColor: myScore === s ? "var(--accent)" : "var(--bg-card)",
-                color: myScore === s ? "var(--bg)" : "var(--text)",
+                backgroundColor: "var(--accent)",
+                border: "none",
+                color: "var(--bg)",
+                borderRadius: 8,
+                padding: "7px 14px",
                 fontSize: 12,
-                fontWeight: myScore === s ? 700 : 400,
+                fontWeight: 700,
                 cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
-              {s}
-            </button>
-          ))}
-          {myScore && (
-            <button
-              onClick={() => handleScoreFilter(myScore)}
-              style={{ color: "var(--text-muted)", fontSize: 11, background: "none", border: "none", cursor: "pointer" }}
-            >
-              ✕ 초기화
+              입고
             </button>
           )}
         </div>
-      )}
+
+        {/* Row 2: 장르 pills — 가로 스크롤 */}
+        <div
+          className="no-scrollbar"
+          style={{
+            display: "flex",
+            gap: 6,
+            overflowX: "auto",
+            marginBottom: 8,
+            paddingBottom: 2,
+          }}
+        >
+          {(["", ...genres] as string[]).map((g) => {
+            const label = g === "" ? "전체" : koGenre(g);
+            const isSelected = g === genre;
+            return (
+              <button
+                key={g}
+                onClick={() => handleGenreChange(g)}
+                style={{
+                  flexShrink: 0,
+                  backgroundColor: isSelected ? "var(--accent)" : "var(--bg-card)",
+                  border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                  color: isSelected ? "var(--bg)" : "var(--text-sub)",
+                  borderRadius: 20,
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: isSelected ? 700 : 400,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Row 3: 국내/해외 + 미청음만 + 내 평점(모바일) + count */}
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          {(["국내", "해외"] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => handleRegionChange(r)}
+              style={{
+                backgroundColor: region === r ? "rgba(232,213,163,0.12)" : "transparent",
+                border: `1px solid ${region === r ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                color: region === r ? "var(--accent)" : "var(--text-muted)",
+                borderRadius: 6, padding: "4px 10px", fontSize: 11,
+                cursor: "pointer", fontWeight: region === r ? 700 : 400,
+                whiteSpace: "nowrap", transition: "all 0.12s",
+              }}
+            >{r}</button>
+          ))}
+
+          {profile && (
+            <button
+              onClick={handleUnratedToggle}
+              style={{
+                backgroundColor: unrated ? "rgba(232,213,163,0.12)" : "transparent",
+                border: `1px solid ${unrated ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                color: unrated ? "var(--accent)" : "var(--text-muted)",
+                borderRadius: 6, padding: "4px 10px", fontSize: 11,
+                cursor: "pointer", fontWeight: unrated ? 700 : 400,
+                whiteSpace: "nowrap", transition: "all 0.12s",
+              }}
+            >
+              미청음만
+            </button>
+          )}
+
+          {/* 내 평점 select (모바일 전용) */}
+          {profile && (
+            <select
+              value={myScore ?? ""}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : null;
+                setMyScore(v);
+                if (!v) setScoreUserId(null);
+                setUnrated(false);
+                handleFilter(search, genre, region, sort, false, v, v === null ? null : scoreUserId);
+              }}
+              style={{
+                backgroundColor: "transparent",
+                border: `1px solid ${myScore ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                color: myScore ? "var(--accent)" : "var(--text-muted)",
+                borderRadius: 6, padding: "4px 10px", fontSize: 11,
+                cursor: "pointer", fontWeight: myScore ? 700 : 400,
+              }}
+              className="sm:hidden"
+            >
+              <option value="">내 평점</option>
+              {[1,2,3,4,5,6,7,8].map((s) => (
+                <option key={s} value={s}>{s}점</option>
+              ))}
+            </select>
+          )}
+
+          <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: "auto" }}>
+            {albums.length}장{hasMore ? "+" : ""}
+          </span>
+        </div>
+
+        {/* Row 4: 내 평점 버튼 1~8 (데스크탑 전용) */}
+        {profile && (
+          <div className="hidden sm:flex items-center gap-2 flex-wrap" style={{ marginTop: 10 }}>
+            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>내 평점</span>
+            {[1,2,3,4,5,6,7,8].map((s) => (
+              <button
+                key={s}
+                onClick={() => handleScoreFilter(s)}
+                style={{
+                  width: 30, height: 30,
+                  borderRadius: 6,
+                  border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
+                  backgroundColor: myScore === s ? "var(--accent)" : "transparent",
+                  color: myScore === s ? "var(--bg)" : "var(--text-muted)",
+                  fontSize: 11,
+                  fontWeight: myScore === s ? 700 : 400,
+                  cursor: "pointer",
+                  transition: "all 0.12s",
+                }}
+              >
+                {s}
+              </button>
+            ))}
+            {myScore && (
+              <button
+                onClick={() => handleScoreFilter(myScore)}
+                style={{ color: "var(--text-muted)", fontSize: 11, background: "none", border: "none", cursor: "pointer", padding: "0 4px" }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 앨범 그리드 */}

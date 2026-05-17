@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import Header from "@/components/layout/Header";
+import PageHeader from "@/components/layout/PageHeader";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
@@ -92,21 +93,17 @@ export default async function AlbumsPage() {
       <Header />
 
       <main style={{ ...containerStyle, padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1
-            style={{
-              color: "var(--text)",
-              fontWeight: 700,
-              fontSize: 22,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            음반고
-          </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
-            {totalCount > 0 ? `${totalCount}장` : ""} 청음된 음반
-          </p>
-        </div>
+        <PageHeader
+          title="음반고"
+          subtitle="청음사 전체 앨범 아카이브"
+          right={
+            totalCount > 0 ? (
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                총 <span style={{ color: "var(--accent)", fontWeight: 700 }}>{totalCount}</span>장
+              </span>
+            ) : undefined
+          }
+        />
 
         <Suspense fallback={<div style={{ color: "var(--text-muted)", textAlign: "center", padding: "80px 0", fontSize: 13 }}>불러오는 중...</div>}>
           <AlbumList

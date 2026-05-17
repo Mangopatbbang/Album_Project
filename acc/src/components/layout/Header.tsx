@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
@@ -16,6 +16,7 @@ export default function Header() {
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
   const router = useRouter();
+  const pathname = usePathname();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const navHoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,7 +91,9 @@ export default function Header() {
 
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
-          {navItems.map(({ href, label, tour, desc }) => (
+          {navItems.map(({ href, label, tour, desc }) => {
+            const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
             <div
               key={href}
               style={{ position: "relative" }}
@@ -101,12 +104,12 @@ export default function Header() {
                 href={href}
                 {...(tour ? { "data-tour": tour } : {})}
                 style={{
-                  color: hoveredNav === href ? "var(--text)" : "var(--text-sub)",
+                  color: isActive ? "var(--accent)" : hoveredNav === href ? "var(--text)" : "var(--text-sub)",
                   background: "transparent",
                   boxShadow: hoveredNav === href
                     ? "inset 0 0 40px 0 rgba(232,213,163,0.13)"
                     : "inset 0 0 0px 0 rgba(232,213,163,0)",
-                  fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
+                  fontSize: 12, fontWeight: isActive ? 700 : 600, letterSpacing: "0.04em",
                   padding: "0 12px", height: 52,
                   display: "flex", alignItems: "center",
                   textTransform: "uppercase",
@@ -115,6 +118,21 @@ export default function Header() {
               >
                 {label}
               </Link>
+
+              {/* 현재 페이지 언더라인 */}
+              <div style={{
+                position: "absolute",
+                bottom: 0,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: isActive ? "60%" : "0%",
+                height: 2,
+                backgroundColor: "var(--accent)",
+                borderRadius: "2px 2px 0 0",
+                opacity: 0.8,
+                transition: "width 0.25s ease",
+                pointerEvents: "none",
+              }} />
 
               {hoveredNav === href && (
                 <div style={{
@@ -141,7 +159,7 @@ export default function Header() {
                 </div>
               )}
             </div>
-          ))}
+          );})}
         </nav>
 
         {/* 유저 + 알림 */}
