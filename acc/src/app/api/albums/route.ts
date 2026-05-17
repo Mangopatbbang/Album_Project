@@ -29,14 +29,11 @@ function quoteOrValue(val: string) {
 // 검색어 + alias 매칭된 spotify_names 로 OR 조건 문자열 생성
 // rawSearch: 원본 검색어 (이스케이프 전), 콤마 포함 아티스트명 직접 검색 지원
 function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): string {
-  // extra_artists는 "A;B;C" 세미콜론 구분 — 토큰 단위 정확 매칭 4패턴
-  const extraParts = [
-    `extra_artists.ilike.${s}`,
-    `extra_artists.ilike.${s};%`,
-    `extra_artists.ilike.%;${s};%`,
-    `extra_artists.ilike.%;${s}`,
+  const parts = [
+    `title.ilike.%${s}%`,
+    `artist.ilike.%${s}%`,
+    `extra_artists.ilike.%${s}%`,
   ];
-  const parts = [`title.ilike.%${s}%`, `artist.ilike.%${s}%`, ...extraParts];
 
   // 원본 검색어에 특수문자가 있으면 따옴표로 감싼 패턴도 추가
   // rawSearch 안의 % _ 는 quoteOrValue 전에 이스케이프 (SQL 와일드카드 방지)
@@ -45,10 +42,7 @@ function buildSearchOr(s: string, aliasMatches: string[], rawSearch?: string): s
     parts.push(
       `title.ilike.${quoteOrValue(`%${r}%`)}`,
       `artist.ilike.${quoteOrValue(`%${r}%`)}`,
-      `extra_artists.ilike.${quoteOrValue(r)}`,
-      `extra_artists.ilike.${quoteOrValue(`${r};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${r};%`)}`,
-      `extra_artists.ilike.${quoteOrValue(`%;${r}`)}`,
+      `extra_artists.ilike.${quoteOrValue(`%${r}%`)}`,
     );
   }
 
