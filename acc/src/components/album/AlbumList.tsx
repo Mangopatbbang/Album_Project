@@ -199,8 +199,9 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
   };
 
   const handleGenreChange = (val: string) => {
-    setGenre(val);
-    handleFilter(search, val, region, sort, unrated, myScore);
+    const next = genre === val ? "" : val;
+    setGenre(next);
+    handleFilter(search, next, region, sort, unrated, myScore);
   };
 
   const handleRegionChange = (val: string) => {
