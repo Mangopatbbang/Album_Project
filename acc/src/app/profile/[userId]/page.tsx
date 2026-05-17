@@ -17,6 +17,7 @@ import EncounterSection, { type EncounterAlbum } from "@/components/profile/Enco
 import ComparisonSection from "@/components/profile/ComparisonSection";
 import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
+import ReportUserButton from "@/components/profile/ReportUserButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
@@ -265,6 +266,7 @@ export default async function ProfilePage({
                 {displayName}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <ReportUserButton targetUserId={userId} />
                 <MobileLogoutButton userId={userId} />
                 <ProfileCaptureButton targetId="profile-card" />
                 <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
@@ -344,6 +346,7 @@ export default async function ProfilePage({
             )}
           </div>
           <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start sm:self-start">
+            <ReportUserButton targetUserId={userId} />
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
