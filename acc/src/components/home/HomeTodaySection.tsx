@@ -30,6 +30,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [album, setAlbum] = useState<AlbumWithRatings | null>(initialAlbum);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState(false);
   const [streamingOpen, setStreamingOpen] = useState(false);
   const [trackHover, setTrackHover] = useState(false);
   const [tracklistOpen, setTracklistOpen] = useState(false);
@@ -142,13 +143,17 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
             onClick={() => setModalOpen(true)}
           >
             {album.cover_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={album.cover_url}
-                alt={album.title}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s ease" }}
-                className="group-hover:scale-[1.06]"
-              />
+              <>
+                {!coverLoaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={album.cover_url}
+                  alt={album.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s ease, opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
+                  className="group-hover:scale-[1.06]"
+                  onLoad={() => setCoverLoaded(true)}
+                />
+              </>
             ) : (
               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 24 }}>
                 ♪

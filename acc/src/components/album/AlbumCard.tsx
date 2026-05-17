@@ -18,6 +18,7 @@ type Props = {
 export default function AlbumCard({ album, onClick }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
   const { profile } = useAuth();
@@ -59,13 +60,18 @@ export default function AlbumCard({ album, onClick }: Props) {
         className="w-full flex items-center justify-center overflow-hidden"
       >
         {album.cover_url && !imgError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={album.cover_url}
-            alt={album.title}
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
-          />
+          <>
+            {!imgLoaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={album.cover_url}
+              alt={album.title}
+              className="w-full h-full object-cover"
+              style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.25s ease" }}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          </>
         ) : (
           <div className="flex flex-col items-center gap-1">
             <span style={{ color: "var(--text-muted)", fontSize: 28 }}>♪</span>
