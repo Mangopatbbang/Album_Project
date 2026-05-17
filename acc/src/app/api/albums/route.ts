@@ -284,12 +284,19 @@ export async function POST(req: NextRequest) {
     .select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { count: artistAlbumCount } = await supabaseServer
+  const { data: siblingAlbums, count: artistAlbumCount } = await supabaseServer
     .from("albums")
-    .select("id", { count: "exact", head: true })
+    .select("id, use_artist_variant", { count: "exact" })
     .ilike("artist", artist.trim())
-    .neq("id", data.id);
+    .neq("id", data.id)
+    .limit(1);
   const isNewArtist = (artistAlbumCount ?? 0) === 0;
+
+  // 기존 앨범의 use_artist_variant 설정 상속
+  const siblingVariant = siblingAlbums?.[0]?.use_artist_variant ?? false;
+  if (siblingVariant) {
+    await supabaseServer.from("albums").update({ use_artist_variant: true }).eq("id", data.id);
+  }
 
   const missingFields: string[] = [];
   if (!cover_url) missingFields.push("커버");
