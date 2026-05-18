@@ -307,8 +307,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
   // 배경 스크롤 잠금
   useEffect(() => {
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
   // ESC 닫기
@@ -1455,7 +1456,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                 )}
               </div>
               <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-                {(tracklistExpanded ? tracklist : tracklist.slice(0, 9)).map((track, i) => {
+                {tracklist.map((track, i) => {
                   const othersWhoLiked = users.filter((u) => {
                     if (u.id === profile?.id) return false;
                     const r = ratings.find((rt) => rt.user_id === u.id);
@@ -1466,7 +1467,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   return (
                     <li
                       key={i}
-                      style={{ display: "flex", gap: 8, alignItems: "center", padding: "3px 0" }}
+                      className={i >= 9 && !tracklistExpanded ? "hidden sm:flex" : "flex"}
+                      style={{ gap: 8, alignItems: "center", padding: "3px 0" }}
                       onMouseEnter={() => setHoveredTrack(i)}
                       onMouseLeave={() => setHoveredTrack(null)}
                     >
@@ -1527,7 +1529,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     cursor: "pointer", padding: "3px 10px",
                     transition: "border-color 0.15s, color 0.15s",
                   }}
-                  className="hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
+                  className="sm:hidden hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
                 >
                   {tracklistExpanded ? "접기" : `+ ${tracklist.length - 9}곡 더보기`}
                 </button>

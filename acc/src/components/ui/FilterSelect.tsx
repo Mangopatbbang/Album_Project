@@ -23,6 +23,8 @@ export default function FilterSelect({ value, onChange, options, title, active, 
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const [mounted, setMounted] = useState(false);
+  const prevOverflow = useRef("");
+  const isMobileRef = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -40,7 +42,9 @@ export default function FilterSelect({ value, onChange, options, title, active, 
   const handleOpen = () => {
     const mobile = window.innerWidth < 640;
     setIsMobile(mobile);
+    isMobileRef.current = mobile;
     if (mobile) {
+      prevOverflow.current = document.body.style.overflow;
       document.body.style.overflow = "hidden";
     } else if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
@@ -51,7 +55,9 @@ export default function FilterSelect({ value, onChange, options, title, active, 
 
   const handleClose = () => {
     setOpen(false);
-    document.body.style.overflow = "";
+    if (isMobileRef.current) {
+      document.body.style.overflow = prevOverflow.current;
+    }
   };
 
   const handleSelect = (v: string) => {
@@ -141,7 +147,7 @@ export default function FilterSelect({ value, onChange, options, title, active, 
             <div style={{
               position: "fixed",
               top: pos.top, left: pos.left,
-              minWidth: Math.max(pos.width, 160),
+              minWidth: Math.max(Math.min(pos.width, 260), 160),
               zIndex: 9001,
               backgroundColor: "var(--bg-elevated)",
               border: "1px solid var(--border-light)",

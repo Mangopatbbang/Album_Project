@@ -57,7 +57,7 @@ export default function RootLayout({
       lang="ko"
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
+      <body className="min-h-dvh flex flex-col sm:pb-0">
         <AuthProvider>
           <UsersProvider>
           <UserAvatarsProvider>

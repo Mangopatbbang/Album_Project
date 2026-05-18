@@ -278,7 +278,7 @@ function SectionGrid({
 }) {
   const top = list.slice(0, TOP_N);
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
         {(() => { const gColor = GENRE_COLOR[koGenre(label)]; return (
         <h2 style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em", ...(gColor ? { color: gColor } : { color: "var(--text)" }) }}>
@@ -307,7 +307,7 @@ function SectionGrid({
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
-            className={`${idx >= 3 ? "hidden sm:block" : ""} w-[112px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]`}
+            className={`${idx >= 3 ? "hidden sm:block" : ""} w-[100px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]`}
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -318,7 +318,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "box-shadow 0.15s",
             }}
-            className="w-[112px] h-[112px] sm:w-[90px] sm:h-[90px]"
+            className="w-[100px] h-[100px] sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
