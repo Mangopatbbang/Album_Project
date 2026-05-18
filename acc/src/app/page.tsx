@@ -39,9 +39,13 @@ async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
     .select("id", { count: "exact", head: true });
   if (!count || count === 0) return null;
 
-  const dateStr = new Date().toISOString().slice(0, 10);
-  const seed = dateStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const offset = seed % count;
+  // KST 기준 날짜 (UTC+9)
+  const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const dateStr = nowKst.toISOString().slice(0, 10);
+  // FNV-1a 해시: 인접한 날짜도 완전히 다른 위치로 분산
+  let h = 2166136261;
+  for (const c of dateStr) { h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; }
+  const offset = h % count;
 
   const { data, error } = await supabaseServer
     .from("albums")
