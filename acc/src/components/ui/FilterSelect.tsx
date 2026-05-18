@@ -104,8 +104,8 @@ export default function FilterSelect({ value, onChange, options, title, active, 
               backgroundColor: "var(--bg-elevated)",
               borderTop: "1px solid var(--border)",
               borderRadius: "16px 16px 0 0",
-              maxHeight: "65vh", overflowY: "auto",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              maxHeight: "65dvh", overflowY: "auto",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
               animation: "sheetIn 0.26s cubic-bezier(0.22, 1, 0.36, 1)",
             }}>
               <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>

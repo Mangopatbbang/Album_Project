@@ -306,8 +306,8 @@ function SectionGrid({
         {top.map((album, idx) => (
           <div
             key={album.id}
-            style={{ flexShrink: 0, cursor: "pointer" }}
-            className={`${idx >= 3 ? "hidden sm:block" : ""} w-[100px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]`}
+            style={{ cursor: "pointer" }}
+            className={`${idx >= 3 ? "hidden sm:block sm:flex-none sm:w-[90px]" : "flex-1 min-w-0 sm:flex-none sm:w-[90px]"} transition-transform hover:scale-[1.04] active:scale-[0.96]`}
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -318,7 +318,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "box-shadow 0.15s",
             }}
-            className="w-[100px] h-[100px] sm:w-[90px] sm:h-[90px]"
+            className="w-full aspect-square sm:aspect-auto sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
