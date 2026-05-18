@@ -404,13 +404,6 @@ export default async function ProfilePage({
         </div>
       )}
 
-      {/* ── InsightSection: 이견 앨범 + 숨은 명반 ── */}
-      {(disagreeAlbums.length > 0 || personalHiddenGems.length > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
-        </div>
-      )}
-
       {/* ── 명반전 ── */}
       <div style={{
         borderRadius: 12,
@@ -455,6 +448,13 @@ export default async function ProfilePage({
           )}
         </div>
       </div>
+
+      {/* ── InsightSection: 이견 앨범 + 숨은 명반 ── */}
+      {(disagreeAlbums.length > 0 || personalHiddenGems.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
+        </div>
+      )}
 
       {/* ── 인연으로 만난 앨범 ── */}
       {encounterAlbums.length > 0 && (
