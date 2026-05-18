@@ -12,7 +12,7 @@ const inputStyle = {
   color: "var(--text)",
   borderRadius: 6,
   padding: "10px 14px",
-  fontSize: 14,
+  fontSize: 16,
   outline: "none",
 };
 

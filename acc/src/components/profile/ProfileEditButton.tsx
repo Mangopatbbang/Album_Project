@@ -163,7 +163,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
     color: "var(--text)",
     borderRadius: 6,
     padding: "8px 12px",
-    fontSize: 13,
+    fontSize: 16,
     outline: "none",
     width: "100%",
   } as const;

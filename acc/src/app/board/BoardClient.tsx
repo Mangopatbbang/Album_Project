@@ -40,7 +40,7 @@ const inputStyle = {
   color: "var(--text)",
   borderRadius: 6,
   padding: "8px 12px",
-  fontSize: 13,
+  fontSize: 16,
   outline: "none",
   width: "100%",
   fontFamily: "inherit",
