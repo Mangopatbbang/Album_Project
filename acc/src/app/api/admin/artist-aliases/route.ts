@@ -81,6 +81,12 @@ export async function POST(req: NextRequest) {
     .upsert({ spotify_name: spotify_name.trim(), variant_name: variant_name.trim() }, { onConflict: "spotify_name" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // alias 저장 시 해당 아티스트 앨범 전체 use_artist_variant 자동 활성화
+  await supabaseServer
+    .from("albums")
+    .update({ use_artist_variant: true })
+    .filter("artist", "ilike", spotify_name.trim());
+
   revalidatePath("/");
   revalidatePath("/best");
   revalidatePath("/albums");

@@ -16,15 +16,12 @@ const inputStyle = {
   outline: "none",
 };
 
-const EMOJI_OPTIONS = ["🎵", "🎸", "🎹", "🥁", "🎷", "🎺", "🎻", "🎤", "🎧", "🎼", "🌊", "🔥", "⭐", "🌙", "🎬"];
-
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [emoji, setEmoji] = useState("🎵");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
@@ -60,7 +57,7 @@ export default function SignupPage() {
         auth_id: authData.user.id,
         username,
         display_name: displayName || username,
-        emoji,
+        emoji: "🎵",
         onboarded: false,
       }),
     });
@@ -125,30 +122,6 @@ export default function SignupPage() {
             onChange={(e) => setDisplayName(e.target.value)}
             style={inputStyle}
           />
-
-          {/* 이모지 선택 */}
-          <div>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>이모지 선택</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {EMOJI_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => setEmoji(e)}
-                  style={{
-                    fontSize: 22,
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    border: `2px solid ${emoji === e ? "var(--accent)" : "var(--border)"}`,
-                    backgroundColor: emoji === e ? "var(--bg-elevated)" : "transparent",
-                    cursor: "pointer",
-                  }}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* 동의 체크박스 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0 4px" }}>

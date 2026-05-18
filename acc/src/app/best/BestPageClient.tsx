@@ -10,6 +10,7 @@ import { AlbumWithRatings } from "@/types";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import { GENRE_COLOR, koGenre } from "@/lib/bio";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 const TOP_N = 5;
 const MEDAL = ["🥇", "🥈", "🥉"];
@@ -595,49 +596,46 @@ export default function BestPageClient({
     ? sections.find(([label]) => label === openSection)
     : null;
 
-  const mobileSelectStyle = {
-    backgroundColor: "var(--bg-elevated)",
-    border: "1px solid var(--border)",
-    color: "var(--text)",
-    borderRadius: 6,
-    padding: "7px 10px",
-    fontSize: 13,
-    cursor: "pointer",
-    flex: 1,
-  } as const;
-
   return (
     <>
-      {/* 모바일 필터: select 2개 */}
+      {/* 모바일 필터 */}
       <div data-tour="best-tabs" className="sm:hidden flex gap-2 mb-5">
-        <select
+        <FilterSelect
           value={regionFilter}
-          onChange={(e) => setRegionFilter(e.target.value as "전체" | "국내" | "해외")}
-          style={mobileSelectStyle}
-        >
-          {(["전체", "국내", "해외"] as const).map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-        <select
+          onChange={(v) => setRegionFilter(v as "전체" | "국내" | "해외")}
+          options={[
+            { value: "전체", label: "전체" },
+            { value: "국내", label: "국내" },
+            { value: "해외", label: "해외" },
+          ]}
+          title="지역"
+          active={regionFilter !== "전체"}
+          style={{ flex: 1, justifyContent: "center" }}
+        />
+        <FilterSelect
           value={view}
-          onChange={(e) => router.push(`/best?view=${e.target.value}`)}
-          style={mobileSelectStyle}
-        >
-          <option value="all">통합</option>
-          <option value="year">연도별</option>
-          <option value="genre">장르별</option>
-          <option value="artist">아티스트별</option>
-        </select>
+          onChange={(v) => router.push(`/best?view=${v}`)}
+          options={[
+            { value: "all", label: "통합" },
+            { value: "year", label: "연도별" },
+            { value: "genre", label: "장르별" },
+            { value: "artist", label: "아티스트별" },
+          ]}
+          title="보기 방식"
+          active={view !== "all"}
+          style={{ flex: 1, justifyContent: "center" }}
+        />
         {view === "artist" && (
-          <select
+          <FilterSelect
             value={artistSort}
-            onChange={(e) => setArtistSort(e.target.value as "count" | "avg")}
-            style={{ ...mobileSelectStyle, flex: "none" }}
-          >
-            <option value="avg">평균 평점순</option>
-            <option value="count">음반 수순</option>
-          </select>
+            onChange={(v) => setArtistSort(v as "count" | "avg")}
+            options={[
+              { value: "avg", label: "평균 평점순" },
+              { value: "count", label: "음반 수순" },
+            ]}
+            title="정렬"
+            active={artistSort !== "avg"}
+          />
         )}
       </div>
 
