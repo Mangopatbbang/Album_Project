@@ -10,7 +10,7 @@ const _fetchAliasEntries = unstable_cache(
     return (data ?? []).map((r: { spotify_name: string; variant_name: string }) => [r.spotify_name, r.variant_name] as [string, string]);
   },
   ["artist-aliases"],
-  { tags: ["artist-aliases"], revalidate: 86400 }
+  { tags: ["artist-aliases"], revalidate: 3600 }
 );
 
 /** artist_aliases 테이블 전체를 Map으로 반환 (캐시됨, 키는 소문자 정규화) */

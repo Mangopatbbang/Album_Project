@@ -99,7 +99,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [nestedAlbum, setNestedAlbum] = useState<AlbumWithRatings | null>(null);
   const [myHistory, setMyHistory] = useState<{ score: number; createdAt: string }[]>([]);
-  const [showAllRatings, setShowAllRatings] = useState(false);
+  const [ratingsSheetOpen, setRatingsSheetOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [tracklistExpanded, setTracklistExpanded] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -475,7 +475,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     if (!ra && rb) return 1;
     return 0;
   });
-  const visibleUsers = showAllRatings ? sortedUsers : sortedUsers.slice(0, VISIBLE_COUNT);
+  const visibleUsers = sortedUsers.slice(0, VISIBLE_COUNT);
   const hiddenCount = Math.max(0, sortedUsers.length - VISIBLE_COUNT);
 
   const tracklist = full?.tracklist
@@ -1024,9 +1024,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             })}
           </div>
 
-          {!showAllRatings && hiddenCount > 0 && (
+          {hiddenCount > 0 && (
             <button
-              onClick={() => setShowAllRatings(true)}
+              onClick={() => setRatingsSheetOpen(true)}
               style={{
                 marginTop: 8, background: "none",
                 border: "1px solid var(--border)", borderRadius: 6,
@@ -1040,6 +1040,73 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             </button>
           )}
         </div>
+
+        {/* 전체 평점 바텀시트 */}
+        {ratingsSheetOpen && (
+          <div
+            onClick={() => setRatingsSheetOpen(false)}
+            style={{
+              position: "fixed", inset: 0,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              zIndex: zIndex + 50,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: "fixed", left: 0, right: 0, bottom: 0,
+                backgroundColor: "var(--bg-elevated)",
+                borderTop: "1px solid var(--border)",
+                borderRadius: "16px 16px 0 0",
+                maxHeight: "75dvh",
+                display: "flex", flexDirection: "column",
+                zIndex: zIndex + 51,
+                animation: "sheetIn 0.26s cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flexShrink: 0 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "var(--border-light)" }} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 20px 12px", flexShrink: 0 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.07em", textTransform: "uppercase", margin: 0 }}>
+                  청음단 평점 전체 ({sortedUsers.length}명)
+                </p>
+                <button
+                  onClick={() => setRatingsSheetOpen(false)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 4px" }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ overflowY: "auto", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 20px" }}>
+                  {sortedUsers.map((user) => {
+                    const r = ratings.find((rt) => rt.user_id === user.id);
+                    const review = r?.one_line_review ?? "";
+                    return (
+                      <div key={user.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                        <span style={{ flexShrink: 0, marginTop: 2 }}><UserAvatar avatarUrl={avatarMap[user.id]} size={18} /></span>
+                        <Link href={`/profile/${user.id}`} onClick={() => setRatingsSheetOpen(false)} style={{ color: "var(--text-sub)", fontSize: 13, flexShrink: 0, textDecoration: "none", width: 80 }} className="truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
+                        {r ? (
+                          <>
+                            <span style={{ color: scoreColor(r.score), fontWeight: 700, fontSize: 15, flexShrink: 0, width: 18, textAlign: "right" }}>{r.score}</span>
+                            {review && (
+                              <span style={{ color: "var(--text-muted)", fontSize: 12, fontStyle: "italic", flex: 1, lineHeight: 1.5 }}>
+                                &ldquo;{review}&rdquo;
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>—</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
 

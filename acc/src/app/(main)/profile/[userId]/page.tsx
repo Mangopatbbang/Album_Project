@@ -17,6 +17,7 @@ import ComparisonSection from "@/components/profile/ComparisonSection";
 import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import ReportUserButton from "@/components/profile/ReportUserButton";
+import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
@@ -277,9 +278,7 @@ export default async function ProfilePage({
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 <ReportUserButton targetUserId={userId} />
-                <MobileLogoutButton userId={userId} />
-                <ProfileCaptureButton targetId="profile-card" />
-                <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} initialBio={bio} />
+                <MobileSettingsButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} initialBio={bio} />
               </div>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 12px", marginTop: 5 }}>

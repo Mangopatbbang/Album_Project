@@ -156,7 +156,8 @@ export default function FilterSelect({ value, onChange, options, title, feature,
               border: "1px solid var(--border-light)",
               borderRadius: 8,
               boxShadow: "0 8px 28px rgba(0,0,0,0.45)",
-              overflow: "hidden",
+              maxHeight: 260,
+              overflowY: "auto",
               animation: "fadeIn 0.14s ease-out",
             }}>
               {title && (

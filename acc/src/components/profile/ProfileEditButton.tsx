@@ -11,15 +11,20 @@ type Props = {
   initialEmoji: string;
   initialAvatarUrl: string | null;
   initialBio?: string | null;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 };
 
 const CROP_SIZE = 220;
 const OUTPUT_SIZE = 600;
 
-export default function ProfileEditButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl, initialBio }: Props) {
+export default function ProfileEditButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl, initialBio, open: controlledOpen, onOpenChange }: Props) {
   const { profile, authUser, refreshProfile } = useAuth();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen! : internalOpen;
+  const setOpen = (v: boolean) => { if (isControlled) onOpenChange?.(v); else setInternalOpen(v); };
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [bio, setBio] = useState(initialBio ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
@@ -179,22 +184,24 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          background: "none",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          padding: "4px 10px",
-          cursor: "pointer",
-          color: "var(--text)",
-          fontSize: 11,
-          flexShrink: 0,
-          transition: "color 0.15s",
-        }}
-      >
-        편집
-      </button>
+      {!isControlled && (
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            background: "none",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            padding: "4px 10px",
+            cursor: "pointer",
+            color: "var(--text)",
+            fontSize: 11,
+            flexShrink: 0,
+            transition: "color 0.15s",
+          }}
+        >
+          편집
+        </button>
+      )}
 
       {open && (
         <div

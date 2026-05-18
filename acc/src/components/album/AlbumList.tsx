@@ -266,6 +266,7 @@ return (
           marginBottom: 28,
           paddingTop: 14,
           paddingBottom: 12,
+          isolation: "isolate",
         }}
       >
         {/* Row 1: 검색 + 정렬 + 입고 */}
@@ -416,46 +417,12 @@ return (
                 title="내 평점"
                 feature="음반고_내평점필터"
                 active={myScore !== null}
-                className="sm:hidden"
                 style={{ fontSize: 11, padding: "4px 8px" }}
               />
             )}
           </div>
         </div>
 
-        {/* Row 3: 내 평점 버튼 1~8 (데스크탑 전용) */}
-        {profile && (
-          <div className="hidden sm:flex items-center gap-2 flex-wrap" style={{ marginTop: 10 }}>
-            <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>내 평점</span>
-            {[1,2,3,4,5,6,7,8].map((s) => (
-              <button
-                key={s}
-                onClick={() => handleScoreFilter(s)}
-                style={{
-                  width: 30, height: 30,
-                  borderRadius: 6,
-                  border: `1px solid ${myScore === s ? "var(--accent)" : "var(--border)"}`,
-                  backgroundColor: myScore === s ? "var(--accent)" : "transparent",
-                  color: myScore === s ? "var(--bg)" : "var(--text-muted)",
-                  fontSize: 11,
-                  fontWeight: myScore === s ? 700 : 400,
-                  cursor: "pointer",
-                  transition: "all 0.12s",
-                }}
-              >
-                {s}
-              </button>
-            ))}
-            {myScore && (
-              <button
-                onClick={() => handleScoreFilter(myScore)}
-                style={{ color: "var(--text-muted)", fontSize: 11, background: "none", border: "none", cursor: "pointer", padding: "0 4px" }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* 앨범 그리드 */}

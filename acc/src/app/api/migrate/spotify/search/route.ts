@@ -48,10 +48,10 @@ export async function GET(req: NextRequest) {
   }[] = [];
 
   for (const q of queries) {
-    if (results.length >= 10) break;
+    if (results.length >= 30) break;
     try {
       const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=10&market=KR`,
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=30&market=KR`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.status === 429) {
