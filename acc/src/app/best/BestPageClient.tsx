@@ -27,7 +27,7 @@ function HiddenGemsBar({
   if (gems.length === 0) return null;
 
   return (
-    <div style={{ position: "relative", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ position: "relative", marginBottom: 20, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <span style={{
         color: "var(--text-muted)", fontSize: 9, fontWeight: 700,
         letterSpacing: "0.1em", flexShrink: 0, opacity: 0.55,
@@ -35,7 +35,7 @@ function HiddenGemsBar({
       }}>
         미발견 명반
       </span>
-      <div style={{ display: "flex", gap: 3 }}>
+      <div style={{ display: "flex", gap: 3, minWidth: 0, overflowX: "auto" }} className="no-scrollbar">
         {gems.map((album, i) => {
           const isHovered = hoveredIdx === i;
           const isFirst = i < 2;
