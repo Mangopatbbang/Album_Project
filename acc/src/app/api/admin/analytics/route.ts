@@ -12,9 +12,10 @@ export async function GET(req: NextRequest) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayISO = today.toISOString();
 
-  const [usersRes, ratingsRes, eventsRes, searchRes, albumVisitsRes, watchlistRes, albumsRes] = await Promise.all([
+  const [usersRes, ratingsRes, activityRes, eventsRes, searchRes, albumVisitsRes, watchlistRes, albumsRes] = await Promise.all([
     supabaseServer.from("users").select("id, display_name, avatar_url, role"),
-    supabaseServer.from("ratings").select("user_id, score, created_at, updated_at"),
+    supabaseServer.from("ratings").select("user_id, score, created_at"),
+    supabaseServer.from("activity_logs").select("user_id, action, created_at").eq("action", "rating_set"),
     supabaseServer.from("events").select("type, path, data, device, created_at, user_id").gte("created_at", since),
     supabaseServer.from("search_logs").select("query, results_count, created_at").gte("created_at", since),
     supabaseServer.from("album_visits").select("album_id, created_at").gte("created_at", since),
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
 
   const users = usersRes.data ?? [];
   const ratings = ratingsRes.data ?? [];
+  const activityLogs = activityRes.data ?? [];
   const events = eventsRes.data ?? [];
   const searchLogs = searchRes.data ?? [];
   const albumVisits = albumVisitsRes.data ?? [];
@@ -31,12 +33,14 @@ export async function GET(req: NextRequest) {
   const albums = albumsRes.data ?? [];
   const albumMap = new Map(albums.map((a) => [a.id, a]));
 
-  // ── 멤버 활동
+  // ── 멤버 활동 (activity_logs 기반으로 최근 활동 판단)
   const memberActivity = users.map((u) => {
     const ur = ratings.filter((r) => r.user_id === u.id);
-    const sorted = [...ur].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    const userLogs = activityLogs.filter((l) => l.user_id === u.id);
+    const sortedLogs = [...userLogs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const avg = ur.length ? ur.reduce((s, r) => s + r.score, 0) / ur.length : null;
-    const recentCount = ur.filter((r) => new Date(r.updated_at) >= new Date(weekAgo)).length;
+    const recentCount = userLogs.filter((l) => new Date(l.created_at) >= new Date(weekAgo)).length;
+    const lastActivityAt = sortedLogs[0]?.created_at ?? null;
     return {
       id: u.id,
       display_name: u.display_name,
@@ -45,7 +49,7 @@ export async function GET(req: NextRequest) {
       total_ratings: ur.length,
       recent_ratings: recentCount,
       avg_score: avg !== null ? Math.round(avg * 10) / 10 : null,
-      last_rating_at: sorted[0]?.updated_at ?? null,
+      last_rating_at: lastActivityAt,
       is_active: recentCount > 0,
     };
   }).sort((a, b) => (b.last_rating_at ?? "").localeCompare(a.last_rating_at ?? ""));
