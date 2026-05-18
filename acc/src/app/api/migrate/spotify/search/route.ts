@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
         `album:${t}${a ? ` artist:${a}` : ""}`,
         `${t}${a ? ` ${a}` : ""}`,
         t,
+        ...(a ? [`artist:${a}`] : []),
       ]
     : [
         `artist:${a}`,
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     if (results.length >= 30) break;
     try {
       const res = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=30&market=KR`,
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=album&limit=10&market=KR`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.status === 429) {
