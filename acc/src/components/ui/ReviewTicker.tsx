@@ -95,6 +95,7 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
             alignItems: "center",
             whiteSpace: "nowrap",
             transform: "translateZ(0)",
+            willChange: "transform",
             animation: `ticker-scroll ${duration}s linear infinite`,
           }}
           className="ticker-track"
