@@ -9,6 +9,7 @@ import { useUsers } from "@/context/UsersContext";
 import type { NotificationItem } from "@/app/api/notifications/route";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
+import { trackTabClick } from "@/lib/track";
 
 const HomeIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -276,7 +277,7 @@ export default function BottomNav() {
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
                 {...(tour ? { "data-tour": tour } : {})}
-                onClick={() => { handleTap(href); setNotifOpen(false); }}
+                onClick={() => { handleTap(href); setNotifOpen(false); trackTabClick(label); }}
                 style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
                 className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
               >

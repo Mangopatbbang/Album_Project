@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
     const { query, results_count } = data;
     if (!query) return NextResponse.json({ ok: false });
     await supabaseServer.from("search_logs").insert({ user_id: userId, query, results_count: results_count ?? 0 });
+  } else if (type === "page_view" || type === "tab_click" || type === "feature_click") {
+    await supabaseServer.from("events").insert({
+      user_id: userId,
+      type,
+      path: data.path ?? null,
+      data: { ...data },
+      device: data.device ?? null,
+    });
   } else {
     return NextResponse.json({ ok: false });
   }

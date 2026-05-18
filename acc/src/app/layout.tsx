@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import { UsersProvider } from "@/context/UsersContext";
@@ -11,6 +12,7 @@ import TutorialModal from "@/components/ui/TutorialModal";
 import SpotlightTour from "@/components/ui/SpotlightTour";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { ToastProvider } from "@/components/ui/Toast";
+import PageViewTracker from "@/components/analytics/PageViewTracker";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -57,6 +59,7 @@ export default function RootLayout({
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
+        <Analytics />
         <AuthProvider>
           <UsersProvider>
           <UserAvatarsProvider>
@@ -69,6 +72,7 @@ export default function RootLayout({
             <SpotlightTour />
             <TutorialModal />
             <OnboardingModal />
+            <PageViewTracker />
           </ToastProvider>
           </UserAvatarsProvider>
           </UsersProvider>
