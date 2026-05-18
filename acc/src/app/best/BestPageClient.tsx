@@ -302,12 +302,12 @@ function SectionGrid({
           </button>
         )}
       </div>
-      <div className="flex gap-2 sm:gap-2.5 overflow-x-auto pb-1">
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-2.5 sm:overflow-x-auto sm:pb-1">
         {top.map((album, idx) => (
           <div
             key={album.id}
             style={{ cursor: "pointer" }}
-            className={`${idx >= 3 ? "hidden sm:block sm:flex-none sm:w-[90px]" : "flex-shrink-0 w-[84px] sm:flex-none sm:w-[90px]"} transition-transform hover:scale-[1.04] active:scale-[0.96]`}
+            className={`${idx >= 3 ? "hidden sm:block sm:flex-none sm:w-[90px]" : "sm:flex-shrink-0 sm:flex-none sm:w-[90px]"} transition-transform hover:scale-[1.04] active:scale-[0.96]`}
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -318,7 +318,7 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "box-shadow 0.15s",
             }}
-            className="w-[84px] h-[84px] sm:w-[90px] sm:h-[90px]"
+            className="w-full aspect-square sm:aspect-auto sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
