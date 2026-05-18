@@ -106,7 +106,7 @@ function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolea
 }
 
 export default function SplashScreen() {
-  const [show, setShow] = useState(false);
+  const [phase, setPhase] = useState<"loading" | "splash" | "done">("loading");
   const [lineVisible, setLineVisible] = useState(false);
   const [opening, setOpening] = useState(false);
 
@@ -114,14 +114,21 @@ export default function SplashScreen() {
     const seen = sessionStorage.getItem("acc_splash");
     if (!seen) {
       sessionStorage.setItem("acc_splash", "1");
-      setShow(true);
+      setPhase("splash");
       setTimeout(() => setLineVisible(true), 1400);
       setTimeout(() => setOpening(true), 2300);
-      setTimeout(() => setShow(false), 4500);
+      setTimeout(() => setPhase("done"), 4500);
+    } else {
+      setPhase("done");
     }
   }, []);
 
-  if (!show) return null;
+  if (phase === "done") return null;
+
+  // useEffect 실행 전(loading): 문짝 색과 동일한 배경으로 홈화면 노출 차단
+  if (phase === "loading") {
+    return <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0c0906" }} />;
+  }
 
   return (
     <div
