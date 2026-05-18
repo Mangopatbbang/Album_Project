@@ -217,17 +217,20 @@ const [filterLoading, setFilterLoading] = useState(false);
   const handleGenreChange = (val: string) => {
     const next = genre === val ? "" : val;
     setGenre(next);
+    window.scrollTo(0, 0);
     handleFilter(search, next, region, sort, unrated, myScore);
   };
 
   const handleRegionChange = (val: string) => {
     const next = region === val ? "" : val;
     setRegion(next);
+    window.scrollTo(0, 0);
     handleFilter(search, genre, next, sort, unrated, myScore);
   };
 
   const handleSortChange = (val: string) => {
     setSort(val);
+    window.scrollTo(0, 0);
     handleFilter(search, genre, region, val, unrated, myScore);
   };
 
@@ -235,16 +238,18 @@ const [filterLoading, setFilterLoading] = useState(false);
     const next = !unrated;
     const nextSort = next && (sort === "my_desc" || sort === "my_asc") ? "newest" : sort;
     setUnrated(next);
-    if (next) setMyScore(null); // 미평가 켜면 점수필터 해제
+    if (next) setMyScore(null);
     if (nextSort !== sort) setSort(nextSort);
+    window.scrollTo(0, 0);
     handleFilter(search, genre, region, nextSort, next, null);
   };
 
   const handleScoreFilter = (score: number) => {
     const next = myScore === score ? null : score;
     setMyScore(next);
-    if (next === null) setScoreUserId(null); // 점수필터 해제 시 scoreUserId도 초기화
-    setUnrated(false); // 점수필터 켜면 미평가 해제
+    if (next === null) setScoreUserId(null);
+    setUnrated(false);
+    window.scrollTo(0, 0);
     handleFilter(search, genre, region, sort, false, next, next === null ? null : scoreUserId);
   };
 

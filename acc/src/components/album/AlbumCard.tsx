@@ -46,7 +46,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <>
     <button
       data-tour="album-card"
-      onClick={() => { onNavigate?.(); router.push(`/album/${album.id}`); }}
+      onClick={() => { onNavigate?.(); router.push(`/album/${album.id}`, { scroll: false }); }}
       style={{
         backgroundColor: "var(--bg-card)",
         border: `1px solid ${glowBorder(album.avg)}`,
@@ -169,7 +169,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         artistName={artistModal.name}
         displayName={artistModal.display}
         onClose={() => setArtistModal(null)}
-        onAlbumClick={(a) => { setArtistModal(null); router.push(`/album/${a.id}`); }}
+        onAlbumClick={(a) => { setArtistModal(null); router.push(`/album/${a.id}`, { scroll: false }); }}
       />
     )}
     </>
