@@ -12,6 +12,7 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
@@ -247,19 +248,6 @@ export default function ReviewsClient() {
   }, [items, isGroupedView]);
 
   const isFiltered = filterUser !== "" || filterAlbumId !== "" || filterReview !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
-  const scoreActive = minScore !== 1 || maxScore !== 8;
-
-  const baseSelect: React.CSSProperties = {
-    background: "none", border: "none", color: "var(--text)",
-    fontSize: 12, cursor: "pointer", outline: "none", padding: "6px 8px",
-  };
-
-  const filterPill = (active: boolean): React.CSSProperties => ({
-    display: "flex", alignItems: "center", borderRadius: 6, overflow: "hidden",
-    border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
-    backgroundColor: active ? "rgba(var(--accent-rgb), 0.07)" : "var(--bg-elevated)",
-    transition: "border-color 0.15s, background-color 0.15s",
-  });
 
   return (
     <div data-tour="reviews-main">
@@ -283,7 +271,10 @@ export default function ReviewsClient() {
         <div
           className="min-h-[36px] sm:min-h-0"
           style={{
-            ...filterPill(filterReview !== ""),
+            display: "flex", alignItems: "center", borderRadius: 6, overflow: "hidden",
+            border: `1px solid ${filterReview !== "" ? "var(--accent)" : "var(--border)"}`,
+            backgroundColor: filterReview !== "" ? "rgba(var(--accent-rgb), 0.07)" : "var(--bg-elevated)",
+            transition: "border-color 0.15s, background-color 0.15s",
             paddingLeft: 8, paddingRight: filterReview ? 4 : 8,
           }}
         >
@@ -308,31 +299,48 @@ export default function ReviewsClient() {
         </div>
 
         {/* 멤버 */}
-        <div className="min-h-[36px] sm:min-h-0" style={filterPill(filterUser !== "")}>
-          <select style={baseSelect} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
-            <option value="">전체 멤버</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
-          </select>
-        </div>
+        <FilterSelect
+          value={filterUser}
+          onChange={(v) => handleFilter(v, filterAlbumId, minScore, maxScore, sort)}
+          options={[
+            { value: "", label: "전체 멤버" },
+            ...users.map((u) => ({ value: u.id, label: `${u.emoji} ${u.display_name}` })),
+          ]}
+          title="멤버"
+          active={filterUser !== ""}
+          className="min-h-[36px] sm:min-h-0"
+        />
 
         {/* 점수 범위 */}
-        <div className="min-h-[36px] sm:min-h-0" style={filterPill(scoreActive)}>
-          <select style={{ ...baseSelect, paddingRight: 4 }} value={minScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, Number(e.target.value), maxScore, sort)}>
-            {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이상</option>)}
-          </select>
-          <span style={{ color: "var(--text-muted)", fontSize: 11, userSelect: "none", flexShrink: 0 }}>–</span>
-          <select style={{ ...baseSelect, paddingLeft: 4 }} value={maxScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, Number(e.target.value), sort)}>
-            {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이하</option>)}
-          </select>
-        </div>
+        <FilterSelect
+          value={minScore}
+          onChange={(v) => handleFilter(filterUser, filterAlbumId, Number(v), maxScore, sort)}
+          options={SCORE_OPTIONS.map((s) => ({ value: s, label: `${s}점 이상` }))}
+          title="최소 점수"
+          active={minScore !== 1}
+          className="min-h-[36px] sm:min-h-0"
+        />
+        <FilterSelect
+          value={maxScore}
+          onChange={(v) => handleFilter(filterUser, filterAlbumId, minScore, Number(v), sort)}
+          options={SCORE_OPTIONS.map((s) => ({ value: s, label: `${s}점 이하` }))}
+          title="최대 점수"
+          active={maxScore !== 8}
+          className="min-h-[36px] sm:min-h-0"
+        />
 
         {/* 정렬 */}
-        <div className="min-h-[36px] sm:min-h-0" style={filterPill(sort !== "latest")}>
-          <select style={baseSelect} value={sort} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, e.target.value)}>
-            <option value="latest">최신순</option>
-            <option value="most_liked">공감 많은순</option>
-          </select>
-        </div>
+        <FilterSelect
+          value={sort}
+          onChange={(v) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, v)}
+          options={[
+            { value: "latest", label: "최신순" },
+            { value: "most_liked", label: "공감 많은순" },
+          ]}
+          title="정렬"
+          active={sort !== "latest"}
+          className="min-h-[36px] sm:min-h-0"
+        />
 
         {/* 초기화 */}
         {isFiltered && (

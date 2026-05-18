@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { koGenre } from "@/lib/bio";
 import Spinner from "@/components/ui/Spinner";
 import { trackSearch } from "@/lib/track";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -296,24 +297,14 @@ return (
           </div>
 
           {/* 정렬 */}
-          <select
+          <FilterSelect
             value={sort}
-            onChange={(e) => handleSortChange(e.target.value)}
-            style={{
-              backgroundColor: "var(--bg-card)",
-              border: "1px solid var(--border)",
-              color: "var(--text)",
-              borderRadius: 8,
-              padding: "7px 10px",
-              fontSize: 12,
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          >
-            {sortOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            onChange={handleSortChange}
+            options={sortOptions}
+            title="정렬 기준"
+            active={sort !== "newest"}
+            style={{ borderRadius: 8, padding: "7px 10px", flexShrink: 0 }}
+          />
 
           {/* 입고 버튼 */}
           {profile && (
@@ -408,29 +399,24 @@ return (
             )}
             {/* 내 평점 select (모바일 전용) */}
             {profile && (
-              <select
+              <FilterSelect
                 value={myScore ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value ? Number(e.target.value) : null;
-                  setMyScore(v);
-                  if (!v) setScoreUserId(null);
+                onChange={(v) => {
+                  const val = v ? Number(v) : null;
+                  setMyScore(val);
+                  if (!val) setScoreUserId(null);
                   setUnrated(false);
-                  handleFilter(search, genre, region, sort, false, v, v === null ? null : scoreUserId);
+                  handleFilter(search, genre, region, sort, false, val, val === null ? null : scoreUserId);
                 }}
-                style={{
-                  backgroundColor: "transparent",
-                  border: `1px solid ${myScore ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
-                  color: myScore ? "var(--accent)" : "var(--text-muted)",
-                  borderRadius: 6, padding: "4px 8px", fontSize: 11,
-                  cursor: "pointer", fontWeight: myScore ? 700 : 400,
-                }}
+                options={[
+                  { value: "", label: "내 평점" },
+                  ...[1,2,3,4,5,6,7,8].map((s) => ({ value: s, label: `${s}점` })),
+                ]}
+                title="내 평점"
+                active={myScore !== null}
                 className="sm:hidden"
-              >
-                <option value="">내 평점</option>
-                {[1,2,3,4,5,6,7,8].map((s) => (
-                  <option key={s} value={s}>{s}점</option>
-                ))}
-              </select>
+                style={{ fontSize: 11, padding: "4px 8px" }}
+              />
             )}
           </div>
         </div>

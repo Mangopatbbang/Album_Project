@@ -179,6 +179,11 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 @keyframes lightBloom {
   from { opacity: 0; }
   to   { opacity: 1; }
