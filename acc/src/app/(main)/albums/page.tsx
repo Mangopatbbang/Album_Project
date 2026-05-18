@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
-import Header from "@/components/layout/Header";
 import PageHeader from "@/components/layout/PageHeader";
 import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
@@ -90,7 +89,7 @@ export default async function AlbumsPage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
 
       <main style={{ ...containerStyle, padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         <PageHeader

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
 import BoardClient from "./BoardClient";
 
 export const metadata: Metadata = {
@@ -10,7 +9,7 @@ export const metadata: Metadata = {
 export default function BoardPage() {
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
       <BoardClient />
     </div>
   );

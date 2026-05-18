@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
@@ -62,7 +61,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
 
       <main id="playlist-card" style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         {/* 헤더 */}

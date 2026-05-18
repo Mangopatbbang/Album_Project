@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
 import PageHeader from "@/components/layout/PageHeader";
 import { fetchAllAlbumsWithRatings, getBestByYear, getBestByGenre, getBestByArtist, getRankedAll, getHiddenGems, AlbumStat } from "@/lib/stats";
 import BestPageClient from "./BestPageClient";
@@ -34,7 +33,7 @@ export default async function BestPage({
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))", overflowX: "hidden" }}>
         <PageHeader title="청음감" subtitle="멤버가 선정한 명반 순위" />
 

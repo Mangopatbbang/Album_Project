@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
-import Header from "@/components/layout/Header";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
@@ -255,7 +254,7 @@ export default async function ProfilePage({
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-    <Header />
+
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
       <div id="profile-card" className="flex flex-col" style={{ backgroundColor: "var(--bg)" }}>

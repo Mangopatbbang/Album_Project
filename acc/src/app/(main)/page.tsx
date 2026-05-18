@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Header from "@/components/layout/Header";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
@@ -184,7 +183,7 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
 
       <main>
         {/* 히어로 */}

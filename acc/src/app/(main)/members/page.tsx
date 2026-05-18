@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
 import PageHeader from "@/components/layout/PageHeader";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
@@ -103,7 +102,7 @@ export default async function MembersPage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-      <Header />
+
       <main data-tour="members-main" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         <PageHeader title="청음인" subtitle="청음사 멤버 현황" />
 
