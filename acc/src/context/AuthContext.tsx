@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -74,17 +74,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
     if (session?.user) await fetchProfile(session.user.id);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabaseBrowser.auth.signOut();
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ authUser, profile, loading, signOut, refreshProfile }),
+    [authUser, profile, loading, signOut, refreshProfile],
+  );
 
   return (
-    <AuthContext.Provider value={{ authUser, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

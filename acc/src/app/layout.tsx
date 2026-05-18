@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import { UsersProvider } from "@/context/UsersContext";
+import { NotificationsProvider } from "@/context/NotificationsContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import BottomNav from "@/components/layout/BottomNav";
 import FloatingActions from "@/components/ui/FloatingActions";
@@ -61,6 +62,7 @@ export default function RootLayout({
         <AuthProvider>
           <UsersProvider>
           <UserAvatarsProvider>
+          <NotificationsProvider>
           <ToastProvider>
             <SplashScreen />
             {children}
@@ -72,6 +74,7 @@ export default function RootLayout({
             <OnboardingModal />
             <PageViewTracker />
           </ToastProvider>
+          </NotificationsProvider>
           </UserAvatarsProvider>
           </UsersProvider>
         </AuthProvider>

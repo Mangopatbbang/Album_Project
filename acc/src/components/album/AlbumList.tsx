@@ -302,6 +302,7 @@ return (
             onChange={handleSortChange}
             options={sortOptions}
             title="정렬 기준"
+            feature="음반고_정렬"
             active={sort !== "newest"}
             style={{ borderRadius: 8, padding: "7px 10px", flexShrink: 0 }}
           />
@@ -413,6 +414,7 @@ return (
                   ...[1,2,3,4,5,6,7,8].map((s) => ({ value: s, label: `${s}점` })),
                 ]}
                 title="내 평점"
+                feature="음반고_내평점필터"
                 active={myScore !== null}
                 className="sm:hidden"
                 style={{ fontSize: 11, padding: "4px 8px" }}

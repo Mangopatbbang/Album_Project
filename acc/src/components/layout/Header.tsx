@@ -6,9 +6,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
-import type { NotificationItem } from "@/app/api/notifications/route";
+import { useNotifications } from "@/context/NotificationsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { apiFetch } from "@/lib/apiFetch";
 
 
 export default function Header() {
@@ -28,7 +27,7 @@ export default function Header() {
     navHoverTimeout.current = setTimeout(() => setHoveredNav(null), 120);
   };
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const { notifications, markAllRead } = useNotifications();
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -41,12 +40,6 @@ export default function Header() {
     ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
   ];
 
-  useEffect(() => {
-    if (!profile) return;
-    fetch(`/api/notifications?userId=${profile.id}`)
-      .then((r) => r.json())
-      .then((d) => setNotifications(d.notifications ?? []));
-  }, [profile]);
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -63,14 +56,8 @@ export default function Header() {
 
   const handleBellClick = async () => {
     setShowNotif((v) => !v);
-    if (!showNotif && unreadCount > 0 && profile) {
-      // 열면 전체 읽음 처리
-      await apiFetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (!showNotif && unreadCount > 0) {
+      await markAllRead();
     }
   };
 

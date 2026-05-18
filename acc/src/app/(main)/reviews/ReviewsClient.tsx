@@ -307,6 +307,7 @@ export default function ReviewsClient() {
             ...users.map((u) => ({ value: u.id, label: u.display_name })),
           ]}
           title="멤버"
+          feature="청음평_멤버필터"
           active={filterUser !== ""}
           className="min-h-[36px] sm:min-h-0"
         />
@@ -317,6 +318,7 @@ export default function ReviewsClient() {
           onChange={(v) => handleFilter(filterUser, filterAlbumId, Number(v), maxScore, sort)}
           options={SCORE_OPTIONS.map((s) => ({ value: s, label: `${s}점 이상` }))}
           title="최소 점수"
+          feature="청음평_최소점수"
           active={minScore !== 1}
           className="min-h-[36px] sm:min-h-0"
         />
@@ -325,6 +327,7 @@ export default function ReviewsClient() {
           onChange={(v) => handleFilter(filterUser, filterAlbumId, minScore, Number(v), sort)}
           options={SCORE_OPTIONS.map((s) => ({ value: s, label: `${s}점 이하` }))}
           title="최대 점수"
+          feature="청음평_최대점수"
           active={maxScore !== 8}
           className="min-h-[36px] sm:min-h-0"
         />
@@ -338,6 +341,7 @@ export default function ReviewsClient() {
             { value: "most_liked", label: "공감 많은순" },
           ]}
           title="정렬"
+          feature="청음평_정렬"
           active={sort !== "latest"}
           className="min-h-[36px] sm:min-h-0"
         />

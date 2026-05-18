@@ -24,6 +24,7 @@ export default function AvatarWithLightbox({ avatarUrl, emoji, displayName }: Pr
           cursor: avatarUrl ? "pointer" : "default",
           transition: "opacity 0.15s",
         }}
+        className={avatarUrl ? "active:opacity-75" : ""}
         onMouseEnter={(e) => { if (avatarUrl) e.currentTarget.style.opacity = "0.8"; }}
         onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
       >

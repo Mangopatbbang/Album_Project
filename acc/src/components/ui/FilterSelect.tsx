@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { trackFeatureClick } from "@/lib/track";
 
 export interface FilterOption {
   value: string | number;
@@ -12,12 +13,13 @@ interface Props {
   onChange: (value: string) => void;
   options: FilterOption[];
   title?: string;
+  feature?: string;
   active?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export default function FilterSelect({ value, onChange, options, title, active, className, style }: Props) {
+export default function FilterSelect({ value, onChange, options, title, feature, active, className, style }: Props) {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
@@ -62,6 +64,7 @@ export default function FilterSelect({ value, onChange, options, title, active, 
 
   const handleSelect = (v: string) => {
     onChange(v);
+    if (feature) trackFeatureClick(feature, v);
     handleClose();
   };
 

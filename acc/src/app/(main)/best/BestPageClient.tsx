@@ -610,6 +610,7 @@ export default function BestPageClient({
             { value: "해외", label: "해외" },
           ]}
           title="지역"
+          feature="청음감_지역필터"
           active={regionFilter !== "전체"}
           style={{ flex: 1, justifyContent: "center" }}
         />
@@ -623,6 +624,7 @@ export default function BestPageClient({
             { value: "artist", label: "아티스트별" },
           ]}
           title="보기 방식"
+          feature="청음감_보기방식"
           active={view !== "all"}
           style={{ flex: 1, justifyContent: "center" }}
         />
@@ -635,6 +637,7 @@ export default function BestPageClient({
               { value: "count", label: "음반 수순" },
             ]}
             title="정렬"
+            feature="청음감_아티스트정렬"
             active={artistSort !== "avg"}
           />
         )}

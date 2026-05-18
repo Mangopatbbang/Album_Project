@@ -6,9 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
-import type { NotificationItem } from "@/app/api/notifications/route";
+import { useNotifications } from "@/context/NotificationsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { apiFetch } from "@/lib/apiFetch";
 import { trackTabClick } from "@/lib/track";
 
 const HomeIcon = () => (
@@ -67,16 +66,9 @@ export default function BottomNav() {
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
   const [bouncingHref, setBouncingHref] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const { notifications, markAllRead } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!profile) return;
-    fetch(`/api/notifications?userId=${profile.id}`)
-      .then((r) => r.json())
-      .then((d) => setNotifications(d.notifications ?? []));
-  }, [profile]);
 
   // 패널 외부 터치 시 닫기
   useEffect(() => {
@@ -99,13 +91,8 @@ export default function BottomNav() {
   const handleBellClick = async () => {
     const opening = !notifOpen;
     setNotifOpen(opening);
-    if (opening && unreadCount > 0 && profile) {
-      await apiFetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (opening && unreadCount > 0) {
+      await markAllRead();
     }
   };
 
