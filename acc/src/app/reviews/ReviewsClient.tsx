@@ -280,10 +280,13 @@ export default function ReviewsClient() {
       {/* 필터 바 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
         {/* 소감 검색 */}
-        <div style={{
-          ...filterPill(filterReview !== ""),
-          paddingLeft: 8, paddingRight: filterReview ? 4 : 8,
-        }}>
+        <div
+          className="min-h-[36px] sm:min-h-0"
+          style={{
+            ...filterPill(filterReview !== ""),
+            paddingLeft: 8, paddingRight: filterReview ? 4 : 8,
+          }}
+        >
           <input
             type="text"
             value={filterReview}
@@ -305,7 +308,7 @@ export default function ReviewsClient() {
         </div>
 
         {/* 멤버 */}
-        <div style={filterPill(filterUser !== "")}>
+        <div className="min-h-[36px] sm:min-h-0" style={filterPill(filterUser !== "")}>
           <select style={baseSelect} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
             <option value="">전체 멤버</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.emoji} {u.display_name}</option>)}
@@ -313,7 +316,7 @@ export default function ReviewsClient() {
         </div>
 
         {/* 점수 범위 */}
-        <div style={filterPill(scoreActive)}>
+        <div className="min-h-[36px] sm:min-h-0" style={filterPill(scoreActive)}>
           <select style={{ ...baseSelect, paddingRight: 4 }} value={minScore} onChange={(e) => handleFilter(filterUser, filterAlbumId, Number(e.target.value), maxScore, sort)}>
             {SCORE_OPTIONS.map((s) => <option key={s} value={s}>{s}점 이상</option>)}
           </select>
@@ -324,7 +327,7 @@ export default function ReviewsClient() {
         </div>
 
         {/* 정렬 */}
-        <div style={filterPill(sort !== "latest")}>
+        <div className="min-h-[36px] sm:min-h-0" style={filterPill(sort !== "latest")}>
           <select style={baseSelect} value={sort} onChange={(e) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, e.target.value)}>
             <option value="latest">최신순</option>
             <option value="most_liked">공감 많은순</option>
@@ -578,6 +581,7 @@ function ReviewRow({
           {/* 댓글 토글 */}
           <button
             onClick={onToggleExpand}
+            className="min-h-[36px] sm:min-h-0"
             style={{
               display: "flex", alignItems: "center", gap: 3,
               background: "none", border: "none", cursor: "pointer",
@@ -600,6 +604,7 @@ function ReviewRow({
             <button
               onClick={onLike}
               disabled={liking}
+              className="min-h-[36px] sm:min-h-0"
               style={{
                 display: "flex", alignItems: "center", gap: 3,
                 background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",

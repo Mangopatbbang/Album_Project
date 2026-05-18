@@ -337,12 +337,12 @@ return (
           )}
         </div>
 
-        {/* Row 2: 장르 pills(스크롤) | 국내·해외·미청음만 */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          {/* 장르 pills — 가로 스크롤 */}
+        {/* Row 2(모바일: 장르 줄) + Row 3(모바일: 필터 줄) — flex-wrap으로 자동 분리 */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5" style={{ marginBottom: 8 }}>
+          {/* 장르 pills — 모바일 전체너비, 데스크탑 flex-1 */}
           <div
-            className="no-scrollbar"
-            style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, minWidth: 0, paddingBottom: 2 }}
+            className="no-scrollbar w-full sm:flex-1 sm:min-w-0"
+            style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}
           >
             {(["", ...genres] as string[]).map((g) => {
               const label = g === "" ? "전체" : koGenre(g);
@@ -351,6 +351,7 @@ return (
                 <button
                   key={g}
                   onClick={() => handleGenreChange(g)}
+                  className="flex items-center justify-center min-h-[40px] sm:min-h-0"
                   style={{
                     flexShrink: 0,
                     backgroundColor: isSelected ? "var(--accent)" : "var(--bg-card)",
@@ -371,8 +372,8 @@ return (
             })}
           </div>
 
-          {/* 구분선 */}
-          <div style={{ width: 1, height: 18, backgroundColor: "var(--border)", flexShrink: 0 }} />
+          {/* 구분선 — 데스크탑만 */}
+          <div className="hidden sm:block flex-shrink-0" style={{ width: 1, height: 18, backgroundColor: "var(--border)" }} />
 
           {/* 국내 / 해외 / 미청음만 / 모바일 내평점 — 우측 고정 */}
           <div style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
@@ -380,6 +381,7 @@ return (
               <button
                 key={r}
                 onClick={() => handleRegionChange(r)}
+                className="flex items-center justify-center min-h-[40px] sm:min-h-0"
                 style={{
                   backgroundColor: region === r ? "rgba(232,213,163,0.12)" : "transparent",
                   border: `1px solid ${region === r ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
@@ -393,6 +395,7 @@ return (
             {profile && (
               <button
                 onClick={handleUnratedToggle}
+                className="flex items-center justify-center min-h-[40px] sm:min-h-0"
                 style={{
                   backgroundColor: unrated ? "rgba(232,213,163,0.12)" : "transparent",
                   border: `1px solid ${unrated ? "rgba(232,213,163,0.45)" : "var(--border)"}`,

@@ -54,8 +54,9 @@ function HiddenGemsBar({
               {/* 커버 */}
               <div
                 onClick={() => onAlbumClick(album)}
+                className="w-10 h-10 sm:w-[34px] sm:h-[34px]"
                 style={{
-                  width: 34, height: 34, borderRadius: 4, overflow: "hidden",
+                  borderRadius: 4, overflow: "hidden",
                   cursor: "pointer", backgroundColor: "var(--bg-elevated)",
                   border: `1px solid ${isHovered ? "rgba(232,213,163,0.6)" : "var(--border)"}`,
                   transition: "border-color 0.12s",
@@ -83,7 +84,7 @@ function HiddenGemsBar({
               {/* 모바일 전용: 커버 아래 제목 텍스트 (데스크탑에서 hidden) */}
               <span className="hgem-label" style={{
                 fontSize: 8, color: "var(--text-muted)", fontWeight: 500,
-                maxWidth: 34, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                maxWidth: 40, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 lineHeight: 1, textAlign: "center",
               }}>
                 {album.title}
