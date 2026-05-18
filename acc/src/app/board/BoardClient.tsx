@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import Spinner from "@/components/ui/Spinner";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type Announcement = {
   id: number;
@@ -395,8 +396,9 @@ export default function BoardClient() {
             </div>
           ) : (
             <>
-              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12 }}>
-                {profile.emoji} {profile.display_name} 으로 제출됩니다
+              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <UserAvatar avatarUrl={profile.avatar_url ?? null} size={16} />
+                {profile.display_name} 으로 제출됩니다
               </p>
               {/* 카테고리 선택 (optional) */}
               <div style={{ marginBottom: 12 }}>

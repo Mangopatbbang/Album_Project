@@ -304,7 +304,7 @@ export default function ReviewsClient() {
           onChange={(v) => handleFilter(v, filterAlbumId, minScore, maxScore, sort)}
           options={[
             { value: "", label: "전체 멤버" },
-            ...users.map((u) => ({ value: u.id, label: `${u.emoji} ${u.display_name}` })),
+            ...users.map((u) => ({ value: u.id, label: u.display_name })),
           ]}
           title="멤버"
           active={filterUser !== ""}

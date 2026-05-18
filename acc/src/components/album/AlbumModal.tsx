@@ -963,10 +963,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       )}
                       {!review && <span style={{ flex: 1 }} />}
 
-                      {/* 좋아요 누른 사람 이모지 */}
+                      {/* 좋아요 누른 사람 아바타 */}
                       {likedByUsers.length > 0 && (
-                        <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, letterSpacing: "0.05em" }}>
-                          {likedByUsers.map((u) => u.emoji).join("")}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                          {likedByUsers.map((u) => (
+                            <UserAvatar key={u.id} avatarUrl={avatarMap[u.id]} size={14} />
+                          ))}
                         </span>
                       )}
 
@@ -1495,7 +1497,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                               iLiked ? "heart-pop" : "active:scale-90",
                               iLiked || hoveredTrack === i
                                 ? "opacity-100"
-                                : "opacity-0 sm:opacity-0 max-sm:opacity-30",
+                                : "opacity-0 sm:opacity-0 max-sm:opacity-50",
                             ].join(" ")}
                           >
                             ♥
