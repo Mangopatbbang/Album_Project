@@ -117,9 +117,7 @@ export default function BottomNav() {
   const navItems = [
     { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
     { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums" },
-    { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
     { href: "/reviews", label: "청음평", Icon: ReviewsIcon, tour: "nav-reviews" },
-    { href: "/members", label: "청음인", Icon: MembersIcon, tour: "nav-members" },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
       label: profile ? "청음록" : "입장",

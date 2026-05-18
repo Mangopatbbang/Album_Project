@@ -315,7 +315,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
         {/* 버튼 */}
         <div style={{ padding: "12px 14px 14px" }}>
-          <div style={{ position: "relative", height: 36 }}>
+          <div style={{ position: "relative", height: 44 }}>
 
             {/* 기본 row: 감상하기 / 평가하기 / 다른 인연 */}
             <div style={{
@@ -347,7 +347,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 style={{
                   backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
                   border: "1px solid var(--border)", borderRadius: "50%",
-                  width: 36, height: 36, flexShrink: 0,
+                  width: 44, height: 44, flexShrink: 0,
                   cursor: loading ? "default" : "pointer",
                   opacity: loading ? 0.4 : 1,
                   display: "flex", alignItems: "center", justifyContent: "center",

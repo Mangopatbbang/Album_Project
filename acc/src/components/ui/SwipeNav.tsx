@@ -31,9 +31,7 @@ export default function SwipeNav() {
     const pages = [
       "/",
       "/albums",
-      "/best",
-      "/themes",
-      "/members",
+      "/reviews",
       ...(profilePath ? [profilePath] : []),
     ];
 

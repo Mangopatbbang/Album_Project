@@ -302,6 +302,38 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* 빠른 접근 — 모바일에서 탭 제거된 페이지들 */}
+          <div className="sm:hidden" style={{ marginTop: 28 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {[
+                { href: "/best", label: "청음감", desc: "명반 순위" },
+                { href: "/themes", label: "청음집", desc: "테마 컬렉션" },
+                { href: "/members", label: "청음인", desc: "멤버 목록" },
+              ].map(({ href, label, desc }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "14px 8px",
+                    backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    textDecoration: "none",
+                    minHeight: 72,
+                  }}
+                >
+                  <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>{label}</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{desc}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
 
       </main>
