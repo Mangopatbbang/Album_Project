@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 type Announcement = {
   id: number;
@@ -404,34 +405,38 @@ export default function BoardClient() {
               <div style={{ marginBottom: 12 }}>
                 <label style={labelStyle}>관련 항목 <span style={{ fontWeight: 400, opacity: 0.6 }}>(선택)</span></label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                  <select
+                  <FilterSelect
                     value={inquiryCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    style={{ ...inputStyle, width: "auto", minWidth: 130, cursor: "pointer", appearance: "auto" }}
-                  >
-                    <option value="">없음</option>
-                    <option value="게시판">게시판</option>
-                    <option value="앨범">앨범</option>
-                    <option value="아티스트">아티스트</option>
-                    <option value="기타">기타</option>
-                  </select>
+                    onChange={handleCategoryChange}
+                    options={[
+                      { value: "", label: "없음" },
+                      { value: "게시판", label: "게시판" },
+                      { value: "앨범", label: "앨범" },
+                      { value: "아티스트", label: "아티스트" },
+                      { value: "기타", label: "기타" },
+                    ]}
+                    title="관련 항목"
+                    style={{ ...inputStyle, width: "auto", minWidth: 130, justifyContent: "space-between", cursor: "pointer" }}
+                  />
 
                   {/* 게시판 → 사이트 탭 선택 */}
                   {inquiryCategory === "게시판" && (
-                    <select
+                    <FilterSelect
                       value={inquirySubSelect}
-                      onChange={(e) => setInquirySubSelect(e.target.value)}
-                      style={{ ...inputStyle, width: "auto", minWidth: 120, cursor: "pointer", appearance: "auto" }}
-                    >
-                      <option value="">탭 선택</option>
-                      <option value="홈">홈</option>
-                      <option value="음반고">음반고</option>
-                      <option value="도감">청음감</option>
-                      <option value="청음집">청음집</option>
-                      <option value="청음인">청음인</option>
-                      <option value="청음록">청음록</option>
-                      <option value="문의판">문의판</option>
-                    </select>
+                      onChange={setInquirySubSelect}
+                      options={[
+                        { value: "", label: "탭 선택" },
+                        { value: "홈", label: "홈" },
+                        { value: "음반고", label: "음반고" },
+                        { value: "도감", label: "청음감" },
+                        { value: "청음집", label: "청음집" },
+                        { value: "청음인", label: "청음인" },
+                        { value: "청음록", label: "청음록" },
+                        { value: "문의판", label: "문의판" },
+                      ]}
+                      title="탭 선택"
+                      style={{ ...inputStyle, width: "auto", minWidth: 120, justifyContent: "space-between", cursor: "pointer" }}
+                    />
                   )}
 
                   {/* 앨범/아티스트 → 검색 */}

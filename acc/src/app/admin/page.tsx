@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -1088,14 +1089,20 @@ export default function AdminPage() {
             <p style={secTitle}>활동 로그</p>
             <p style={secDesc}>앨범 등록·수정·삭제와 평점 이력을 확인합니다. 15일 이전 로그는 주기적으로 정리하세요.</p>
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-              <select value={logsAction} onChange={(e) => setLogsAction(e.target.value)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
-                <option value="">전체 액션</option>
-                <option value="album_add">앨범 등록</option>
-                <option value="album_edit">앨범 수정</option>
-                <option value="album_delete">앨범 삭제</option>
-                <option value="rating_set">평점 저장</option>
-                <option value="rating_delete">평점 삭제</option>
-              </select>
+              <FilterSelect
+                value={logsAction}
+                onChange={setLogsAction}
+                options={[
+                  { value: "", label: "전체 액션" },
+                  { value: "album_add", label: "앨범 등록" },
+                  { value: "album_edit", label: "앨범 수정" },
+                  { value: "album_delete", label: "앨범 삭제" },
+                  { value: "rating_set", label: "평점 저장" },
+                  { value: "rating_delete", label: "평점 삭제" },
+                ]}
+                title="액션 필터"
+                style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
+              />
               <button onClick={() => loadLogs(logsAction || undefined)} disabled={logsLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
                 {logsLoading ? "로딩 중..." : logs === null ? "불러오기" : "새로고침"}
               </button>
@@ -1169,11 +1176,17 @@ export default function AdminPage() {
             <p style={secDesc}>Spotify에서 앨범을 검색해 커버·트랙리스트·Spotify ID를 직접 연결합니다. 신규 앨범 입고 후 자동 매칭이 안 된 경우 사용하세요.</p>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-              <select value={albumFilter} onChange={(e) => setAlbumFilter(e.target.value as "no_cover" | "no_spotify" | "all")} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
-                <option value="no_cover">커버 없는 앨범</option>
-                <option value="no_spotify">Spotify 미매칭</option>
-                <option value="all">전체 앨범</option>
-              </select>
+              <FilterSelect
+                value={albumFilter}
+                onChange={(v) => setAlbumFilter(v as "no_cover" | "no_spotify" | "all")}
+                options={[
+                  { value: "no_cover", label: "커버 없는 앨범" },
+                  { value: "no_spotify", label: "Spotify 미매칭" },
+                  { value: "all", label: "전체 앨범" },
+                ]}
+                title="앨범 필터"
+                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}
+              />
               <button onClick={loadAlbums} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
                 목록 불러오기
               </button>
@@ -1302,10 +1315,16 @@ export default function AdminPage() {
             <p style={secTitle}>iTunes 발매일 검증</p>
             <p style={secDesc}>DB 발매연도와 iTunes를 비교해 불일치 항목을 확인하고 교정합니다. 2026년 앨범부터 확인하는 걸 권장합니다.</p>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-              <select value={itunesScope} onChange={(e) => setItunesScope(e.target.value as "2026" | "all")} disabled={itunesRunning} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12 }}>
-                <option value="2026">2026년 앨범만 (빠름)</option>
-                <option value="all">전체 앨범 (느림)</option>
-              </select>
+              <FilterSelect
+                value={itunesScope}
+                onChange={(v) => { if (!itunesRunning) setItunesScope(v as "2026" | "all"); }}
+                options={[
+                  { value: "2026", label: "2026년 앨범만 (빠름)" },
+                  { value: "all", label: "전체 앨범 (느림)" },
+                ]}
+                title="범위"
+                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, opacity: itunesRunning ? 0.5 : 1, pointerEvents: itunesRunning ? "none" : "auto" }}
+              />
               {!itunesRunning ? (
                 <button onClick={runItunesCheck} style={{ padding: "7px 18px", borderRadius: 6, border: "none", cursor: "pointer", backgroundColor: "var(--accent)", color: "var(--bg)", fontWeight: 600, fontSize: 13 }}>▶ 조회 시작</button>
               ) : (

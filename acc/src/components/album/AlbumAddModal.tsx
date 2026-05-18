@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
 import { apiFetch } from "@/lib/apiFetch";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 const GENRES = [
   "Hip-Hop", "R&B", "Pop", "Rock",
@@ -701,10 +702,13 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div>
               <label style={labelStyle}>장르</label>
-              <select style={{ ...inputStyle, cursor: "pointer" }} value={genre} onChange={(e) => setGenre(e.target.value)}>
-                <option value="">선택 안함</option>
-                {GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
-              </select>
+              <FilterSelect
+                value={genre}
+                onChange={setGenre}
+                options={[{ value: "", label: "선택 안함" }, ...GENRES.map((g) => ({ value: g, label: g }))]}
+                title="장르"
+                style={{ ...inputStyle, justifyContent: "space-between", cursor: "pointer" }}
+              />
             </div>
             <div>
               <label style={labelStyle}>국내 / 해외</label>

@@ -286,9 +286,10 @@ function SectionGrid({
         </h2>
         ); })()}
         <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
-        {list.length > TOP_N && (
+        {list.length > 3 && (
           <button
             onClick={onMoreClick}
+            className={list.length <= TOP_N ? "sm:hidden" : ""}
             style={{
               marginLeft: "auto",
               background: "none", border: "none", cursor: "pointer",
@@ -306,7 +307,7 @@ function SectionGrid({
           <div
             key={album.id}
             style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[84px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]"
+            className={`${idx >= 3 ? "hidden sm:block" : ""} w-[112px] sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]`}
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
@@ -317,25 +318,25 @@ function SectionGrid({
               boxShadow: glowShadow(album.avg),
               transition: "box-shadow 0.15s",
             }}
-            className="w-[84px] h-[84px] sm:w-[90px] sm:h-[90px]"
+            className="w-[112px] h-[112px] sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
+                    <span style={{ fontSize: 24, color: "var(--text-muted)" }}>♪</span>
                   </div>
               }
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
-              <span style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-              <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)", fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
+              <span className="text-[13px] sm:text-[11px]" style={{ color: scoreColor(album.avg), fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
             </div>
-            <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p className="text-[12px] sm:text-[11px]" style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {album.title}
             </p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+              <p className="text-[11px] sm:text-[10px]" style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                 <span onClick={(e) => { e.stopPropagation(); onArtistClick({ name: album.artist, display: album.artist_display ?? album.artist }); }} style={{ cursor: "pointer" }} className="hover:underline">{album.artist_display ?? album.artist}</span>
               </p>
               <SpotifyAttribution spotifyId={album.spotify_id} />

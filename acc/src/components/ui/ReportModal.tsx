@@ -5,6 +5,7 @@ import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { useToast } from "@/components/ui/Toast";
+import FilterSelect from "@/components/ui/FilterSelect";
 
 const REASONS = [
   "비매너 행동",
@@ -99,18 +100,16 @@ export default function ReportModal({ onClose, defaultUserId }: Props) {
         {/* 멤버 선택 */}
         <div>
           <label style={labelStyle}>신고할 멤버</label>
-          <select
+          <FilterSelect
             value={reportedUserId}
-            onChange={(e) => setReportedUserId(e.target.value)}
-            style={{ ...inputStyle, cursor: "pointer", color: reportedUserId ? "var(--text)" : "var(--text-muted)" }}
-          >
-            <option value="">멤버를 선택하세요</option>
-            {otherUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.display_name} (@{u.id})
-              </option>
-            ))}
-          </select>
+            onChange={setReportedUserId}
+            options={[
+              { value: "", label: "멤버를 선택하세요" },
+              ...otherUsers.map((u) => ({ value: u.id, label: `${u.display_name} (@${u.id})` })),
+            ]}
+            title="신고할 멤버"
+            style={{ ...inputStyle, justifyContent: "space-between", cursor: "pointer" }}
+          />
         </div>
 
         {/* 신고 사유 */}
