@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   width: "100%",
   backgroundColor: "var(--bg-card)",
   border: "1px solid var(--border)",
@@ -16,10 +16,138 @@ const inputStyle = {
   outline: "none",
 };
 
+function EyeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+function PasswordField({
+  placeholder,
+  value,
+  onChange,
+  autoComplete,
+}: {
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        type={show ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        style={{ ...inputStyle, paddingRight: 42 }}
+        required
+        minLength={6}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        tabIndex={-1}
+        style={{
+          position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+          background: "none", border: "none", cursor: "pointer",
+          color: "var(--text-muted)", padding: 4,
+          display: "flex", alignItems: "center",
+        }}
+      >
+        {show ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </div>
+  );
+}
+
+function VisualCheckbox({ checked }: { checked: boolean }) {
+  return (
+    <div
+      style={{
+        width: 16, height: 16, borderRadius: 3, marginTop: 2, flexShrink: 0,
+        border: `1.5px solid ${checked ? "var(--accent)" : "var(--border-light)"}`,
+        backgroundColor: checked ? "var(--accent)" : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "border-color 0.12s, background-color 0.12s",
+      }}
+    >
+      {checked && (
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+          <path d="M1 3.5L3 5.5L8 1" stroke="var(--bg)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function CustomCheckbox({
+  checked,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}
+    >
+      <VisualCheckbox checked={checked} />
+      <span style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.5, userSelect: "none" }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+      color: "var(--text-muted)", opacity: 0.7,
+    }}>
+      {children}
+    </p>
+  );
+}
+
+function HintText({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: -4, paddingLeft: 2 }}>
+      {children}
+    </p>
+  );
+}
+
+function validateUsername(u: string): string | null {
+  if (u.length === 0) return null;
+  if (u.length < 2) return "2자 이상이어야 합니다";
+  if (!/^[a-zA-Z0-9_]+$/.test(u)) return "영문, 숫자, _ 만 사용 가능합니다";
+  return null;
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -28,16 +156,24 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const allAgreed = agreeTerms && agreePrivacy && agreeAge;
+  const usernameError = validateUsername(username);
+
+  const handleAllAgree = (v: boolean) => {
+    setAgreeTerms(v);
+    setAgreePrivacy(v);
+    setAgreeAge(v);
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (username.length < 2) return setError("username은 2자 이상이어야 합니다");
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) return setError("username은 영문, 숫자, _ 만 사용 가능합니다");
+    if (usernameError) return setError(usernameError);
+    if (password !== passwordConfirm) return setError("비밀번호가 일치하지 않습니다");
 
     setLoading(true);
 
-    // 1. Supabase Auth 회원가입
     const { data: authData, error: authError } = await supabaseBrowser.auth.signUp({
       email,
       password,
@@ -49,7 +185,6 @@ export default function SignupPage() {
       return;
     }
 
-    // 2. users 테이블에 프로필 생성
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -63,10 +198,9 @@ export default function SignupPage() {
     });
 
     let json: { error?: string } = {};
-    try { json = await res.json(); } catch { /* non-JSON response */ }
+    try { json = await res.json(); } catch { /* non-JSON */ }
 
     if (!res.ok) {
-      // auth 계정은 만들어졌지만 프로필 생성 실패 — username 중복 등
       await supabaseBrowser.auth.signOut();
       setError(json.error ?? "프로필 생성에 실패했습니다");
       setLoading(false);
@@ -78,8 +212,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", display: "flex", alignItems: "center" }}>
-      <div style={{ width: "100%", maxWidth: 440, margin: "0 auto", padding: "0 24px" }}>
+    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
+      <div style={{ width: "100%", maxWidth: 440, margin: "0 auto", padding: "max(48px, 8vh) 24px 48px" }}>
+
+        {/* 로고 */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <Link href="/">
             <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 28, letterSpacing: "-0.04em" }}>
@@ -89,72 +225,101 @@ export default function SignupPage() {
           <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 6 }}>청음사 입문</p>
         </div>
 
-        <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="email"
-            placeholder="이메일"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <input
-            type="password"
-            placeholder="비밀번호 (6자 이상)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-            minLength={6}
-            required
-          />
-          <input
-            type="text"
-            placeholder="username (영문, 숫자, _)"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={inputStyle}
-            required
-          />
-          <input
-            type="text"
-            placeholder="표시 이름 (선택, 기본값: username)"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            style={inputStyle}
-          />
+        <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {/* 동의 체크박스 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 0 4px" }}>
-            {[
-              { key: "terms", checked: agreeTerms, set: setAgreeTerms, label: "이용약관에 동의합니다 (필수)", link: "/terms" },
-              { key: "privacy", checked: agreePrivacy, set: setAgreePrivacy, label: "개인정보처리방침에 동의합니다 (필수)", link: "/privacy" },
-              { key: "age", checked: agreeAge, set: setAgreeAge, label: "만 14세 이상임을 확인합니다 (필수)", link: null },
-            ].map(({ key, checked, set, label, link }) => (
-              <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(e) => set(e.target.checked)}
-                  style={{ marginTop: 2, accentColor: "var(--accent)", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
-                />
-                <span style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.5 }}>
-                  {link ? (
-                    <>
-                      <Link href={link} target="_blank" style={{ color: "var(--accent)", textDecoration: "underline" }}>
-                        {label.split("에 동의합니다")[0]}
-                      </Link>
-                      에 동의합니다{" "}
-                      <span style={{ color: "var(--text-muted)" }}>(필수)</span>
-                    </>
-                  ) : (
-                    <>
-                      만 14세 이상임을 확인합니다{" "}
-                      <span style={{ color: "var(--text-muted)" }}>(필수)</span>
-                    </>
-                  )}
-                </span>
-              </label>
-            ))}
+          {/* 계정 정보 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SectionLabel>계정 정보</SectionLabel>
+            <input
+              type="email"
+              placeholder="이메일"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+              autoComplete="email"
+              required
+            />
+            <PasswordField
+              placeholder="비밀번호"
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+            />
+            <HintText>6자 이상</HintText>
+            <PasswordField
+              placeholder="비밀번호 확인"
+              value={passwordConfirm}
+              onChange={setPasswordConfirm}
+              autoComplete="new-password"
+            />
+          </div>
+
+          {/* 프로필 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SectionLabel>프로필</SectionLabel>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <input
+                type="text"
+                placeholder="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                style={{
+                  ...inputStyle,
+                  borderColor: usernameError ? "var(--error)" : "var(--border)",
+                }}
+                autoComplete="username"
+                required
+              />
+              {usernameError
+                ? <p style={{ fontSize: 11, color: "var(--error)", paddingLeft: 2 }}>{usernameError}</p>
+                : <HintText>영문·숫자·_ 만 가능 · 로그인에 사용됩니다</HintText>
+              }
+            </div>
+            <input
+              type="text"
+              placeholder="표시 이름 (선택 — 기본값: username)"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              style={inputStyle}
+              autoComplete="nickname"
+            />
+          </div>
+
+          {/* 약관 동의 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <SectionLabel>약관 동의</SectionLabel>
+            <CustomCheckbox checked={allAgreed} onChange={handleAllAgree}>
+              <span style={{ fontWeight: 600, color: "var(--text)" }}>전체 동의</span>
+            </CustomCheckbox>
+            <div style={{ height: 1, backgroundColor: "var(--border)" }} />
+            <CustomCheckbox checked={agreeTerms} onChange={setAgreeTerms}>
+              <Link
+                href="/terms"
+                target="_blank"
+                onClick={(e) => e.stopPropagation()}
+                style={{ color: "var(--accent)", textDecoration: "underline" }}
+              >
+                이용약관
+              </Link>
+              에 동의합니다{" "}
+              <span style={{ color: "var(--text-muted)" }}>(필수)</span>
+            </CustomCheckbox>
+            <CustomCheckbox checked={agreePrivacy} onChange={setAgreePrivacy}>
+              <Link
+                href="/privacy"
+                target="_blank"
+                onClick={(e) => e.stopPropagation()}
+                style={{ color: "var(--accent)", textDecoration: "underline" }}
+              >
+                개인정보처리방침
+              </Link>
+              에 동의합니다{" "}
+              <span style={{ color: "var(--text-muted)" }}>(필수)</span>
+            </CustomCheckbox>
+            <CustomCheckbox checked={agreeAge} onChange={setAgreeAge}>
+              만 14세 이상임을 확인합니다{" "}
+              <span style={{ color: "var(--text-muted)" }}>(필수)</span>
+            </CustomCheckbox>
           </div>
 
           {error && (
@@ -163,7 +328,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading || !agreeTerms || !agreePrivacy || !agreeAge}
+            disabled={loading || !allAgreed}
             style={{
               backgroundColor: "var(--accent)",
               color: "var(--bg)",
@@ -171,9 +336,9 @@ export default function SignupPage() {
               fontSize: 14,
               padding: "10px",
               borderRadius: 6,
-              cursor: (loading || !agreeTerms || !agreePrivacy || !agreeAge) ? "default" : "pointer",
-              opacity: (loading || !agreeTerms || !agreePrivacy || !agreeAge) ? 0.4 : 1,
-              marginTop: 4,
+              border: "none",
+              cursor: (loading || !allAgreed) ? "default" : "pointer",
+              opacity: (loading || !allAgreed) ? 0.7 : 1,
             }}
           >
             {loading ? "입문 중..." : "입문하기"}
