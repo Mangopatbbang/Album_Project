@@ -141,13 +141,19 @@ export default function AdminDataTab() {
   const [period, setPeriod] = useState<7 | 30>(30);
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     apiFetch(`/api/admin/analytics?period=${period}`)
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then((d: Analytics & { error?: string }) => {
+        if (d.error) { setError(d.error); setLoading(false); return; }
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => { setError("데이터 로드 중 오류가 발생했습니다"); setLoading(false); });
   }, [period]);
 
   if (loading) {
@@ -158,6 +164,7 @@ export default function AdminDataTab() {
     );
   }
 
+  if (error) return <p style={{ color: "var(--error)", fontSize: 13 }}>{error}</p>;
   if (!data) return <p style={{ color: "var(--error)", fontSize: 13 }}>데이터 로드 실패</p>;
 
   const maxPageCount = Math.max(...data.top_pages.map((p) => p.count), 1);
