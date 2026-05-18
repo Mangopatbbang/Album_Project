@@ -203,11 +203,11 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     // 제목+아티스트가 정확히 일치하는 결과 자동 선택
     const titleLower = title.trim().toLowerCase();
     const artistLower = artist.trim().toLowerCase();
-    const exactMatch =
-      results.find(
-        (r) => r.name.toLowerCase() === titleLower && r.artist.toLowerCase() === artistLower
-      ) ??
-      results.find((r) => r.name.toLowerCase() === titleLower);
+    const exactMatch = artistLower
+      ? results.find(
+          (r) => r.name.toLowerCase() === titleLower && r.artist.toLowerCase() === artistLower
+        )
+      : results.find((r) => r.name.toLowerCase() === titleLower);
 
     if (exactMatch) {
       await handleSelectCandidate(exactMatch);
