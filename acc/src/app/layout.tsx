@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
-import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import { UsersProvider } from "@/context/UsersContext";
@@ -59,7 +58,6 @@ export default function RootLayout({
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-dvh flex flex-col pb-[72px] sm:pb-0">
-        <Analytics />
         <AuthProvider>
           <UsersProvider>
           <UserAvatarsProvider>
