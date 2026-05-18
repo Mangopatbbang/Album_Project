@@ -108,7 +108,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [evictScore, setEvictScore] = useState<number | null>(null);
   const [evicting, setEvicting] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
-  const [reListenCount, setReListenCount] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -267,15 +266,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       .then((data: { score: number; createdAt: string }[]) => setMyHistory(data))
       .catch(() => {});
   }, [album.id, profile]);
-
-  // 재청음 횟수 fetch
-  useEffect(() => {
-    if (!profile || myScore === null) return;
-    apiFetch(`/api/listening-logs?userId=${profile.id}&albumId=${album.id}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) setReListenCount(data.logs?.length ?? 0); })
-      .catch(() => {});
-  }, [album.id, profile, myScore]);
 
   // 소감 dirty 추적
   useEffect(() => {
@@ -1412,45 +1402,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           )}
         </div>
 
-        {/* 다시 들었어요 버튼 — 이미 평가한 앨범 */}
-        {profile && myScore !== null && (
+        {/* 청음 횟수 — 평점 기록 횟수 기준 */}
+        {profile && myScore !== null && myHistory.length > 0 && (
           <div className="px-5 sm:px-8" style={{ marginBottom: 0 }}>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <button
-              onClick={async () => {
-                setReListenCount((c) => (c ?? 0) + 1);
-                const res = await apiFetch("/api/listening-logs", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ albumId: album.id }),
-                });
-                if (res.ok) {
-                  showToast("다시 들은 기록을 남겼어요");
-                } else {
-                  setReListenCount((c) => Math.max(0, (c ?? 1) - 1));
-                  showToast("기록 실패. 다시 시도해주세요.", "info");
-                }
-              }}
-              style={{
-                background: "none",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                color: "var(--text-muted)",
-                fontSize: 12,
-                padding: "5px 12px",
-                cursor: "pointer",
-                transition: "border-color 0.15s, color 0.15s",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-              className="hover:!border-[var(--text-sub)] hover:!text-[var(--text-sub)]"
-            >
-              다시 들었어요
-              {reListenCount !== null && reListenCount > 0 && (
-                <span style={{ fontSize: 11, opacity: 0.65 }}>{reListenCount}회</span>
-              )}
-            </button>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12, color: "var(--text-muted)",
+              border: "1px solid var(--border)", borderRadius: 6,
+              padding: "5px 12px",
+            }}>
+              청음
+              <span style={{ fontSize: 11, opacity: 0.65 }}>{myHistory.length}회</span>
+            </span>
           </div>
         )}
 
