@@ -107,7 +107,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [evictAlbumId, setEvictAlbumId] = useState<string | null>(null);
   const [evictScore, setEvictScore] = useState<number | null>(null);
   const [evicting, setEvicting] = useState(false);
-  const [coverLoaded, setCoverLoaded] = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState<"loaded" | "error" | false>(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -700,13 +700,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               height: 96,
             }}
           >
-            {data.cover_url ? (
+            {data.cover_url && coverLoaded !== "error" ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={data.cover_url}
                 alt={data.title}
-                style={{ width: "100%", height: "100%", objectFit: "cover", opacity: coverLoaded ? 1 : 0, transition: "opacity 0.3s ease" }}
-                onLoad={() => setCoverLoaded(true)}
+                style={{ width: "100%", height: "100%", objectFit: "cover", opacity: coverLoaded === "loaded" ? 1 : 0, transition: "opacity 0.3s ease" }}
+                onLoad={() => setCoverLoaded("loaded")}
+                onError={() => setCoverLoaded("error")}
               />
             ) : (
               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
