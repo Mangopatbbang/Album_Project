@@ -10,6 +10,7 @@ import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import PlaylistTitleEditor from "@/components/playlist/PlaylistTitleEditor";
+import PlaylistVisibilityToggle from "@/components/playlist/PlaylistVisibilityToggle";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,7 +18,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
   const { data, error } = await supabaseServer
     .from("playlists")
     .select(`
-      id, title, user_id, created_at,
+      id, title, user_id, created_at, is_public,
       playlist_entries(
         id, sort_order, comment, recommended_tracks,
         albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, tracklist)
@@ -95,6 +96,13 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
             <span style={{ color: "var(--border-light)" }}>·</span>
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{entries.length}장</span>
             <ProfileCaptureButton targetId="playlist-card" />
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <PlaylistVisibilityToggle
+              playlistId={data.id}
+              ownerId={data.user_id}
+              initialIsPublic={data.is_public ?? true}
+            />
           </div>
         </div>
 

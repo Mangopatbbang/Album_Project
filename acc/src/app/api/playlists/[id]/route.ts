@@ -11,9 +11,10 @@ export async function PATCH(
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const { id } = await params;
-  const { title } = await req.json();
+  const body = await req.json();
+  const { title, is_public } = body;
 
-  if (!title?.trim()) {
+  if (title !== undefined && !title?.trim()) {
     return NextResponse.json({ error: "title required" }, { status: 400 });
   }
 
@@ -26,9 +27,13 @@ export async function PATCH(
     return NextResponse.json({ error: "권한 없음" }, { status: 403 });
   }
 
+  const updates: Record<string, string | boolean> = {};
+  if (title !== undefined) updates.title = title.trim();
+  if (is_public !== undefined) updates.is_public = is_public;
+
   const { error } = await supabaseServer
     .from("playlists")
-    .update({ title: title.trim() })
+    .update(updates)
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

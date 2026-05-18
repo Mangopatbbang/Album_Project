@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { title, entries } = body;
+  const { title, entries, is_public } = body;
 
   if (!title || !entries?.length) {
     return NextResponse.json({ error: "title, entries required" }, { status: 400 });
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: playlist, error: plErr } = await supabaseServer
     .from("playlists")
-    .insert({ user_id: authed.id, title })
+    .insert({ user_id: authed.id, title, is_public: is_public !== false })
     .select()
     .single();
 

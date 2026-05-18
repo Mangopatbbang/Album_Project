@@ -11,6 +11,7 @@ type UserProfile = {
   role: "admin" | "user";
   auth_id: string;
   avatar_url?: string | null;
+  onboarded?: boolean | null;
 };
 
 type AuthContextType = {
@@ -37,11 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function fetchProfile(userId: string) {
     const { data, error } = await supabaseBrowser
       .from("users")
-      .select("id, display_name, emoji, role, auth_id, avatar_url")
+      .select("id, display_name, emoji, role, auth_id, avatar_url, onboarded")
       .eq("auth_id", userId)
       .single();
     if (error) {
-      // avatar_url 컬럼이 아직 없을 경우 폴백
       const { data: fallback } = await supabaseBrowser
         .from("users")
         .select("id, display_name, emoji, role, auth_id")

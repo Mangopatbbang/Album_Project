@@ -49,7 +49,7 @@ export default async function ProfilePage({
   // DB에서 최신 프로필 정보 가져오기 (avatar_url, display_name, emoji 반영)
   const { data: dbUser } = await supabaseServer
     .from("users")
-    .select("id, display_name, emoji, avatar_url")
+    .select("id, display_name, emoji, avatar_url, bio")
     .eq("id", userId)
     .single();
 
@@ -58,9 +58,10 @@ export default async function ProfilePage({
   const displayName = (dbUser as { display_name?: string })?.display_name ?? userId;
   const displayEmoji = (dbUser as { emoji?: string })?.emoji ?? "🎵";
   const avatarUrl = (dbUser as { avatar_url?: string | null })?.avatar_url ?? null;
+  const bio = (dbUser as { bio?: string | null })?.bio ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, allCommunityAlbums, listeningLogsResult] = await Promise.all([
+  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, allCommunityAlbums, listeningLogsResult, playlistsResult] = await Promise.all([
     fetchProfileRatings(userId),
     fetchAllUserGenreEmojis(),
     fetchAllUserAvatarUrls(),
@@ -71,12 +72,22 @@ export default async function ProfilePage({
       .eq("user_id", userId)
       .order("listened_at", { ascending: false })
       .limit(20),
+    supabaseServer
+      .from("playlists")
+      .select("id, title, created_at, playlist_entries(id, sort_order, albums(id, cover_url))")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(6),
   ]);
 
   type LogAlbum = { id: string; title: string; artist: string; cover_url: string | null };
   type ListeningLog = { id: string; listened_at: string; context: string | null; note: string | null; albums: LogAlbum | null };
   // ListeningLogsSection이 export한 타입과 구조가 동일 — as unknown을 통해 pass
   const listeningLogs = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
+
+  type PlaylistEntry = { id: string; sort_order: number; albums: { id: string; cover_url: string | null } | null };
+  type UserPlaylist = { id: string; title: string; created_at: string; playlist_entries: PlaylistEntry[] };
+  const userPlaylists = (playlistsResult.data ?? []) as unknown as UserPlaylist[];
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
   const yearlyRecap = computeYearlyRecap(validRatings);
@@ -269,7 +280,7 @@ export default async function ProfilePage({
                 <ReportUserButton targetUserId={userId} />
                 <MobileLogoutButton userId={userId} />
                 <ProfileCaptureButton targetId="profile-card" />
-                <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
+                <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} initialBio={bio} />
               </div>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 12px", marginTop: 5 }}>
@@ -288,6 +299,11 @@ export default async function ProfilePage({
               )}
               <LikedTracksButton userId={userId} />
             </div>
+            {bio && (
+              <p style={{ color: "var(--text-sub)", fontSize: 12, marginTop: 6, lineHeight: 1.5, wordBreak: "keep-all" }}>
+                {bio}
+              </p>
+            )}
             {topGenres.length > 0 && (
               <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
                 {topGenres.map((g) => {
@@ -329,6 +345,11 @@ export default async function ProfilePage({
               )}
               <LikedTracksButton userId={userId} />
             </div>
+            {bio && (
+              <p style={{ color: "var(--text-sub)", fontSize: 12, marginTop: 6, lineHeight: 1.5, wordBreak: "keep-all" }}>
+                {bio}
+              </p>
+            )}
             {topGenres.length > 0 && (
               <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
                 {topGenres.map((g) => {
@@ -353,6 +374,42 @@ export default async function ProfilePage({
           </div>
         </div>
       </div>
+
+      {/* ── 첫 방문 가이드 (청음 기록 없을 때) ── */}
+      {total === 0 && (
+        <div style={{
+          backgroundColor: "var(--bg-card)", border: "1px dashed var(--border)",
+          borderRadius: 12, padding: "32px 24px", marginBottom: 16,
+          textAlign: "center",
+        }}>
+          <p style={{ fontSize: 28, marginBottom: 12 }}>♪</p>
+          <p style={{ color: "var(--text)", fontWeight: 600, fontSize: 15, marginBottom: 6 }}>
+            아직 청음 기록이 없어요
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
+            음반고에서 앨범을 찾아 점수를 매겨보세요.<br />
+            기록이 쌓이면 나만의 청음 스타일이 보입니다.
+          </p>
+          <a
+            href="/albums"
+            style={{
+              display: "inline-block",
+              backgroundColor: "var(--accent)", color: "var(--bg)",
+              fontWeight: 700, fontSize: 13, borderRadius: 8,
+              padding: "10px 24px", textDecoration: "none",
+            }}
+          >
+            음반고 둘러보기 →
+          </a>
+        </div>
+      )}
+
+      {/* ── InsightSection: 이견 앨범 + 숨은 명반 ── */}
+      {(disagreeAlbums.length > 0 || personalHiddenGems.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
+        </div>
+      )}
 
       {/* ── 명반전 ── */}
       <div style={{
@@ -489,11 +546,67 @@ export default async function ProfilePage({
           {/* 재청음 기록 */}
           <ListeningLogsSection logs={listeningLogs} />
 
-          {/* 이견 앨범 + 내 숨은 명반 (클라이언트 컴포넌트 — 클릭 시 모달) */}
-          <InsightSection
-            disagreeAlbums={disagreeAlbums}
-            personalHiddenGems={personalHiddenGems}
-          />
+          {/* 청음집 */}
+          {userPlaylists.length > 0 && (
+            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                  청음집
+                </p>
+                <Link
+                  href="/themes"
+                  style={{ color: "var(--text-muted)", fontSize: 11 }}
+                  className="hover:text-[var(--accent)] transition-colors"
+                >
+                  전체 →
+                </Link>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {userPlaylists.map((pl) => {
+                  const entries = [...pl.playlist_entries].sort((a, b) => a.sort_order - b.sort_order);
+                  const covers = entries.slice(0, 4).map((e) => e.albums?.cover_url ?? null);
+                  const count = pl.playlist_entries.length;
+                  return (
+                    <Link
+                      key={pl.id}
+                      href={`/playlist/${pl.id}`}
+                      style={{ display: "flex", gap: 10, alignItems: "center", textDecoration: "none" }}
+                      className="hover:opacity-75 transition-opacity"
+                    >
+                      {/* 미니 커버 2×2 */}
+                      <div style={{
+                        flexShrink: 0, width: 40, height: 40, borderRadius: 6,
+                        overflow: "hidden", display: "grid",
+                        gridTemplateColumns: "1fr 1fr", gap: 1,
+                        backgroundColor: "var(--bg-elevated)",
+                      }}>
+                        {covers.map((c, i) =>
+                          c ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img key={i} src={c} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <div key={i} style={{ backgroundColor: "var(--bg-elevated)" }} />
+                          )
+                        )}
+                        {covers.length < 4 && Array.from({ length: 4 - covers.length }).map((_, i) => (
+                          <div key={`empty-${i}`} style={{ backgroundColor: "var(--bg-elevated)" }} />
+                        ))}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {pl.title}
+                        </p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
+                          {count}장
+                        </p>
+                      </div>
+                      <span style={{ color: "var(--text-muted)", fontSize: 16, flexShrink: 0 }}>›</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 최근 한줄 소감 */}
           {recentReviews.length > 0 && (

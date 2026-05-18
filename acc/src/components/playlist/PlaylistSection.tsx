@@ -43,10 +43,17 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
   return (
     <section>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
           <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 18, letterSpacing: "-0.02em" }}>
-            선곡집
+            청음집
           </h2>
+          <Link
+            href="/themes"
+            style={{ color: "var(--text-muted)", fontSize: 11 }}
+            className="hover:text-[var(--accent)] transition-colors"
+          >
+            전체 보기 →
+          </Link>
         </div>
         {profile && (
           <button
@@ -59,7 +66,7 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-light)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}
           >
-            + 새 선곡집
+            + 새 청음집
           </button>
         )}
       </div>
@@ -69,7 +76,7 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
           border: "1px dashed var(--border)", borderRadius: 10, padding: "32px 24px",
           textAlign: "center", color: "var(--text-muted)", fontSize: 13,
         }}>
-          아직 선곡집이 없습니다
+          아직 청음집이 없습니다
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

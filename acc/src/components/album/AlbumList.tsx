@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import AlbumCard from "./AlbumCard";
-import AlbumModal from "./AlbumModal";
 import AlbumAddModal from "./AlbumAddModal";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
@@ -63,8 +62,7 @@ export default function AlbumList({
   const [unrated, setUnrated] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(urlScore);
   const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
-const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
-  const [filterLoading, setFilterLoading] = useState(false);
+const [filterLoading, setFilterLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   // 필터 변경 시 진행 중인 loadMore 응답을 폐기하기 위한 세대 카운터
@@ -185,6 +183,24 @@ const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null
     };
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
+  // 앨범 모달에서 평점/삭제 시 로컬 상태 동기화
+  useEffect(() => {
+    const handleUpdated = (e: Event) => {
+      const { albumId, data } = (e as CustomEvent<{ albumId: string; data: AlbumWithRatings }>).detail;
+      setAlbums((prev) => prev.map((a) => (a.id === albumId ? { ...data } : a)));
+    };
+    const handleDeleted = (e: Event) => {
+      const { albumId } = (e as CustomEvent<{ albumId: string }>).detail;
+      setAlbums((prev) => prev.filter((a) => a.id !== albumId));
+    };
+    window.addEventListener("album-updated", handleUpdated);
+    window.addEventListener("album-deleted", handleDeleted);
+    return () => {
+      window.removeEventListener("album-updated", handleUpdated);
+      window.removeEventListener("album-deleted", handleDeleted);
+    };
   }, []);
 
   const handleSearchChange = (val: string) => {
@@ -500,7 +516,7 @@ return (
               className={albums.length <= 10 ? "animate-stagger" : ""}
               style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
             >
-              <AlbumCard album={album} onClick={(a) => { if (search) trackSearch(search, albums.length); setSelectedAlbum(a); }} />
+              <AlbumCard album={album} onNavigate={() => { if (search) trackSearch(search, albums.length); }} />
             </div>
           ))}
         </div>
@@ -512,26 +528,6 @@ return (
         <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
           <Spinner size={16} />
         </div>
-      )}
-
-      {selectedAlbum && (
-        <AlbumModal
-          album={selectedAlbum}
-          onClose={() => setSelectedAlbum(null)}
-          source="search"
-          onSaved={async (albumId) => {
-            const res = await fetch(`/api/albums/${albumId}`);
-            if (!res.ok) {
-              // 앨범이 삭제된 경우 목록에서 제거
-              setAlbums((prev) => prev.filter((a) => a.id !== albumId));
-              setSelectedAlbum(null);
-              return;
-            }
-            const updated = await res.json();
-            setAlbums((prev) => prev.map((a) => a.id === albumId ? { ...updated } : a));
-            setSelectedAlbum((prev) => prev?.id === albumId ? { ...updated } : prev);
-          }}
-        />
       )}
 
       {showAddModal && (

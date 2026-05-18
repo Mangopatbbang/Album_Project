@@ -38,7 +38,8 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
 
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-  const title = `${dateStr} 기록`;
+  const [title, setTitle] = useState(`${dateStr} 기록`);
+  const [isPublic, setIsPublic] = useState(true);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -112,6 +113,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
 
   const handleSave = async () => {
     if (!profile) { setError("로그인이 필요합니다."); return; }
+    if (!title.trim()) { setError("청음집 제목을 입력해주세요."); return; }
     if (entries.length === 0) { setError("앨범을 최소 1개 추가해주세요."); return; }
     setSaving(true);
     setError("");
@@ -120,7 +122,8 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        title,
+        title: title.trim(),
+        is_public: isPublic,
         entries: entries.map((e, i) => ({
           album_id: e.album.id,
           comment: e.comment,
@@ -170,13 +173,57 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
         overflowY: "auto", display: "flex", flexDirection: "column", gap: 24,
       }} className="p-5 sm:p-8">
         {/* 헤더 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", marginBottom: 4 }}>NEW PLAYLIST</p>
-            <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 20 }}>{title}</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", marginBottom: 6 }}>새 청음집</p>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="청음집 제목을 입력하세요"
+              maxLength={60}
+              style={{
+                ...inputStyle,
+                fontWeight: 700, fontSize: 18,
+                backgroundColor: "transparent",
+                border: "none",
+                borderBottom: "1px solid var(--border)",
+                borderRadius: 0,
+                padding: "4px 0",
+                width: "100%",
+              }}
+            />
           </div>
-          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
+          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20, flexShrink: 0, marginTop: 18 }}>×</button>
         </div>
+
+        {/* 공개 설정 */}
+        <button
+          onClick={() => setIsPublic((v) => !v)}
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "none", border: "none", cursor: "pointer", padding: 0,
+            marginTop: -16,
+          }}
+        >
+          <div style={{
+            width: 32, height: 18, borderRadius: 9,
+            backgroundColor: isPublic ? "var(--accent)" : "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            position: "relative", transition: "background-color 0.2s",
+            flexShrink: 0,
+          }}>
+            <div style={{
+              position: "absolute", top: 2,
+              left: isPublic ? 14 : 2,
+              width: 12, height: 12, borderRadius: "50%",
+              backgroundColor: isPublic ? "var(--bg)" : "var(--text-muted)",
+              transition: "left 0.2s",
+            }} />
+          </div>
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            {isPublic ? "공개 — 청음집 목록에 표시" : "비공개 — 나만 볼 수 있음"}
+          </span>
+        </button>
 
         {/* 앨범 검색 */}
         <div>

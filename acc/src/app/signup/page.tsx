@@ -61,6 +61,7 @@ export default function SignupPage() {
         username,
         display_name: displayName || username,
         emoji,
+        onboarded: false,
       }),
     });
 

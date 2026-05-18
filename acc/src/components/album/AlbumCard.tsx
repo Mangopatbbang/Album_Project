@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
@@ -12,10 +13,11 @@ import UserAvatar from "@/components/ui/UserAvatar";
 
 type Props = {
   album: AlbumWithRatings;
-  onClick: (album: AlbumWithRatings) => void;
+  onNavigate?: () => void;
 };
 
-export default function AlbumCard({ album, onClick }: Props) {
+export default function AlbumCard({ album, onNavigate }: Props) {
+  const router = useRouter();
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -44,7 +46,7 @@ export default function AlbumCard({ album, onClick }: Props) {
     <>
     <button
       data-tour="album-card"
-      onClick={() => onClick(album)}
+      onClick={() => { onNavigate?.(); router.push(`/album/${album.id}`); }}
       style={{
         backgroundColor: "var(--bg-card)",
         border: `1px solid ${glowBorder(album.avg)}`,
@@ -167,7 +169,7 @@ export default function AlbumCard({ album, onClick }: Props) {
         artistName={artistModal.name}
         displayName={artistModal.display}
         onClose={() => setArtistModal(null)}
-        onAlbumClick={(a) => { setArtistModal(null); onClick(a); }}
+        onAlbumClick={(a) => { setArtistModal(null); router.push(`/album/${a.id}`); }}
       />
     )}
     </>

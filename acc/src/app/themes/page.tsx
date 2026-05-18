@@ -6,7 +6,7 @@ import ThemesPageClient, { type Playlist } from "./ThemesPageClient";
 
 export const metadata: Metadata = {
   title: "청음집",
-  description: "선곡집 모음",
+  description: "청음집 모음",
 };
 
 async function getPlaylists() {

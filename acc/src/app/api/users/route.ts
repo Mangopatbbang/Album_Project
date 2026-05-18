@@ -6,11 +6,12 @@ import { validateUser } from "@/lib/validateUser";
 // POST /api/users — 회원가입 시 users 프로필 생성
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { auth_id, username, display_name, emoji } = body as {
+  const { auth_id, username, display_name, emoji, onboarded } = body as {
     auth_id: string;
     username: string;
     display_name?: string;
     emoji?: string;
+    onboarded?: boolean;
   };
 
   if (!auth_id || !username) {
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
       emoji: emoji || "🎵",
       role: "user",
       auth_id,
+      onboarded: onboarded ?? false,
     })
     .select()
     .single();
@@ -61,22 +63,26 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, user: data });
 }
 
-// PATCH /api/users — 프로필 수정 (display_name, emoji, avatar_url)
+// PATCH /api/users — 프로필 수정 (display_name, emoji, avatar_url, bio)
 export async function PATCH(req: NextRequest) {
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { display_name, emoji, avatar_url } = body as {
+  const { display_name, emoji, avatar_url, bio, onboarded } = body as {
     display_name?: string;
     emoji?: string;
     avatar_url?: string | null;
+    bio?: string | null;
+    onboarded?: boolean;
   };
 
-  const updates: Record<string, string | null> = {};
+  const updates: Record<string, string | boolean | null> = {};
   if (display_name !== undefined) updates.display_name = display_name;
   if (emoji !== undefined) updates.emoji = emoji;
   if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+  if (bio !== undefined) updates.bio = bio || null;
+  if (onboarded !== undefined) updates.onboarded = onboarded;
 
   const { data, error } = await supabaseServer
     .from("users")

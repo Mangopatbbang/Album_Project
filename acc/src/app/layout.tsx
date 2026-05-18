@@ -9,6 +9,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import FloatingActions from "@/components/ui/FloatingActions";
 import TutorialModal from "@/components/ui/TutorialModal";
 import SpotlightTour from "@/components/ui/SpotlightTour";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
@@ -45,8 +46,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  modal,
 }: Readonly<{
   children: React.ReactNode;
+  modal?: React.ReactNode;
 }>) {
   return (
     <html
@@ -60,10 +63,12 @@ export default function RootLayout({
           <ToastProvider>
             <SplashScreen />
             {children}
+            {modal}
             <BottomNav />
             <FloatingActions />
             <SpotlightTour />
             <TutorialModal />
+            <OnboardingModal />
           </ToastProvider>
           </UserAvatarsProvider>
           </UsersProvider>

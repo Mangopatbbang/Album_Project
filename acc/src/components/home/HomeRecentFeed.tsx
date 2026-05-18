@@ -11,6 +11,7 @@ export type FeedItem = {
   user_id: string;
   score: number;
   one_line_review: string | null;
+  liked_tracks: string | null;
   updated_at: string;
   album_id: string;
   album_title: string;
@@ -155,6 +156,12 @@ export default function HomeRecentFeed({ items }: { items: FeedItem[] }) {
                 {item.one_line_review && (
                   <p style={{ color: "var(--text-muted)", fontSize: 11, fontStyle: "italic", marginTop: 2 }} className="truncate">
                     &ldquo;{item.one_line_review}&rdquo;
+                  </p>
+                )}
+                {/* 찜한 트랙 수 */}
+                {item.liked_tracks && item.liked_tracks.split(",").filter(Boolean).length > 0 && (
+                  <p style={{ color: "var(--error, #e05050)", fontSize: 10, marginTop: 2, opacity: 0.75 }}>
+                    ♥ {item.liked_tracks.split(",").filter(Boolean).length}곡 찜
                   </p>
                 )}
               </div>

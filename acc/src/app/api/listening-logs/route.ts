@@ -2,21 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
 
-// GET /api/listening-logs?userId=X
+// GET /api/listening-logs?userId=X&albumId=Y
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
+  const albumId = searchParams.get("albumId");
 
   if (!userId) {
     return NextResponse.json({ error: "userId 필수" }, { status: 400 });
   }
 
-  const { data, error } = await supabaseServer
+  let query = supabaseServer
     .from("listening_logs")
     .select("id, listened_at, context, note, created_at, albums(id, title, artist, cover_url)")
     .eq("user_id", userId)
     .order("listened_at", { ascending: false })
-    .limit(20);
+    .limit(albumId ? 200 : 20);
+
+  if (albumId) query = query.eq("album_id", albumId);
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

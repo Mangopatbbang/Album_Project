@@ -97,7 +97,7 @@ export default function ThemesPageClient({
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-          선곡집
+          청음집
         </p>
         {profile && (
           <button
@@ -110,7 +110,7 @@ export default function ThemesPageClient({
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-light)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}
           >
-            + 새 선곡집
+            + 새 청음집
           </button>
         )}
       </div>
@@ -120,7 +120,7 @@ export default function ThemesPageClient({
           border: "1px dashed var(--border)", borderRadius: 10, padding: "32px 24px",
           textAlign: "center", color: "var(--text-muted)", fontSize: 13,
         }}>
-          아직 선곡집이 없습니다
+          아직 청음집이 없습니다
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

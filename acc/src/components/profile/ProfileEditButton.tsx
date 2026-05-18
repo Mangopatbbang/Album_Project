@@ -10,13 +10,15 @@ type Props = {
   initialDisplayName: string;
   initialEmoji: string;
   initialAvatarUrl: string | null;
+  initialBio?: string | null;
 };
 
-export default function ProfileEditButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl }: Props) {
+export default function ProfileEditButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl, initialBio }: Props) {
   const { profile, authUser, refreshProfile } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState(initialDisplayName);
+  const [bio, setBio] = useState(initialBio ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,6 +75,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
         display_name: displayName.trim() || initialDisplayName,
         emoji: initialEmoji,
         avatar_url: avatarUrl,
+        bio: bio.trim() || null,
       }),
     });
 
@@ -190,7 +193,28 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
               />
             </div>
 
-            {error &&<p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+            {/* 소개글 */}
+            <div>
+              <label style={labelStyle}>소개글</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                maxLength={150}
+                rows={3}
+                placeholder="짧게 자신을 소개해보세요 (최대 150자)"
+                style={{
+                  ...inputStyle,
+                  resize: "none",
+                  lineHeight: 1.5,
+                  fontFamily: "inherit",
+                }}
+              />
+              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4, textAlign: "right" }}>
+                {bio.length} / 150
+              </p>
+            </div>
+
+            {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
 
             {/* 버튼 */}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

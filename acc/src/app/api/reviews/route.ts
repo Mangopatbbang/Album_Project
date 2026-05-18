@@ -20,6 +20,10 @@ export type ReviewItem = {
 
 const LIMIT = 20;
 
+function escapeSearch(s: string) {
+  return s.replace(/%/g, "\\%").replace(/_/g, "\\_").trim();
+}
+
 export async function GET(req: NextRequest) {
   const limited = await checkRateLimit(generalLimiter, getIP(req));
   if (limited) return limited;
@@ -27,6 +31,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId")?.trim() || null;
   const albumId = searchParams.get("albumId")?.trim() || null;
+  const search = searchParams.get("search")?.trim() || null;
   const minScore = Number(searchParams.get("minScore") ?? 1);
   const maxScore = Number(searchParams.get("maxScore") ?? 8);
   const sort = searchParams.get("sort") ?? "latest";
@@ -43,6 +48,7 @@ export async function GET(req: NextRequest) {
 
   if (userId) query = (query as typeof query).eq("user_id", userId);
   if (albumId) query = (query as typeof query).eq("album_id", albumId);
+  if (search) query = (query as typeof query).ilike("one_line_review", `%${escapeSearch(search)}%`);
   if (sort === "latest") query = (query as typeof query).order("updated_at", { ascending: false });
 
   const { data, error } = await query;

@@ -37,9 +37,11 @@ export default function ReviewsClient() {
   const [filterUser, setFilterUser] = useState("");
   const [filterAlbumId, setFilterAlbumId] = useState(initAlbumId);
   const [filterAlbumTitle, setFilterAlbumTitle] = useState("");
+  const [filterReview, setFilterReview] = useState("");
   const [minScore, setMinScore] = useState(1);
   const [maxScore, setMaxScore] = useState(8);
   const [sort, setSort] = useState("latest");
+  const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumModalData | null>(null);
   const [liking, setLiking] = useState<string | null>(null);
@@ -53,12 +55,13 @@ export default function ReviewsClient() {
   const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
 
   const fetchReviews = useCallback(async (params: {
-    userId: string; albumId: string; minScore: number; maxScore: number; sort: string; offset: number;
+    userId: string; albumId: string; search: string; minScore: number; maxScore: number; sort: string; offset: number;
   }, append = false) => {
     if (!append) setLoading(true); else setLoadingMore(true);
     const q = new URLSearchParams();
     if (params.userId) q.set("userId", params.userId);
     if (params.albumId) q.set("albumId", params.albumId);
+    if (params.search) q.set("search", params.search);
     q.set("minScore", String(params.minScore));
     q.set("maxScore", String(params.maxScore));
     q.set("sort", params.sort);
@@ -85,7 +88,7 @@ export default function ReviewsClient() {
   }, []);
 
   useEffect(() => {
-    fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset: 0 });
+    fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -103,7 +106,7 @@ export default function ReviewsClient() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
-          fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset }, true);
+          fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset }, true);
         }
       },
       { threshold: 0.1 }
@@ -111,13 +114,24 @@ export default function ReviewsClient() {
     observer.observe(sentinel);
     return () => observer.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, loadingMore, loading, offset, filterUser, filterAlbumId, minScore, maxScore, sort]);
+  }, [hasMore, loadingMore, loading, offset, filterUser, filterAlbumId, filterReview, minScore, maxScore, sort]);
 
-  const handleFilter = (u: string, aid: string, mn: number, mx: number, s: string) => {
+  const handleFilter = (u: string, aid: string, mn: number, mx: number, s: string, rev?: string) => {
+    const reviewVal = rev !== undefined ? rev : filterReview;
     setFilterUser(u); setFilterAlbumId(aid); setMinScore(mn); setMaxScore(mx); setSort(s);
-    fetchReviews({ userId: u, albumId: aid, minScore: mn, maxScore: mx, sort: s, offset: 0 });
+    fetchReviews({ userId: u, albumId: aid, search: reviewVal, minScore: mn, maxScore: mx, sort: s, offset: 0 });
     setOffset(0);
     setExpandedKey(null);
+  };
+
+  const handleReviewSearch = (val: string) => {
+    setFilterReview(val);
+    if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    reviewSearchTimer.current = setTimeout(() => {
+      fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: val, minScore, maxScore, sort, offset: 0 });
+      setOffset(0);
+      setExpandedKey(null);
+    }, 350);
   };
 
   const handleLike = async (item: ReviewItem) => {
@@ -169,7 +183,9 @@ export default function ReviewsClient() {
   const handleReset = () => {
     setFilterAlbumId("");
     setFilterAlbumTitle("");
-    handleFilter("", "", 1, 8, "latest");
+    setFilterReview("");
+    if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    handleFilter("", "", 1, 8, "latest", "");
   };
 
   const fetchComments = async (albumId: string, reviewerId: string) => {
@@ -230,7 +246,7 @@ export default function ReviewsClient() {
     return [...map.entries()].map(([, reviews]) => reviews);
   }, [items, isGroupedView]);
 
-  const isFiltered = filterUser !== "" || filterAlbumId !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
+  const isFiltered = filterUser !== "" || filterAlbumId !== "" || filterReview !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
   const scoreActive = minScore !== 1 || maxScore !== 8;
 
   const baseSelect: React.CSSProperties = {
@@ -263,6 +279,31 @@ export default function ReviewsClient() {
 
       {/* 필터 바 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
+        {/* 소감 검색 */}
+        <div style={{
+          ...filterPill(filterReview !== ""),
+          paddingLeft: 8, paddingRight: filterReview ? 4 : 8,
+        }}>
+          <input
+            type="text"
+            value={filterReview}
+            onChange={(e) => handleReviewSearch(e.target.value)}
+            placeholder="소감 검색…"
+            style={{
+              background: "none", border: "none", outline: "none",
+              color: "var(--text)", fontSize: 12, padding: "6px 0",
+              width: filterReview ? 110 : 80, minWidth: 0,
+              transition: "width 0.2s",
+            }}
+          />
+          {filterReview && (
+            <button
+              onClick={() => { setFilterReview(""); handleReviewSearch(""); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13, padding: "0 4px", lineHeight: 1 }}
+            >×</button>
+          )}
+        </div>
+
         {/* 멤버 */}
         <div style={filterPill(filterUser !== "")}>
           <select style={baseSelect} value={filterUser} onChange={(e) => handleFilter(e.target.value, filterAlbumId, minScore, maxScore, sort)}>
@@ -315,7 +356,7 @@ export default function ReviewsClient() {
         <div style={{ textAlign: "center", padding: "60px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>불러오지 못했어요</p>
           <button
-            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, minScore, maxScore, sort, offset: 0 })}
+            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 })}
             style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-sub)", fontSize: 13, cursor: "pointer" }}
           >
             다시 시도

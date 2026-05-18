@@ -100,6 +100,7 @@ type RecentFeedRow = {
   user_id: string;
   score: number;
   one_line_review: string | null;
+  liked_tracks: string | null;
   updated_at: string;
   albums: {
     id: string;
@@ -114,7 +115,7 @@ type RecentFeedRow = {
 async function getRecentFeed(): Promise<FeedItem[]> {
   const { data } = await supabaseServer
     .from("ratings")
-    .select("user_id, score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
+    .select("user_id, score, one_line_review, liked_tracks, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
     .not("score", "is", null)
     .order("updated_at", { ascending: false })
     .limit(6);
@@ -140,6 +141,7 @@ async function getRecentFeed(): Promise<FeedItem[]> {
     album_artist: r.albums!.artist,
     album_artist_display: r.albums!.artist_display ?? r.albums!.artist,
     album_cover_url: r.albums!.cover_url,
+    liked_tracks: r.liked_tracks,
   }));
 }
 
