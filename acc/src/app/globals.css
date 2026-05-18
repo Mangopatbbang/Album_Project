@@ -258,6 +258,9 @@ main {
 }
 
 /* 프로필 최근 평가 hover */
+.rating-row {
+  transition: background-color 0.15s ease;
+}
 .rating-row:hover {
   background-color: var(--bg-elevated);
 }

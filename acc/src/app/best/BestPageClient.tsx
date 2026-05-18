@@ -699,38 +699,40 @@ export default function BestPageClient({
         </div>
       </div>
 
-      {view === "all" ? (
-        <RankedGrid
-          list={rankedList}
-          onAlbumClick={(a) => setSelectedAlbum(a)}
-          onArtistClick={(a) => setArtistModal(a)}
-        />
-      ) : view === "artist" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {sortedArtistSections.map(([artist, list]) => (
-            <ArtistSection
-              key={artist}
-              artist={artist}
-              list={list}
-              onAlbumClick={(a) => setSelectedAlbum(a)}
-              onArtistClick={(a) => setArtistModal(a)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ minWidth: 0 }}>
-          {sections.map(([label, list]) => (
-            <SectionGrid
-              key={label}
-              label={label}
-              list={list}
-              onAlbumClick={(a) => setSelectedAlbum(a)}
-              onMoreClick={() => setOpenSection(label)}
-              onArtistClick={(a) => setArtistModal(a)}
-            />
-          ))}
-        </div>
-      )}
+      <div key={view} style={{ animation: "fadeIn 0.18s ease-out" }}>
+        {view === "all" ? (
+          <RankedGrid
+            list={rankedList}
+            onAlbumClick={(a) => setSelectedAlbum(a)}
+            onArtistClick={(a) => setArtistModal(a)}
+          />
+        ) : view === "artist" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {sortedArtistSections.map(([artist, list]) => (
+              <ArtistSection
+                key={artist}
+                artist={artist}
+                list={list}
+                onAlbumClick={(a) => setSelectedAlbum(a)}
+                onArtistClick={(a) => setArtistModal(a)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8" style={{ minWidth: 0 }}>
+            {sections.map(([label, list]) => (
+              <SectionGrid
+                key={label}
+                label={label}
+                list={list}
+                onAlbumClick={(a) => setSelectedAlbum(a)}
+                onMoreClick={() => setOpenSection(label)}
+                onArtistClick={(a) => setArtistModal(a)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* 미발견 명반 — 얇은 바 (hover 시 팝업) */}
       <HiddenGemsBar gems={hiddenGems} onAlbumClick={(a) => setSelectedAlbum(a)} />

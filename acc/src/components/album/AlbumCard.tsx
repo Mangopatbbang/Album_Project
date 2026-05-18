@@ -54,7 +54,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         width: "100%",
         boxShadow: glowShadow(album.avg),
       }}
-      className="rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
+      className="group rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
     >
       {/* 커버 이미지 */}
       <div
@@ -68,8 +68,8 @@ export default function AlbumCard({ album, onNavigate }: Props) {
             <img
               src={album.cover_url}
               alt={album.title}
-              className="w-full h-full object-cover"
-              style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.25s ease" }}
+              className="w-full h-full object-cover group-hover:scale-[1.05]"
+              style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 0.25s ease, transform 0.35s ease" }}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
             />

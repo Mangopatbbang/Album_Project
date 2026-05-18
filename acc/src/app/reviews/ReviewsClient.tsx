@@ -626,7 +626,13 @@ function ReviewRow({
       </div>
 
       {/* 댓글 영역 */}
-      {expanded && (
+      <div style={{
+        overflow: "hidden",
+        maxHeight: expanded ? 600 : 0,
+        transition: expanded
+          ? "max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1)"
+          : "max-height 0.18s cubic-bezier(0.4, 0, 1, 1)",
+      }}>
         <div style={{ backgroundColor: "var(--bg-elevated)", borderTop: "1px solid var(--border)", padding: "10px 14px 10px 72px" }}>
           {rowComments === undefined ? (
             <p style={{ fontSize: 11, color: "var(--text-muted)", padding: "6px 0" }}>불러오는 중…</p>
@@ -684,7 +690,7 @@ function ReviewRow({
             </>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
