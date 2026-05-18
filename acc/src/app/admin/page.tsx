@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
 import FilterSelect from "@/components/ui/FilterSelect";
+import AdminDataTab from "./AdminDataTab";
 
 type SpotifyCandidate = {
   spotify_id: string;
@@ -76,7 +77,7 @@ type ReportRow = {
 
 export default function AdminPage() {
   const { profile, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "albums" | "artists" | "migration" | "reports">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "albums" | "artists" | "migration" | "reports" | "data">("overview");
 
   // --- 활동 로그 ---
   const [logs, setLogs] = useState<LogRow[] | null>(null);
@@ -968,6 +969,7 @@ export default function AdminPage() {
             { key: "artists", label: "아티스트" },
             { key: "migration", label: "마이그레이션" },
             { key: "reports", label: "신고 관리" },
+            { key: "data", label: "데이터" },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -1821,6 +1823,9 @@ export default function AdminPage() {
             </div>
           )}
         </>)}
+
+        {/* ════ 데이터 탭 ════ */}
+        {activeTab === "data" && <AdminDataTab />}
 
       </div>
     </div>
