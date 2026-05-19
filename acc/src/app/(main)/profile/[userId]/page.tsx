@@ -18,7 +18,7 @@ import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import ReportUserButton from "@/components/profile/ReportUserButton";
 import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
-import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, fetchAllAlbumsWithRatings, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
+import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
 import type { DayAlbum } from "@/components/profile/CalendarSection";
@@ -61,11 +61,10 @@ export default async function ProfilePage({
   const bio = (dbUser as { bio?: string | null })?.bio ?? null;
 
   // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, allCommunityAlbums, listeningLogsResult, playlistsResult] = await Promise.all([
+  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, listeningLogsResult, playlistsResult] = await Promise.all([
     fetchProfileRatings(userId),
     fetchAllUserGenreEmojis(),
     fetchAllUserAvatarUrls(),
-    fetchAllAlbumsWithRatings(),
     supabaseServer
       .from("listening_logs")
       .select("id, listened_at, context, note, albums(id, title, artist, cover_url)")
@@ -90,6 +89,24 @@ export default async function ProfilePage({
   const userPlaylists = (playlistsResult.data ?? []) as unknown as UserPlaylist[];
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
+
+  // 커뮤니티 비교용: 내가 평가한 앨범 ID들에 한정해서 타인 평점만 fetch
+  const myAlbumIds = validRatings.map((r) => r.albums!.id);
+  let communityRatings: { album_id: string; score: number }[] = [];
+  if (myAlbumIds.length > 0) {
+    const { data: commData } = await supabaseServer
+      .from("ratings")
+      .select("album_id, score")
+      .in("album_id", myAlbumIds)
+      .neq("user_id", userId);
+    communityRatings = commData ?? [];
+  }
+  const communityScoresByAlbum = new Map<string, number[]>();
+  for (const r of communityRatings) {
+    const arr = communityScoresByAlbum.get(r.album_id) ?? [];
+    arr.push(r.score);
+    communityScoresByAlbum.set(r.album_id, arr);
+  }
   const yearlyRecap = computeYearlyRecap(validRatings);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
@@ -217,11 +234,13 @@ export default async function ProfilePage({
     }));
 
   // 커뮤니티 데이터 맵 (albumId → community info)
-  const communityMap = new Map(allCommunityAlbums.map((a) => {
-    const commScores = a.ratings.filter((r) => r.user_id !== userId).map((r) => r.score);
-    const commAvg = commScores.length > 0 ? commScores.reduce((s, n) => s + n, 0) / commScores.length : null;
-    return [a.id, { commCount: commScores.length, commAvg }];
-  }));
+  const communityMap = new Map<string, { commCount: number; commAvg: number | null }>(
+    myAlbumIds.map((albumId) => {
+      const commScores = communityScoresByAlbum.get(albumId) ?? [];
+      const commAvg = commScores.length > 0 ? commScores.reduce((s, n) => s + n, 0) / commScores.length : null;
+      return [albumId, { commCount: commScores.length, commAvg }];
+    })
+  );
 
   // 이견 앨범: |내 점수 - 커뮤니티 평균| >= 2.0, 커뮤니티 평가자 >= 2명
   type InsightAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; commAvg: number; diff: number };
