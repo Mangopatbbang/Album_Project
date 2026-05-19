@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
+import { trackFeatureClick } from "@/lib/track";
 
 const GENRES = [
   "Hip-Hop", "R&B", "Pop", "Rock",
@@ -299,6 +300,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     }
 
     setSaving(false);
+    trackFeatureClick("앨범_추가완료");
     onAdded();
     setAddedAlbumId(data.id);
 

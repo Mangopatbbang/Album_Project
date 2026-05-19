@@ -8,6 +8,7 @@ import ArtistModal from "@/components/album/ArtistModal";
 import { AlbumWithRatings } from "@/types";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import { apiFetch } from "@/lib/apiFetch";
+import { trackFeatureClick } from "@/lib/track";
 
 type WatchlistAlbum = {
   id: string;
@@ -65,6 +66,7 @@ export default function WatchlistSection({ userId }: Props) {
     if (existing) clearTimeout(existing);
 
     setItems((prev) => prev.filter((i) => i.album_id !== albumId));
+    trackFeatureClick("위시리스트_제거");
 
     showToastWithUndo("나중에 들을 목록에서 삭제했어요", () => {
       const tid = pendingRemovesRef.current.get(albumId);

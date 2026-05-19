@@ -8,7 +8,7 @@ import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { koGenre } from "@/lib/bio";
 import Spinner from "@/components/ui/Spinner";
-import { trackSearch } from "@/lib/track";
+import { trackSearch, trackFeatureClick } from "@/lib/track";
 import FilterSelect from "@/components/ui/FilterSelect";
 
 type Props = {
@@ -218,6 +218,7 @@ const [filterLoading, setFilterLoading] = useState(false);
   const handleGenreChange = (val: string) => {
     const next = genre === val ? "" : val;
     setGenre(next);
+    trackFeatureClick("음반고_장르필터", next || "전체");
     window.scrollTo(0, 0);
     handleFilter(search, next, region, sort, unrated, myScore);
   };
@@ -225,6 +226,7 @@ const [filterLoading, setFilterLoading] = useState(false);
   const handleRegionChange = (val: string) => {
     const next = region === val ? "" : val;
     setRegion(next);
+    trackFeatureClick("음반고_지역필터", next || "전체");
     window.scrollTo(0, 0);
     handleFilter(search, genre, next, sort, unrated, myScore);
   };
@@ -239,6 +241,7 @@ const [filterLoading, setFilterLoading] = useState(false);
     const next = !unrated;
     const nextSort = next && (sort === "my_desc" || sort === "my_asc") ? "newest" : sort;
     setUnrated(next);
+    trackFeatureClick("음반고_미청음", next ? "켜짐" : "꺼짐");
     if (next) setMyScore(null);
     if (nextSort !== sort) setSort(nextSort);
     window.scrollTo(0, 0);

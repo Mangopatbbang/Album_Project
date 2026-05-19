@@ -9,7 +9,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { apiFetch } from "@/lib/apiFetch";
-import { trackAlbumVisit } from "@/lib/track";
+import { trackAlbumVisit, trackFeatureClick } from "@/lib/track";
 import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -303,6 +303,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     if (!profile) return;
     const adding = !isWatchlisted;
     setIsWatchlisted(adding);
+    trackFeatureClick(adding ? "위시리스트_추가" : "위시리스트_제거");
     await apiFetch("/api/watchlist", {
       method: adding ? "POST" : "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -345,6 +346,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     setMyReview("");
     initialReviewRef.current = "";
     setMyLikedTracks(new Set());
+    trackFeatureClick("평점_삭제");
     // undo 토스트 (5초)
     showToastWithUndo("이 인연을 지웠어요", () => {
       if (pendingDeleteRef.current) { clearTimeout(pendingDeleteRef.current); pendingDeleteRef.current = null; }
@@ -425,6 +427,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       }
     }
     if (!res.ok) return;
+    trackFeatureClick("평점_저장", String(myScore));
     showToast("청음을 기록했어요");
     await afterSaveSuccess();
   };
@@ -462,6 +465,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     setHofLimitAlbums(null);
     setEvictAlbumId(null);
     setEvictScore(null);
+    trackFeatureClick("평점_명반저장", "8");
     showToast("명반전에 추가됐어요");
     await afterSaveSuccess();
   };
@@ -801,6 +805,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       href={data.soundcloud_url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackFeatureClick("사운드클라우드_클릭")}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none", color: "rgba(255,85,0,0.7)", fontSize: 11, fontWeight: 600 }}
                       className="hover:!text-[#f50] transition-colors"
                     >

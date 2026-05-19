@@ -1,5 +1,7 @@
 "use client";
 
+import { trackFeatureClick } from "@/lib/track";
+
 // Spotify 공식 브랜드 가이드라인 준수:
 // - 아이콘 단독 최소 21px, 풀 로고(아이콘+워드마크) 최소 70px
 // - 다크 배경에서 흰색 로고 사용 허용
@@ -25,7 +27,7 @@ export default function SpotifyAttribution({ spotifyId, size = "sm" }: Props) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); trackFeatureClick("스포티파이_클릭"); }}
       title="Spotify에서 보기"
       style={{
         display: "inline-flex",

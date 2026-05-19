@@ -106,17 +106,17 @@ export async function GET(req: NextRequest) {
   // ── 인기 앨범
   const avMap = new Map<string, number>();
   for (const v of albumVisits) avMap.set(v.album_id, (avMap.get(v.album_id) ?? 0) + 1);
-  const topAlbums = [...avMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id, count]) => {
-    const a = albumMap.get(id);
-    return { album_id: id, count, title: a?.title ?? "알 수 없음", artist: a?.artist ?? "", cover_url: a?.cover_url ?? null };
+  const topAlbums = [...avMap.entries()].sort((a, b) => b[1] - a[1]).filter(([id]) => albumMap.has(id)).slice(0, 10).map(([id, count]) => {
+    const a = albumMap.get(id)!;
+    return { album_id: id, count, title: a.title, artist: a.artist, cover_url: a.cover_url ?? null };
   });
 
   // ── 위시리스트 인기
   const wlMap = new Map<string, number>();
   for (const w of watchlistItems) wlMap.set(w.album_id, (wlMap.get(w.album_id) ?? 0) + 1);
-  const topWatchlist = [...wlMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id, count]) => {
-    const a = albumMap.get(id);
-    return { album_id: id, count, title: a?.title ?? "알 수 없음", artist: a?.artist ?? "", cover_url: a?.cover_url ?? null };
+  const topWatchlist = [...wlMap.entries()].sort((a, b) => b[1] - a[1]).filter(([id]) => albumMap.has(id)).slice(0, 10).map(([id, count]) => {
+    const a = albumMap.get(id)!;
+    return { album_id: id, count, title: a.title, artist: a.artist, cover_url: a.cover_url ?? null };
   });
 
   // ── 기기 비율 (period 기준)

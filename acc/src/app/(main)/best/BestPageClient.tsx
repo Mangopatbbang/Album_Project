@@ -9,6 +9,7 @@ import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import { GENRE_COLOR, koGenre } from "@/lib/bio";
 import FilterSelect from "@/components/ui/FilterSelect";
+import { trackFeatureClick } from "@/lib/track";
 
 const TOP_N = 5;
 const MEDAL = ["🥇", "🥈", "🥉"];
@@ -650,7 +651,7 @@ export default function BestPageClient({
           {(["전체", "국내", "해외"] as const).map((r) => (
             <button
               key={r}
-              onClick={() => setRegionFilter(r)}
+              onClick={() => { setRegionFilter(r); trackFeatureClick("청음감_지역필터", r); }}
               style={{
                 padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 backgroundColor: regionFilter === r ? "var(--accent)" : "var(--bg-elevated)",
@@ -687,7 +688,7 @@ export default function BestPageClient({
           {(["all", "year", "genre", "artist"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => { setView(v); setOpenSection(null); }}
+              onClick={() => { setView(v); setOpenSection(null); trackFeatureClick("청음감_보기방식", v); }}
               style={{
                 padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 backgroundColor: view === v ? "var(--accent)" : "var(--bg-elevated)",
