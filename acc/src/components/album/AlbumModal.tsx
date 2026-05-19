@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
@@ -1651,24 +1652,26 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
     </div>
 
-      {artistModal && (
+      {artistModal && createPortal(
         <ArtistModal
           artistName={artistModal.name}
           displayName={artistModal.display}
           onClose={() => setArtistModal(null)}
           onAlbumClick={(a) => { setArtistModal(null); setNestedAlbum(a); }}
           source="album_modal"
-        />
+        />,
+        document.body
       )}
 
-      {nestedAlbum && (
+      {nestedAlbum && createPortal(
         <AlbumModal
           album={nestedAlbum}
           onClose={() => setNestedAlbum(null)}
           onSaved={onSaved}
           zIndex={120}
           source="artist_modal"
-        />
+        />,
+        document.body
       )}
 
       {showCardPreview && myScore !== null && (
