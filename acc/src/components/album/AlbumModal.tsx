@@ -144,7 +144,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }
     showToast("앨범을 삭제했어요", "info");
     onSaved?.(album.id);
-    handleClose();
+    doClose();
   };
 
   const doClose = () => {
@@ -293,13 +293,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   // 찜 여부 fetch
   useEffect(() => {
     if (!profile) return;
-    fetch(`/api/watchlist?userId=${profile.id}`)
+    fetch(`/api/watchlist/check?userId=${profile.id}&albumId=${album.id}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.items) {
-          setIsWatchlisted(data.items.some((i: { album_id: string }) => i.album_id === album.id));
-        }
-      })
+      .then((data) => { setIsWatchlisted(data.isWatchlisted ?? false); })
       .catch(() => {});
   }, [album.id, profile]);
 
