@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import PageHeader from "@/components/layout/PageHeader";
-import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
 import { koGenre, GENRE_COLOR } from "@/lib/bio";
 import Link from "next/link";
 import { PairsSection, type PairData } from "./MembersSections";
-import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
+import { fetchAllUserAvatarUrls, fetchAllUsers, fetchAllMemberRatings } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 export const metadata: Metadata = {
@@ -13,22 +12,12 @@ export const metadata: Metadata = {
   description: "아차청음사 청음단 멤버 소개",
 };
 
-type RatingRow = { user_id: string; album_id: string; score: number; one_line_review: string | null; albums: { id: string; genre: string | null; artist: string | null } | null };
-
 export default async function MembersPage() {
-  const [avatarMap, USERS] = await Promise.all([fetchAllUserAvatarUrls(), fetchAllUsers()]);
-
-  // Supabase 1000행 제한 우회 — 페이지네이션으로 전체 수집
-  const allRaw: RatingRow[] = [];
-  for (let page = 0; ; page++) {
-    const { data: pageData } = await supabaseServer
-      .from("ratings")
-      .select("user_id, album_id, score, one_line_review, albums(id, genre, artist)")
-      .range(page * 1000, (page + 1) * 1000 - 1);
-    if (!pageData || pageData.length === 0) break;
-    allRaw.push(...(pageData as unknown as RatingRow[]));
-    if (pageData.length < 1000) break;
-  }
+  const [avatarMap, USERS, allRaw] = await Promise.all([
+    fetchAllUserAvatarUrls(),
+    fetchAllUsers(),
+    fetchAllMemberRatings(),
+  ]);
 
   // 실제로 앨범이 존재하는 평점만 사용 (프로필 페이지와 동일 기준)
   const ratings = allRaw.filter((r) => r.albums !== null);

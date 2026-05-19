@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
@@ -549,36 +547,39 @@ function RankedGrid({
   );
 }
 
+type ViewSections = { all: [string, AlbumStat[]][]; domestic: [string, AlbumStat[]][]; foreign: [string, AlbumStat[]][] };
+
 export default function BestPageClient({
-  allSections,
-  domesticSections,
-  foreignSections,
+  yearData,
+  genreData,
+  artistData,
   allRanked,
   domesticRanked,
   foreignRanked,
   hiddenGems,
-  view,
+  initialView,
 }: {
-  allSections: [string, AlbumStat[]][];
-  domesticSections: [string, AlbumStat[]][];
-  foreignSections: [string, AlbumStat[]][];
+  yearData: ViewSections;
+  genreData: ViewSections;
+  artistData: ViewSections;
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
   hiddenGems: AlbumStat[];
-  view: string;
+  initialView: string;
 }) {
-  const router = useRouter();
+  const [view, setView] = useState(initialView);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [artistSort, setArtistSort] = useState<"count" | "avg">("avg");
   const [regionFilter, setRegionFilter] = useState<"전체" | "국내" | "해외">("전체");
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
+  const viewData = view === "genre" ? genreData : view === "artist" ? artistData : yearData;
   const sections =
-    regionFilter === "국내" ? domesticSections :
-    regionFilter === "해외" ? foreignSections :
-    allSections;
+    regionFilter === "국내" ? viewData.domestic :
+    regionFilter === "해외" ? viewData.foreign :
+    viewData.all;
 
   const rankedList =
     regionFilter === "국내" ? domesticRanked :
@@ -616,7 +617,7 @@ export default function BestPageClient({
         />
         <FilterSelect
           value={view}
-          onChange={(v) => router.push(`/best?view=${v}`)}
+          onChange={(v) => { setView(v); setOpenSection(null); }}
           options={[
             { value: "all", label: "통합" },
             { value: "year", label: "연도별" },
@@ -684,19 +685,19 @@ export default function BestPageClient({
             </>
           )}
           {(["all", "year", "genre", "artist"] as const).map((v) => (
-            <Link
+            <button
               key={v}
-              href={`/best?view=${v}`}
+              onClick={() => { setView(v); setOpenSection(null); }}
               style={{
                 padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                textDecoration: "none",
                 backgroundColor: view === v ? "var(--accent)" : "var(--bg-elevated)",
                 color: view === v ? "var(--bg)" : "var(--text-sub)",
                 border: `1px solid ${view === v ? "var(--accent)" : "var(--border)"}`,
+                cursor: "pointer",
               }}
             >
               {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
-            </Link>
+            </button>
           ))}
         </div>
       </div>

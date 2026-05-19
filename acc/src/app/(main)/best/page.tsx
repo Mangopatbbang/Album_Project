@@ -15,20 +15,28 @@ export default async function BestPage({
 }) {
   const { view = "year" } = await searchParams;
   const albums = await fetchAllAlbumsWithRatings();
+  const domAlbums = albums.filter((a) => a.region === "국내");
+  const forAlbums = albums.filter((a) => a.region === "해외");
 
-  function computeSections(albs: typeof albums): [string, AlbumStat[]][] {
-    if (view === "genre") return [...getBestByGenre(albs).entries()];
-    if (view === "artist") return [...getBestByArtist(albs).entries()];
-    return [...getBestByYear(albs).entries()];
-  }
-
-  const sections = computeSections(albums);
-  const domesticSections = computeSections(albums.filter((a) => a.region === "국내"));
-  const foreignSections = computeSections(albums.filter((a) => a.region === "해외"));
+  const yearData = {
+    all: [...getBestByYear(albums).entries()] as [string, AlbumStat[]][],
+    domestic: [...getBestByYear(domAlbums).entries()] as [string, AlbumStat[]][],
+    foreign: [...getBestByYear(forAlbums).entries()] as [string, AlbumStat[]][],
+  };
+  const genreData = {
+    all: [...getBestByGenre(albums).entries()] as [string, AlbumStat[]][],
+    domestic: [...getBestByGenre(domAlbums).entries()] as [string, AlbumStat[]][],
+    foreign: [...getBestByGenre(forAlbums).entries()] as [string, AlbumStat[]][],
+  };
+  const artistData = {
+    all: [...getBestByArtist(albums).entries()] as [string, AlbumStat[]][],
+    domestic: [...getBestByArtist(domAlbums).entries()] as [string, AlbumStat[]][],
+    foreign: [...getBestByArtist(forAlbums).entries()] as [string, AlbumStat[]][],
+  };
 
   const allRanked = getRankedAll(albums);
-  const domesticRanked = getRankedAll(albums.filter((a) => a.region === "국내"));
-  const foreignRanked = getRankedAll(albums.filter((a) => a.region === "해외"));
+  const domesticRanked = getRankedAll(domAlbums);
+  const foreignRanked = getRankedAll(forAlbums);
   const hiddenGems = getHiddenGems(albums);
 
   return (
@@ -38,14 +46,14 @@ export default async function BestPage({
         <PageHeader title="청음감" subtitle="멤버가 선정한 명반 순위" />
 
         <BestPageClient
-          allSections={sections}
-          domesticSections={domesticSections}
-          foreignSections={foreignSections}
+          yearData={yearData}
+          genreData={genreData}
+          artistData={artistData}
           allRanked={allRanked}
           domesticRanked={domesticRanked}
           foreignRanked={foreignRanked}
           hiddenGems={hiddenGems}
-          view={view}
+          initialView={view}
         />
       </main>
     </div>

@@ -333,6 +333,33 @@ export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
     .slice(0, 8);
 }
 
+// 청음인 페이지용 — 전체 ratings (1시간 캐시)
+export type MemberRatingRow = {
+  user_id: string;
+  album_id: string;
+  score: number;
+  one_line_review: string | null;
+  albums: { id: string; genre: string | null; artist: string | null } | null;
+};
+
+export const fetchAllMemberRatings = unstable_cache(
+  async (): Promise<MemberRatingRow[]> => {
+    const all: MemberRatingRow[] = [];
+    for (let page = 0; ; page++) {
+      const { data } = await supabaseServer
+        .from("ratings")
+        .select("user_id, album_id, score, one_line_review, albums(id, genre, artist)")
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!data || data.length === 0) break;
+      all.push(...(data as unknown as MemberRatingRow[]));
+      if (data.length < 1000) break;
+    }
+    return all;
+  },
+  ["all-member-ratings"],
+  { tags: ["profile-ratings"], revalidate: 3600 }
+);
+
 // 서버사이드: DB에서 전체 유저 목록 조회
 export const fetchAllUsers = unstable_cache(
   async (): Promise<Array<{ id: string; display_name: string; emoji: string }>> => {
