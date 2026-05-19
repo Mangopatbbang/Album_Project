@@ -51,18 +51,12 @@ async function getInitialAlbums() {
 
 const getGenres = unstable_cache(
   async (): Promise<string[]> => {
-    const all: { genre: string | null }[] = [];
-    for (let page = 0; ; page++) {
-      const { data } = await supabaseServer
-        .from("albums")
-        .select("genre")
-        .not("genre", "is", null)
-        .range(page * 1000, (page + 1) * 1000 - 1);
-      if (!data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < 1000) break;
-    }
-    const unique = [...new Set(all.map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
+    const { data } = await supabaseServer
+      .from("albums")
+      .select("genre")
+      .not("genre", "is", null)
+      .limit(9999);
+    const unique = [...new Set((data ?? []).map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
     return unique as string[];
   },
   ["albums-page-genres"],
