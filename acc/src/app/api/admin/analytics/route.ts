@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const [usersRes, ratingsRes, activityRes, eventsRes, searchRes, albumVisitsRes, watchlistRes, albumsRes] = await Promise.all([
     supabaseServer.from("users").select("id, display_name, avatar_url, role").limit(500),
     // ratings: limit 넉넉히 — total/avg 계산에 전체 필요
-    supabaseServer.from("ratings").select("user_id, score, created_at").limit(9999),
+    supabaseServer.from("ratings").select("user_id, score, updated_at").limit(9999),
     // activity_logs: 7일 이내만 — 최근 활동 판단용
     supabaseServer.from("activity_logs")
       .select("user_id, action, created_at")
@@ -51,14 +51,14 @@ export async function GET(req: NextRequest) {
 
     const avg = ur.length ? ur.reduce((s, r) => s + r.score, 0) / ur.length : null;
 
-    // 최근 7일 활동: activity_logs 기준 (더 정확) + 없으면 ratings.created_at 기준 fallback
+    // 최근 7일 활동: activity_logs 기준 (등록+수정 모두 포함) + 없으면 ratings.updated_at 기준 fallback
     const recentFromLogs = userLogs.filter((l) => l.action === "rating_set").length;
-    const recentFromRatings = ur.filter((r) => new Date(r.created_at) >= new Date(weekAgo)).length;
+    const recentFromRatings = ur.filter((r) => new Date(r.updated_at) >= new Date(weekAgo)).length;
     const recentCount = recentFromLogs > 0 ? recentFromLogs : recentFromRatings;
 
-    // 마지막 평가: activity_logs 최신 vs ratings.created_at 최신 중 더 최근 것
+    // 마지막 평가: activity_logs 최신 vs ratings.updated_at 최신 중 더 최근 것
     const latestLog = userLogs.sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.created_at ?? null;
-    const latestRating = [...ur].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.created_at ?? null;
+    const latestRating = [...ur].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0]?.updated_at ?? null;
     const lastActivityAt =
       !latestLog ? latestRating :
       !latestRating ? latestLog :
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
   const pageViews = events.filter((e) => e.type === "page_view");
   const pvMap = new Map<string, number>();
   for (const e of pageViews) {
-    const p = (e.data as Record<string, string>)?.path ?? (e as Record<string, unknown>).path as string ?? "unknown";
+    const p = (e as Record<string, unknown>).path as string ?? (e.data as Record<string, string>)?.path ?? "unknown";
     pvMap.set(p, (pvMap.get(p) ?? 0) + 1);
   }
   const topPages = [...pvMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([path, count]) => ({ path, count }));
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
   });
 
   // ── 기기 비율 (period 기준)
-  const mobile = pageViews.filter((e) => (e.data as Record<string, string>)?.device === "mobile" || (e as Record<string, unknown>).device === "mobile").length;
+  const mobile = pageViews.filter((e) => (e as Record<string, unknown>).device === "mobile").length;
   const desktop = pageViews.length - mobile;
 
   // ── KPI
