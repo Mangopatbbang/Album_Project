@@ -103,6 +103,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [showGuide, setShowGuide] = useState(false);
   const [tracklistExpanded, setTracklistExpanded] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showDeleteAlbumConfirm, setShowDeleteAlbumConfirm] = useState(false);
   const [hofLimitAlbums, setHofLimitAlbums] = useState<{ id: string; title: string; artist: string; cover_url: string | null }[] | null>(null);
   const [evictAlbumId, setEvictAlbumId] = useState<string | null>(null);
   const [evictScore, setEvictScore] = useState<number | null>(null);
@@ -116,13 +117,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const deletedScoreRef = useRef<number | null>(null);
   const deletedReviewRef = useRef<string>("");
   const initialReviewRef = useRef<string>("");
+  const initialScoreRef = useRef<number | null>(null);
   const isDirtyRef = useRef(false);
   const touchStartY = useRef(0);
   const isDraggingRef = useRef(false);
 
-  const handleDeleteAlbum = async () => {
+  const handleDeleteAlbum = () => {
+    cardRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setShowDeleteAlbumConfirm(true);
+  };
+
+  const doDeleteAlbum = async () => {
     if (!profile) return;
-    if (!confirm("이 앨범을 삭제할까요? 모든 평점도 함께 삭제됩니다.")) return;
+    setShowDeleteAlbumConfirm(false);
     setDeletingAlbum(true);
     const res = await apiFetch(`/api/albums/${album.id}`, {
       method: "DELETE",
@@ -216,7 +223,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   useEffect(() => {
     if (!profile) return;
     const existing = (album.ratings ?? []).find((r) => r.user_id === profile.id);
-    if (existing) setMyScore(existing.score);
+    if (existing) { setMyScore(existing.score); initialScoreRef.current = existing.score; }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -234,6 +241,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           );
           if (myRating) {
             setMyScore(myRating.score);
+            initialScoreRef.current = myRating.score;
             const reviewVal = myRating.one_line_review ?? "";
             setMyReview(reviewVal);
             initialReviewRef.current = reviewVal;
@@ -275,10 +283,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       .catch(() => {});
   }, [album.id, profile]);
 
-  // 소감 dirty 추적
+  // 소감/별점 dirty 추적
   useEffect(() => {
-    isDirtyRef.current = myReview.trim() !== "" && myReview !== initialReviewRef.current;
-  }, [myReview]);
+    isDirtyRef.current =
+      myReview !== initialReviewRef.current ||
+      (myScore !== null && myScore !== initialScoreRef.current);
+  }, [myReview, myScore]);
 
   // 찜 여부 fetch
   useEffect(() => {
@@ -377,6 +387,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
       setIsWatchlisted(false);
     }
+    initialReviewRef.current = myReview;
+    initialScoreRef.current = myScore;
+    isDirtyRef.current = false;
     setSaved(true);
     onSaved?.(album.id);
     setTimeout(() => setSaved(false), 2000);
@@ -564,14 +577,25 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           if (!card) return;
           const delta = e.changedTouches[0].clientY - touchStartY.current;
           if (isDraggingRef.current && delta > 80) {
-            // 드래그 현재 위치에서 이어서 내려가며 닫기
-            card.style.transition = "transform 0.22s cubic-bezier(0.4, 0, 1, 1)";
-            card.style.transform = "translateY(100%)";
-            if (backdropRef.current) {
-              backdropRef.current.style.transition = "background-color 0.22s ease";
-              backdropRef.current.style.backgroundColor = "rgba(0,0,0,0)";
+            if (isDirtyRef.current) {
+              // 미저장 내용 있으면 spring-back 후 확인창
+              card.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
+              card.style.transform = "translateY(0)";
+              if (backdropRef.current) {
+                backdropRef.current.style.transition = "background-color 0.32s ease";
+                backdropRef.current.style.backgroundColor = "rgba(0,0,0,0.75)";
+              }
+              setShowCloseConfirm(true);
+            } else {
+              // 드래그 현재 위치에서 이어서 내려가며 닫기
+              card.style.transition = "transform 0.22s cubic-bezier(0.4, 0, 1, 1)";
+              card.style.transform = "translateY(100%)";
+              if (backdropRef.current) {
+                backdropRef.current.style.transition = "background-color 0.22s ease";
+                backdropRef.current.style.backgroundColor = "rgba(0,0,0,0)";
+              }
+              setTimeout(onClose, 220);
             }
-            setTimeout(onClose, 220);
           } else if (isDraggingRef.current) {
             // 80px 미만이면 spring-back
             card.style.transition = "transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -591,6 +615,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
         {/* 닫기 버튼 전용 행 — 오버랩 없음 */}
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "10px 14px 0", gap: 8 }}>
+          {showDeleteAlbumConfirm && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, animation: "fadeUp 0.15s ease-out" }}>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>앨범과 모든 평점이 삭제돼요</span>
+              <button onClick={doDeleteAlbum} style={{ fontSize: 11, color: "var(--error)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>삭제</button>
+              <button onClick={() => setShowDeleteAlbumConfirm(false)} style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>취소</button>
+            </div>
+          )}
           {showCloseConfirm && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, animation: "fadeUp 0.15s ease-out" }}>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>소감이 저장되지 않아요</span>
@@ -598,7 +629,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               <button onClick={() => setShowCloseConfirm(false)} style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>취소</button>
             </div>
           )}
-          {!showCloseConfirm && (
+          {!showCloseConfirm && !showDeleteAlbumConfirm && (
             <>
               {/* 데스크탑 전용 액션 버튼 */}
               {profile && (
@@ -894,7 +925,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
               <p style={{ fontWeight: 700, fontSize: 22, color: data.avg ? scoreColor(data.avg) : "var(--text-muted)" }}>
                 {data.avg ?? "–"}
-                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 7</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 400, marginLeft: 4 }}>/ 8</span>
               </p>
               {controversyIndex !== null && (
                 <span style={{

@@ -30,6 +30,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
   const [barWidths, setBarWidths] = useState<Record<string, number>>({});
+  const [fetchError, setFetchError] = useState(false);
   const loadedRef = useRef(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +57,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
                 setBarWidths(widths);
               });
             })
-            .catch(() => {});
+            .catch(() => { setComparisons([]); setFetchError(true); });
         }
       },
       { rootMargin: "200px" }
@@ -76,7 +77,25 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
       }}>{g}</span>
     );
   });
-  const isLoading = comparisons === null;
+  const isLoading = comparisons === null && !fetchError;
+
+  const retryFetch = () => {
+    setFetchError(false);
+    setComparisons(null);
+    fetch(`/api/profile/${userId}/comparison`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.comparisons) setComparisons(data.comparisons);
+        if (data.bestMatch) setBestMatch(data.bestMatch);
+        const allItems: ComparisonItem[] = [...(data.comparisons ?? []), ...(data.bestMatch ? [data.bestMatch] : [])];
+        requestAnimationFrame(() => {
+          const widths: Record<string, number> = {};
+          allItems.forEach((item) => { widths[item.user.id] = Math.round(Math.max(0, item.pearson ?? 0) * 100); });
+          setBarWidths(widths);
+        });
+      })
+      .catch(() => { setComparisons([]); setFetchError(true); });
+  };
 
   return (
     <div ref={sectionRef}>
@@ -96,8 +115,25 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
         </div>
       )}
 
+      {/* 오류 */}
+      {fetchError && (
+        <div style={{
+          backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 12, padding: "24px 28px",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+        }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>불러오지 못했어요</p>
+          <button
+            onClick={retryFetch}
+            style={{ padding: "6px 18px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-sub)", fontSize: 12, cursor: "pointer" }}
+          >
+            다시 시도
+          </button>
+        </div>
+      )}
+
       {/* 취향 궁합 */}
-      {!isLoading && bestMatch && (() => {
+      {!isLoading && !fetchError && bestMatch && (() => {
         const pct = Math.round(Math.max(0, bestMatch.pearson ?? 0) * 100);
         return (
           <div
@@ -158,7 +194,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
       })()}
 
       {/* 멤버 비교 */}
-      {!isLoading && (
+      {!isLoading && !fetchError && (
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             멤버 비교

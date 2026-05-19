@@ -51,7 +51,7 @@ export default function ReviewsClient() {
 
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommentItem[]>>({});
-  const [commentInput, setCommentInput] = useState("");
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
 
@@ -199,16 +199,16 @@ export default function ReviewsClient() {
   const toggleExpand = (key: string, albumId: string, reviewerId: string) => {
     if (expandedKey === key) {
       setExpandedKey(null);
-      setCommentInput("");
     } else {
       setExpandedKey(key);
-      setCommentInput("");
       if (!comments[key]) fetchComments(albumId, reviewerId);
     }
   };
 
   const handleComment = async (item: ReviewItem) => {
-    if (!profile || !commentInput.trim()) return;
+    const key = `${item.albumId}-${item.userId}`;
+    const inputVal = commentInputs[key]?.trim();
+    if (!profile || !inputVal) return;
     setSubmitting(true);
     try {
       const res = await apiFetch("/api/comments", {
@@ -216,11 +216,11 @@ export default function ReviewsClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           albumId: item.albumId, reviewerId: item.userId,
-          content: commentInput.trim(),
+          content: inputVal,
         }),
       });
       if (res.ok) {
-        setCommentInput("");
+        setCommentInputs((prev) => { const next = { ...prev }; delete next[key]; return next; });
         await fetchComments(item.albumId, item.userId);
         setItems((prev) => prev.map((r) =>
           r.albumId === item.albumId && r.userId === item.userId
@@ -415,13 +415,13 @@ export default function ReviewsClient() {
                       liking={liking === key}
                       expanded={expandedKey === key}
                       rowComments={comments[key]}
-                      commentInput={expandedKey === key ? commentInput : ""}
+                      commentInput={commentInputs[key] ?? ""}
                       submitting={submitting}
                       onLike={() => handleLike(item)}
                       onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                       onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
                       onToggleExpand={() => toggleExpand(key, item.albumId, item.userId)}
-                      onCommentInput={setCommentInput}
+                      onCommentInput={(v) => setCommentInputs((prev) => ({ ...prev, [key]: v }))}
                       onCommentSubmit={() => handleComment(item)}
                       isLast={idx === reviews.length - 1}
                       hideAlbumInfo
@@ -447,13 +447,13 @@ export default function ReviewsClient() {
                 liking={liking === key}
                 expanded={expandedKey === key}
                 rowComments={comments[key]}
-                commentInput={expandedKey === key ? commentInput : ""}
+                commentInput={commentInputs[key] ?? ""}
                 submitting={submitting}
                 onLike={() => handleLike(item)}
                 onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                 onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
                 onToggleExpand={() => toggleExpand(key, item.albumId, item.userId)}
-                onCommentInput={setCommentInput}
+                onCommentInput={(v) => setCommentInputs((prev) => ({ ...prev, [key]: v }))}
                 onCommentSubmit={() => handleComment(item)}
                 isLast={idx === items.length - 1}
                 isNew={isNew}

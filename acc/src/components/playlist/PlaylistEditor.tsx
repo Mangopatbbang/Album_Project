@@ -33,6 +33,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -41,12 +42,18 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
   const [title, setTitle] = useState(`${dateStr} 기록`);
   const [isPublic, setIsPublic] = useState(true);
 
+  const handleClose = () => {
+    if (entries.length > 0) { setShowCloseConfirm(true); return; }
+    onClose();
+  };
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries.length]);
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -161,7 +168,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
   return (
     <div
       ref={backdropRef}
-      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      onClick={(e) => { if (e.target === backdropRef.current) handleClose(); }}
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
         zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
@@ -193,7 +200,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
               }}
             />
           </div>
-          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20, flexShrink: 0, marginTop: 18 }}>×</button>
+          <button onClick={handleClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20, flexShrink: 0, marginTop: 18 }}>✕</button>
         </div>
 
         {/* 공개 설정 */}
@@ -394,11 +401,19 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
           </div>
         )}
 
-        {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+        {error && <p style={{ color: "var(--error)", fontSize: 12 }}>{error}</p>}
 
         {/* 버튼 */}
+        {showCloseConfirm && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", backgroundColor: "var(--bg-elevated)", borderRadius: 8, border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: 12, color: "var(--text-muted)", flex: 1 }}>작성 중인 내용이 저장되지 않아요. 닫을까요?</span>
+            <button onClick={onClose} style={{ fontSize: 12, color: "var(--error)", background: "none", border: "none", cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>닫기</button>
+            <button onClick={() => setShowCloseConfirm(false)} style={{ fontSize: 12, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 10px", cursor: "pointer", flexShrink: 0 }}>취소</button>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{
+          <button onClick={handleClose} style={{
             backgroundColor: "transparent", border: "1px solid var(--border)",
             color: "var(--text-muted)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
           }}>취소</button>

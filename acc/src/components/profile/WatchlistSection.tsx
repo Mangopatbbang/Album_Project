@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -33,6 +34,9 @@ export default function WatchlistSection({ userId }: Props) {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
+  const { showToastWithUndo } = useToast();
+  const pendingRemovesRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   const isOwner = profile?.id === userId;
   const [popupOpen, setPopupOpen] = useState(false);
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
@@ -50,20 +54,37 @@ export default function WatchlistSection({ userId }: Props) {
 
   if (!isOwner) return null;
 
-  const handleRemove = async (albumId: string) => {
+  const handleRemove = (albumId: string) => {
+    const index = items.findIndex((i) => i.album_id === albumId);
+    if (index === -1) return;
+
+    // 각 제거 항목마다 독립적인 클로저로 캡처
+    const removed = { item: items[index], index };
+
+    const existing = pendingRemovesRef.current.get(albumId);
+    if (existing) clearTimeout(existing);
+
     setItems((prev) => prev.filter((i) => i.album_id !== albumId));
-    const res = await apiFetch("/api/watchlist", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId }),
+
+    showToastWithUndo("나중에 들을 목록에서 삭제했어요", () => {
+      const tid = pendingRemovesRef.current.get(albumId);
+      if (tid) { clearTimeout(tid); pendingRemovesRef.current.delete(albumId); }
+      setItems((prev) => [
+        ...prev.slice(0, removed.index),
+        removed.item,
+        ...prev.slice(removed.index),
+      ]);
     });
-    if (!res.ok) {
-      // 실패 시 목록 복구
-      fetch(`/api/watchlist?userId=${userId}`)
-        .then((r) => r.json())
-        .then((data) => { if (data.items) setItems(data.items); })
-        .catch(() => {});
-    }
+
+    const tid = setTimeout(async () => {
+      pendingRemovesRef.current.delete(albumId);
+      await apiFetch("/api/watchlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId }),
+      });
+    }, 5000);
+    pendingRemovesRef.current.set(albumId, tid);
   };
 
   return (

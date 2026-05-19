@@ -130,8 +130,9 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
     };
   }, [onClose]);
 
-  const handleSearch = async () => {
-    if (!title.trim() && !album.artist.trim()) return;
+  const handleSearch = async (artistOverride?: string) => {
+    const searchArtist = artistOverride ?? album.artist.trim();
+    if (!title.trim() && !searchArtist) return;
     setSearching(true);
     setSearchError("");
     setNotFound(false);
@@ -142,7 +143,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
 
     let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
     try {
-      const q = new URLSearchParams({ title: title.trim(), artist: album.artist.trim() });
+      const q = new URLSearchParams({ title: title.trim(), artist: searchArtist });
       const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
       data = await res.json();
     } catch {
@@ -160,8 +161,8 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
 
     if (!data.results?.length) {
       setNotFound(true);
-      if (album.artist.trim()) {
-        fetch(`/api/spotify/artist-hint?artist=${encodeURIComponent(album.artist.trim())}`)
+      if (searchArtist) {
+        fetch(`/api/spotify/artist-hint?artist=${encodeURIComponent(searchArtist)}`)
           .then((r) => r.json())
           .then((d) => setArtistHints(d.hints ?? []))
           .catch(() => {});
@@ -268,7 +269,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>앨범 수정</p>
-          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
+          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">✕</button>
         </div>
 
         {/* 제목 + 아티스트 + 검색 */}
@@ -335,7 +336,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
             />
           </div>
           <button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={searching || (!title.trim() && !album.artist.trim())}
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
@@ -368,7 +369,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
                     <button
                       key={h.name}
                       type="button"
-                      onClick={() => { setArtistHints([]); setNotFound(false); }}
+                      onClick={() => handleSearch(h.name)}
                       style={{
                         display: "flex", alignItems: "center", gap: 8,
                         background: "var(--bg-elevated)", border: "1px solid var(--border)",
