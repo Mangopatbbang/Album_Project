@@ -299,7 +299,6 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     }
 
     setSaving(false);
-    showToast(`${title} 입고 완료`);
     onAdded();
     setAddedAlbumId(data.id);
 
@@ -347,14 +346,22 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     display: "block" as const,
   };
 
-  // alias 체크 완료 후 alias 있으면 바로 닫기
+  // alias 체크 완료 후 alias 있으면 바로 닫기 (toast는 닫히는 시점에)
   useEffect(() => {
-    if (addedAlbumId && aliasCheckDone && aliasExists) onClose();
-  }, [addedAlbumId, aliasCheckDone, aliasExists, onClose]);
+    if (addedAlbumId && aliasCheckDone && aliasExists) {
+      showToast(`${title} 입고 완료`);
+      onClose();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addedAlbumId, aliasCheckDone, aliasExists]);
 
   if (addedAlbumId && aliasCheckDone && !aliasExists) {
+    const closeWithToast = () => { showToast(`${title} 입고 완료`); onClose(); };
     return (
       <div
+        ref={backdropRef}
+        onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
+        onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) closeWithToast(); mouseDownOnBackdrop.current = false; }}
         style={{
           position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
           zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
@@ -398,7 +405,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   });
                   setAliasSaving(false);
                   setAliasSaved(true);
-                  setTimeout(() => onClose(), 600);
+                  setTimeout(() => closeWithToast(), 600);
                 }}
                 placeholder={`표시할 이름 입력 (예: 한글명)`}
                 style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none", boxSizing: "border-box" }}
@@ -414,7 +421,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   });
                   setAliasSaving(false);
                   setAliasSaved(true);
-                  setTimeout(() => onClose(), 600);
+                  setTimeout(() => closeWithToast(), 600);
                 }}
                 disabled={!aliasInput.trim() || aliasSaving}
                 style={{
@@ -434,7 +441,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             </div>
           )}
           <button
-            onClick={onClose}
+            onClick={closeWithToast}
             style={{
               background: "none", border: "none", cursor: "pointer",
               color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", textDecorationStyle: "dotted",
