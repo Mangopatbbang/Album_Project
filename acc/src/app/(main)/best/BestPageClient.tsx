@@ -588,13 +588,13 @@ export default function BestPageClient({
     allRanked;
 
   const sortedArtistSections = useMemo(() => {
-    if (artistSort !== "avg") return sections;
+    if (view !== "artist" || artistSort !== "avg") return sections;
     return [...sections].sort((a, b) => {
       const avgA = a[1].reduce((s, x) => s + x.avg, 0) / a[1].length;
       const avgB = b[1].reduce((s, x) => s + x.avg, 0) / b[1].length;
       return avgB - avgA;
     });
-  }, [sections, artistSort]);
+  }, [view, sections, artistSort]);
 
   const openSectionData = openSection
     ? sections.find(([label]) => label === openSection)

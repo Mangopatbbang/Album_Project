@@ -355,9 +355,13 @@ export default function BoardClient() {
         {isAdmin && (
           <div style={{ marginBottom: 24 }}>
             <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 10 }}>
-              문의 목록 — {inquiries.length}건
+              문의 목록 — {loadingInquiries ? "로딩 중..." : `${inquiries.length}건`}
             </p>
-            {inquiries.length === 0 ? (
+            {loadingInquiries ? (
+              <div style={{ padding: "16px 0", display: "flex", justifyContent: "center" }}>
+                <Spinner size={18} />
+              </div>
+            ) : inquiries.length === 0 ? (
               <p style={{ color: "var(--text-muted)", fontSize: 13 }}>접수된 문의가 없습니다.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
