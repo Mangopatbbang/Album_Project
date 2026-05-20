@@ -3,6 +3,21 @@
 > 모든 `/api/*` 엔드포인트 정리.  
 > 인증이 필요한 엔드포인트는 `Authorization: Bearer {JWT}` 헤더 필요.
 
+## 공통 규칙
+
+**인증**: Supabase Auth에서 발급한 JWT를 `Authorization: Bearer {토큰}` 헤더로 전달.  
+클라이언트 컴포넌트는 `supabase-browser.ts`를 통해 자동으로 토큰을 주입한다.
+
+**권한 레벨**:
+- 비로그인: GET(읽기) 전용
+- 로그인: 본인 데이터 쓰기 (평점, 한줄평, 댓글, 찜 등)
+- admin: `users.role = "admin"` — 어드민 전용 엔드포인트 접근 가능
+
+**레이트 리밋**: Upstash Redis 기반. 일반 API 분당 60회, Spotify 연동 API 분당 10회.  
+초과 시 `429 Too Many Requests` 반환.
+
+**캐시 무효화**: 데이터를 변경하는 모든 POST/PATCH/DELETE 핸들러는 관련 `revalidateTag`를 호출해 서버 캐시를 즉시 갱신한다.
+
 ---
 
 ## 목차
