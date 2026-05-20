@@ -19,6 +19,7 @@ type Analytics = {
   top_albums: { album_id: string; count: number; title: string; artist: string; cover_url: string | null }[];
   top_watchlist: { album_id: string; count: number; title: string; artist: string; cover_url: string | null }[];
   device: { mobile: number; desktop: number };
+  truncated_warning?: string;
 };
 
 function KpiCard({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
@@ -194,6 +195,17 @@ export default function AdminDataTab() {
           </button>
         ))}
       </div>
+
+      {/* 데이터 절삭 경고 */}
+      {data.truncated_warning && (
+        <div style={{
+          backgroundColor: "rgba(240,160,40,0.08)", border: "1px solid rgba(240,160,40,0.3)",
+          borderRadius: 8, padding: "10px 16px",
+          fontSize: 12, color: "#df9e30",
+        }}>
+          ⚠️ {data.truncated_warning}
+        </div>
+      )}
 
       {/* KPI 카드 */}
       <div style={{ display: "flex", gap: 10 }}>
