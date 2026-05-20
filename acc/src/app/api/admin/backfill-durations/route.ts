@@ -20,10 +20,10 @@ export async function POST(req: NextRequest) {
 
   const { data: albums, error } = await supabaseServer
     .from("albums")
-    .select("id, spotify_id")
+    .select("id, title, spotify_id")
     .not("spotify_id", "is", null)
     .is("track_durations", null)
-    .limit(50);
+    .limit(30);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!albums?.length) {
@@ -35,26 +35,44 @@ export async function POST(req: NextRequest) {
   const errors: string[] = [];
 
   for (const album of albums) {
-    try {
-      const res = await fetch(
-        `https://api.spotify.com/v1/albums/${album.spotify_id}/tracks?limit=50&market=KR`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) { errors.push(`${album.id}: Spotify ${res.status}`); continue; }
-      const data = await res.json();
-      const tracks = (data.items ?? []) as { track_number: number; duration_ms: number }[];
-      if (!tracks.length) continue;
-      const sorted = tracks.sort((a, b) => a.track_number - b.track_number);
-      const track_durations = sorted.map((t) => t.duration_ms).join("; ");
-      const { error: upErr } = await supabaseServer
-        .from("albums")
-        .update({ track_durations })
-        .eq("id", album.id);
-      if (upErr) { errors.push(`${album.id}: ${upErr.message}`); continue; }
-      updated++;
-    } catch (e) {
-      errors.push(`${album.id}: ${String(e)}`);
+    const res = await fetch(
+      `https://api.spotify.com/v1/albums/${album.spotify_id}/tracks?limit=50&market=KR`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get("Retry-After") ?? "10", 10);
+      return NextResponse.json({
+        updated,
+        remaining: null,
+        done: false,
+        rateLimited: true,
+        retryAfter,
+        message: `Spotify 레이트 리밋 — ${retryAfter}초 후 재시도`,
+      });
     }
+
+    if (!res.ok) {
+      errors.push(`"${album.title}" Spotify ${res.status}`);
+      continue;
+    }
+
+    const data = await res.json();
+    const tracks = (data.items ?? []) as { track_number: number; duration_ms: number }[];
+    if (!tracks.length) {
+      errors.push(`"${album.title}" 트랙 없음 (건너뜀)`);
+      continue;
+    }
+
+    const sorted = tracks.sort((a, b) => a.track_number - b.track_number);
+    const track_durations = sorted.map((t) => t.duration_ms).join("; ");
+    const { error: upErr } = await supabaseServer
+      .from("albums")
+      .update({ track_durations })
+      .eq("id", album.id);
+
+    if (upErr) { errors.push(`"${album.title}" DB 오류: ${upErr.message}`); continue; }
+    updated++;
   }
 
   const { count: remainingCount } = await supabaseServer

@@ -671,23 +671,43 @@ export default function AdminPage() {
       try {
         const res = await apiFetch("/api/admin/backfill-durations", { method: "POST" });
         const data = await res.json();
+
         if (data.error) {
-          setDurLog((prev) => [...prev, `❌ ${data.error}`]);
+          setDurLog((prev) => [...prev, `❌ 서버 오류: ${data.error}`]);
           break;
         }
+
+        if (data.rateLimited) {
+          const wait = data.retryAfter ?? 10;
+          setDurLog((prev) => [...prev, `⚠️ Spotify 레이트 리밋 — ${wait}초 대기 후 재시도...`]);
+          for (let t = wait; t > 0 && !durStopRef.current; t--) {
+            setDurLog((prev) => {
+              const next = [...prev];
+              next[next.length - 1] = `⚠️ Spotify 레이트 리밋 — ${t}초 후 재시도...`;
+              return next;
+            });
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+          if (!durStopRef.current) batchNum--;
+          continue;
+        }
+
         setDurDone((prev) => prev + (data.updated ?? 0));
-        setDurRemaining(data.remaining ?? 0);
+        if (data.remaining !== null) setDurRemaining(data.remaining);
+
+        const errNote = data.errors?.length ? ` · 오류 ${data.errors.length}건: ${data.errors[0]}` : "";
         setDurLog((prev) => [
           ...prev,
-          `배치 ${batchNum}: ${data.updated}개 완료${data.errors?.length ? ` (오류 ${data.errors.length}건)` : ""} · 남은: ${data.remaining}개`,
+          `배치 ${batchNum}: ${data.updated}개 완료 · 남은: ${data.remaining ?? "?"}개${errNote}`,
         ]);
+
         if (data.done) {
           setDurLog((prev) => [...prev, "✅ 재생시간 백필 완료!"]);
           break;
         }
         await new Promise((r) => setTimeout(r, 800));
       } catch (e) {
-        setDurLog((prev) => [...prev, `❌ 오류: ${String(e)}`]);
+        setDurLog((prev) => [...prev, `❌ 네트워크 오류: ${String(e)}`]);
         break;
       }
     }
