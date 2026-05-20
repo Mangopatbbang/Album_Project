@@ -585,6 +585,14 @@ export default function AdminPage() {
   const [trackRemaining, setTrackRemaining] = useState<number | null>(null);
   const trackStopRef = useRef(false);
 
+  // --- 재생시간 백필 ---
+  const [durRunning, setDurRunning] = useState(false);
+  const [durLog, setDurLog] = useState<string[]>([]);
+  const [durTotal, setDurTotal] = useState<number | null>(null);
+  const [durDone, setDurDone] = useState(0);
+  const [durRemaining, setDurRemaining] = useState<number | null>(null);
+  const durStopRef = useRef(false);
+
   async function runTracklistMigration() {
     setTrackRunning(true);
     trackStopRef.current = false;
@@ -630,6 +638,60 @@ export default function AdminPage() {
     }
 
     setTrackRunning(false);
+  }
+
+  async function runDurationBackfill() {
+    setDurRunning(true);
+    durStopRef.current = false;
+    setDurLog([]);
+    setDurDone(0);
+
+    // 총 개수 먼저 확인
+    try {
+      const countRes = await apiFetch("/api/admin/backfill-durations");
+      const countData = await countRes.json();
+      const total = countData.remaining ?? 0;
+      setDurTotal(total);
+      setDurRemaining(total);
+      if (total === 0) {
+        setDurLog(["✅ 이미 모든 앨범에 재생시간이 있어요."]);
+        setDurRunning(false);
+        return;
+      }
+      setDurLog([`총 ${total}개 처리 시작...`]);
+    } catch (e) {
+      setDurLog([`❌ 오류: ${String(e)}`]);
+      setDurRunning(false);
+      return;
+    }
+
+    let batchNum = 0;
+    while (!durStopRef.current) {
+      batchNum++;
+      try {
+        const res = await apiFetch("/api/admin/backfill-durations", { method: "POST" });
+        const data = await res.json();
+        if (data.error) {
+          setDurLog((prev) => [...prev, `❌ ${data.error}`]);
+          break;
+        }
+        setDurDone((prev) => prev + (data.updated ?? 0));
+        setDurRemaining(data.remaining ?? 0);
+        setDurLog((prev) => [
+          ...prev,
+          `배치 ${batchNum}: ${data.updated}개 완료${data.errors?.length ? ` (오류 ${data.errors.length}건)` : ""} · 남은: ${data.remaining}개`,
+        ]);
+        if (data.done) {
+          setDurLog((prev) => [...prev, "✅ 재생시간 백필 완료!"]);
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 800));
+      } catch (e) {
+        setDurLog((prev) => [...prev, `❌ 오류: ${String(e)}`]);
+        break;
+      }
+    }
+    setDurRunning(false);
   }
 
   async function runMigration() {
@@ -1695,6 +1757,43 @@ export default function AdminPage() {
               {trackRunning && <button onClick={() => { trackStopRef.current = true; }} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>}
             </div>
             {trackLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{trackLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
+          </div>
+
+          {/* 재생시간 백필 */}
+          <div style={card}>
+            <p style={secTitle}>재생시간 백필</p>
+            <p style={secDesc}>Spotify ID는 있지만 재생시간 데이터가 없는 앨범에 트랙별 재생시간을 채웁니다. 트랙리스트 채우기 후 실행하세요.</p>
+            {durTotal !== null && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: "var(--text-sub)" }}>
+                    총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{durTotal}</span>개 중{" "}
+                    <span style={{ color: "var(--accent)", fontWeight: 600 }}>{durDone}</span>개 완료
+                    {durRemaining !== null && durRemaining > 0 && (
+                      <span style={{ color: "var(--text-muted)" }}> · 남은: {durRemaining}개</span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    {durTotal > 0 ? Math.round((durDone / durTotal) * 100) : 100}%
+                  </span>
+                </div>
+                <div style={{ height: 6, backgroundColor: "var(--bg-elevated)", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", borderRadius: 3,
+                    backgroundColor: "var(--accent)",
+                    width: `${durTotal > 0 ? Math.round((durDone / durTotal) * 100) : 100}%`,
+                    transition: "width 0.3s ease",
+                  }} />
+                </div>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <button onClick={runDurationBackfill} disabled={durRunning} style={{ padding: "8px 20px", borderRadius: 6, border: "none", cursor: durRunning ? "not-allowed" : "pointer", backgroundColor: durRunning ? "var(--bg-elevated)" : "var(--accent)", color: durRunning ? "var(--text-muted)" : "var(--bg)", fontWeight: 600, fontSize: 13 }}>
+                {durRunning ? "실행 중..." : "▶ 시작"}
+              </button>
+              {durRunning && <button onClick={() => { durStopRef.current = true; }} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-muted)", fontWeight: 600, fontSize: 13 }}>■ 중지</button>}
+            </div>
+            {durLog.length > 0 && <div style={{ backgroundColor: "var(--bg-elevated)", borderRadius: 8, padding: "12px 16px", maxHeight: 200, overflowY: "auto", fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", display: "flex", flexDirection: "column", gap: 2 }}>{durLog.map((line, i) => <span key={i}>{line}</span>)}</div>}
           </div>
         </>)}
 

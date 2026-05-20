@@ -142,8 +142,6 @@ export default function AdminDataTab() {
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [backfilling, setBackfilling] = useState(false);
-  const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -332,36 +330,6 @@ export default function AdminDataTab() {
         </div>
       </div>
 
-      {/* DB 유지보수 */}
-      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-        <SectionTitle>DB 유지보수</SectionTitle>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={async () => {
-              setBackfilling(true);
-              setBackfillResult(null);
-              try {
-                const res = await apiFetch("/api/admin/backfill-durations", { method: "POST" });
-                const d = await res.json();
-                setBackfillResult(d.error ?? `${d.updated}곡 업데이트, 미처리 ${d.remaining ?? 0}개${d.errors?.length ? ` (오류 ${d.errors.length}건)` : ""}`);
-              } catch {
-                setBackfillResult("오류 발생");
-              }
-              setBackfilling(false);
-            }}
-            disabled={backfilling}
-            style={{
-              padding: "7px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600,
-              border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)",
-              color: "var(--text-sub)", cursor: backfilling ? "default" : "pointer",
-              opacity: backfilling ? 0.6 : 1,
-            }}
-          >
-            {backfilling ? "처리 중..." : "재생시간 백필 (최대 50곡)"}
-          </button>
-          {backfillResult && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{backfillResult}</span>}
-        </div>
-      </div>
 
     </div>
   );

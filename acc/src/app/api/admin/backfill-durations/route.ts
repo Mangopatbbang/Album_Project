@@ -3,6 +3,18 @@ import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
 import { validateAdmin } from "@/lib/validateAdmin";
 
+export async function GET(req: NextRequest) {
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
+
+  const { count } = await supabaseServer
+    .from("albums")
+    .select("id", { count: "exact", head: true })
+    .not("spotify_id", "is", null)
+    .is("track_durations", null);
+
+  return NextResponse.json({ remaining: count ?? 0 });
+}
+
 export async function POST(req: NextRequest) {
   if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
@@ -14,7 +26,9 @@ export async function POST(req: NextRequest) {
     .limit(50);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!albums?.length) return NextResponse.json({ updated: 0, message: "백필 완료 — 미처리 항목 없음" });
+  if (!albums?.length) {
+    return NextResponse.json({ updated: 0, remaining: 0, done: true });
+  }
 
   const token = await getAccessToken();
   let updated = 0;
@@ -43,5 +57,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ updated, remaining: albums.length - updated, errors: errors.length ? errors : undefined });
+  const { count: remainingCount } = await supabaseServer
+    .from("albums")
+    .select("id", { count: "exact", head: true })
+    .not("spotify_id", "is", null)
+    .is("track_durations", null);
+
+  const remaining = remainingCount ?? 0;
+
+  return NextResponse.json({
+    updated,
+    remaining,
+    done: remaining === 0,
+    errors: errors.length ? errors : undefined,
+  });
 }
