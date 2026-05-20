@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
@@ -587,13 +587,14 @@ export default function BestPageClient({
     regionFilter === "해외" ? foreignRanked :
     allRanked;
 
-  const sortedArtistSections = artistSort === "avg"
-    ? [...sections].sort((a, b) => {
-        const avgA = a[1].reduce((s, x) => s + x.avg, 0) / a[1].length;
-        const avgB = b[1].reduce((s, x) => s + x.avg, 0) / b[1].length;
-        return avgB - avgA;
-      })
-    : sections;
+  const sortedArtistSections = useMemo(() => {
+    if (artistSort !== "avg") return sections;
+    return [...sections].sort((a, b) => {
+      const avgA = a[1].reduce((s, x) => s + x.avg, 0) / a[1].length;
+      const avgB = b[1].reduce((s, x) => s + x.avg, 0) / b[1].length;
+      return avgB - avgA;
+    });
+  }, [sections, artistSort]);
 
   const openSectionData = openSection
     ? sections.find(([label]) => label === openSection)

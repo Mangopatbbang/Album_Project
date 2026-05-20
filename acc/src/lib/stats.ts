@@ -297,6 +297,41 @@ export function getBestByArtist(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   return new Map([...map.entries()].sort((a, b) => b[1].length - a[1].length));
 }
 
+export type RegionSplit<T> = { all: T; domestic: T; foreign: T };
+
+// 전체/국내/해외 필터를 한 번에 계산 — best/page.tsx에서 9번 중복 호출 방지
+export function getBestDataForPage(albums: RawAlbum[]): {
+  yearData: RegionSplit<[string, AlbumStat[]][]>;
+  genreData: RegionSplit<[string, AlbumStat[]][]>;
+  artistData: RegionSplit<[string, AlbumStat[]][]>;
+  allRanked: AlbumStat[];
+  domesticRanked: AlbumStat[];
+  foreignRanked: AlbumStat[];
+} {
+  const dom = albums.filter((a) => a.region === "국내");
+  const for_ = albums.filter((a) => a.region === "해외");
+  return {
+    yearData: {
+      all: [...getBestByYear(albums).entries()],
+      domestic: [...getBestByYear(dom).entries()],
+      foreign: [...getBestByYear(for_).entries()],
+    },
+    genreData: {
+      all: [...getBestByGenre(albums).entries()],
+      domestic: [...getBestByGenre(dom).entries()],
+      foreign: [...getBestByGenre(for_).entries()],
+    },
+    artistData: {
+      all: [...getBestByArtist(albums).entries()],
+      domestic: [...getBestByArtist(dom).entries()],
+      foreign: [...getBestByArtist(for_).entries()],
+    },
+    allRanked: getRankedAll(albums),
+    domesticRanked: getRankedAll(dom),
+    foreignRanked: getRankedAll(for_),
+  };
+}
+
 // 테마: 아티스트 대표작 (2장 이상 평가된 아티스트의 최고 앨범)
 export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
   const valid = validAlbums(albums);

@@ -62,7 +62,8 @@ export default function BoardClient() {
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+  const [loadingInquiries, setLoadingInquiries] = useState(false);
 
   // 공지 작성 폼
   const [noticeContent, setNoticeContent] = useState("");
@@ -93,7 +94,12 @@ export default function BoardClient() {
   }, [isAdmin, profile]);
 
   useEffect(() => {
-    Promise.all([fetchAnnouncements(), fetchInquiries()]).finally(() => setLoadingData(false));
+    setLoadingAnnouncements(true);
+    fetchAnnouncements().finally(() => setLoadingAnnouncements(false));
+    if (isAdmin && profile) {
+      setLoadingInquiries(true);
+      fetchInquiries().finally(() => setLoadingInquiries(false));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
@@ -219,7 +225,7 @@ export default function BoardClient() {
     }
   };
 
-  if (loadingData) {
+  if (loadingAnnouncements) {
     return (
       <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))", display: "flex", justifyContent: "center" }}>
         <Spinner size={22} />
