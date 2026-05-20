@@ -17,13 +17,12 @@ export async function GET(req: NextRequest) {
     );
     if (!res.ok) return NextResponse.json({ tracklist: null });
     const data = await res.json();
-    const tracks = (data.items ?? []) as { name: string; track_number: number }[];
-    if (!tracks.length) return NextResponse.json({ tracklist: null });
-    const tracklist = tracks
-      .sort((a, b) => a.track_number - b.track_number)
-      .map((t) => t.name)
-      .join("; ");
-    return NextResponse.json({ tracklist });
+    const tracks = (data.items ?? []) as { name: string; track_number: number; duration_ms: number }[];
+    if (!tracks.length) return NextResponse.json({ tracklist: null, track_durations: null });
+    const sorted = tracks.sort((a, b) => a.track_number - b.track_number);
+    const tracklist = sorted.map((t) => t.name).join("; ");
+    const track_durations = sorted.map((t) => t.duration_ms).join("; ");
+    return NextResponse.json({ tracklist, track_durations });
   } catch {
     return NextResponse.json({ tracklist: null });
   }

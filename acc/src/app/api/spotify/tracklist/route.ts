@@ -18,11 +18,12 @@ export async function GET(req: NextRequest) {
     if (!res.ok) return NextResponse.json({ error: `Spotify API 오류: ${res.status}` }, { status: 502 });
 
     const data = await res.json();
-    const tracks: string[] = (data.items ?? [])
-      .sort((a: { track_number: number }, b: { track_number: number }) => a.track_number - b.track_number)
-      .map((t: { name: string }) => t.name);
+    const sorted = (data.items ?? [] as { track_number: number; name: string; duration_ms: number }[])
+      .sort((a: { track_number: number }, b: { track_number: number }) => a.track_number - b.track_number);
+    const tracks: string[] = sorted.map((t: { name: string }) => t.name);
+    const track_durations = sorted.map((t: { duration_ms: number }) => t.duration_ms).join("; ");
 
-    return NextResponse.json({ tracks, tracklist: tracks.join("; ") });
+    return NextResponse.json({ tracks, tracklist: tracks.join("; "), track_durations });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

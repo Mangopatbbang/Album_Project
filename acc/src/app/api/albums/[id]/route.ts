@@ -16,7 +16,7 @@ export async function PATCH(
   if (!authed) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
   const body = await req.json();
-  const allowed = ["spotify_id", "cover_url", "tracklist", "title", "artist", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "track_durations", "title", "artist", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
@@ -56,12 +56,11 @@ export async function PATCH(
       );
       if (tr.ok) {
         const td = await tr.json();
-        const tracks = td.items as { name: string; track_number: number }[];
+        const tracks = td.items as { name: string; track_number: number; duration_ms: number }[];
         if (tracks?.length) {
-          update.tracklist = tracks
-            .sort((a, b) => a.track_number - b.track_number)
-            .map((t) => t.name)
-            .join("; ");
+          const sorted = tracks.sort((a, b) => a.track_number - b.track_number);
+          update.tracklist = sorted.map((t) => t.name).join("; ");
+          update.track_durations = sorted.map((t) => t.duration_ms).join("; ");
         }
       }
     } catch {}
@@ -109,7 +108,7 @@ export async function GET(
   const [albumResult, commentResult] = await Promise.all([
     supabaseServer
       .from("albums")
-      .select("id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
+      .select("id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, track_durations, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
       .eq("id", id)
       .single(),
     supabaseServer

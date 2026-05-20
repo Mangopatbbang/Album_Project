@@ -49,6 +49,7 @@ type RatingWithLikes = {
 
 type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
   tracklist?: string | null;
+  track_durations?: string | null;
   release_date?: string | null;
   region?: string | null;
   added_by?: string | null;
@@ -176,7 +177,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       }),
     });
     setSavingLike(false);
-    showToast(liked ? "트랙을 좋아요했어요 ♥" : "트랙 좋아요를 취소했어요", "info");
   };
 
   const handleToggleLikeReview = async (reviewerId: string) => {
@@ -495,6 +495,27 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const tracklist = full?.tracklist
     ? full.tracklist.split(";").map((t) => t.trim()).filter(Boolean)
     : [];
+
+  const trackDurationsMs: number[] = full?.track_durations
+    ? full.track_durations.split(";").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n))
+    : [];
+  const hasDurations = trackDurationsMs.length > 0 && trackDurationsMs.length === tracklist.length;
+
+  const formatTrackDuration = (ms: number): string => {
+    const totalSec = Math.round(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const formatTotalDuration = (msArr: number[]): string => {
+    const totalSec = Math.round(msArr.reduce((a, b) => a + b, 0) / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}시간 ${m}분`;
+    return `${m}분 ${s}초`;
+  };
 
   const ratingScores = ratings.map((r) => r.score).filter(Boolean);
   const controversyIndex = (() => {
@@ -1545,17 +1566,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
             <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-                  수록곡
-                </p>
-                {top3TrackIndices.size > 0 && (
-                  <span style={{ fontSize: 10, color: "var(--accent)", opacity: 0.7, letterSpacing: "0.04em" }}>
-                    인기 트랙 번호 강조
-                  </span>
-                )}
-              </div>
-              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+              {/* 섹션 헤더 */}
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
+                수록곡 · {tracklist.length}곡{hasDurations ? ` · 총 ${formatTotalDuration(trackDurationsMs)}` : ""}
+              </p>
+              <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 0 }}>
                 {tracklist.map((track, i) => {
                   const othersWhoLiked = users.filter((u) => {
                     if (u.id === profile?.id) return false;
@@ -1564,57 +1579,91 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   });
                   const iLiked = myLikedTracks.has(i);
                   const hasMyRating = !!ratings.find((r) => r.user_id === profile?.id);
+                  const likeTotal = othersWhoLiked.length + (iLiked ? 1 : 0);
+                  const isRowHovered = hoveredTrack === i;
                   return (
                     <li
                       key={i}
                       className={i >= 9 && !tracklistExpanded ? "hidden sm:flex" : "flex"}
-                      style={{ gap: 8, alignItems: "center", padding: "3px 0" }}
+                      style={{
+                        alignItems: "center", padding: "8px 6px",
+                        borderRadius: 6,
+                        backgroundColor: isRowHovered ? "var(--bg-elevated)" : "transparent",
+                        transition: "background-color 0.12s",
+                      }}
                       onMouseEnter={() => setHoveredTrack(i)}
                       onMouseLeave={() => setHoveredTrack(null)}
                     >
+                      {/* 번호 */}
                       <span style={{
                         color: top3TrackIndices.has(i) ? "var(--accent)" : "var(--text-muted)",
-                        fontSize: 11, width: 20, textAlign: "right", flexShrink: 0,
+                        fontSize: 11, width: 22, textAlign: "right", flexShrink: 0,
                         fontWeight: top3TrackIndices.has(i) ? 700 : 400,
+                        marginRight: 10,
                       }}>
                         {i + 1}
                       </span>
-                      {/* 트랙명 + 하트 인라인 */}
-                      <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ color: iLiked ? "var(--text)" : "var(--text-sub)", fontSize: 13, fontWeight: iLiked ? 500 : 400 }}>
-                          {track}
-                        </span>
-                        {profile && hasMyRating && (
-                          <button
-                            onClick={() => handleToggleLike(i)}
-                            disabled={savingLike}
-                            style={{
-                              background: "none", border: "none", cursor: "pointer",
-                              color: iLiked ? "var(--error)" : "var(--text-muted)",
-                              fontSize: 13, flexShrink: 0, lineHeight: 1,
-                              transition: "opacity 0.15s, color 0.15s",
-                            }}
-                            className={[
-                              "p-2 -m-2 transition-colors",
-                              iLiked ? "heart-pop" : "active:scale-90",
-                              iLiked || hoveredTrack === i
-                                ? "opacity-100"
-                                : "opacity-0 sm:opacity-0 max-sm:opacity-50",
-                            ].join(" ")}
-                          >
-                            ♥
-                          </button>
-                        )}
+                      {/* 트랙명 */}
+                      <span style={{
+                        flex: 1, minWidth: 0,
+                        color: iLiked ? "var(--text)" : "var(--text-sub)",
+                        fontSize: 13, fontWeight: iLiked ? 500 : 400,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        marginRight: 10,
+                      }}>
+                        {track}
                       </span>
-                      {/* 좋아요 수 */}
-                      {(() => {
-                        const total = othersWhoLiked.length + (iLiked ? 1 : 0);
-                        return total > 0 ? (
-                          <span style={{ color: "var(--error)", fontSize: 11, flexShrink: 0, opacity: 0.8 }}>
-                            {total}
+                      {/* 재생시간 */}
+                      {hasDurations && (
+                        <span style={{
+                          color: "var(--text-muted)", fontSize: 11,
+                          width: 36, textAlign: "right", flexShrink: 0,
+                          fontVariantNumeric: "tabular-nums",
+                          marginRight: 4,
+                        }}>
+                          {formatTrackDuration(trackDurationsMs[i])}
+                        </span>
+                      )}
+                      {/* 하트 + 좋아요 수 버튼 */}
+                      {profile && hasMyRating ? (
+                        <button
+                          onClick={() => handleToggleLike(i)}
+                          disabled={savingLike}
+                          style={{
+                            display: "flex", alignItems: "center", justifyContent: "flex-end",
+                            gap: 3,
+                            minWidth: 44, flexShrink: 0,
+                            background: "none", border: "none", cursor: "pointer",
+                            padding: "0 2px",
+                            alignSelf: "stretch",
+                          }}
+                          className={iLiked ? "heart-pop" : "active:scale-90"}
+                        >
+                          {likeTotal > 0 && (
+                            <span style={{ fontSize: 11, color: "var(--error)", lineHeight: 1 }}>
+                              {likeTotal}
+                            </span>
+                          )}
+                          <span style={{
+                            fontSize: 14, lineHeight: 1,
+                            color: iLiked ? "var(--error)" : "var(--text-muted)",
+                            opacity: iLiked ? 1 : isRowHovered ? 0.6 : 0.4,
+                            transition: "opacity 0.15s, color 0.15s",
+                          }}>
+                            ♥
                           </span>
-                        ) : null;
-                      })()}
+                        </button>
+                      ) : (
+                        /* 하트 없어도 좋아요 수는 표시 */
+                        likeTotal > 0 ? (
+                          <span style={{
+                            minWidth: 44, flexShrink: 0, textAlign: "right",
+                            fontSize: 11, color: "var(--error)",
+                          }}>
+                            {likeTotal}
+                          </span>
+                        ) : <span style={{ minWidth: 44, flexShrink: 0 }} />
+                      )}
                     </li>
                   );
                 })}

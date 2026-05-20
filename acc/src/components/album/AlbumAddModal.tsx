@@ -85,6 +85,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [genre, setGenre] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [tracklist, setTracklist] = useState("");
+  const [trackDurations, setTrackDurations] = useState<string | null>(null);
 
   const [searching, setSearching] = useState(false);
   const [searchDone, setSearchDone] = useState(false);
@@ -238,6 +239,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     const trackRes = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
     const trackData = await trackRes.json();
     setTracklist(trackData.tracklist ?? "");
+    setTrackDurations(trackData.track_durations ?? null);
     setLoadingTracklist(false);
   };
 
@@ -278,6 +280,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
         region: region || null,
         cover_url: coverUrl || null,
         tracklist: tracklist || null,
+        track_durations: trackDurations || null,
         spotify_id: spotifyId || null,
       }),
     });

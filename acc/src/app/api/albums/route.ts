@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { title, artist, extra_artists, year, release_date, genre, region, cover_url, tracklist, spotify_id, soundcloud_url } = body;
+  const { title, artist, extra_artists, year, release_date, genre, region, cover_url, tracklist, track_durations, spotify_id, soundcloud_url } = body;
   const added_by = authed.id;
   if (!title?.trim() || !artist?.trim()) return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   if (tracklist) {
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
   const newId = crypto.randomUUID();
   const { data, error } = await supabaseServer
     .from("albums")
-    .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, region: region || null, cover_url, tracklist, spotify_id: spotify_id || null, soundcloud_url: soundcloud_url || null, added_by: added_by || null })
+    .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, region: region || null, cover_url, tracklist, track_durations: track_durations || null, spotify_id: spotify_id || null, soundcloud_url: soundcloud_url || null, added_by: added_by || null })
     .select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

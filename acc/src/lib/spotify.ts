@@ -40,6 +40,7 @@ export type SpotifyAlbumResult = {
   release_date: string | null;
   genres: string[];
   tracklist: string | null;
+  trackDurations: number[];
 };
 
 export async function searchAndFetchAlbum(
@@ -96,15 +97,16 @@ export async function searchAndFetchAlbum(
 
   let genres: string[] = albumData.genres ?? [];
   let tracklist: string | null = null;
+  let trackDurations: number[] = [];
 
   if (detailRes.ok) {
     const detail = await detailRes.json();
     genres = detail.genres ?? [];
-    const tracks = detail.tracks?.items ?? [];
+    const tracks = (detail.tracks?.items ?? []) as { track_number: number; name: string; duration_ms: number }[];
     if (tracks.length > 0) {
-      tracklist = tracks
-        .map((t: { track_number: number; name: string }) => t.name)
-        .join("; ");
+      const sorted = tracks.sort((a, b) => a.track_number - b.track_number);
+      tracklist = sorted.map((t) => t.name).join("; ");
+      trackDurations = sorted.map((t) => t.duration_ms);
     }
   }
 
@@ -116,5 +118,6 @@ export async function searchAndFetchAlbum(
     release_date: albumData.release_date ?? null,
     genres,
     tracklist,
+    trackDurations,
   };
 }
