@@ -1581,15 +1581,18 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   const hasMyRating = !!ratings.find((r) => r.user_id === profile?.id);
                   const likeTotal = othersWhoLiked.length + (iLiked ? 1 : 0);
                   const isRowHovered = hoveredTrack === i;
+                  const canLike = !!(profile && hasMyRating && !savingLike);
                   return (
                     <li
                       key={i}
                       className={i >= 9 && !tracklistExpanded ? "hidden sm:flex" : "flex"}
+                      onClick={() => canLike && handleToggleLike(i)}
                       style={{
                         alignItems: "center", padding: "8px 6px",
                         borderRadius: 6,
                         backgroundColor: isRowHovered ? "var(--bg-elevated)" : "transparent",
                         transition: "background-color 0.12s",
+                        cursor: canLike ? "pointer" : "default",
                       }}
                       onMouseEnter={() => setHoveredTrack(i)}
                       onMouseLeave={() => setHoveredTrack(null)}
@@ -1624,46 +1627,30 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                           {formatTrackDuration(trackDurationsMs[i])}
                         </span>
                       )}
-                      {/* 하트 + 좋아요 수 버튼 */}
-                      {profile && hasMyRating ? (
-                        <button
-                          onClick={() => handleToggleLike(i)}
-                          disabled={savingLike}
-                          style={{
-                            display: "flex", alignItems: "center", justifyContent: "flex-end",
-                            gap: 3,
-                            minWidth: 44, flexShrink: 0,
-                            background: "none", border: "none", cursor: "pointer",
-                            padding: "0 2px",
-                            alignSelf: "stretch",
-                          }}
-                          className={iLiked ? "heart-pop" : "active:scale-90"}
-                        >
-                          {likeTotal > 0 && (
-                            <span style={{ fontSize: 11, color: "var(--error)", lineHeight: 1 }}>
-                              {likeTotal}
-                            </span>
-                          )}
-                          <span style={{
-                            fontSize: 14, lineHeight: 1,
-                            color: iLiked ? "var(--error)" : "var(--text-muted)",
-                            opacity: iLiked ? 1 : isRowHovered ? 0.6 : 0.4,
-                            transition: "opacity 0.15s, color 0.15s",
-                          }}>
-                            ♥
-                          </span>
-                        </button>
-                      ) : (
-                        /* 하트 없어도 좋아요 수는 표시 */
-                        likeTotal > 0 ? (
-                          <span style={{
-                            minWidth: 44, flexShrink: 0, textAlign: "right",
-                            fontSize: 11, color: "var(--error)",
-                          }}>
+                      {/* 하트 + 좋아요 수 (시각 표시만) */}
+                      <span style={{
+                        minWidth: 44, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3,
+                      }}>
+                        {likeTotal > 0 && (
+                          <span style={{ fontSize: 11, color: "var(--error)", lineHeight: 1 }}>
                             {likeTotal}
                           </span>
-                        ) : <span style={{ minWidth: 44, flexShrink: 0 }} />
-                      )}
+                        )}
+                        {profile && hasMyRating && (
+                          <span
+                            className={iLiked ? "heart-pop" : ""}
+                            style={{
+                              fontSize: 14, lineHeight: 1,
+                              color: iLiked ? "var(--error)" : "var(--text-muted)",
+                              opacity: iLiked ? 1 : isRowHovered ? 0.6 : 0.4,
+                              transition: "opacity 0.15s, color 0.15s",
+                            }}
+                          >
+                            ♥
+                          </span>
+                        )}
+                      </span>
                     </li>
                   );
                 })}
