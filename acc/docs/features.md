@@ -1,0 +1,268 @@
+# 기능 목록 (Feature Inventory)
+
+> 아차청음사에 현재 구현된 모든 기능을 페이지/컴포넌트 단위로 정리한 목록.  
+> 신규 기능 추가 시 이 문서를 먼저 업데이트할 것.
+
+---
+
+## 홈 `/`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 통계 히어로 | `(main)/page.tsx` | 총 앨범 수·평가 수 실시간 CountUp 애니메이션 |
+| 오늘의 인연 | `HomeTodaySection.tsx` | KST 날짜 기반 FNV-1a 해시 → 결정적 랜덤 앨범, 하루 한 번만 바뀜 |
+| 최근 청음 피드 | `HomeRecentFeed.tsx` | 최근 6개 평가 (아바타 + 점수 + 커버 미리보기) |
+| 리뷰 티커 | `ReviewTicker.tsx` | 80개 한줄평 중 40개 무작위 가로 스크롤 자막 |
+| 홈 검색바 | `HomeSearchBar.tsx` | 음반고로 이동하는 검색 입력 (Enter 시 /albums?search=…) |
+| 모바일 빠른 접근 | `(main)/page.tsx` | 청음감·청음집·청음인 단축 링크 (모바일 전용, sm:hidden) |
+| 모바일 로그인 힌트 | `MobileLoginHint.tsx` | 비로그인 시 로그인 안내 링크 |
+| 모바일 로그아웃 버튼 | `HeroLogoutButton.tsx` | 히어로 우상단 로그아웃 (모바일 전용) |
+
+---
+
+## 음반고 `/albums`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 앨범 그리드 | `AlbumList.tsx` | 커버 + 제목 + 아티스트 + 평균 점수 카드 |
+| 무한 스크롤 | `AlbumList.tsx` | Intersection Observer 기반, offset 30씩 추가 로드 |
+| 검색 | `AlbumList.tsx` | 제목 / 아티스트 / extra_artists 통합 검색 |
+| 장르 필터 | `AlbumList.tsx` + `FilterSelect.tsx` | 장르별 필터링 드롭다운 |
+| 지역 필터 | `AlbumList.tsx` + `FilterSelect.tsx` | 국내 / 해외 |
+| 정렬 | `AlbumList.tsx` + `FilterSelect.tsx` | 최신 입고·오래된 순·발매일·평균 점수 높은/낮은·제목·내 점수 등 9가지 |
+| 미평가 필터 | `AlbumList.tsx` | 아직 점수를 안 준 앨범만 표시 (로그인 필요) |
+| 앨범 카드 | `AlbumCard.tsx` | 커버 이미지, Glow 효과(7·8점), 점수 컬러 배지, 국내/해외 뱃지, 장르 뱃지 |
+| 앨범 추가 | `AlbumAddModal.tsx` | Spotify 검색 → 후보 선택 → DB 저장 (로그인 필요) |
+| 랜덤 버튼 | `RandomButton.tsx` | 회전 애니메이션 + 미평가 앨범 랜덤 이동 |
+| FloatingActions | `FloatingActions.tsx` | 앨범 추가 + 랜덤 플로팅 버튼 |
+| 앨범 모달 | `AlbumModal.tsx` | 클릭 시 슬라이드업(모바일)/fadeIn(데스크탑) 상세 모달 |
+| Intercepting Route | `@modal/(.)album/[id]/` | URL 직접 접근 vs 네비게이션 클릭 분기 (모달 vs 전체 페이지) |
+
+---
+
+## 앨범 모달 `AlbumModal.tsx`
+
+| 기능 | 설명 |
+|------|------|
+| 트랙리스트 | 곡명 목록 + 재생시간(mm:ss) 표시, 좋아요 토글 (트랙 행 클릭) |
+| 점수 입력 | 1~8점 버튼, 선택 시 Glow 펄스 애니메이션 |
+| 한줄평 | 최대 100자 입력 (글자 수 실시간 카운트) |
+| 개인 메모 | 최대 500자, 본인만 열람 가능 |
+| 인연 앨범 | "이 앨범과 인연이 있나요?" 체크박스 + 날짜 입력 + 발견 경로 |
+| 다른 멤버 한줄평 | 점수 컬러 배지 + 아바타 + 텍스트, 좋아요 토글 |
+| 댓글 | 한줄평에 달린 댓글 목록 + 작성 |
+| SoundCloud 플레이어 | soundcloud_url 있을 시 내장 플레이어 표시 |
+| Spotify Attribution | SpotifyAttribution.tsx로 Spotify 로고 + 링크 |
+| 앨범 수정 (admin) | AlbumEditModal.tsx 연결 — 정보·커버·트랙리스트 수정 |
+| 아티스트 모달 | 아티스트명 클릭 시 ArtistModal 열기 |
+| 스토리카드 | StoryCard.tsx — SNS 공유용 카드 이미지 생성 |
+| 찜 (watchlist) | 하트 버튼으로 찜 목록 추가/제거 |
+
+---
+
+## 아티스트 모달 `ArtistModal.tsx`
+
+| 기능 | 설명 |
+|------|------|
+| 아티스트 사진 | Spotify 또는 직접 등록한 사진 |
+| 디스코그래피 | 해당 아티스트 모든 앨범 목록 (평균 점수 포함) |
+| 장르 분포 | 파이/바 형태의 장르 분포 |
+| 멤버별 평균 | 각 멤버가 이 아티스트에게 준 평균 점수 |
+
+---
+
+## 청음감 `/best`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 통합 랭킹 | `BestPageClient.tsx` | 평균 점수 기준 전체 앨범 순위 |
+| 연도별 랭킹 | `BestPageClient.tsx` | 발매 연도별 TOP5 + 미발견 명반 바 |
+| 장르별 랭킹 | `BestPageClient.tsx` | 장르별 TOP5 |
+| 아티스트별 랭킹 | `BestPageClient.tsx` | 아티스트별 앨범 목록 + 평균 점수 정렬 |
+| 미발견 명반 | `BestPageClient.tsx` | 한 명만 들은 고점 앨범 (HiddenGemsBar) |
+| 뷰 전환 | `BestPageClient.tsx` | 통합/연도/장르/아티스트 탭 전환 |
+| Glow 효과 | `BestPageClient.tsx` + `score.ts` | 7·8점 앨범 발광 테두리 |
+| 메달 아이콘 | `BestPageClient.tsx` | 🥇🥈🥉 TOP3 표시 |
+
+---
+
+## 청음평 `/reviews`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 전체 한줄평 피드 | `ReviewsClient.tsx` | 최신 / 좋아요 순 정렬 |
+| 검색 | `ReviewsClient.tsx` | 한줄평 내용 전문 검색 |
+| 점수 범위 필터 | `ReviewsClient.tsx` | 최소~최대 점수 필터 |
+| 무한 스크롤 | `ReviewsClient.tsx` | offset 기반 추가 로드 |
+| 한줄평 좋아요 | `ReviewsClient.tsx` | 토글 버튼, Optimistic locking 5회 재시도 |
+| 댓글 보기 | `ReviewsClient.tsx` | 한줄평 클릭 시 댓글 섹션 확장 |
+
+---
+
+## 청음집 `/themes`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 선곡집 목록 | `ThemesPageClient.tsx` | 최근 선곡집 10개 그리드 |
+| 선곡집 생성 | `PlaylistEditor.tsx` | 앨범·트랙 선택 + 제목 + 공개 여부 설정 |
+| 선곡집 상세 | `/playlist/[id]/page.tsx` | 선곡 목록 + 각 곡 코멘트 |
+| 선곡집 수정 | `PlaylistEditor.tsx` | 소유자 전용 수정/삭제 |
+| 공개·비공개 | `PlaylistVisibilityToggle.tsx` | 공개 여부 토글 |
+| 커버 콜라주 | `ThemesPageClient.tsx` | 최대 4개 앨범 커버 2×2 그리드 |
+
+---
+
+## 청음인 `/members`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 멤버 카드 | `members/page.tsx` | 아바타 + 청음 수 + 평균 + 점수 분포 미니 바 + 상위 장르 |
+| 청음 수 랭킹 | `members/page.tsx` | 진행 바 형태의 청음 수 순위 |
+| 평균 점수 랭킹 | `members/page.tsx` | 점수 컬러 바 형태의 평균 순위 |
+| 취향 유사도 | `MembersSections.tsx` | 멤버 간 MAE(평균절대오차) 기반 취향 거리 행렬 |
+
+---
+
+## 프로필 `/profile/[userId]`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 프로필 헤더 | `profile/[userId]/page.tsx` | 아바타 라이트박스, 표시명, 자기소개 |
+| 청음 통계 | `profile/[userId]/page.tsx` | 총 청음 수, 평균 점수, 명반 수, 한줄평 수 |
+| 점수 분포 차트 | `profile/[userId]/page.tsx` | 1~8점 막대 그래프 |
+| 장르 분포 | `profile/[userId]/page.tsx` | 장르별 비율 + 컬러 배지 |
+| 아티스트 섹션 | `ArtistSection.tsx` | 가장 많이 들은 아티스트, 평균 점수 |
+| 명반전 (HOF) | `HallOfFameSection.tsx` | 8점 앨범 갤러리 |
+| 최근 청음 | `RecentRatingsSection.tsx` | 최근 평가 앨범 목록 |
+| 최근 한줄평 | `RecentRatingsSection.tsx` | 최근 작성 한줄평 |
+| 인연 앨범 | `EncounterSection.tsx` | is_encounter=true 앨범 목록 + 인연 날짜 |
+| 청음 캘린더 | `CalendarSection.tsx` | 히트맵 달력 (listening_logs 기반) |
+| 청음 인사이트 | `InsightSection.tsx` | 연도별 회고, 총 재생시간, 통계 요약 |
+| 찜 목록 | `WatchlistSection.tsx` | 찜한 앨범 목록 |
+| 좋아하는 곡 | `LikedTracksButton.tsx` | liked_tracks 앨범 목록 모달 |
+| 취향 비교 | `ComparisonSection.tsx` | 다른 멤버와의 공통 청음 + 점수 차이 |
+| 청음 로그 | `ListeningLogsSection.tsx` | 날짜별 청음 기록 (listening_logs) |
+| 프로필 편집 | `ProfileEditButton.tsx` | 표시명·자기소개·아바타 변경 (본인만) |
+| 스토리카드 | `ProfileCaptureButton.tsx` | 프로필 스냅샷 카드 이미지 생성 |
+| 유저 신고 | `ReportUserButton.tsx` | 다른 유저 신고 (로그인 필요) |
+| 모바일 설정 | `MobileSettingsButton.tsx` | 모바일 설정 메뉴 (본인만) |
+
+---
+
+## 게시판 `/board`
+
+| 기능 | 컴포넌트 / 파일 | 설명 |
+|------|----------------|------|
+| 공지사항 목록 | `BoardClient.tsx` | NEW 배지, 날짜, 내용 |
+| 공지 상세 | `BoardClient.tsx` | 클릭 시 내용 확장 |
+| 공지 작성/수정/삭제 | `BoardClient.tsx` | admin 전용 |
+| 문의 목록 | `BoardClient.tsx` | admin만 조회 가능 |
+| 문의 작성 | `BoardClient.tsx` | 로그인 유저 문의 접수 |
+
+---
+
+## 어드민 `/admin`
+
+| 기능 | 설명 |
+|------|------|
+| 앨범 관리 | 커버 없는·Spotify 미연결 앨범 필터, 정보 수정 |
+| 재생시간 백필 | Spotify API로 track_durations 일괄 보완 (5개 배치, 429 대응) |
+| 발매일 백필 | Spotify API로 release_date 일괄 보완 |
+| 아티스트 별칭 관리 | 한글명 alias 추가/수정/삭제 |
+| 아티스트 검색 별칭 | 검색용 추가 이름 관리 |
+| 아티스트 이미지 | Spotify 사진 자동 등록 또는 수동 URL 등록 |
+| 아티스트 정식명 업데이트 | artist_canonical PATCH |
+| 데이터 통계 | 총 앨범·평가 수, 일별 이벤트, 기능 클릭, 기기 분포 |
+| 활동 로그 | 유저 행동 이력 조회 |
+| 신고 관리 | 신고 목록 + 처리 (경고/정지/영구정지/기각) |
+
+---
+
+## 공통 UI 컴포넌트
+
+| 컴포넌트 | 위치 | 설명 |
+|---------|------|------|
+| Header | `layout/Header.tsx` | 로고, 탭 네비, 알림 벨, 검색, 로그인/아바타 |
+| BottomNav | `layout/BottomNav.tsx` | 모바일 하단 탭 바 (홈/음반고/청음평/프로필) |
+| Toast | `ui/Toast.tsx` | 성공·실패·로딩 알림 |
+| Spinner | `ui/Spinner.tsx` | 로딩 인디케이터 |
+| FilterSelect | `ui/FilterSelect.tsx` | 공통 필터 드롭다운 |
+| UserAvatar | `ui/UserAvatar.tsx` | 아바타 이미지 (없을 시 이모지 폴백) |
+| SpotifyAttribution | `ui/SpotifyAttribution.tsx` | Spotify 로고 + 링크 (ADR-002 준수) |
+| SpotlightTour | `ui/SpotlightTour.tsx` | 신규 유저 기능 안내 투어 |
+| TutorialModal | `ui/TutorialModal.tsx` | 온보딩 튜토리얼 모달 |
+| SplashScreen | `ui/SplashScreen.tsx` | 앱 초기 로딩 스플래시 |
+| SwipeNav | `ui/SwipeNav.tsx` | 모바일 스와이프 네비게이션 |
+| ReportModal | `ui/ReportModal.tsx` | 신고 모달 (사유 선택) |
+| CountUp | `ui/CountUp.tsx` | 숫자 카운트업 애니메이션 |
+| MobileLoginHint | `ui/MobileLoginHint.tsx` | 비로그인 힌트 배너 |
+| LoadingMessage | `ui/LoadingMessage.tsx` | 텍스트 로딩 메시지 |
+| AppleMusicLink | `ui/AppleMusicLink.tsx` | Apple Music 외부 링크 버튼 |
+| YoutubeMusicLink | `ui/YoutubeMusicLink.tsx` | YouTube Music 외부 링크 버튼 |
+| PageHeader | `layout/PageHeader.tsx` | 페이지 제목 + 부제목 + 우측 슬롯 |
+| OnboardingModal | `onboarding/OnboardingModal.tsx` | 첫 방문 온보딩 (Spotlight Tour 포함) |
+| PageViewTracker | `analytics/PageViewTracker.tsx` | 클라이언트 페이지뷰 자동 트래킹 |
+
+---
+
+## 음악 외부 서비스 연동
+
+| 서비스 | 기능 | 컴포넌트 / API |
+|--------|------|---------------|
+| Spotify | 앨범 검색, 커버 이미지, 트랙리스트, duration_ms | `/api/spotify/*` |
+| Spotify | Spotify 링크 Attribution | `SpotifyAttribution.tsx` |
+| SoundCloud | 앨범별 임베드 플레이어 URL 저장 | `SoundCloudAddModal.tsx` |
+| Apple Music | 외부 링크 버튼 | `AppleMusicLink.tsx` |
+| YouTube Music | 외부 링크 버튼 | `YoutubeMusicLink.tsx` |
+
+---
+
+## 인증 & 권한
+
+| 기능 | 설명 |
+|------|------|
+| 이메일/비밀번호 회원가입 | Supabase Auth + users 테이블 레코드 생성 |
+| 로그인 | JWT 발급, AuthContext 전역 상태 |
+| 비로그인 제한 | 평점·한줄평·댓글·추가 등 쓰기 작업 차단 |
+| admin 권한 | `users.role = "admin"` 확인, 어드민 API 보호 |
+| 밴 처리 | `banned_at` (영구) / `ban_until` (임시) 확인 후 쓰기 차단 |
+
+---
+
+## 알림 시스템
+
+| 알림 유형 | 트리거 |
+|-----------|--------|
+| `comment` | 내 한줄평에 댓글 달렸을 때 |
+| `like` | 내 한줄평에 좋아요 눌렸을 때 |
+| `report_reviewed` | 내 신고가 처리됐을 때 |
+| `moderation_warning` | 경고 처치 받았을 때 |
+| `moderation_ban_temp` | 임시 정지됐을 때 |
+| `moderation_ban_permanent` | 영구 정지됐을 때 |
+
+알림 읽음 처리: 개별 / 전체 일괄.  
+헤더 알림 벨에 미읽음 수 배지 표시.
+
+---
+
+## 이벤트 트래킹
+
+자체 구현 분석 시스템 (Vercel Analytics 대체, ADR-003 참고):
+
+| 이벤트 | 함수 | 설명 |
+|--------|------|------|
+| 페이지뷰 | `trackPageView(path)` | 경로별 조회 수 |
+| 앨범 방문 | `trackAlbumVisit(albumId)` | 모달 열기 횟수 |
+| 검색 | `trackSearch(query)` | 검색어 기록 |
+| 기능 클릭 | `trackFeatureClick(feature, value)` | 버튼/탭 클릭 |
+
+어드민 데이터 탭에서 일자별·기능별 조회 가능.
+
+---
+
+## 스토리카드 & 공유
+
+| 기능 | 컴포넌트 | 설명 |
+|------|---------|------|
+| 앨범 스토리카드 | `StoryCard.tsx` + `StoryCardPreviewModal.tsx` | 앨범 커버 + 점수 + 한줄평 SNS 카드 이미지 |
+| 프로필 캡처 | `ProfileCaptureButton.tsx` | 프로필 통계 스냅샷 이미지 다운로드 |

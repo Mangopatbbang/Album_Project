@@ -1,5 +1,17 @@
 # 아차청음사 — 프로젝트 문서
 
+## 핵심 문서
+
+| 문서 | 설명 |
+|------|------|
+| [architecture.md](./architecture.md) | 시스템 아키텍처 — 기술 스택, 라우팅, 데이터 흐름, 캐시 전략 |
+| [database.md](./database.md) | DB 스키마 — 전체 테이블 정의, 관계, 제약 조건 |
+| [api-reference.md](./api-reference.md) | API 레퍼런스 — 전체 `/api/*` 엔드포인트 목록 |
+| [design-system.md](./design-system.md) | 디자인 시스템 — 색상 변수, 타이포, 컴포넌트 패턴 |
+| [features.md](./features.md) | 기능 목록 — 페이지/컴포넌트별 전체 기능 인벤토리 |
+
+## 서비스 히스토리
+
 | 문서 | 설명 |
 |------|------|
 | [changelog-service.md](./changelog-service.md) | 서비스 일지 — 멤버/데이터 현황, 마일스톤, 방향성 변화 |
