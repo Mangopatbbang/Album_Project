@@ -70,40 +70,41 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   if (!album) {
     return (
-      <>
+      <div className="sm:flex sm:flex-col sm:flex-1">
         <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
           {sectionLabel}
         </h2>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 160,
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: 12,
-        }}
-      >
-        <button
-          onClick={shuffle}
-          disabled={loading}
+        <div
+          className="sm:flex-1"
           style={{
-            color: "var(--accent)",
-            fontSize: 13,
-            fontWeight: 600,
-            background: "none",
-            border: "1px solid var(--accent)",
-            borderRadius: 8,
-            padding: "10px 20px",
-            cursor: loading ? "default" : "pointer",
-            opacity: loading ? 0.5 : 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 160,
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
           }}
         >
-          {loading ? "찾는 중..." : "인연 찾기"}
-        </button>
+          <button
+            onClick={shuffle}
+            disabled={loading}
+            style={{
+              color: "var(--accent)",
+              fontSize: 13,
+              fontWeight: 600,
+              background: "none",
+              border: "1px solid var(--accent)",
+              borderRadius: 8,
+              padding: "10px 20px",
+              cursor: loading ? "default" : "pointer",
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            {loading ? "찾는 중..." : "인연 찾기"}
+          </button>
+        </div>
       </div>
-      </>
     );
   }
 
@@ -119,12 +120,13 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const tagStyle = { fontSize: 10, color: "var(--text-muted)" as const, backgroundColor: "var(--bg-elevated)" as const, borderRadius: 4, padding: "2px 7px", fontWeight: 600 };
 
   return (
-    <>
+    <div className="sm:flex sm:flex-col sm:flex-1">
       <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
         {sectionLabel}
       </h2>
       <div
         key={album.id}
+        className="sm:flex-1 sm:flex sm:flex-col"
         style={{
           backgroundColor: "var(--bg-card)",
           border: `1px solid ${glowBorder(avg)}`,
@@ -315,7 +317,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         )}
 
         {/* 버튼 */}
-        <div style={{ padding: "12px 14px 14px" }}>
+        <div className="sm:mt-auto" style={{ padding: "12px 14px 14px" }}>
           <div style={{ position: "relative", height: 44 }}>
 
             {/* 기본 row: 감상하기 / 평가하기 / 다른 인연 */}
@@ -437,6 +439,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

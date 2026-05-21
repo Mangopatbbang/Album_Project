@@ -265,7 +265,7 @@ export default async function HomePage() {
         <div style={{ ...containerStyle, padding: "28px 24px calc(80px + env(safe-area-inset-bottom))" }}>
           <div className="sm:grid sm:grid-cols-2 sm:gap-6">
             {/* 오늘의 인연 */}
-            <div className="mb-8 sm:mb-0">
+            <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
               <HomeTodaySection initialAlbum={todayAlbum} />
             </div>
 
