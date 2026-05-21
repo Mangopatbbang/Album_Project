@@ -10,8 +10,8 @@ type UsersContextType = {
 
 const UsersContext = createContext<UsersContextType>({ users: [], getUserById: () => undefined });
 
-export function UsersProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = useState<User[]>([]);
+export function UsersProvider({ children, initialUsers = [] }: { children: React.ReactNode; initialUsers?: User[] }) {
+  const [users, setUsers] = useState<User[]>(initialUsers);
 
   useEffect(() => {
     fetch("/api/users")

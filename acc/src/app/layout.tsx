@@ -13,6 +13,8 @@ import SpotlightTour from "@/components/ui/SpotlightTour";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
+import { supabaseServer } from "@/lib/supabase";
+import type { User } from "@/types";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -46,13 +48,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+async function getInitialData() {
+  const [usersResult, avatarsResult] = await Promise.all([
+    supabaseServer.from("users").select("id, display_name, emoji"),
+    supabaseServer.from("users").select("id, avatar_url"),
+  ]);
+  const initialUsers: User[] = (usersResult.data ?? []) as User[];
+  const initialAvatarMap: Record<string, string | null> = {};
+  for (const row of (avatarsResult.data ?? []) as { id: string; avatar_url: string | null }[]) {
+    initialAvatarMap[row.id] = row.avatar_url ?? null;
+  }
+  return { initialUsers, initialAvatarMap };
+}
+
+export default async function RootLayout({
   children,
   modal,
 }: Readonly<{
   children: React.ReactNode;
   modal?: React.ReactNode;
 }>) {
+  const { initialUsers, initialAvatarMap } = await getInitialData();
+
   return (
     <html
       lang="ko"
@@ -60,8 +77,8 @@ export default function RootLayout({
     >
       <body className="min-h-dvh flex flex-col sm:pb-0">
         <AuthProvider>
-          <UsersProvider>
-          <UserAvatarsProvider>
+          <UsersProvider initialUsers={initialUsers}>
+          <UserAvatarsProvider initialAvatarMap={initialAvatarMap}>
           <NotificationsProvider>
           <ToastProvider>
             <SplashScreen />

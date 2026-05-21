@@ -60,7 +60,7 @@ const BellIcon = () => (
 );
 
 export default function BottomNav() {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const avatarMap = useUserAvatars();
@@ -107,7 +107,7 @@ export default function BottomNav() {
     { href: "/reviews", label: "청음평", Icon: ReviewsIcon, tour: "nav-reviews" },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
-      label: profile ? "청음록" : "입장",
+      label: !loading && !profile ? "입장" : "청음록",
       Icon: ProfileIcon,
       tour: "nav-profile",
     },

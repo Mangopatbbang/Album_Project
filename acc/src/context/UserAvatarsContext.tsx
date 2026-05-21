@@ -6,8 +6,8 @@ type AvatarMap = Record<string, string | null>;
 
 const UserAvatarsContext = createContext<AvatarMap>({});
 
-export function UserAvatarsProvider({ children }: { children: React.ReactNode }) {
-  const [avatarMap, setAvatarMap] = useState<AvatarMap>({});
+export function UserAvatarsProvider({ children, initialAvatarMap = {} }: { children: React.ReactNode; initialAvatarMap?: AvatarMap }) {
+  const [avatarMap, setAvatarMap] = useState<AvatarMap>(initialAvatarMap);
 
   useEffect(() => {
     fetch("/api/user-avatars")
