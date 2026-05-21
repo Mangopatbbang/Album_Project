@@ -317,7 +317,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         )}
 
         {/* 버튼 */}
-        <div className="sm:mt-auto" style={{ padding: "12px 14px 14px" }}>
+        <div style={{ padding: "12px 14px 14px" }}>
           <div style={{ position: "relative", height: 44 }}>
 
             {/* 기본 row: 감상하기 / 평가하기 / 다른 인연 */}
