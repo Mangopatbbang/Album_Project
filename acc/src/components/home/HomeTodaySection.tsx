@@ -126,13 +126,15 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       </h2>
       <div
         key={album.id}
-        className="sm:flex-1 sm:flex sm:flex-col"
+        className="sm:flex-1"
         style={{
           backgroundColor: "var(--bg-card)",
           border: `1px solid ${glowBorder(avg)}`,
           borderRadius: 12,
           boxShadow: glowShadow(avg),
           animation: "encounterFadeIn 1.6s ease-out",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* 커버 + 우측 정보 */}
@@ -317,7 +319,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         )}
 
         {/* 버튼 */}
-        <div className="sm:mt-auto" style={{ padding: "12px 14px 6px" }}>
+        <div style={{ padding: "12px 14px 6px", marginTop: "auto" }}>
           <div style={{ position: "relative", height: 44 }}>
 
             {/* 기본 row: 감상하기 / 평가하기 / 다른 인연 */}
