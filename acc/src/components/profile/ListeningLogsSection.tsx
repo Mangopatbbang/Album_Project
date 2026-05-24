@@ -14,7 +14,7 @@ type LogAlbum = {
 export type ListeningLog = {
   id: string;
   listened_at: string;
-  context: string | null;
+  context: string[] | null;
   note: string | null;
   albums: LogAlbum | null;
 };
@@ -89,17 +89,18 @@ export default function ListeningLogsSection({ logs }: Props) {
                 {formatDate(log.listened_at)}
               </span>
 
-              {/* context 배지 */}
-              {log.context && (
+              {/* context 첫 번째 태그 */}
+              {log.context && log.context.length > 0 && (
                 <span style={{
                   fontSize: 10, fontWeight: 600,
                   backgroundColor: "rgba(var(--accent-rgb), 0.08)",
                   color: "var(--accent)",
                   border: "1px solid rgba(var(--accent-rgb), 0.25)",
                   borderRadius: 4, padding: "1px 6px",
-                  flexShrink: 0,
+                  flexShrink: 0, maxWidth: 80,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
-                  {log.context}
+                  {log.context[0]}
                 </span>
               )}
             </div>

@@ -14,10 +14,11 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseServer
     .from("listening_logs")
-    .select("id, listened_at, context, note, created_at, albums(id, title, artist, cover_url)")
+    .select("id, listened_at, context, note, image_url, relistened, created_at, albums(id, title, artist, cover_url)")
     .eq("user_id", userId)
     .order("listened_at", { ascending: false })
-    .limit(albumId ? 200 : 20);
+    .order("created_at", { ascending: false })
+    .limit(albumId ? 200 : 100);
 
   if (albumId) query = query.eq("album_id", albumId);
 
@@ -31,16 +32,18 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/listening-logs
-// body: { albumId, note?, context? }
+// body: { albumId, note?, context?: string[], listenedAt?, imageUrl? }
 export async function POST(req: NextRequest) {
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { albumId, note, context } = body as {
+  const { albumId, note, context, listenedAt, imageUrl } = body as {
     albumId: string;
     note?: string;
-    context?: string;
+    context?: string[];
+    listenedAt?: string;
+    imageUrl?: string;
   };
 
   if (!albumId) {
@@ -48,16 +51,27 @@ export async function POST(req: NextRequest) {
   }
 
   const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const listenedAt = kst.toISOString().slice(0, 10);
+  const defaultDate = kst.toISOString().slice(0, 10);
+  const finalDate = listenedAt ?? defaultDate;
+
+  // 같은 앨범에 이전 기록이 있으면 relistened = true
+  const { count } = await supabaseServer
+    .from("listening_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", authed.id)
+    .eq("album_id", albumId);
+  const relistened = (count ?? 0) > 0;
 
   const { data, error } = await supabaseServer
     .from("listening_logs")
     .insert({
       user_id: authed.id,
       album_id: albumId,
-      listened_at: listenedAt,
+      listened_at: finalDate,
       note: note ?? null,
-      context: context ?? null,
+      context: context && context.length > 0 ? context : null,
+      image_url: imageUrl ?? null,
+      relistened,
     })
     .select()
     .single();
@@ -67,6 +81,39 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, log: data });
+}
+
+// PATCH /api/listening-logs
+// body: { id, note?, context?: string[], imageUrl? }
+export async function PATCH(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const body = await req.json();
+  const { id, note, context, imageUrl } = body as {
+    id: string;
+    note?: string;
+    context?: string[];
+    imageUrl?: string | null;
+  };
+
+  if (!id) return NextResponse.json({ error: "id 필수" }, { status: 400 });
+
+  const { error } = await supabaseServer
+    .from("listening_logs")
+    .update({
+      note: note ?? null,
+      context: context && context.length > 0 ? context : null,
+      image_url: imageUrl ?? null,
+    })
+    .eq("id", id)
+    .eq("user_id", authed.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 // DELETE /api/listening-logs?id=X

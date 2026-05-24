@@ -21,6 +21,7 @@ import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
+import ProfileDiaryButton from "@/components/profile/ProfileDiaryButton";
 import type { DayAlbum } from "@/components/profile/CalendarSection";
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
@@ -80,7 +81,7 @@ export default async function ProfilePage({
   ]);
 
   type LogAlbum = { id: string; title: string; artist: string; cover_url: string | null };
-  type ListeningLog = { id: string; listened_at: string; context: string | null; note: string | null; albums: LogAlbum | null };
+  type ListeningLog = { id: string; listened_at: string; context: string[] | null; note: string | null; albums: LogAlbum | null };
   // ListeningLogsSection이 export한 타입과 구조가 동일 — as unknown을 통해 pass
   const listeningLogs = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
 
@@ -297,6 +298,7 @@ export default async function ProfilePage({
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 <ReportUserButton targetUserId={userId} />
+                <ProfileDiaryButton userId={userId} />
                 <MobileSettingsButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} initialBio={bio} />
               </div>
             </div>
@@ -387,6 +389,7 @@ export default async function ProfilePage({
             <ReportUserButton targetUserId={userId} />
             <MobileLogoutButton userId={userId} />
             <ProfileCaptureButton targetId="profile-card" />
+            <ProfileDiaryButton userId={userId} />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           </div>
         </div>
