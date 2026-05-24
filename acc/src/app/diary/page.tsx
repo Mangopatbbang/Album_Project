@@ -107,12 +107,6 @@ export default function DiaryPage() {
 
   return (
     <>
-      {/* 배경 — 미세한 온기 */}
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "radial-gradient(ellipse 80% 50% at 15% 0%, rgba(180,140,60,0.05) 0%, transparent 60%)",
-      }} />
-
       <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", position: "relative", zIndex: 1 }}>
         <main style={{ maxWidth: 600, margin: "0 auto", padding: "36px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
