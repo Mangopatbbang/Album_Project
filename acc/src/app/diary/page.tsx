@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiFetch";
 import { DiaryEntry } from "@/types/diary";
 import { SAMPLE_DIARY_ENTRIES } from "@/lib/diarySampleData";
-import { supabaseBrowser as supabase } from "@/lib/supabase-browser";
 import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
 import RecordsTab from "@/components/diary/tabs/RecordsTab";
 import CalendarTab from "@/components/diary/tabs/CalendarTab";
@@ -63,39 +62,60 @@ export default function DiaryPage() {
 
   useEffect(() => {
     if (!isSample) return;
-    supabase.from("albums").select("id, title, artist, cover_url")
-      .not("cover_url", "is", null)
-      .neq("cover_url", "")
-      .order("id", { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        const validAlbums = (data ?? []).filter((a) => a.cover_url);
-        if (!validAlbums.length) return;
-        const NOTES: (string | null)[] = [
-          "생각보다 훨씬 좋다.",
-          "한 번에 다 듣진 못했다. 나중에 다시.",
-          null,
-          "처음 들었을 때랑 좀 다르게 들린다.",
-          "출근길에 계속 틀었다.",
-        ];
-        const CONTEXTS = [
-          ["퇴근 후", "이어폰", "차분한"],
-          ["카페", "집중"],
-          ["산책", "맑은날"],
-          ["심야", "혼자"],
-          ["출퇴근", "반복 청취"],
-        ];
-        const DAYS_AGO = [0, 1, 2, 14, 35];
-        setSampleEntries(validAlbums.slice(0, 5).map((album, i) => ({
+    const SAMPLE_ALBUMS = [
+      { title: "CHROMAKOPIA", artist: "Kendrick Lamar" },
+      { title: "Blonde", artist: "Frank Ocean" },
+      { title: "folklore", artist: "Taylor Swift" },
+      { title: "LILAC", artist: "IU" },
+      { title: "GNX", artist: "Kendrick Lamar" },
+    ];
+    const NOTES: (string | null)[] = [
+      "생각보다 훨씬 좋다.",
+      "한 번에 다 듣진 못했다. 나중에 다시.",
+      null,
+      "처음 들었을 때랑 좀 다르게 들린다.",
+      "출근길에 계속 틀었다.",
+    ];
+    const CONTEXTS = [
+      ["퇴근 후", "이어폰", "차분한"],
+      ["카페", "집중"],
+      ["산책", "맑은날"],
+      ["심야", "혼자"],
+      ["출퇴근", "반복 청취"],
+    ];
+    const DAYS_AGO = [0, 1, 2, 14, 35];
+
+    Promise.all(
+      SAMPLE_ALBUMS.map(async ({ title, artist }) => {
+        try {
+          const url = `https://itunes.apple.com/search?term=${encodeURIComponent(`${title} ${artist}`)}&entity=album&limit=5&country=us`;
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const artwork: string | undefined = data.results?.[0]?.artworkUrl100;
+          return artwork ? artwork.replace("100x100", "600x600") : null;
+        } catch {
+          return null;
+        }
+      })
+    ).then((covers) => {
+      setSampleEntries(
+        SAMPLE_ALBUMS.map((album, i) => ({
           id: `sample-${i}`,
           listened_at: new Date(Date.now() + 9 * 3600000 - DAYS_AGO[i] * 86400000).toISOString().slice(0, 10),
           note: NOTES[i] ?? null,
           context: CONTEXTS[i],
           image_url: null,
           relistened: [false, true, false, false, true][i],
-          albums: { id: album.id, title: album.title, artist: album.artist, cover_url: album.cover_url },
-        })));
-      });
+          albums: {
+            id: `sample-album-${i}`,
+            title: album.title,
+            artist: album.artist,
+            cover_url: covers[i] ?? null,
+          },
+        }))
+      );
+    });
   }, [isSample]);
 
   const displayEntries = isSample
