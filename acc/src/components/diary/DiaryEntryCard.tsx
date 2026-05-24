@@ -15,6 +15,7 @@ const NOTE_LIMIT = 160;
 export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample }: Props) {
   const [noteExpanded, setNoteExpanded] = useState(false);
   const [imageExpanded, setImageExpanded] = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState(false);
 
   const note = entry.note ?? "";
   const isLong = note.length > NOTE_LIMIT;
@@ -25,21 +26,21 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
       <div
         style={{
           backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border)",
+          border: "1px solid rgba(255,255,255,0.07)",
           borderRadius: 14,
           padding: "14px 16px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
-          transition: "border-color 0.15s, box-shadow 0.15s",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2)",
+          transition: "border-color 0.15s, box-shadow 0.15s, transform 0.15s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "rgba(196,170,124,0.3)";
-          el.style.boxShadow = "0 4px 16px rgba(0,0,0,0.28)";
+          el.style.borderColor = "rgba(196,170,124,0.25)";
+          el.style.boxShadow = "0 8px 32px rgba(0,0,0,0.38), 0 2px 6px rgba(0,0,0,0.24)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "var(--border)";
-          el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.18)";
+          el.style.borderColor = "rgba(255,255,255,0.07)";
+          el.style.boxShadow = "0 4px 20px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.2)";
         }}
       >
         {/* 앨범 + 액션 */}
@@ -53,7 +54,17 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           }}>
             {entry.albums?.cover_url
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={entry.albums.cover_url} alt={entry.albums.title ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ? <img
+                  src={entry.albums.cover_url}
+                  alt={entry.albums.title ?? ""}
+                  onLoad={() => setCoverLoaded(true)}
+                  style={{
+                    width: "100%", height: "100%", objectFit: "cover",
+                    opacity: coverLoaded ? 1 : 0,
+                    filter: coverLoaded ? "none" : "blur(8px)",
+                    transition: "opacity 0.3s ease, filter 0.3s ease",
+                  }}
+                />
               : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "var(--text-muted)", opacity: 0.4 }}>♪</span>
             }
           </div>
@@ -138,11 +149,17 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
 
         {/* 메모 */}
         {note && (
-          <div style={{ marginTop: 12 }}>
+          <div style={{
+            marginTop: 12,
+            paddingLeft: 12,
+            borderLeft: "2px solid rgba(196,170,124,0.35)",
+          }}>
             <p style={{
-              color: "var(--text)", fontSize: 14, lineHeight: 1.85,
+              color: "var(--text-muted)", fontSize: 13, lineHeight: 1.9,
               whiteSpace: "pre-wrap", wordBreak: "break-word",
-              letterSpacing: "-0.01em",
+              letterSpacing: "-0.005em",
+              fontStyle: "italic",
+              fontFamily: "var(--font-lora, Georgia, serif)",
             }}>
               {displayNote}
             </p>

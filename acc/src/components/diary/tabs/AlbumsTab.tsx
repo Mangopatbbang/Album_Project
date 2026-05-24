@@ -134,11 +134,12 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
         {albumGroups.length}장의 앨범
       </p>
       <div className="grid grid-cols-3 sm:grid-cols-4" style={{ gap: 10 }}>
-        {albumGroups.map((group) => (
+        {albumGroups.map((group, idx) => (
           <div
             key={group.albumId}
             onClick={() => setSelectedAlbumId(group.albumId)}
             className="group cursor-pointer transition-all active:scale-[0.96]"
+            style={{ animation: `feedItemIn 0.22s ease-out ${idx * 0.05}s both` }}
           >
             <div
               className="overflow-hidden"

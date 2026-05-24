@@ -173,14 +173,15 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
               {selectedDate.slice(0, 4)}년 {parseInt(selectedDate.slice(5, 7))}월 {parseInt(selectedDate.slice(8, 10))}일
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {selectedEntries.map((entry) => (
-                <DiaryEntryCard
-                  key={entry.id}
-                  entry={entry}
-                  onEdit={() => onEdit(entry)}
-                  onDeleteRequest={() => setDeleteConfirm(entry.id)}
-                  isSample={isSample}
-                />
+              {selectedEntries.map((entry, idx) => (
+                <div key={entry.id} style={{ animation: `feedItemIn 0.22s ease-out ${idx * 0.07}s both` }}>
+                  <DiaryEntryCard
+                    entry={entry}
+                    onEdit={() => onEdit(entry)}
+                    onDeleteRequest={() => setDeleteConfirm(entry.id)}
+                    isSample={isSample}
+                  />
+                </div>
               ))}
             </div>
           </div>

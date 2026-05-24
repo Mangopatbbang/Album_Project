@@ -184,10 +184,19 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
         )}
 
         {/* 날짜별 엔트리 */}
-        {grouped.map(([date, dayEntries]) => {
+        {grouped.map(([date, dayEntries], groupIdx) => {
           const { year, month, date: d, day } = parseDateParts(date);
+          const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+          const yesterday = new Date(Date.now() + 9 * 3600000 - 86400000).toISOString().slice(0, 10);
+          const relLabel = date === today ? "오늘" : date === yesterday ? "어제" : null;
           return (
-            <div key={date} style={{ marginBottom: 52 }}>
+            <div
+              key={date}
+              style={{
+                marginBottom: 52,
+                animation: `feedItemIn 0.25s ease-out ${groupIdx * 0.07}s both`,
+              }}
+            >
               <div style={{ marginBottom: 20 }}>
                 <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em", marginBottom: 2 }}>
                   {year}
@@ -203,6 +212,18 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                   <p style={{ color: "var(--text-muted)", fontSize: 13, fontWeight: 400 }}>
                     {day}요일
                   </p>
+                  {relLabel && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700,
+                      color: "var(--accent)", opacity: 0.85,
+                      backgroundColor: "rgba(196,170,124,0.1)",
+                      border: "1px solid rgba(196,170,124,0.25)",
+                      borderRadius: 4, padding: "2px 7px",
+                      letterSpacing: "0.04em",
+                    }}>
+                      {relLabel}
+                    </span>
+                  )}
                 </div>
                 <div style={{
                   marginTop: 10, height: 1,

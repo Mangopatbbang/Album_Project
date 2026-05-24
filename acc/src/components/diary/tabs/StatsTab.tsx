@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DiaryEntry } from "@/types/diary";
 
 type Period = "all" | "month";
@@ -63,8 +63,61 @@ function getTopTags(entries: DiaryEntry[], limit = 10) {
   return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([tag, count]) => ({ tag, count }));
 }
 
+function useCountUp(target: number, duration = 600): number {
+  const [val, setVal] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => {
+    setVal(0);
+    if (target === 0) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      setVal(Math.round(t * target));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+  return val;
+}
+
+function SummaryCards({ total, albums, relisten, mounted }: { total: number; albums: number; relisten: number; mounted: boolean }) {
+  const t = useCountUp(mounted ? total : 0, 700);
+  const a = useCountUp(mounted ? albums : 0, 700);
+  const r = useCountUp(mounted ? relisten : 0, 700);
+  const items = [
+    { label: "총 기록", value: t },
+    { label: "앨범 수", value: a },
+    { label: "재청취", value: r },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 28 }}>
+      {items.map((item) => (
+        <div key={item.label} style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 10, padding: "16px 0", textAlign: "center",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+        }}>
+          <p style={{
+            color: "var(--text)", fontSize: 26, fontWeight: 800,
+            fontFamily: "var(--font-playfair, serif)", lineHeight: 1,
+          }}>
+            {item.value}
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.04em" }}>
+            {item.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function StatsTab({ entries }: Props) {
   const [period, setPeriod] = useState<Period>("all");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 60); return () => clearTimeout(t); }, []);
 
   const monthPrefix = useMemo(
     () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7),
@@ -146,29 +199,12 @@ export default function StatsTab({ entries }: Props) {
       </div>
 
       {/* 숫자 요약 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 28 }}>
-        {[
-          { label: "총 기록", value: periodEntries.length },
-          { label: "앨범 수", value: albumCount },
-          { label: "재청취", value: relistenCount },
-        ].map((item) => (
-          <div key={item.label} style={{
-            backgroundColor: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 10, padding: "16px 0", textAlign: "center",
-          }}>
-            <p style={{
-              color: "var(--text)", fontSize: 26, fontWeight: 800,
-              fontFamily: "var(--font-playfair, serif)", lineHeight: 1,
-            }}>
-              {item.value}
-            </p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.04em" }}>
-              {item.label}
-            </p>
-          </div>
-        ))}
-      </div>
+      <SummaryCards
+        total={periodEntries.length}
+        albums={albumCount}
+        relisten={relistenCount}
+        mounted={mounted}
+      />
 
       {/* 최근 6개월 바 차트 */}
       <div style={{ marginBottom: 28 }}>
@@ -180,9 +216,10 @@ export default function StatsTab({ entries }: Props) {
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 5 }}>
               <div style={{
                 width: "100%", borderRadius: "3px 3px 0 0",
-                height: m.count > 0 ? `${Math.max((m.count / maxBar) * 100, 10)}%` : "3px",
+                height: mounted && m.count > 0 ? `${Math.max((m.count / maxBar) * 100, 10)}%` : "3px",
                 backgroundColor: m.count > 0 ? "var(--accent)" : "var(--border)",
                 opacity: m.isCurrent ? 1 : 0.45,
+                transition: `height 0.55s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`,
               }} />
               <span style={{ fontSize: 9, color: m.isCurrent ? "var(--text-muted)" : "var(--text-sub)", letterSpacing: "0.02em" }}>
                 {m.label}

@@ -1,4 +1,4 @@
-import { Playfair_Display } from "next/font/google";
+import { Playfair_Display, Lora } from "next/font/google";
 import DiaryHeader from "@/components/diary/DiaryHeader";
 
 const playfair = Playfair_Display({
@@ -7,10 +7,17 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["italic"],
+  variable: "--font-lora",
+});
+
 export default function DiaryLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={playfair.variable}
+      className={`${playfair.variable} ${lora.variable}`}
       style={{
         "--bg": "#1C1917",
         "--bg-card": "#252220",

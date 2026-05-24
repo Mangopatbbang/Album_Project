@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiFetch";
 import { DiaryEntry } from "@/types/diary";
 import { SAMPLE_DIARY_ENTRIES } from "@/lib/diarySampleData";
+import { supabase } from "@/lib/supabase";
 import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
 import RecordsTab from "@/components/diary/tabs/RecordsTab";
 import CalendarTab from "@/components/diary/tabs/CalendarTab";
@@ -37,6 +38,7 @@ export default function DiaryPage() {
   const [activeTab, setActiveTab] = useState<Tab>("records");
   const [showModal, setShowModal] = useState(false);
   const [editEntry, setEditEntry] = useState<DiaryEntry | null>(null);
+  const [sampleEntries, setSampleEntries] = useState<DiaryEntry[]>([]);
 
   const fetchEntries = useCallback(async () => {
     if (!authUser) return;
@@ -58,7 +60,43 @@ export default function DiaryPage() {
   }, [authUser, router, fetchEntries]);
 
   const isSample = !loading && entries.length === 0;
-  const displayEntries = isSample ? SAMPLE_DIARY_ENTRIES : entries;
+
+  useEffect(() => {
+    if (!isSample) return;
+    supabase.from("albums").select("id, title, artist, cover_url")
+      .not("cover_url", "is", null).order("id").limit(5)
+      .then(({ data }) => {
+        if (!data?.length) return;
+        const NOTES: (string | null)[] = [
+          "생각보다 훨씬 좋다.",
+          "한 번에 다 듣진 못했다. 나중에 다시.",
+          null,
+          "처음 들었을 때랑 좀 다르게 들린다.",
+          "출근길에 계속 틀었다.",
+        ];
+        const CONTEXTS = [
+          ["퇴근 후", "이어폰", "차분한"],
+          ["카페", "집중"],
+          ["산책", "맑은날"],
+          ["심야", "혼자"],
+          ["출퇴근", "반복 청취"],
+        ];
+        const DAYS_AGO = [0, 1, 2, 14, 35];
+        setSampleEntries(data.slice(0, 5).map((album, i) => ({
+          id: `sample-${i}`,
+          listened_at: new Date(Date.now() + 9 * 3600000 - DAYS_AGO[i] * 86400000).toISOString().slice(0, 10),
+          note: NOTES[i] ?? null,
+          context: CONTEXTS[i],
+          image_url: null,
+          relistened: [false, true, false, false, true][i],
+          albums: { id: album.id, title: album.title, artist: album.artist, cover_url: album.cover_url },
+        })));
+      });
+  }, [isSample]);
+
+  const displayEntries = isSample
+    ? (sampleEntries.length > 0 ? sampleEntries : SAMPLE_DIARY_ENTRIES)
+    : entries;
   const recentTags = useMemo(() => getRecentTags(entries), [entries]);
 
   const handleDelete = useCallback(async (id: string) => {
