@@ -378,8 +378,8 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Row 2: 나중에 들을 앨범 + 갑론을박 */}
-          <div className="sm:grid sm:grid-cols-2 sm:gap-6" style={{ marginTop: 24 }}>
+          {/* Row 2: 나중에 들을 앨범 + 갑론을박 — 데스크탑 전용 */}
+          <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6" style={{ marginTop: 24 }}>
             {/* 나중에 들을 앨범 */}
             <div className="mb-8 sm:mb-0" style={{ display: "flex", flexDirection: "column" }}>
               <HomeWatchlistSection />

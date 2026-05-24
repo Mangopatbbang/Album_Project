@@ -63,7 +63,7 @@ export default function HomeWatchlistSection() {
       </h2>
       {profile && (
         <Link
-          href={`/profile/${profile.id}`}
+          href={`/profile/${profile.id}#watchlist`}
           style={{ color: "var(--text-muted)", fontSize: 11 }}
           className="hover:text-[var(--accent)] transition-colors"
         >

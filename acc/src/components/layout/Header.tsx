@@ -8,6 +8,7 @@ import { useUserAvatars } from "@/context/UserAvatarsContext";
 import { useUsers } from "@/context/UsersContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { apiFetch } from "@/lib/apiFetch";
 
 
 export default function Header() {
@@ -30,6 +31,10 @@ export default function Header() {
   const { notifications, markAllRead } = useNotifications();
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { href: "/albums", label: "음반고", tour: "nav-albums", desc: "보유한 모든 앨범 탐색" },
@@ -44,13 +49,26 @@ export default function Header() {
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setShowNotif(false);
-      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotif(false);
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setShowSettings(false);
     };
-    if (showNotif) document.addEventListener("mousedown", handler);
+    if (showNotif || showSettings) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showNotif]);
+  }, [showNotif, showSettings]);
+
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await apiFetch("/api/users", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      await signOut();
+      router.replace("/login");
+    } catch {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -62,6 +80,7 @@ export default function Header() {
   };
 
   return (
+    <>
     <header
       style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}
       className="sticky top-0 z-50 hidden sm:block"
@@ -297,13 +316,49 @@ export default function Header() {
                 <UserAvatar avatarUrl={profile.avatar_url} size={18} />
                 <span className="truncate">{profile.display_name}</span>
               </Link>
-              <button
-                onClick={signOut}
-                style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
-                className="hidden sm:block hover:text-[var(--text)] transition-colors"
-              >
-                로그아웃
-              </button>
+              {/* 설정 드롭다운 */}
+              <div ref={settingsRef} style={{ position: "relative" }} className="hidden sm:block">
+                <button
+                  onClick={() => setShowSettings((v) => !v)}
+                  style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em", background: "none", border: "none", cursor: "pointer", padding: "4px 0" }}
+                  className="hover:text-[var(--text)] transition-colors"
+                >
+                  설정
+                </button>
+                {showSettings && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 8px)",
+                    width: 140, backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border)", borderRadius: 10,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                    zIndex: 200, overflow: "hidden",
+                    animation: "modalIn 0.15s ease-out",
+                  }}>
+                    <button
+                      onClick={() => { setShowSettings(false); signOut(); }}
+                      style={{
+                        display: "block", width: "100%", padding: "12px 16px",
+                        background: "none", border: "none", borderBottom: "1px solid var(--border)",
+                        cursor: "pointer", color: "var(--text)", fontSize: 13, textAlign: "left",
+                      }}
+                      className="hover:bg-[var(--bg-elevated)] transition-colors"
+                    >
+                      로그아웃
+                    </button>
+                    <button
+                      onClick={() => { setShowSettings(false); setDeleteConfirm(true); }}
+                      style={{
+                        display: "block", width: "100%", padding: "12px 16px",
+                        background: "none", border: "none",
+                        cursor: "pointer", color: "#e05050", fontSize: 13, textAlign: "left",
+                      }}
+                      className="hover:bg-[var(--bg-elevated)] transition-colors"
+                    >
+                      계정 탈퇴
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
           {!loading && !profile && (
@@ -321,5 +376,55 @@ export default function Header() {
         }
       `}</style>
     </header>
+
+    {/* 계정 탈퇴 확인 모달 */}
+    {deleteConfirm && (
+      <div
+        onClick={() => !deleting && setDeleteConfirm(false)}
+        style={{
+          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
+          zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+            borderRadius: 14, padding: "28px 24px", maxWidth: 340, width: "100%",
+            animation: "modalIn 0.18s ease-out",
+          }}
+        >
+          <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text)", marginBottom: 10 }}>정말 탈퇴하시겠어요?</p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 24 }}>
+            탈퇴하면 모든 청음 기록, 소감, 평점이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          </p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setDeleteConfirm(false)}
+              disabled={deleting}
+              style={{
+                backgroundColor: "transparent", border: "1px solid var(--border)",
+                color: "var(--text)", borderRadius: 6, padding: "8px 18px", fontSize: 13, cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              style={{
+                backgroundColor: "#e05050", border: "none",
+                color: "#fff", borderRadius: 6, padding: "8px 18px", fontSize: 13, fontWeight: 600,
+                cursor: deleting ? "not-allowed" : "pointer",
+                opacity: deleting ? 0.6 : 1,
+              }}
+            >
+              {deleting ? "처리 중..." : "탈퇴하기"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

@@ -91,7 +91,7 @@ export default function WatchlistSection({ userId }: Props) {
 
   return (
     <>
-      <div style={{
+      <div id="watchlist" style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         borderRadius: 12,

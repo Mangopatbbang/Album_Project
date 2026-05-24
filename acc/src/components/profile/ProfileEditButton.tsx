@@ -19,7 +19,7 @@ const CROP_SIZE = 220;
 const OUTPUT_SIZE = 600;
 
 export default function ProfileEditButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl, initialBio, open: controlledOpen, onOpenChange }: Props) {
-  const { profile, authUser, refreshProfile, signOut } = useAuth();
+  const { profile, authUser, refreshProfile } = useAuth();
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -31,8 +31,6 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -162,21 +160,6 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
     setSaving(false);
     setOpen(false);
     router.refresh();
-  };
-
-  const handleDeleteAccount = async () => {
-    if (deleting) return;
-    setDeleting(true);
-    try {
-      const res = await apiFetch("/api/users", { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      await signOut();
-      router.replace("/login");
-    } catch {
-      setError("탈퇴 처리 중 오류가 발생했습니다");
-      setDeleting(false);
-      setDeleteConfirm(false);
-    }
   };
 
   const inputStyle = {
@@ -408,47 +391,6 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 </button>
               </div>
 
-              {/* 계정 탈퇴 */}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
-                {!deleteConfirm ? (
-                  <button
-                    onClick={() => setDeleteConfirm(true)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 12, padding: 0 }}
-                  >
-                    계정 탈퇴
-                  </button>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 12 }}>
-                      탈퇴하면 모든 청음 기록이 영구 삭제됩니다. 되돌릴 수 없습니다.
-                    </p>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => setDeleteConfirm(false)}
-                        disabled={deleting}
-                        style={{
-                          backgroundColor: "transparent", border: "1px solid var(--border)",
-                          color: "var(--text)", borderRadius: 6, padding: "6px 14px", fontSize: 12, cursor: "pointer",
-                        }}
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={handleDeleteAccount}
-                        disabled={deleting}
-                        style={{
-                          backgroundColor: "#e05050", border: "none",
-                          color: "#fff", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 600,
-                          cursor: deleting ? "not-allowed" : "pointer",
-                          opacity: deleting ? 0.6 : 1,
-                        }}
-                      >
-                        {deleting ? "처리 중..." : "탈퇴하기"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
