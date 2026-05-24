@@ -18,9 +18,10 @@ type Props = {
   entries: DiaryEntry[];
   onEdit: (entry: DiaryEntry) => void;
   onDelete: (id: string) => Promise<void>;
+  isSample?: boolean;
 };
 
-export default function AlbumsTab({ entries, onEdit, onDelete }: Props) {
+export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props) {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -107,6 +108,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete }: Props) {
                 entry={entry}
                 onEdit={() => onEdit(entry)}
                 onDeleteRequest={() => setDeleteConfirm(entry.id)}
+                isSample={isSample}
               />
             ))}
           </div>

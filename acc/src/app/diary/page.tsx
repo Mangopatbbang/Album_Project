@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiFetch";
 import { DiaryEntry } from "@/types/diary";
+import { SAMPLE_DIARY_ENTRIES } from "@/lib/diarySampleData";
 import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
 import RecordsTab from "@/components/diary/tabs/RecordsTab";
 import CalendarTab from "@/components/diary/tabs/CalendarTab";
@@ -56,6 +57,8 @@ export default function DiaryPage() {
     fetchEntries();
   }, [authUser, router, fetchEntries]);
 
+  const isSample = !loading && entries.length === 0;
+  const displayEntries = isSample ? SAMPLE_DIARY_ENTRIES : entries;
   const recentTags = useMemo(() => getRecentTags(entries), [entries]);
 
   const handleDelete = useCallback(async (id: string) => {
@@ -129,32 +132,52 @@ export default function DiaryPage() {
           </div>
         </nav>
 
+        {/* 예시 배너 */}
+        {isSample && (
+          <div style={{ maxWidth: 600, margin: "0 auto", padding: "14px 24px 0" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              backgroundColor: "rgba(212,165,116,0.06)",
+              border: "1px solid rgba(212,165,116,0.2)",
+              borderRadius: 8, padding: "9px 14px",
+            }}>
+              <span style={{ color: "var(--accent)", fontSize: 12, flexShrink: 0 }}>✦</span>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, lineHeight: 1.5 }}>
+                아래는 예시 기록입니다. 첫 기록을 남겨보세요.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* 탭 콘텐츠 */}
         {activeTab === "records" && (
           <RecordsTab
-            entries={entries}
+            entries={displayEntries}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onNewEntry={openNewEntry}
+            isSample={isSample}
           />
         )}
         {activeTab === "calendar" && (
           <CalendarTab
-            entries={entries}
+            entries={displayEntries}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            isSample={isSample}
           />
         )}
         {activeTab === "albums" && (
           <AlbumsTab
-            entries={entries}
+            entries={displayEntries}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            isSample={isSample}
           />
         )}
         {activeTab === "stats" && (
-          <StatsTab entries={entries} />
+          <StatsTab entries={displayEntries} />
         )}
       </div>
 

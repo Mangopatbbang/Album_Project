@@ -7,11 +7,12 @@ type Props = {
   entry: DiaryEntry;
   onEdit: () => void;
   onDeleteRequest: () => void;
+  isSample?: boolean;
 };
 
 const NOTE_LIMIT = 160;
 
-export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest }: Props) {
+export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample }: Props) {
   const [noteExpanded, setNoteExpanded] = useState(false);
   const [imageExpanded, setImageExpanded] = useState(false);
 
@@ -88,10 +89,12 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest }: Props
             </p>
           </div>
 
-          <div style={{ display: "flex", flexShrink: 0 }}>
-            <button onClick={onEdit} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>편집</button>
-            <button onClick={onDeleteRequest} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>삭제</button>
-          </div>
+          {!isSample && (
+            <div style={{ display: "flex", flexShrink: 0 }}>
+              <button onClick={onEdit} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>편집</button>
+              <button onClick={onDeleteRequest} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>삭제</button>
+            </div>
+          )}
         </div>
 
         {/* 메모 */}

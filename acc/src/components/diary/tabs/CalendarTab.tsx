@@ -9,6 +9,7 @@ type Props = {
   entries: DiaryEntry[];
   onEdit: (entry: DiaryEntry) => void;
   onDelete: (id: string) => Promise<void>;
+  isSample?: boolean;
 };
 
 function buildCalendarGrid(year: number, month: number): (number | null)[] {
@@ -27,7 +28,7 @@ function toDateStr(year: number, month: number, day: number): string {
 
 const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
-export default function CalendarTab({ entries, onEdit, onDelete }: Props) {
+export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Props) {
   const kstNow = new Date(Date.now() + 9 * 3600000);
   const initYear = parseInt(kstNow.toISOString().slice(0, 4));
   const initMonth = parseInt(kstNow.toISOString().slice(5, 7));
@@ -178,6 +179,7 @@ export default function CalendarTab({ entries, onEdit, onDelete }: Props) {
                   entry={entry}
                   onEdit={() => onEdit(entry)}
                   onDeleteRequest={() => setDeleteConfirm(entry.id)}
+                  isSample={isSample}
                 />
               ))}
             </div>

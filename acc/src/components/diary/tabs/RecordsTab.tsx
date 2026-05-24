@@ -13,6 +13,7 @@ type Props = {
   onEdit: (entry: DiaryEntry) => void;
   onDelete: (id: string) => Promise<void>;
   onNewEntry: () => void;
+  isSample?: boolean;
 };
 
 function parseDateParts(dateStr: string) {
@@ -26,7 +27,7 @@ function parseDateParts(dateStr: string) {
   };
 }
 
-export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEntry }: Props) {
+export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEntry, isSample }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -106,7 +107,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 24px calc(80px + env(safe-area-inset-bottom))" }}>
 
         {/* 오늘 같은 날 */}
-        {onThisDayEntries.length > 0 && filter === "all" && (
+        {onThisDayEntries.length > 0 && filter === "all" && !isSample && (
           <div style={{
             marginBottom: 32,
             background: "rgba(212,165,116,0.06)",
@@ -217,6 +218,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                     entry={entry}
                     onEdit={() => onEdit(entry)}
                     onDeleteRequest={() => setDeleteConfirm(entry.id)}
+                    isSample={isSample}
                   />
                 ))}
               </div>
