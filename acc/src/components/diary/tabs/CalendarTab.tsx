@@ -71,7 +71,7 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
 
   return (
     <>
-      <div style={{ padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
 
         {/* 월 네비게이션 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>

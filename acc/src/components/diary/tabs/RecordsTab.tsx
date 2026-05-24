@@ -60,7 +60,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
   if (loading) {
     return (
-      <div style={{ padding: "32px 20px", display: "flex", flexDirection: "column", gap: 40 }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 20px", display: "flex", flexDirection: "column", gap: 40 }}>
         {[1, 2].map((i) => (
           <div key={i}>
             <div className="skeleton-shimmer" style={{ height: 18, width: 120, borderRadius: 4, marginBottom: 20 }} />
@@ -104,7 +104,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
   return (
     <>
-      <div style={{ padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
 
         {/* 오늘 같은 날 */}
         {onThisDayEntries.length > 0 && filter === "all" && !isSample && (

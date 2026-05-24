@@ -83,7 +83,7 @@ export default function DiaryPage() {
       <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
         {/* 페이지 헤더 */}
-        <div style={{ padding: "28px 20px 0" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 0" }}>
           <div style={{
             display: "flex", alignItems: "flex-start",
             justifyContent: "space-between", marginBottom: 24,
@@ -161,7 +161,7 @@ export default function DiaryPage() {
 
         {/* 예시 배너 — 모든 탭에 공통 표시 */}
         {isSample && (
-          <div style={{ padding: "10px 20px 0" }}>
+          <div style={{ maxWidth: 680, margin: "0 auto", padding: "10px 20px 0" }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
               backgroundColor: "rgba(var(--accent-rgb), 0.05)",
