@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
 
@@ -40,6 +40,7 @@ export async function PATCH(
 
   revalidatePath(`/playlist/${id}`);
   revalidatePath("/");
+  revalidateTag("user-playlists", "max");
 
   return NextResponse.json({ ok: true });
 }

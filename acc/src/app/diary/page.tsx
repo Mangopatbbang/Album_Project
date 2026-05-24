@@ -107,12 +107,12 @@ export default function DiaryPage() {
               </div>
             </div>
 
-            {/* 기록 버튼 */}
+            {/* 기록 버튼 — 데스크탑만 */}
             <button
               onClick={openNewEntry}
-              className="active:scale-[0.95]"
+              className="hidden sm:flex active:scale-[0.95]"
               style={{
-                display: "flex", alignItems: "center", gap: 5,
+                alignItems: "center", gap: 5,
                 backgroundColor: "var(--accent)",
                 border: "none", borderRadius: 8,
                 padding: "8px 15px",
@@ -214,6 +214,31 @@ export default function DiaryPage() {
           </div>
         )}
       </div>
+
+      {/* 모바일 FAB — 새 기록 */}
+      <button
+        onClick={openNewEntry}
+        className="sm:hidden active:scale-[0.92]"
+        style={{
+          position: "fixed",
+          bottom: "calc(60px + env(safe-area-inset-bottom) + 16px)",
+          right: 16,
+          zIndex: 45,
+          width: 50, height: 50,
+          borderRadius: "50%",
+          backgroundColor: "var(--accent)",
+          border: "none",
+          color: "#1C1917",
+          fontSize: 20,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+          transition: "transform 0.12s, opacity 0.12s",
+        }}
+        aria-label="새 기록"
+      >
+        ✎
+      </button>
 
       {showModal && (
         <DiaryEntryModal

@@ -104,7 +104,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
   return (
     <>
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(144px + env(safe-area-inset-bottom))" }}>
 
         {/* 오늘 같은 날 */}
         {onThisDayEntries.length > 0 && filter === "all" && !isSample && (

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
 
@@ -57,5 +58,6 @@ export async function POST(req: NextRequest) {
   const { error: entErr } = await supabaseServer.from("playlist_entries").insert(entryRows);
   if (entErr) return NextResponse.json({ error: entErr.message }, { status: 500 });
 
+  revalidateTag("user-playlists", "max");
   return NextResponse.json({ id: playlist.id }, { status: 201 });
 }

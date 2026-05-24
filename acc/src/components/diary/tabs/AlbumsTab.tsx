@@ -63,7 +63,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
   if (selectedGroup) {
     return (
       <>
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(144px + env(safe-area-inset-bottom))" }}>
           <button
             onClick={() => setSelectedAlbumId(null)}
             style={{
@@ -129,7 +129,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
 
   // 앨범 그리드
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(144px + env(safe-area-inset-bottom))" }}>
       <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.06em", marginBottom: 16 }}>
         {albumGroups.length}장의 앨범
       </p>

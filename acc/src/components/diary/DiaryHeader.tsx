@@ -35,11 +35,12 @@ export default function DiaryHeader() {
           alignItems: "center",
           justifyContent: "space-between",
         }}>
-          {/* 뒤로가기 */}
+          {/* 뒤로가기 — 데스크탑만 */}
           <button
             onClick={handleBack}
+            className="hidden sm:flex"
             style={{
-              display: "flex", alignItems: "center", gap: 5,
+              alignItems: "center", gap: 5,
               background: "none", border: "none",
               color: "var(--text-muted)", fontSize: 13,
               cursor: "pointer", padding: "4px 0",
@@ -51,6 +52,8 @@ export default function DiaryHeader() {
             <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
             <span>돌아가기</span>
           </button>
+          {/* 모바일 — 빈 공간 확보 */}
+          <div className="sm:hidden" style={{ width: 40 }} />
 
           {/* 타이틀 */}
           <p style={{

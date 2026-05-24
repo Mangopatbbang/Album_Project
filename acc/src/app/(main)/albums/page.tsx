@@ -19,35 +19,39 @@ const containerStyle = {
   margin: "0 auto",
 };
 
-async function getInitialAlbums() {
-  const { data, error } = await supabaseServer
-    .from("albums")
-    .select("id, title, artist, use_artist_variant, year, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)")
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .range(0, 30);
+const getInitialAlbums = unstable_cache(
+  async () => {
+    const { data, error } = await supabaseServer
+      .from("albums")
+      .select("id, title, artist, use_artist_variant, year, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(0, 30);
 
-  if (error || !data) return { items: [], hasMore: false, nextOffset: null };
+    if (error || !data) return { items: [], hasMore: false, nextOffset: null };
 
-  const hasMore = data.length > 30;
-  const page = hasMore ? data.slice(0, 30) : data;
-  const resolved = await resolveArtistDisplay(page);
-  const items = resolved.map((album) => {
-    const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
-    const scores = ratings.map((r) => r.score);
-    const avg =
-      scores.length > 0
-        ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
-        : null;
-    return { ...album, ratings, avg } as unknown as AlbumWithRatings;
-  });
+    const hasMore = data.length > 30;
+    const page = hasMore ? data.slice(0, 30) : data;
+    const resolved = await resolveArtistDisplay(page);
+    const items = resolved.map((album) => {
+      const ratings = (album.ratings ?? []) as { user_id: string; score: number }[];
+      const scores = ratings.map((r) => r.score);
+      const avg =
+        scores.length > 0
+          ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+          : null;
+      return { ...album, ratings, avg } as unknown as AlbumWithRatings;
+    });
 
-  return {
-    items,
-    hasMore,
-    nextOffset: hasMore ? 30 : null,
-  };
-}
+    return {
+      items,
+      hasMore,
+      nextOffset: hasMore ? 30 : null,
+    };
+  },
+  ["albums-initial"],
+  { tags: ["albums-page-meta"], revalidate: 60 }
+);
 
 const getGenres = unstable_cache(
   async (): Promise<string[]> => {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
@@ -23,6 +24,53 @@ import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
 import ProfileDiaryButton from "@/components/profile/ProfileDiaryButton";
 import type { DayAlbum } from "@/components/profile/CalendarSection";
+
+const getCommunityRatings = unstable_cache(
+  async (userId: string) => {
+    const { data: myAlbums } = await supabaseServer
+      .from("ratings")
+      .select("album_id")
+      .eq("user_id", userId);
+    const ids = (myAlbums ?? []).map((r: { album_id: string }) => r.album_id);
+    if (!ids.length) return [] as { album_id: string; score: number }[];
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("album_id, score")
+      .in("album_id", ids)
+      .neq("user_id", userId);
+    return (data ?? []) as { album_id: string; score: number }[];
+  },
+  ["community-ratings"],
+  { tags: ["profile-ratings"], revalidate: 3600 }
+);
+
+const getUserListeningLogs = unstable_cache(
+  async (userId: string) => {
+    const { data } = await supabaseServer
+      .from("listening_logs")
+      .select("id, listened_at, context, note, albums(id, title, artist, cover_url)")
+      .eq("user_id", userId)
+      .order("listened_at", { ascending: false })
+      .limit(20);
+    return data ?? [];
+  },
+  ["user-listening-logs"],
+  { tags: ["user-logs"], revalidate: 3600 }
+);
+
+const getUserPlaylists = unstable_cache(
+  async (userId: string) => {
+    const { data } = await supabaseServer
+      .from("playlists")
+      .select("id, title, created_at, playlist_entries(id, sort_order, albums(id, cover_url))")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(6);
+    return data ?? [];
+  },
+  ["user-playlists"],
+  { tags: ["user-playlists"], revalidate: 3600 }
+);
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
   const { userId } = await params;
@@ -61,47 +109,26 @@ export default async function ProfilePage({
   const avatarUrl = (dbUser as { avatar_url?: string | null })?.avatar_url ?? null;
   const bio = (dbUser as { bio?: string | null })?.bio ?? null;
 
-  // 내 전체 평점 (1시간 캐시, 평점 저장/삭제 시 revalidateTag로 즉시 갱신)
-  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, listeningLogsResult, playlistsResult] = await Promise.all([
+  // 전체 데이터 병렬 fetch (모두 캐시 처리됨)
+  const [allRawRatings, allUserTopGenres, allUserAvatarUrls, listeningLogsData, playlistsData, communityRatings] = await Promise.all([
     fetchProfileRatings(userId),
     fetchAllUserGenreEmojis(),
     fetchAllUserAvatarUrls(),
-    supabaseServer
-      .from("listening_logs")
-      .select("id, listened_at, context, note, albums(id, title, artist, cover_url)")
-      .eq("user_id", userId)
-      .order("listened_at", { ascending: false })
-      .limit(20),
-    supabaseServer
-      .from("playlists")
-      .select("id, title, created_at, playlist_entries(id, sort_order, albums(id, cover_url))")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(6),
+    getUserListeningLogs(userId),
+    getUserPlaylists(userId),
+    getCommunityRatings(userId),
   ]);
 
   type LogAlbum = { id: string; title: string; artist: string; cover_url: string | null };
   type ListeningLog = { id: string; listened_at: string; context: string[] | null; note: string | null; albums: LogAlbum | null };
-  // ListeningLogsSection이 export한 타입과 구조가 동일 — as unknown을 통해 pass
-  const listeningLogs = (listeningLogsResult.data ?? []) as unknown as ListeningLog[];
+  const listeningLogs = listeningLogsData as unknown as ListeningLog[];
 
   type PlaylistEntry = { id: string; sort_order: number; albums: { id: string; cover_url: string | null } | null };
   type UserPlaylist = { id: string; title: string; created_at: string; playlist_entries: PlaylistEntry[] };
-  const userPlaylists = (playlistsResult.data ?? []) as unknown as UserPlaylist[];
+  const userPlaylists = playlistsData as unknown as UserPlaylist[];
 
   const validRatings = allRawRatings.filter((r) => r.albums !== null);
 
-  // 커뮤니티 비교용: 내가 평가한 앨범 ID들에 한정해서 타인 평점만 fetch
-  const myAlbumIds = validRatings.map((r) => r.albums!.id);
-  let communityRatings: { album_id: string; score: number }[] = [];
-  if (myAlbumIds.length > 0) {
-    const { data: commData } = await supabaseServer
-      .from("ratings")
-      .select("album_id, score")
-      .in("album_id", myAlbumIds)
-      .neq("user_id", userId);
-    communityRatings = commData ?? [];
-  }
   const communityScoresByAlbum = new Map<string, number[]>();
   for (const r of communityRatings) {
     const arr = communityScoresByAlbum.get(r.album_id) ?? [];
@@ -236,7 +263,7 @@ export default async function ProfilePage({
 
   // 커뮤니티 데이터 맵 (albumId → community info)
   const communityMap = new Map<string, { commCount: number; commAvg: number | null }>(
-    myAlbumIds.map((albumId) => {
+    validRatings.map((r) => r.albums!.id).map((albumId) => {
       const commScores = communityScoresByAlbum.get(albumId) ?? [];
       const commAvg = commScores.length > 0 ? commScores.reduce((s, n) => s + n, 0) / commScores.length : null;
       return [albumId, { commCount: commScores.length, commAvg }];

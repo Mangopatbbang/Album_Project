@@ -155,7 +155,7 @@ export default function StatsTab({ entries }: Props) {
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 20px calc(144px + env(safe-area-inset-bottom))" }}>
 
       {/* streak */}
       {streak > 0 && (

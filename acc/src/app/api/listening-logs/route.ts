@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
 
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("user-logs", "max");
   return NextResponse.json({ ok: true, log: data });
 }
 
@@ -116,6 +118,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("user-logs", "max");
   return NextResponse.json({ ok: true });
 }
 
@@ -141,5 +144,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("user-logs", "max");
   return NextResponse.json({ ok: true });
 }
