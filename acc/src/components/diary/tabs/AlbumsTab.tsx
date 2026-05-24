@@ -138,19 +138,25 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
           <div
             key={group.albumId}
             onClick={() => setSelectedAlbumId(group.albumId)}
-            style={{ cursor: "pointer" }}
+            className="group cursor-pointer transition-all active:scale-[0.96]"
           >
-            <div style={{
-              position: "relative",
-              aspectRatio: "1/1",
-              borderRadius: 8, overflow: "hidden",
-              backgroundColor: "var(--bg-elevated)",
-              border: "1px solid var(--border)",
-              marginBottom: 8,
-            }}>
+            <div
+              className="overflow-hidden"
+              style={{
+                position: "relative",
+                aspectRatio: "1/1",
+                borderRadius: 8,
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+                marginBottom: 6,
+                transition: "border-color 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(196,170,124,0.4)")}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+            >
               {group.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={group.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img src={group.cover_url} alt="" className="group-hover:scale-[1.06]" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.35s ease" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "var(--text-muted)", opacity: 0.3 }}>♪</div>
               }
               {group.count > 1 && (

@@ -212,14 +212,15 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {dayEntries.map((entry) => (
-                  <DiaryEntryCard
-                    key={entry.id}
-                    entry={entry}
-                    onEdit={() => onEdit(entry)}
-                    onDeleteRequest={() => setDeleteConfirm(entry.id)}
-                    isSample={isSample}
-                  />
+                {dayEntries.map((entry, idx) => (
+                  <div key={entry.id} style={{ animation: `feedItemIn 0.22s ease-out ${idx * 0.06}s both` }}>
+                    <DiaryEntryCard
+                      entry={entry}
+                      onEdit={() => onEdit(entry)}
+                      onDeleteRequest={() => setDeleteConfirm(entry.id)}
+                      isSample={isSample}
+                    />
+                  </div>
                 ))}
               </div>
             </div>

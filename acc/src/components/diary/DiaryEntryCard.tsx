@@ -22,12 +22,26 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
 
   return (
     <>
-      <div style={{
-        backgroundColor: "var(--bg-card)",
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        padding: "14px 16px",
-      }}>
+      <div
+        style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 14,
+          padding: "14px 16px",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          el.style.borderColor = "rgba(196,170,124,0.3)";
+          el.style.boxShadow = "0 4px 16px rgba(0,0,0,0.28)";
+        }}
+        onMouseLeave={(e) => {
+          const el = e.currentTarget;
+          el.style.borderColor = "var(--border)";
+          el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.18)";
+        }}
+      >
         {/* 앨범 + 액션 */}
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
           {/* 커버 */}

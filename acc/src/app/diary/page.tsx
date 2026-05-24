@@ -83,48 +83,47 @@ export default function DiaryPage() {
       <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
         {/* 페이지 헤더 */}
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 0" }}>
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 20px 0" }}>
           <div style={{
-            display: "flex", alignItems: "flex-start",
-            justifyContent: "space-between", marginBottom: 24,
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", marginBottom: 12,
           }}>
-            <div>
-              <p style={{
-                color: "rgba(var(--accent-rgb), 0.4)",
-                fontSize: 9, fontWeight: 700,
-                letterSpacing: "0.22em", textTransform: "uppercase",
-                marginBottom: 8,
-              }}>
-                Private
-              </p>
-              <h1 style={{
-                color: "var(--text)", fontSize: 28, fontWeight: 800,
-                letterSpacing: "-0.04em", lineHeight: 1,
-              }}>
-                청음일기
-              </h1>
-              {!isSample && entries.length > 0 && (
-                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 7 }}>
-                  {entries.length}개의 기록
+            {/* 제목 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 3, height: 22, borderRadius: 2,
+                backgroundColor: "var(--accent)", opacity: 0.7, flexShrink: 0,
+              }} />
+              <div>
+                <h1 style={{
+                  color: "var(--text)", fontSize: 20, fontWeight: 700,
+                  letterSpacing: "-0.03em", lineHeight: 1,
+                }}>
+                  청음일기
+                </h1>
+                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4, letterSpacing: "0.04em" }}>
+                  {!isSample && entries.length > 0 ? `${entries.length}개의 기록` : "PRIVATE"}
                 </p>
-              )}
+              </div>
             </div>
 
+            {/* 기록 버튼 */}
             <button
               onClick={openNewEntry}
+              className="active:scale-[0.95]"
               style={{
-                display: "flex", alignItems: "center", gap: 6,
+                display: "flex", alignItems: "center", gap: 5,
                 backgroundColor: "var(--accent)",
-                border: "none", borderRadius: 10,
-                padding: "10px 18px", marginTop: 6,
-                color: "#0C0E16", fontSize: 12, fontWeight: 700,
+                border: "none", borderRadius: 8,
+                padding: "8px 15px",
+                color: "#1C1917", fontSize: 12, fontWeight: 700,
                 cursor: "pointer", letterSpacing: "-0.01em",
+                transition: "opacity 0.12s, transform 0.12s",
               }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>✎</span> 기록
+              <span style={{ fontSize: 13, lineHeight: 1 }}>✎</span> 기록
             </button>
           </div>
-
         </div>
 
         {/* 탭 바 — 전체 너비 언더라인 스타일 */}
@@ -178,33 +177,41 @@ export default function DiaryPage() {
 
         {/* 탭 콘텐츠 */}
         {activeTab === "records" && (
-          <RecordsTab
-            entries={displayEntries}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onNewEntry={openNewEntry}
-            isSample={isSample}
-          />
+          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
+            <RecordsTab
+              entries={displayEntries}
+              loading={loading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onNewEntry={openNewEntry}
+              isSample={isSample}
+            />
+          </div>
         )}
         {activeTab === "calendar" && (
-          <CalendarTab
-            entries={displayEntries}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isSample={isSample}
-          />
+          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
+            <CalendarTab
+              entries={displayEntries}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              isSample={isSample}
+            />
+          </div>
         )}
         {activeTab === "albums" && (
-          <AlbumsTab
-            entries={displayEntries}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isSample={isSample}
-          />
+          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
+            <AlbumsTab
+              entries={displayEntries}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              isSample={isSample}
+            />
+          </div>
         )}
         {activeTab === "stats" && (
-          <StatsTab entries={displayEntries} />
+          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
+            <StatsTab entries={displayEntries} />
+          </div>
         )}
       </div>
 
