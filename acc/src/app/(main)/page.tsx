@@ -277,6 +277,11 @@ export default async function HomePage() {
             <HeroLogoutButton />
           </div>
 
+          {/* 청음일기 바로가기 */}
+          <div style={{ position: "absolute", top: 18, left: 20 }}>
+            <HomeDiaryBanner />
+          </div>
+
           <p
             style={{
               color: "var(--text-muted)",
@@ -340,7 +345,6 @@ export default async function HomePage() {
 
         {/* 메인 섹션 */}
         <div style={{ ...containerStyle, padding: "28px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-          <HomeDiaryBanner />
           <div className="sm:grid sm:grid-cols-2 sm:gap-6">
             {/* 오늘의 인연 */}
             <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
