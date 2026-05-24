@@ -133,7 +133,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
       <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.06em", marginBottom: 16 }}>
         {albumGroups.length}장의 앨범
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {albumGroups.map((group) => (
           <div
             key={group.albumId}
@@ -166,14 +166,14 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
               )}
             </div>
             <p style={{
-              color: "var(--text)", fontSize: 12, fontWeight: 600,
+              color: "var(--text)", fontSize: 11, fontWeight: 600,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               fontFamily: "var(--font-playfair, serif)",
             }}>
               {group.title}
             </p>
             <p style={{
-              color: "var(--text-muted)", fontSize: 10,
+              color: "var(--text-muted)", fontSize: 9,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               marginTop: 2,
             }}>

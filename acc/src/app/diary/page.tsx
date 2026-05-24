@@ -125,21 +125,6 @@ export default function DiaryPage() {
             </button>
           </div>
 
-          {/* 예시 배너 */}
-          {isSample && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              marginBottom: 8,
-              backgroundColor: "rgba(var(--accent-rgb), 0.05)",
-              border: "1px solid rgba(var(--accent-rgb), 0.15)",
-              borderRadius: 8, padding: "8px 12px",
-            }}>
-              <span style={{ color: "var(--accent)", fontSize: 10, flexShrink: 0, opacity: 0.6 }}>✦</span>
-              <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                예시 기록입니다. 첫 기록을 남겨보세요.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* 탭 바 — 전체 너비 언더라인 스타일 */}
@@ -173,6 +158,23 @@ export default function DiaryPage() {
             </button>
           ))}
         </div>
+
+        {/* 예시 배너 — 모든 탭에 공통 표시 */}
+        {isSample && (
+          <div style={{ padding: "10px 20px 0" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              backgroundColor: "rgba(var(--accent-rgb), 0.05)",
+              border: "1px solid rgba(var(--accent-rgb), 0.15)",
+              borderRadius: 8, padding: "8px 12px",
+            }}>
+              <span style={{ color: "var(--accent)", fontSize: 10, flexShrink: 0, opacity: 0.6 }}>✦</span>
+              <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                예시 기록입니다. 첫 기록을 남겨보세요.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* 탭 콘텐츠 */}
         {activeTab === "records" && (
