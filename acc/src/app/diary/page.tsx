@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiFetch";
 import { DiaryEntry } from "@/types/diary";
 import { SAMPLE_DIARY_ENTRIES } from "@/lib/diarySampleData";
-import { supabase } from "@/lib/supabase";
+import { supabaseBrowser as supabase } from "@/lib/supabase-browser";
 import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
 import RecordsTab from "@/components/diary/tabs/RecordsTab";
 import CalendarTab from "@/components/diary/tabs/CalendarTab";
