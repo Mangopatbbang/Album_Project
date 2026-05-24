@@ -85,15 +85,34 @@ export default function Header() {
       style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}
       className="sticky top-0 z-50 hidden sm:block"
     >
-      <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr minmax(max-content, auto)", alignItems: "center", height: 52, gap: 8 }}>
+      <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr minmax(max-content, auto)", alignItems: "center", height: 60, gap: 8 }}>
 
         {/* 로고 */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }} className="group">
-          <span style={{ color: "var(--accent)", fontSize: 16, lineHeight: 1, transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)", display: "inline-block" }} className="group-hover:scale-[1.2]">♪</span>
-          <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em", transition: "letter-spacing 0.2s ease, color 0.15s" }} className="group-hover:text-[var(--accent)]">
-            아차청음사
-          </span>
-        </Link>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }} className="group">
+            <span style={{ color: "var(--accent)", fontSize: 16, lineHeight: 1, transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)", display: "inline-block" }} className="group-hover:scale-[1.2]">♪</span>
+            <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em", transition: "letter-spacing 0.2s ease, color 0.15s" }} className="group-hover:text-[var(--accent)]">
+              아차청음사
+            </span>
+          </Link>
+          {profile && (
+            <Link
+              href="/diary"
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                color: "var(--text-sub)", fontSize: 10,
+                textDecoration: "none", letterSpacing: "0.02em",
+                paddingLeft: 24,
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "var(--text-sub)")}
+            >
+              <span style={{ fontSize: 10, lineHeight: 1 }}>✎</span>
+              청음일기
+            </Link>
+          )}
+        </div>
 
         {/* 네비 */}
         <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-evenly" }} className="hidden sm:flex">
