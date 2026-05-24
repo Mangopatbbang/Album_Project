@@ -102,14 +102,14 @@ export default function StatsTab({ entries }: Props) {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 24px calc(80px + env(safe-area-inset-bottom))" }}>
+    <div style={{ padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
 
       {/* streak */}
       {streak > 0 && (
         <div style={{
           marginBottom: 24,
-          background: "rgba(212,165,116,0.06)",
-          border: "1px solid rgba(212,165,116,0.2)",
+          background: "rgba(var(--accent-rgb), 0.05)",
+          border: "1px solid rgba(var(--accent-rgb), 0.18)",
           borderRadius: 12, padding: "20px 24px",
           display: "flex", alignItems: "center", gap: 18,
         }}>

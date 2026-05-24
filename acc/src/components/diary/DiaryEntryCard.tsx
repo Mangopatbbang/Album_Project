@@ -22,7 +22,87 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
 
   return (
     <>
-      <div style={{ borderLeft: "2px solid var(--accent)", paddingLeft: 16 }}>
+      <div style={{
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        borderRadius: 14,
+        padding: "14px 16px",
+      }}>
+        {/* 앨범 + 액션 */}
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          {/* 커버 */}
+          <div style={{
+            width: 52, height: 52, borderRadius: 8,
+            overflow: "hidden", flexShrink: 0,
+            backgroundColor: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+          }}>
+            {entry.albums?.cover_url
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={entry.albums.cover_url} alt={entry.albums.title ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "var(--text-muted)", opacity: 0.4 }}>♪</span>
+            }
+          </div>
+
+          {/* 앨범 정보 */}
+          <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+            <p style={{
+              color: "var(--text)", fontSize: 14, fontWeight: 700,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              fontFamily: "var(--font-playfair, serif)", letterSpacing: "-0.01em",
+            }}>
+              {entry.albums?.title}
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {entry.albums?.artist}
+            </p>
+            {entry.relistened && (
+              <span style={{
+                display: "inline-block", marginTop: 5,
+                fontSize: 9, fontWeight: 700,
+                color: "var(--accent)",
+                backgroundColor: "rgba(var(--accent-rgb), 0.1)",
+                border: "1px solid rgba(var(--accent-rgb), 0.25)",
+                borderRadius: 4, padding: "2px 6px",
+                letterSpacing: "0.04em",
+              }}>
+                재청취
+              </span>
+            )}
+          </div>
+
+          {!isSample && (
+            <div style={{ display: "flex", gap: 1, flexShrink: 0, paddingTop: 2 }}>
+              <button
+                onClick={onEdit}
+                style={{
+                  background: "none", border: "none",
+                  color: "var(--text-sub)", fontSize: 11,
+                  cursor: "pointer", padding: "2px 6px",
+                  transition: "color 0.12s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-sub)")}
+              >
+                편집
+              </button>
+              <button
+                onClick={onDeleteRequest}
+                style={{
+                  background: "none", border: "none",
+                  color: "var(--text-sub)", fontSize: 11,
+                  cursor: "pointer", padding: "2px 6px",
+                  transition: "color 0.12s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-sub)")}
+              >
+                삭제
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* 사진 */}
         {entry.image_url && (
           <button
@@ -30,7 +110,7 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
             style={{
               display: "block", width: "100%", padding: 0, border: "none",
               background: "none", cursor: "pointer",
-              marginBottom: 14, borderRadius: 8, overflow: "hidden",
+              marginTop: 12, borderRadius: 8, overflow: "hidden",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,66 +122,11 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           </button>
         )}
 
-        {/* 앨범 정보 */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          marginBottom: note || (entry.context?.length ?? 0) > 0 ? 14 : 0,
-        }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 5,
-            overflow: "hidden", flexShrink: 0,
-            backgroundColor: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-          }}>
-            {entry.albums?.cover_url
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={entry.albums.cover_url} alt={entry.albums.title ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "var(--text-muted)" }}>♪</span>
-            }
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <p style={{
-                color: "var(--text)", fontSize: 13, fontWeight: 600,
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                fontFamily: "var(--font-playfair, serif)",
-              }}>
-                {entry.albums?.title}
-              </p>
-              {entry.relistened && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700,
-                  color: "var(--accent)",
-                  border: "1px solid rgba(var(--accent-rgb), 0.3)",
-                  borderRadius: 3, padding: "1px 5px",
-                  letterSpacing: "0.05em", flexShrink: 0,
-                }}>
-                  재청취
-                </span>
-              )}
-            </div>
-            <p style={{
-              color: "var(--text-muted)", fontSize: 11, marginTop: 1,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
-              {entry.albums?.artist}
-            </p>
-          </div>
-
-          {!isSample && (
-            <div style={{ display: "flex", flexShrink: 0 }}>
-              <button onClick={onEdit} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>편집</button>
-              <button onClick={onDeleteRequest} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", padding: "4px 6px", opacity: 0.6 }}>삭제</button>
-            </div>
-          )}
-        </div>
-
         {/* 메모 */}
         {note && (
-          <div style={{ marginBottom: (entry.context?.length ?? 0) > 0 ? 12 : 0 }}>
+          <div style={{ marginTop: 12 }}>
             <p style={{
-              color: "var(--text)", fontSize: 13.5, lineHeight: 1.9,
+              color: "var(--text)", fontSize: 14, lineHeight: 1.85,
               whiteSpace: "pre-wrap", wordBreak: "break-word",
               letterSpacing: "-0.01em",
             }}>
@@ -113,7 +138,7 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
                 style={{
                   background: "none", border: "none",
                   color: "var(--text-muted)", fontSize: 11,
-                  cursor: "pointer", padding: "4px 0 0 0", opacity: 0.7,
+                  cursor: "pointer", padding: "4px 0 0 0",
                 }}
               >
                 {noteExpanded ? "접기 ↑" : "더 보기 ↓"}
@@ -124,15 +149,16 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
 
         {/* 태그 */}
         {entry.context && entry.context.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 10 }}>
             {entry.context.map((tag) => (
               <span key={tag} style={{
-                padding: "2px 8px", borderRadius: 20,
-                backgroundColor: "transparent",
-                border: "1px solid var(--border)",
-                color: "var(--text-muted)", fontSize: 10, letterSpacing: "0.01em",
+                padding: "3px 9px", borderRadius: 20,
+                backgroundColor: "rgba(var(--accent-rgb), 0.07)",
+                border: "1px solid rgba(var(--accent-rgb), 0.18)",
+                color: "var(--text-muted)", fontSize: 10,
+                letterSpacing: "0.01em",
               }}>
-                {tag}
+                #{tag}
               </span>
             ))}
           </div>

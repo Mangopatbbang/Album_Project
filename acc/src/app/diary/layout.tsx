@@ -12,16 +12,16 @@ export default function DiaryLayout({ children }: { children: React.ReactNode })
     <div
       className={playfair.variable}
       style={{
-        "--bg": "#1C1917",
-        "--bg-card": "#292524",
-        "--bg-elevated": "#3C3330",
-        "--bg-rgb": "28,25,23",
-        "--border": "#44403C",
-        "--text": "#FAFAF9",
-        "--text-muted": "#A8A29E",
-        "--text-sub": "#78716C",
-        "--accent": "#D4A574",
-        "--accent-rgb": "212,165,116",
+        "--bg": "#0C0E16",
+        "--bg-card": "#12151F",
+        "--bg-elevated": "#191C2C",
+        "--bg-rgb": "12,14,22",
+        "--border": "#22273A",
+        "--text": "#E8ECFF",
+        "--text-muted": "#7880A8",
+        "--text-sub": "#424872",
+        "--accent": "#8B9CF4",
+        "--accent-rgb": "139,156,244",
       } as React.CSSProperties}
     >
       <DiaryHeader />

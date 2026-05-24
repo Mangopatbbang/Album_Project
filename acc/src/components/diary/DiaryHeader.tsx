@@ -29,9 +29,7 @@ export default function DiaryHeader() {
         backgroundColor: "rgba(var(--bg-rgb, 14,14,14), 0.85)",
       }}>
         <div style={{
-          maxWidth: 600,
-          margin: "0 auto",
-          padding: "0 24px",
+          padding: "0 20px",
           height: 52,
           display: "flex",
           alignItems: "center",

@@ -71,7 +71,7 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
 
   return (
     <>
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 24px calc(80px + env(safe-area-inset-bottom))" }}>
+      <div style={{ padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
 
         {/* 월 네비게이션 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -172,7 +172,7 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
             <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em", marginBottom: 24 }}>
               {selectedDate.slice(0, 4)}년 {parseInt(selectedDate.slice(5, 7))}월 {parseInt(selectedDate.slice(8, 10))}일
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {selectedEntries.map((entry) => (
                 <DiaryEntryCard
                   key={entry.id}

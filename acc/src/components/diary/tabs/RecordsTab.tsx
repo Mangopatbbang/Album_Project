@@ -60,7 +60,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
   if (loading) {
     return (
-      <div style={{ padding: "32px 24px", maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 40 }}>
+      <div style={{ padding: "32px 20px", display: "flex", flexDirection: "column", gap: 40 }}>
         {[1, 2].map((i) => (
           <div key={i}>
             <div className="skeleton-shimmer" style={{ height: 18, width: 120, borderRadius: 4, marginBottom: 20 }} />
@@ -104,14 +104,14 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
   return (
     <>
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 24px calc(80px + env(safe-area-inset-bottom))" }}>
+      <div style={{ padding: "24px 20px calc(80px + env(safe-area-inset-bottom))" }}>
 
         {/* 오늘 같은 날 */}
         {onThisDayEntries.length > 0 && filter === "all" && !isSample && (
           <div style={{
             marginBottom: 32,
-            background: "rgba(212,165,116,0.06)",
-            border: "1px solid rgba(212,165,116,0.18)",
+            background: "rgba(var(--accent-rgb), 0.05)",
+            border: "1px solid rgba(var(--accent-rgb), 0.15)",
             borderRadius: 10,
             padding: "14px 16px",
           }}>
@@ -211,7 +211,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                 }} />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {dayEntries.map((entry) => (
                   <DiaryEntryCard
                     key={entry.id}
