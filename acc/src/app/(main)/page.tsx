@@ -12,6 +12,7 @@ import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
 import HomeWatchlistSection from "@/components/home/HomeWatchlistSection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
+import HomeDiaryBanner from "@/components/home/HomeDiaryBanner";
 
 async function getTotalCount() {
   const { count } = await supabaseServer
@@ -339,6 +340,7 @@ export default async function HomePage() {
 
         {/* 메인 섹션 */}
         <div style={{ ...containerStyle, padding: "28px 24px calc(80px + env(safe-area-inset-bottom))" }}>
+          <HomeDiaryBanner />
           <div className="sm:grid sm:grid-cols-2 sm:gap-6">
             {/* 오늘의 인연 */}
             <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">

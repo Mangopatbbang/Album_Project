@@ -82,72 +82,97 @@ export default function DiaryPage() {
     <>
       <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
-        {/* 탭 바 */}
-        <nav style={{
-          position: "sticky", top: 52, zIndex: 40,
-          backgroundColor: "rgba(28,25,23,0.92)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--border)",
-        }}>
+        {/* 페이지 타이틀 + 탭 */}
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 24px 0" }}>
+          {/* 상단: 제목 + 기록 버튼 */}
           <div style={{
-            maxWidth: 600, margin: "0 auto", padding: "0 20px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
+            display: "flex", alignItems: "flex-start",
+            justifyContent: "space-between", marginBottom: 20,
           }}>
-            <div style={{ display: "flex" }}>
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: "0 12px", height: 44,
-                    background: "none", border: "none",
-                    borderBottom: `2px solid ${activeTab === tab.id ? "var(--accent)" : "transparent"}`,
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontWeight: activeTab === tab.id ? 700 : 400,
-                    color: activeTab === tab.id ? "var(--accent)" : "var(--text-muted)",
-                    transition: "all 0.12s",
-                    letterSpacing: activeTab === tab.id ? "-0.01em" : "0",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div>
+              <p style={{
+                color: "rgba(212,165,116,0.55)", fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 7,
+              }}>
+                Private
+              </p>
+              <h1 style={{
+                color: "var(--text)", fontSize: 26, fontWeight: 800,
+                letterSpacing: "-0.04em", lineHeight: 1,
+              }}>
+                청음일기
+              </h1>
+              {!isSample && entries.length > 0 && (
+                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 6 }}>
+                  {entries.length}개의 기록
+                </p>
+              )}
             </div>
 
             <button
               onClick={openNewEntry}
               style={{
-                display: "flex", alignItems: "center", gap: 4,
-                backgroundColor: "rgba(var(--accent-rgb), 0.14)",
-                border: "1px solid rgba(var(--accent-rgb), 0.32)",
-                borderRadius: 7, padding: "5px 12px",
-                color: "var(--accent)", fontSize: 11, fontWeight: 700,
-                cursor: "pointer", letterSpacing: "-0.01em",
+                display: "flex", alignItems: "center", gap: 5,
+                backgroundColor: "var(--accent)",
+                border: "none", borderRadius: 8,
+                padding: "8px 16px", marginTop: 4,
+                color: "#1C1917", fontSize: 12, fontWeight: 700,
+                cursor: "pointer",
               }}
             >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>✎</span> 기록
+              <span style={{ fontSize: 14, lineHeight: 1 }}>✎</span> 기록
             </button>
           </div>
-        </nav>
 
-        {/* 예시 배너 */}
-        {isSample && (
-          <div style={{ maxWidth: 600, margin: "0 auto", padding: "14px 24px 0" }}>
+          {/* 탭 pills */}
+          <div style={{ display: "flex", gap: 5 }}>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 20,
+                  border: activeTab === tab.id
+                    ? "none"
+                    : "1px solid var(--border)",
+                  backgroundColor: activeTab === tab.id
+                    ? "var(--accent)"
+                    : "transparent",
+                  color: activeTab === tab.id ? "#1C1917" : "var(--text-muted)",
+                  fontSize: 12,
+                  fontWeight: activeTab === tab.id ? 700 : 400,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 예시 배너 */}
+          {isSample && (
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
-              backgroundColor: "rgba(212,165,116,0.06)",
-              border: "1px solid rgba(212,165,116,0.2)",
-              borderRadius: 8, padding: "9px 14px",
+              marginTop: 16,
+              backgroundColor: "rgba(212,165,116,0.05)",
+              border: "1px solid rgba(212,165,116,0.15)",
+              borderRadius: 7, padding: "8px 12px",
             }}>
-              <span style={{ color: "var(--accent)", fontSize: 12, flexShrink: 0 }}>✦</span>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, lineHeight: 1.5 }}>
-                아래는 예시 기록입니다. 첫 기록을 남겨보세요.
+              <span style={{ color: "var(--accent)", fontSize: 11, flexShrink: 0, opacity: 0.7 }}>✦</span>
+              <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                예시 기록입니다. 첫 기록을 남겨보세요.
               </p>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* 구분선 */}
+          <div style={{
+            marginTop: 20, height: 1,
+            background: "linear-gradient(90deg, rgba(212,165,116,0.3) 0%, var(--border) 25%, transparent 100%)",
+          }} />
+        </div>
 
         {/* 탭 콘텐츠 */}
         {activeTab === "records" && (
