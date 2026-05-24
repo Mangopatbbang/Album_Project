@@ -12,6 +12,22 @@ type Props = {
 
 const NOTE_LIMIT = 160;
 
+const TAG_COLORS = [
+  { bg: "rgba(196,170,124,0.1)",  border: "rgba(196,170,124,0.3)",  text: "#C4AA7C" }, // gold
+  { bg: "rgba(180,120,120,0.1)",  border: "rgba(180,120,120,0.3)",  text: "#C48888" }, // rose
+  { bg: "rgba(115,155,135,0.1)",  border: "rgba(115,155,135,0.3)",  text: "#7AAE96" }, // sage
+  { bg: "rgba(115,135,185,0.1)",  border: "rgba(115,135,185,0.3)",  text: "#8096C8" }, // slate
+  { bg: "rgba(190,130,90,0.1)",   border: "rgba(190,130,90,0.3)",   text: "#C48855" }, // terracotta
+  { bg: "rgba(148,128,185,0.1)",  border: "rgba(148,128,185,0.3)",  text: "#9E88C4" }, // lavender
+  { bg: "rgba(90,162,158,0.1)",   border: "rgba(90,162,158,0.3)",   text: "#5AA8A4" }, // teal
+];
+
+function tagColor(tag: string) {
+  let h = 0;
+  for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) & 0xffff;
+  return TAG_COLORS[h % TAG_COLORS.length];
+}
+
 export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample }: Props) {
   const [noteExpanded, setNoteExpanded] = useState(false);
   const [imageExpanded, setImageExpanded] = useState(false);
@@ -181,17 +197,20 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
         {/* 태그 */}
         {entry.context && entry.context.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 10 }}>
-            {entry.context.map((tag) => (
-              <span key={tag} style={{
-                padding: "3px 9px", borderRadius: 20,
-                backgroundColor: "rgba(var(--accent-rgb), 0.07)",
-                border: "1px solid rgba(var(--accent-rgb), 0.18)",
-                color: "var(--text-muted)", fontSize: 10,
-                letterSpacing: "0.01em",
-              }}>
-                #{tag}
-              </span>
-            ))}
+            {entry.context.map((tag) => {
+              const c = tagColor(tag);
+              return (
+                <span key={tag} style={{
+                  padding: "3px 9px", borderRadius: 20,
+                  backgroundColor: c.bg,
+                  border: `1px solid ${c.border}`,
+                  color: c.text,
+                  fontSize: 10, letterSpacing: "0.02em",
+                }}>
+                  #{tag}
+                </span>
+              );
+            })}
           </div>
         )}
       </div>
