@@ -64,9 +64,13 @@ export default function DiaryPage() {
   useEffect(() => {
     if (!isSample) return;
     supabase.from("albums").select("id, title, artist, cover_url")
-      .not("cover_url", "is", null).order("id").limit(5)
+      .not("cover_url", "is", null)
+      .neq("cover_url", "")
+      .order("id", { ascending: false })
+      .limit(20)
       .then(({ data }) => {
-        if (!data?.length) return;
+        const validAlbums = (data ?? []).filter((a) => a.cover_url);
+        if (!validAlbums.length) return;
         const NOTES: (string | null)[] = [
           "생각보다 훨씬 좋다.",
           "한 번에 다 듣진 못했다. 나중에 다시.",
@@ -82,7 +86,7 @@ export default function DiaryPage() {
           ["출퇴근", "반복 청취"],
         ];
         const DAYS_AGO = [0, 1, 2, 14, 35];
-        setSampleEntries(data.slice(0, 5).map((album, i) => ({
+        setSampleEntries(validAlbums.slice(0, 5).map((album, i) => ({
           id: `sample-${i}`,
           listened_at: new Date(Date.now() + 9 * 3600000 - DAYS_AGO[i] * 86400000).toISOString().slice(0, 10),
           note: NOTES[i] ?? null,
