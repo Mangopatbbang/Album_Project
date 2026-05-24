@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { validateAdmin } from "@/lib/validateAdmin";
 
+async function fetchAll<T>(
+  queryFn: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  pageSize = 1000
+): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryFn(from, from + pageSize - 1);
+    if (error || !data?.length) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 export async function GET(req: NextRequest) {
   if (!(await validateAdmin(req))) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
@@ -15,41 +31,38 @@ export async function GET(req: NextRequest) {
   const todayKSTMidnight = Math.floor((Date.now() + kstOffset) / 86400000) * 86400000 - kstOffset;
   const todayISO = new Date(todayKSTMidnight).toISOString();
 
-  const [usersRes, ratingsRes, activityRes, eventsRes, searchRes, albumVisitsRes, watchlistRes, albumsRes] = await Promise.all([
+  const [usersRes, totalRatingsRes, activityRes, searchRes, watchlistRes, albumsRes] = await Promise.all([
     supabaseServer.from("users").select("id, display_name, avatar_url, role").limit(500),
-    // count: "exact" → SQL COUNT(*) 로 실행, Supabase max_rows(1000) 한도 무관하게 정확한 수 반환
-    supabaseServer.from("ratings").select("user_id, score, updated_at", { count: "exact" }).limit(1000),
+    supabaseServer.from("ratings").select("*", { count: "exact", head: true }),
     supabaseServer.from("activity_logs")
       .select("user_id, action, created_at")
       .in("action", ["rating_set", "rating_delete"])
       .gte("created_at", weekAgo)
-      .limit(1000),
-    supabaseServer.from("events").select("type, path, data, device, created_at, user_id", { count: "exact" }).gte("created_at", since).limit(1000),
+      .limit(5000),
     supabaseServer.from("search_logs").select("query, results_count, created_at").gte("created_at", since).limit(500),
-    supabaseServer.from("album_visits").select("album_id, created_at", { count: "exact" }).gte("created_at", since).limit(1000),
-    supabaseServer.from("watchlist").select("album_id", { count: "exact" }).limit(1000),
-    supabaseServer.from("albums").select("id, title, artist, cover_url").limit(1000),
+    supabaseServer.from("watchlist").select("album_id", { count: "exact" }).limit(2000),
+    supabaseServer.from("albums").select("id, title, artist, cover_url").limit(2000),
+  ]);
+
+  const [ratings, events, albumVisits] = await Promise.all([
+    fetchAll<{ user_id: string; score: number; updated_at: string }>((from, to) =>
+      supabaseServer.from("ratings").select("user_id, score, updated_at").range(from, to)
+    ),
+    fetchAll<{ type: string; path: string | null; data: Record<string, unknown>; device: string | null; created_at: string; user_id: string | null }>((from, to) =>
+      supabaseServer.from("events").select("type, path, data, device, created_at, user_id").gte("created_at", since).range(from, to)
+    ),
+    fetchAll<{ album_id: string; created_at: string }>((from, to) =>
+      supabaseServer.from("album_visits").select("album_id, created_at").gte("created_at", since).range(from, to)
+    ),
   ]);
 
   const users = usersRes.data ?? [];
-  const ratings = ratingsRes.data ?? [];
-  const totalRatingsCount = ratingsRes.count ?? ratings.length;
+  const totalRatingsCount = totalRatingsRes.count ?? ratings.length;
   const activityLogs = activityRes.data ?? [];
-  const events = eventsRes.data ?? [];
-  const totalEventsCount = eventsRes.count ?? events.length;
   const searchLogs = searchRes.data ?? [];
-  const albumVisits = albumVisitsRes.data ?? [];
-  const totalVisitsCount = albumVisitsRes.count ?? albumVisits.length;
   const watchlistItems = watchlistRes.data ?? [];
-  const totalWatchlistCount = watchlistRes.count ?? watchlistItems.length;
   const albums = albumsRes.data ?? [];
   const albumMap = new Map(albums.map((a) => [a.id, a]));
-
-  // 데이터 절삭 감지 — limit을 초과하면 집계가 부정확할 수 있음
-  const truncated: string[] = [];
-  if (ratings.length >= 1000 && totalRatingsCount > 1000) truncated.push(`ratings(${totalRatingsCount})`);
-  if (events.length >= 1000 && totalEventsCount > 1000) truncated.push(`events(${totalEventsCount})`);
-  if (albumVisits.length >= 1000 && totalVisitsCount > 1000) truncated.push(`album_visits(${totalVisitsCount})`);
 
   // ── 멤버 활동
   // activity_logs(7일 이내) + ratings.created_at(7일 이내) 둘 다 체크해서 더 많은 쪽 사용
@@ -148,6 +161,5 @@ export async function GET(req: NextRequest) {
     top_albums: topAlbums,
     top_watchlist: topWatchlist,
     device: { mobile, desktop },
-    ...(truncated.length > 0 ? { truncated_warning: `집계 데이터 절삭됨: ${truncated.join(", ")} — 페이지네이션 필요` } : {}),
   });
 }
