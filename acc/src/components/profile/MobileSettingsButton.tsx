@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { captureElement } from "@/lib/capture";
+import { apiFetch } from "@/lib/apiFetch";
+import { useRouter } from "next/navigation";
 import ProfileEditButton from "./ProfileEditButton";
 
 type Props = {
@@ -15,9 +17,12 @@ type Props = {
 
 export default function MobileSettingsButton({ userId, initialDisplayName, initialEmoji, initialAvatarUrl, initialBio }: Props) {
   const { profile, signOut } = useAuth();
+  const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!profile || profile.id !== userId) return null;
 
@@ -38,6 +43,20 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
   const handleLogout = () => {
     setSheetOpen(false);
     signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await apiFetch("/api/users", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      await signOut();
+      router.replace("/login");
+    } catch {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
   };
 
   return (
@@ -120,12 +139,73 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
               style={{
                 display: "flex", alignItems: "center",
                 width: "100%", padding: "16px 20px",
-                background: "none", border: "none",
+                background: "none", border: "none", borderBottom: "1px solid var(--border)",
                 cursor: "pointer", color: "#e05050", fontSize: 15, textAlign: "left",
               }}
             >
               로그아웃
             </button>
+
+            <button
+              onClick={() => { setSheetOpen(false); setDeleteConfirm(true); }}
+              style={{
+                display: "flex", alignItems: "center",
+                width: "100%", padding: "14px 20px",
+                background: "none", border: "none",
+                cursor: "pointer", color: "var(--text-muted)", fontSize: 13, textAlign: "left",
+              }}
+            >
+              계정 탈퇴
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 계정 탈퇴 확인 다이얼로그 */}
+      {deleteConfirm && (
+        <div
+          onClick={() => !deleting && setDeleteConfirm(false)}
+          style={{
+            position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
+            zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: 14, padding: "28px 24px", maxWidth: 340, width: "100%",
+              animation: "modalIn 0.18s ease-out",
+            }}
+          >
+            <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text)", marginBottom: 10 }}>정말 탈퇴하시겠어요?</p>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 24 }}>
+              탈퇴하면 모든 청음 기록, 소감, 평점이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                disabled={deleting}
+                style={{
+                  backgroundColor: "transparent", border: "1px solid var(--border)",
+                  color: "var(--text)", borderRadius: 6, padding: "8px 18px", fontSize: 13, cursor: "pointer",
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                style={{
+                  backgroundColor: "#e05050", border: "none",
+                  color: "#fff", borderRadius: 6, padding: "8px 18px", fontSize: 13, fontWeight: 600,
+                  cursor: deleting ? "not-allowed" : "pointer",
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? "처리 중..." : "탈퇴하기"}
+              </button>
+            </div>
           </div>
         </div>
       )}

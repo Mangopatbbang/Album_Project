@@ -10,6 +10,8 @@ import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
+import HomeWatchlistSection from "@/components/home/HomeWatchlistSection";
+import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
 
 async function getTotalCount() {
   const { count } = await supabaseServer
@@ -148,6 +150,78 @@ async function getRecentFeed(): Promise<FeedItem[]> {
   }));
 }
 
+async function getControversialAlbums(): Promise<ControversialItem[]> {
+  const { data } = await supabaseServer
+    .from("ratings")
+    .select("album_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)");
+  if (!data) return [];
+
+  type RatingRow = {
+    album_id: string;
+    score: number;
+    one_line_review: string | null;
+    albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
+  };
+  const rows = data as unknown as RatingRow[];
+
+  const grouped = new Map<string, {
+    scores: number[];
+    reviews: { score: number; review: string | null }[];
+    album: RatingRow["albums"];
+  }>();
+
+  for (const row of rows) {
+    if (!row.albums) continue;
+    const entry = grouped.get(row.album_id);
+    if (entry) {
+      entry.scores.push(row.score);
+      entry.reviews.push({ score: row.score, review: row.one_line_review });
+    } else {
+      grouped.set(row.album_id, {
+        scores: [row.score],
+        reviews: [{ score: row.score, review: row.one_line_review }],
+        album: row.albums,
+      });
+    }
+  }
+
+  const results: Omit<ControversialItem, "album_artist_display">[] = [];
+  for (const [album_id, { scores, reviews, album }] of grouped) {
+    if (scores.length < 2 || !album) continue;
+    const min = Math.min(...scores);
+    const max = Math.max(...scores);
+    const variance = max - min;
+    if (variance < 2) continue;
+    const highReview = reviews.find((r) => r.score === max && r.review)?.review ?? null;
+    const lowReview = reviews.find((r) => r.score === min && r.review)?.review ?? null;
+    results.push({
+      album_id,
+      album_title: album.title,
+      album_artist: album.artist,
+      album_cover_url: album.cover_url,
+      min_score: min,
+      max_score: max,
+      variance,
+      rating_count: scores.length,
+      high_review: highReview,
+      low_review: lowReview,
+    });
+  }
+
+  results.sort((a, b) => b.variance - a.variance || b.rating_count - a.rating_count);
+  const top = results.slice(0, 3);
+
+  if (top.length === 0) return [];
+  const albumObjs = top.map((r) => ({ id: r.album_id, artist: r.album_artist, use_artist_variant: false }));
+  const resolved = await resolveArtistDisplay(albumObjs);
+  const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+
+  return top.map((r) => ({
+    ...r,
+    album_artist_display: displayMap.get(r.album_id) ?? r.album_artist,
+  }));
+}
+
 const containerStyle = {
   width: "100%",
   maxWidth: "1100px",
@@ -162,6 +236,7 @@ export default async function HomePage() {
     recentFeedRaw,
     tickerItemsRaw,
     avatarMap,
+    controversialAlbums,
   ] = await Promise.all([
     getTotalCount(),
     getRatingsCount(),
@@ -169,6 +244,7 @@ export default async function HomePage() {
     getRecentFeed(),
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
+    getControversialAlbums(),
   ]);
 
   const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
@@ -299,6 +375,24 @@ export default async function HomePage() {
               }}>
                 <HomeRecentFeed items={feedItems} />
               </div>
+            </div>
+          </div>
+
+          {/* Row 2: 나중에 들을 앨범 + 갑론을박 */}
+          <div className="sm:grid sm:grid-cols-2 sm:gap-6" style={{ marginTop: 24 }}>
+            {/* 나중에 들을 앨범 */}
+            <div className="mb-8 sm:mb-0" style={{ display: "flex", flexDirection: "column" }}>
+              <HomeWatchlistSection />
+            </div>
+
+            {/* 갑론을박 */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em" }}>
+                  갑론을박
+                </h2>
+              </div>
+              <HomeControversialSection items={controversialAlbums} />
             </div>
           </div>
 

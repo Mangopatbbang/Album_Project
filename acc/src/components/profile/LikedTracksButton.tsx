@@ -8,6 +8,8 @@ import type { AlbumWithRatings } from "@/types";
 
 type SortKey = "album" | "artist";
 
+function normalize(s: string) { return s.toLowerCase(); }
+
 function sortGroups(
   groups: { albumId: string; albumTitle: string; artistDisplay: string; coverUrl: string | null; tracks: { index: number; name: string }[] }[],
   sort: SortKey
@@ -24,6 +26,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [sort, setSort] = useState<SortKey>("album");
+  const [query, setQuery] = useState("");
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
@@ -71,7 +74,17 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
       map.get(it.albumId)!.tracks.push({ index: it.trackIndex, name: it.trackName });
     }
   }
-  const grouped = sortGroups(rawGrouped, sort);
+  const q = normalize(query.trim());
+  const grouped = sortGroups(
+    q
+      ? rawGrouped.filter((g) =>
+          normalize(g.albumTitle).includes(q) ||
+          normalize(g.artistDisplay).includes(q) ||
+          g.tracks.some((t) => normalize(t.name).includes(q))
+        )
+      : rawGrouped,
+    sort
+  );
   const totalCount = items?.length ?? 0;
 
   const SORTS: { key: SortKey; label: string }[] = [
@@ -110,7 +123,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
         >
           <div style={{
             backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-            borderRadius: 14, width: "min(560px, 100%)", maxHeight: "85dvh",
+            borderRadius: 14, width: "min(720px, 100%)", maxHeight: "85dvh",
             display: "flex", flexDirection: "column", overflow: "hidden",
           }}>
             {/* 헤더 */}
@@ -156,6 +169,22 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
               </div>
             </div>
 
+            {/* 검색 */}
+            <div style={{ padding: "10px 20px 0", flexShrink: 0 }}>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="제목·아티스트·트랙 검색"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                  borderRadius: 8, padding: "8px 12px", fontSize: 13,
+                  color: "var(--text)", outline: "none",
+                }}
+              />
+            </div>
+
             {/* 본문 */}
             <div style={{ overflowY: "auto", flex: 1, padding: "12px 0" }}>
               {loading ? (
@@ -169,6 +198,10 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
               ) : !items || items.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
                   아직 좋아요 누른 곡이 없어요
+                </div>
+              ) : grouped.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
+                  검색 결과가 없어요
                 </div>
               ) : (
                 grouped.map((group) => (

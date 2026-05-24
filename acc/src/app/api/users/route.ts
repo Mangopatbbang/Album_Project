@@ -97,6 +97,49 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true, user: data });
 }
 
+// DELETE /api/users — 계정 탈퇴 (본인 데이터 전체 삭제 + Auth 삭제)
+export async function DELETE(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const { data: user } = await supabaseServer
+    .from("users")
+    .select("auth_id")
+    .eq("id", authed.id)
+    .single();
+
+  if (!user?.auth_id) {
+    return NextResponse.json({ error: "사용자를 찾을 수 없습니다" }, { status: 404 });
+  }
+
+  // 플레이리스트 항목 먼저 삭제 (FK 순서)
+  const { data: playlists } = await supabaseServer
+    .from("playlists")
+    .select("id")
+    .eq("user_id", authed.id);
+  if (playlists && playlists.length > 0) {
+    await supabaseServer
+      .from("playlist_entries")
+      .delete()
+      .in("playlist_id", playlists.map((p) => p.id));
+  }
+
+  await supabaseServer.from("playlists").delete().eq("user_id", authed.id);
+  await supabaseServer.from("ratings").delete().eq("user_id", authed.id);
+  await supabaseServer.from("listening_logs").delete().eq("user_id", authed.id);
+  // 알림 (존재하는 경우)
+  try { await supabaseServer.from("notifications").delete().or(`user_id.eq.${authed.id},target_user_id.eq.${authed.id}`); } catch { /* ignore if table doesn't exist */ }
+
+  await supabaseServer.from("users").delete().eq("id", authed.id);
+
+  const { error: authError } = await supabaseServer.auth.admin.deleteUser(user.auth_id);
+  if (authError) {
+    return NextResponse.json({ error: "Auth 삭제 실패: " + authError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
 // GET /api/users — 전체 유저 목록 반환 (authId 없을 때)
 // GET /api/users?authId=xxx — 특정 유저 프로필 조회
 export async function GET(req: NextRequest) {
