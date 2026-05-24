@@ -260,7 +260,7 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-
+      <HomeDiaryBanner />
 
       <main>
         {/* 히어로 */}
