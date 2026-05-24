@@ -90,24 +90,38 @@ const TAG_PRESETS: Record<string, TagStyle> = {
 };
 
 const FALLBACK_COLORS: Omit<TagStyle, "icon">[] = [
-  { bg: "rgba(196,170,124,0.1)", border: "rgba(196,170,124,0.3)", text: "#C4AA7C" },
-  { bg: "rgba(180,120,120,0.1)", border: "rgba(180,120,120,0.3)", text: "#C48888" },
-  { bg: "rgba(115,155,135,0.1)", border: "rgba(115,155,135,0.3)", text: "#7AAE96" },
-  { bg: "rgba(115,135,185,0.1)", border: "rgba(115,135,185,0.3)", text: "#8096C8" },
-  { bg: "rgba(190,130,90,0.1)",  border: "rgba(190,130,90,0.3)",  text: "#C48855" },
-  { bg: "rgba(148,128,185,0.1)", border: "rgba(148,128,185,0.3)", text: "#9E88C4" },
-  { bg: "rgba(90,162,158,0.1)",  border: "rgba(90,162,158,0.3)",  text: "#5AA8A4" },
-  { bg: "rgba(175,140,90,0.1)",  border: "rgba(175,140,90,0.3)",  text: "#B89050" },
-  { bg: "rgba(140,90,140,0.1)",  border: "rgba(140,90,140,0.3)",  text: "#A060A0" },
-  { bg: "rgba(80,150,140,0.1)",  border: "rgba(80,150,140,0.3)",  text: "#50A090" },
+  // 따뜻한 황금 — 포근함, 향수, 오래된 것
+  { bg: "rgba(196,170,100,0.1)", border: "rgba(196,170,100,0.28)", text: "#C4AA64" },
+  // 차가운 청회색 — 고요함, 집중, 이른 아침
+  { bg: "rgba(100,120,165,0.1)", border: "rgba(100,120,165,0.28)", text: "#7088B8" },
+  // 세이지 그린 — 자연, 산책, 맑은 공기
+  { bg: "rgba(100,150,115,0.1)", border: "rgba(100,150,115,0.28)", text: "#64A078" },
+  // 먼지 낀 로즈 — 감상, 부드러운 슬픔, 밤
+  { bg: "rgba(175,115,115,0.1)", border: "rgba(175,115,115,0.28)", text: "#C07878" },
+  // 테라코타 — 흙냄새, 오후, 따뜻한 실내
+  { bg: "rgba(185,120,80,0.1)",  border: "rgba(185,120,80,0.28)",  text: "#C08050" },
+  // 라벤더 — 몽환, 피로, 잠들기 전
+  { bg: "rgba(145,120,185,0.1)", border: "rgba(145,120,185,0.28)", text: "#9878C8" },
+  // 딥 틸 — 깊은 물, 고독, 몰입
+  { bg: "rgba(60,148,150,0.1)",  border: "rgba(60,148,150,0.28)",  text: "#3A9898" },
+  // 앰버 — 늦은 오후, 카페 창가, 따스한 빛
+  { bg: "rgba(200,150,60,0.1)",  border: "rgba(200,150,60,0.28)",  text: "#C89830" },
+  // 슬레이트 퍼플 — 사색, 심야, 혼자인 시간
+  { bg: "rgba(120,95,170,0.1)",  border: "rgba(120,95,170,0.28)",  text: "#8060B8" },
+  // 모스 그린 — 빈티지, 낡은 LP, 오래된 기억
+  { bg: "rgba(110,135,80,0.1)",  border: "rgba(110,135,80,0.28)",  text: "#789050" },
+  // 아이스 블루 — 겨울, 투명함, 정적
+  { bg: "rgba(90,155,185,0.1)",  border: "rgba(90,155,185,0.28)",  text: "#58A0C8" },
+  // 버건디 — 와인, 깊은 밤, 감정의 무게
+  { bg: "rgba(155,65,80,0.1)",   border: "rgba(155,65,80,0.28)",   text: "#A84050" },
 ];
 
-function getTagStyle(tag: string): TagStyle {
-  if (TAG_PRESETS[tag]) return TAG_PRESETS[tag];
+function getTagStyle(tag: string): TagStyle & { isPreset: boolean } {
+  if (TAG_PRESETS[tag]) return { ...TAG_PRESETS[tag], isPreset: true };
   let h = 0;
   for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) & 0xffff;
   const c = FALLBACK_COLORS[h % FALLBACK_COLORS.length];
-  return { icon: tag[0] ?? "•", ...c };
+  return { icon: "", ...c, isPreset: false };
 }
 
 export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample }: Props) {
@@ -281,19 +295,18 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 10 }}>
             {entry.context.map((tag) => {
               const s = getTagStyle(tag);
-              const isPreset = !!TAG_PRESETS[tag];
               return (
                 <span key={tag} style={{
-                  display: "inline-flex", alignItems: "center", gap: 4,
+                  display: "inline-flex", alignItems: "center", gap: s.isPreset ? 4 : 0,
                   padding: "3px 9px", borderRadius: 20,
                   backgroundColor: s.bg,
                   border: `1px solid ${s.border}`,
                   color: s.text,
                   fontSize: 10, letterSpacing: "0.02em",
                 }}>
-                  <span style={{ fontSize: isPreset ? 10 : 9, lineHeight: 1, opacity: isPreset ? 1 : 0.7 }}>
-                    {s.icon}
-                  </span>
+                  {s.isPreset && (
+                    <span style={{ fontSize: 10, lineHeight: 1 }}>{s.icon}</span>
+                  )}
                   #{tag}
                 </span>
               );
