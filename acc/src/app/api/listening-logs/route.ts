@@ -12,13 +12,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "userId 필수" }, { status: 400 });
   }
 
+  const limitParam = searchParams.get("limit");
+  const limit = albumId ? 200 : Math.min(parseInt(limitParam ?? "100") || 100, 1000);
+
   let query = supabaseServer
     .from("listening_logs")
     .select("id, listened_at, context, note, image_url, relistened, created_at, albums(id, title, artist, cover_url)")
     .eq("user_id", userId)
     .order("listened_at", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(albumId ? 200 : 100);
+    .limit(limit);
 
   if (albumId) query = query.eq("album_id", albumId);
 
