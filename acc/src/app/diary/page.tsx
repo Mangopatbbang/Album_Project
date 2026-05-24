@@ -169,7 +169,7 @@ export default function DiaryPage() {
             }}>
               <span style={{ color: "var(--accent)", fontSize: 10, flexShrink: 0, opacity: 0.6 }}>✦</span>
               <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                예시 기록입니다. 첫 기록을 남겨보세요.
+                예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
               </p>
             </div>
           </div>
