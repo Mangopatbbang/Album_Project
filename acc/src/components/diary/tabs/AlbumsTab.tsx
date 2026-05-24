@@ -133,7 +133,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
       <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.06em", marginBottom: 16 }}>
         {albumGroups.length}장의 앨범
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+      <div className="grid grid-cols-3 sm:grid-cols-4" style={{ gap: 10 }}>
         {albumGroups.map((group) => (
           <div
             key={group.albumId}
