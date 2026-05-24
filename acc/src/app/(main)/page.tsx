@@ -277,11 +277,6 @@ export default async function HomePage() {
             <HeroLogoutButton />
           </div>
 
-          {/* 청음일기 바로가기 */}
-          <div style={{ position: "absolute", top: 18, left: 20 }}>
-            <HomeDiaryBanner />
-          </div>
-
           <p
             style={{
               color: "var(--text-muted)",
@@ -305,6 +300,11 @@ export default async function HomePage() {
           >
             아차청음사
           </h1>
+
+          {/* 청음일기 바로가기 버튼 */}
+          <div style={{ marginBottom: 24 }}>
+            <HomeDiaryBanner />
+          </div>
 
           {/* 통계 — 카드 없이 클린 타이포그래피 */}
           <div
