@@ -166,8 +166,8 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
           <div style={{ marginTop: 32 }}>
             <div style={{
               height: 1,
-              background: "linear-gradient(90deg, var(--accent) 0%, var(--border) 30%, transparent 100%)",
-              opacity: 0.4, marginBottom: 24,
+              background: "linear-gradient(90deg, rgba(138,45,36,0.6) 0%, rgba(43,34,24,0.18) 35%, transparent 100%)",
+              marginBottom: 24,
             }} />
             <p style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em", marginBottom: 24 }}>
               {selectedDate.slice(0, 4)}년 {parseInt(selectedDate.slice(5, 7))}월 {parseInt(selectedDate.slice(8, 10))}일

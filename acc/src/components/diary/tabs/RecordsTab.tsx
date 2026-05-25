@@ -110,10 +110,11 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
         {onThisDayEntries.length > 0 && filter === "all" && !isSample && (
           <div style={{
             marginBottom: 32,
-            background: "rgba(var(--accent-rgb), 0.05)",
-            border: "1px solid rgba(var(--accent-rgb), 0.15)",
-            borderRadius: 10,
+            background: "linear-gradient(150deg, #f7efdc 0%, #f0e8cc 100%)",
+            border: "1px solid rgba(138,45,36,0.2)",
+            borderRadius: 4,
             padding: "14px 16px",
+            boxShadow: "2px 3px 8px rgba(43,34,24,0.08)",
           }}>
             <p style={{
               color: "var(--accent)", fontSize: 10, fontWeight: 700,

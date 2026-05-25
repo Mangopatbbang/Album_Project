@@ -15,7 +15,6 @@ const lora = Lora({
 });
 
 const songMyung = Song_Myung({
-  subsets: ["latin"],
   weight: ["400"],
   variable: "--font-song",
 });

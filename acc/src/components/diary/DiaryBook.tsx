@@ -73,24 +73,22 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
 
   useEffect(() => {
     if (flipPhase !== "exit") return;
-    const t = setTimeout(() => { setVisibleTab(activeTab); setFlipPhase("enter"); }, 160);
+    const t = setTimeout(() => { setVisibleTab(activeTab); setFlipPhase("enter"); }, 140);
     return () => clearTimeout(t);
   }, [flipPhase, activeTab]);
 
   useEffect(() => {
     if (flipPhase !== "enter") return;
-    const t = setTimeout(() => setFlipPhase("idle"), 180);
+    const t = setTimeout(() => setFlipPhase("idle"), 190);
     return () => clearTimeout(t);
   }, [flipPhase]);
 
   const pageAnim =
     flipPhase === "exit"
-      ? (flipDir === 1 ? "pageExitFwd 0.16s ease-in forwards" : "pageExitBwd 0.16s ease-in forwards")
+      ? (flipDir === 1 ? "pageExitFwd 0.14s ease-in forwards" : "pageExitBwd 0.14s ease-in forwards")
       : flipPhase === "enter"
       ? (flipDir === 1 ? "pageEnterFwd 0.18s ease-out forwards" : "pageEnterBwd 0.18s ease-out forwards")
       : "none";
-
-  const pageOrigin = flipDir === 1 ? "left center" : "right center";
 
   const renderContent = () => {
     switch (visibleTab) {
@@ -119,20 +117,20 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           100% { opacity: 0; transform: scale(0.97); }
         }
         @keyframes pageExitFwd {
-          from { transform: scaleX(1);    filter: brightness(1); }
-          to   { transform: scaleX(0.01); filter: brightness(0.55); }
+          from { opacity: 1; transform: translateX(0)     scale(1);    filter: brightness(1); }
+          to   { opacity: 0; transform: translateX(-12%)  scale(0.96); filter: brightness(0.82); }
         }
         @keyframes pageEnterFwd {
-          from { transform: scaleX(0.01); filter: brightness(0.55); }
-          to   { transform: scaleX(1);    filter: brightness(1); }
+          from { opacity: 0; transform: translateX(12%)   scale(0.96); filter: brightness(0.82); }
+          to   { opacity: 1; transform: translateX(0)     scale(1);    filter: brightness(1); }
         }
         @keyframes pageExitBwd {
-          from { transform: scaleX(1);    filter: brightness(1); }
-          to   { transform: scaleX(0.01); filter: brightness(0.55); }
+          from { opacity: 1; transform: translateX(0)     scale(1);    filter: brightness(1); }
+          to   { opacity: 0; transform: translateX(12%)   scale(0.96); filter: brightness(0.82); }
         }
         @keyframes pageEnterBwd {
-          from { transform: scaleX(0.01); filter: brightness(0.55); }
-          to   { transform: scaleX(1);    filter: brightness(1); }
+          from { opacity: 0; transform: translateX(-12%)  scale(0.96); filter: brightness(0.82); }
+          to   { opacity: 1; transform: translateX(0)     scale(1);    filter: brightness(1); }
         }
       `}</style>
 
@@ -367,7 +365,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               {/* 스크롤 가능한 페이지 내용 */}
               <div style={{
                 flex: 1, overflowY: "auto", overflowX: "hidden",
-                animation: pageAnim, transformOrigin: pageOrigin,
+                animation: pageAnim,
                 position: "relative", zIndex: 1,
               }}>
                 {isSample && (

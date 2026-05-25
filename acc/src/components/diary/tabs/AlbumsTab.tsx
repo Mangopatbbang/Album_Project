@@ -77,9 +77,10 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
 
           <div style={{ display: "flex", gap: 14, marginBottom: 28, alignItems: "center" }}>
             <div style={{
-              width: 60, height: 60, borderRadius: 7,
+              width: 60, height: 60, borderRadius: 4,
               overflow: "hidden", flexShrink: 0,
-              border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)",
+              border: "1px solid rgba(43,34,24,0.22)", backgroundColor: "#e8ddb0",
+              boxShadow: "2px 2px 6px rgba(43,34,24,0.1)",
             }}>
               {selectedGroup.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -146,14 +147,21 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
               style={{
                 position: "relative",
                 aspectRatio: "1/1",
-                borderRadius: 8,
-                backgroundColor: "var(--bg-elevated)",
-                border: "1px solid var(--border)",
+                borderRadius: 3,
+                backgroundColor: "#e8ddb0",
+                border: "1px solid rgba(43,34,24,0.22)",
                 marginBottom: 6,
-                transition: "border-color 0.15s",
+                boxShadow: "2px 2px 6px rgba(43,34,24,0.1)",
+                transition: "border-color 0.15s, box-shadow 0.15s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(196,170,124,0.4)")}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(43,34,24,0.38)";
+                e.currentTarget.style.boxShadow = "3px 4px 12px rgba(43,34,24,0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(43,34,24,0.22)";
+                e.currentTarget.style.boxShadow = "2px 2px 6px rgba(43,34,24,0.1)";
+              }}
             >
               {group.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
