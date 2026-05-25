@@ -22,6 +22,7 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
   const [editOpen, setEditOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   if (!profile || profile.id !== userId) return null;
@@ -164,7 +165,7 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
       {/* 계정 탈퇴 확인 다이얼로그 */}
       {deleteConfirm && (
         <div
-          onClick={() => !deleting && setDeleteConfirm(false)}
+          onClick={() => { if (!deleting) { setDeleteConfirm(false); setDeleteInput(""); } }}
           style={{
             position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
             zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
@@ -179,12 +180,29 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
             }}
           >
             <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text)", marginBottom: 10 }}>정말 탈퇴하시겠어요?</p>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 24 }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 20 }}>
               탈퇴하면 모든 청음 기록, 소감, 평점이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
             </p>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+              계속하려면 아래에 <span style={{ color: "var(--text)", fontWeight: 600 }}>탈퇴합니다</span>를 입력하세요.
+            </p>
+            <input
+              type="text"
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder="탈퇴합니다"
+              disabled={deleting}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                backgroundColor: "var(--bg)", border: "1px solid var(--border)",
+                borderRadius: 6, padding: "8px 12px",
+                color: "var(--text)", fontSize: 13,
+                marginBottom: 20, outline: "none",
+              }}
+            />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
-                onClick={() => setDeleteConfirm(false)}
+                onClick={() => { setDeleteConfirm(false); setDeleteInput(""); }}
                 disabled={deleting}
                 style={{
                   backgroundColor: "transparent", border: "1px solid var(--border)",
@@ -195,12 +213,13 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={deleting}
+                disabled={deleting || deleteInput !== "탈퇴합니다"}
                 style={{
                   backgroundColor: "#e05050", border: "none",
                   color: "#fff", borderRadius: 6, padding: "8px 18px", fontSize: 13, fontWeight: 600,
-                  cursor: deleting ? "not-allowed" : "pointer",
-                  opacity: deleting ? 0.6 : 1,
+                  cursor: (deleting || deleteInput !== "탈퇴합니다") ? "not-allowed" : "pointer",
+                  opacity: (deleting || deleteInput !== "탈퇴합니다") ? 0.4 : 1,
+                  transition: "opacity 0.15s",
                 }}
               >
                 {deleting ? "처리 중..." : "탈퇴하기"}
