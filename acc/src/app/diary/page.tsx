@@ -7,19 +7,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { DiaryEntry } from "@/types/diary";
 import { SAMPLE_DIARY_ENTRIES } from "@/lib/diarySampleData";
 import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
-import RecordsTab from "@/components/diary/tabs/RecordsTab";
-import CalendarTab from "@/components/diary/tabs/CalendarTab";
-import AlbumsTab from "@/components/diary/tabs/AlbumsTab";
-import StatsTab from "@/components/diary/tabs/StatsTab";
-
-type Tab = "records" | "calendar" | "albums" | "stats";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "records", label: "기록" },
-  { id: "calendar", label: "캘린더" },
-  { id: "albums", label: "앨범별" },
-  { id: "stats", label: "통계" },
-];
+import DiaryBook from "@/components/diary/DiaryBook";
 
 function getRecentTags(entries: DiaryEntry[]): string[] {
   const freq = new Map<string, number>();
@@ -34,9 +22,9 @@ export default function DiaryPage() {
   const router = useRouter();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("records");
   const [showModal, setShowModal] = useState(false);
   const [editEntry, setEditEntry] = useState<DiaryEntry | null>(null);
+
   const fetchEntries = useCallback(async () => {
     if (!authUser) return;
     setLoading(true);
@@ -57,7 +45,6 @@ export default function DiaryPage() {
   }, [authUser, router, fetchEntries]);
 
   const isSample = !loading && entries.length === 0;
-
   const displayEntries = isSample ? SAMPLE_DIARY_ENTRIES : entries;
   const recentTags = useMemo(() => getRecentTags(entries), [entries]);
 
@@ -80,165 +67,14 @@ export default function DiaryPage() {
 
   return (
     <>
-      <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-
-        {/* 페이지 헤더 */}
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "16px 20px 0" }}>
-          <div style={{
-            display: "flex", alignItems: "center",
-            justifyContent: "space-between", marginBottom: 12,
-          }}>
-            {/* 제목 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 3, height: 22, borderRadius: 2,
-                backgroundColor: "var(--accent)", opacity: 0.7, flexShrink: 0,
-              }} />
-              <div>
-                <h1 style={{
-                  color: "var(--text)", fontSize: 20, fontWeight: 700,
-                  letterSpacing: "-0.03em", lineHeight: 1,
-                }}>
-                  청음일기
-                </h1>
-                <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 4, letterSpacing: "0.04em" }}>
-                  {!isSample && entries.length > 0 ? `${entries.length}개의 기록` : "PRIVATE"}
-                </p>
-              </div>
-            </div>
-
-            {/* 기록 버튼 — 데스크탑만 */}
-            <button
-              onClick={openNewEntry}
-              className="hidden sm:flex active:scale-[0.95]"
-              style={{
-                alignItems: "center", gap: 5,
-                backgroundColor: "var(--accent)",
-                border: "none", borderRadius: 8,
-                padding: "8px 15px",
-                color: "#1C1917", fontSize: 12, fontWeight: 700,
-                cursor: "pointer", letterSpacing: "-0.01em",
-                transition: "opacity 0.12s, transform 0.12s",
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>✎</span> 기록
-            </button>
-          </div>
-        </div>
-
-        {/* 탭 바 — 전체 너비 언더라인 스타일 */}
-        <div style={{
-          display: "flex",
-          borderBottom: "1px solid var(--border)",
-          marginTop: 4,
-        }}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1,
-                padding: "14px 0",
-                background: "none",
-                border: "none",
-                borderBottom: activeTab === tab.id
-                  ? "2px solid var(--accent)"
-                  : "2px solid transparent",
-                color: activeTab === tab.id ? "var(--text)" : "var(--text-muted)",
-                fontSize: 13,
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                cursor: "pointer",
-                marginBottom: -1,
-                transition: "color 0.15s",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 예시 배너 — 모든 탭에 공통 표시 */}
-        {isSample && (
-          <div style={{ maxWidth: 680, margin: "0 auto", padding: "10px 20px 0" }}>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              backgroundColor: "rgba(var(--accent-rgb), 0.05)",
-              border: "1px solid rgba(var(--accent-rgb), 0.15)",
-              borderRadius: 8, padding: "8px 12px",
-            }}>
-              <span style={{ color: "var(--accent)", fontSize: 10, flexShrink: 0, opacity: 0.6 }}>✦</span>
-              <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
-                예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 탭 콘텐츠 */}
-        {activeTab === "records" && (
-          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
-            <RecordsTab
-              entries={displayEntries}
-              loading={loading}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onNewEntry={openNewEntry}
-              isSample={isSample}
-            />
-          </div>
-        )}
-        {activeTab === "calendar" && (
-          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
-            <CalendarTab
-              entries={displayEntries}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              isSample={isSample}
-            />
-          </div>
-        )}
-        {activeTab === "albums" && (
-          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
-            <AlbumsTab
-              entries={displayEntries}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              isSample={isSample}
-            />
-          </div>
-        )}
-        {activeTab === "stats" && (
-          <div style={{ animation: "fadeUp 0.18s ease-out" }}>
-            <StatsTab entries={displayEntries} />
-          </div>
-        )}
-      </div>
-
-      {/* 모바일 FAB — 새 기록 */}
-      <button
-        onClick={openNewEntry}
-        className="sm:hidden active:scale-[0.92]"
-        style={{
-          position: "fixed",
-          bottom: "calc(60px + env(safe-area-inset-bottom) + 16px)",
-          right: 16,
-          zIndex: 45,
-          width: 50, height: 50,
-          borderRadius: "50%",
-          backgroundColor: "var(--accent)",
-          border: "none",
-          color: "#1C1917",
-          fontSize: 20,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
-          transition: "transform 0.12s, opacity 0.12s",
-        }}
-        aria-label="새 기록"
-      >
-        ✎
-      </button>
+      <DiaryBook
+        displayEntries={displayEntries}
+        loading={loading}
+        isSample={isSample}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onNewEntry={openNewEntry}
+      />
 
       {showModal && (
         <DiaryEntryModal
