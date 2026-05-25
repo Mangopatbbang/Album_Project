@@ -18,15 +18,15 @@ export default function DiaryHeader() {
       {/* 배경 온기 — 고정 레이어 */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "radial-gradient(ellipse 80% 50% at 15% 0%, rgba(180,140,60,0.05) 0%, transparent 60%)",
+        background: "radial-gradient(ellipse 80% 50% at 15% 0%, rgba(var(--accent-rgb, 138,45,36), 0.04) 0%, transparent 60%)",
       }} />
 
       <header style={{
         position: "sticky", top: 0, zIndex: 50,
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        borderBottom: "1px solid var(--border)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        backgroundColor: "rgba(var(--bg-rgb, 14,14,14), 0.85)",
+        backgroundColor: "rgba(var(--bg-rgb, 14,14,14), 0.88)",
       }}>
         <div style={{
           padding: "0 20px",
@@ -35,7 +35,7 @@ export default function DiaryHeader() {
           alignItems: "center",
           justifyContent: "space-between",
         }}>
-          {/* 뒤로가기 — 데스크탑만 */}
+          {/* 돌아가기 — 데스크탑만 */}
           <button
             onClick={handleBack}
             className="hidden sm:flex"
@@ -60,17 +60,24 @@ export default function DiaryHeader() {
             position: "absolute", left: "50%", transform: "translateX(-50%)",
             color: "var(--text)", fontSize: 13, fontWeight: 700,
             letterSpacing: "-0.02em", pointerEvents: "none",
+            fontFamily: "var(--font-song, serif)",
           }}>
             청음일기
           </p>
 
-          {/* PRIVATE 뱃지 */}
+          {/* 私記 인장 뱃지 */}
           <span style={{
-            fontSize: 9, fontWeight: 700,
-            color: "var(--text-muted)", letterSpacing: "0.12em",
-            opacity: 0.5,
+            display: "inline-flex",
+            border: "1.5px solid var(--accent)",
+            padding: "2px 6px",
+            fontSize: 9,
+            fontWeight: 700,
+            color: "var(--accent)",
+            letterSpacing: "0.14em",
+            opacity: 0.75,
+            fontFamily: "var(--font-song, serif)",
           }}>
-            PRIVATE
+            私記
           </span>
         </div>
       </header>
