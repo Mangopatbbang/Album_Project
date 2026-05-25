@@ -25,15 +25,15 @@ export default function DiaryLayout({ children }: { children: React.ReactNode })
       className={`${playfair.variable} ${lora.variable} ${songMyung.variable}`}
       style={{
         /* 일기 전용 한지 테마 — 다이어리 섹션 내부에만 적용 */
-        "--bg": "#eae0be",
-        "--bg-card": "#f0e8cc",
-        "--bg-elevated": "#f5eed8",
-        "--bg-rgb": "234,224,190",
-        "--border": "rgba(43,34,24,0.25)",
-        "--border-light": "rgba(43,34,24,0.12)",
-        "--text": "#241b14",
-        "--text-muted": "rgba(36,27,20,0.58)",
-        "--text-sub": "rgba(36,27,20,0.38)",
+        "--bg": "#f8f7f4",
+        "--bg-card": "#ffffff",
+        "--bg-elevated": "#f2f1ee",
+        "--bg-rgb": "248,247,244",
+        "--border": "rgba(20,14,6,0.14)",
+        "--border-light": "rgba(20,14,6,0.07)",
+        "--text": "#150f06",
+        "--text-muted": "rgba(21,15,6,0.5)",
+        "--text-sub": "rgba(21,15,6,0.3)",
         "--accent": "#8a2d24",
         "--accent-rgb": "138,45,36",
       } as React.CSSProperties}

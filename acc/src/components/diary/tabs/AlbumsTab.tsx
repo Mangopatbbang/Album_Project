@@ -79,8 +79,8 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
             <div style={{
               width: 60, height: 60, borderRadius: 4,
               overflow: "hidden", flexShrink: 0,
-              border: "1px solid rgba(43,34,24,0.22)", backgroundColor: "#e8ddb0",
-              boxShadow: "2px 2px 6px rgba(43,34,24,0.1)",
+              border: "1px solid rgba(20,14,6,0.14)", backgroundColor: "#f0eeea",
+              boxShadow: "1px 2px 6px rgba(20,14,6,0.08)",
             }}>
               {selectedGroup.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -148,19 +148,19 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
                 position: "relative",
                 aspectRatio: "1/1",
                 borderRadius: 3,
-                backgroundColor: "#e8ddb0",
-                border: "1px solid rgba(43,34,24,0.22)",
+                backgroundColor: "#f0eeea",
+                border: "1px solid rgba(20,14,6,0.14)",
                 marginBottom: 6,
-                boxShadow: "2px 2px 6px rgba(43,34,24,0.1)",
+                boxShadow: "1px 2px 6px rgba(20,14,6,0.08)",
                 transition: "border-color 0.15s, box-shadow 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(43,34,24,0.38)";
-                e.currentTarget.style.boxShadow = "3px 4px 12px rgba(43,34,24,0.15)";
+                e.currentTarget.style.borderColor = "rgba(20,14,6,0.28)";
+                e.currentTarget.style.boxShadow = "2px 4px 10px rgba(20,14,6,0.12)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(43,34,24,0.22)";
-                e.currentTarget.style.boxShadow = "2px 2px 6px rgba(43,34,24,0.1)";
+                e.currentTarget.style.borderColor = "rgba(20,14,6,0.14)";
+                e.currentTarget.style.boxShadow = "1px 2px 6px rgba(20,14,6,0.08)";
               }}
             >
               {group.cover_url

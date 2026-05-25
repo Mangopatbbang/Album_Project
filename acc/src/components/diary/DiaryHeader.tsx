@@ -26,7 +26,7 @@ export default function DiaryHeader() {
         borderBottom: "1px solid var(--border)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        backgroundColor: "rgba(var(--bg-rgb, 14,14,14), 0.88)",
+        backgroundColor: "rgba(var(--bg-rgb, 248,247,244), 0.92)",
       }}>
         <div style={{
           padding: "0 20px",

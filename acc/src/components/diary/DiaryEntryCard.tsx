@@ -137,22 +137,22 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
     <>
       <div
         style={{
-          background: "linear-gradient(150deg, #f8f2e4 0%, #f1e9cd 55%, #ece3c3 100%)",
-          border: "1px solid rgba(43,34,24,0.2)",
-          borderRadius: 5,
+          background: "#ffffff",
+          border: "1px solid rgba(20,14,6,0.12)",
+          borderRadius: 4,
           padding: "14px 16px",
-          boxShadow: "2px 3px 10px rgba(43,34,24,0.1), 1px 1px 0 rgba(43,34,24,0.05)",
+          boxShadow: "1px 2px 8px rgba(20,14,6,0.08), 0 1px 1px rgba(20,14,6,0.04)",
           transition: "border-color 0.15s, box-shadow 0.15s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "rgba(43,34,24,0.38)";
-          el.style.boxShadow = "3px 5px 18px rgba(43,34,24,0.14), 1px 1px 0 rgba(43,34,24,0.07)";
+          el.style.borderColor = "rgba(20,14,6,0.24)";
+          el.style.boxShadow = "2px 4px 14px rgba(20,14,6,0.12), 0 1px 1px rgba(20,14,6,0.06)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "rgba(43,34,24,0.2)";
-          el.style.boxShadow = "2px 3px 10px rgba(43,34,24,0.1), 1px 1px 0 rgba(43,34,24,0.05)";
+          el.style.borderColor = "rgba(20,14,6,0.12)";
+          el.style.boxShadow = "1px 2px 8px rgba(20,14,6,0.08), 0 1px 1px rgba(20,14,6,0.04)";
         }}
       >
         {/* 앨범 + 액션 */}
@@ -161,8 +161,8 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           <div style={{
             width: 52, height: 52, borderRadius: 4,
             overflow: "hidden", flexShrink: 0,
-            backgroundColor: "#e8ddb0",
-            border: "1px solid rgba(43,34,24,0.22)",
+            backgroundColor: "#f0eeea",
+            border: "1px solid rgba(20,14,6,0.14)",
           }}>
             {entry.albums?.cover_url
               // eslint-disable-next-line @next/next/no-img-element
