@@ -58,7 +58,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
 
   useEffect(() => {
     if (flipPhase !== "exit") return;
-    const t = setTimeout(() => { setVisibleTab(activeTab); setFlipPhase("enter"); }, 180);
+    const t = setTimeout(() => { setVisibleTab(activeTab); setFlipPhase("enter"); }, 160);
     return () => clearTimeout(t);
   }, [flipPhase, activeTab]);
 
@@ -70,10 +70,13 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
 
   const pageAnim =
     flipPhase === "exit"
-      ? (flipDir === 1 ? "pageExitFwd 0.18s ease-in forwards" : "pageExitBwd 0.18s ease-in forwards")
+      ? (flipDir === 1 ? "pageExitFwd 0.16s ease-in forwards" : "pageExitBwd 0.16s ease-in forwards")
       : flipPhase === "enter"
       ? (flipDir === 1 ? "pageEnterFwd 0.18s ease-out forwards" : "pageEnterBwd 0.18s ease-out forwards")
       : "none";
+
+  // transform-origin: 앞으로 넘길 땐 왼쪽(책등)에서 접힘, 뒤로 넘길 땐 오른쪽에서 접힘
+  const pageOrigin = flipDir === 1 ? "left center" : "right center";
 
   const renderContent = () => {
     switch (visibleTab) {
@@ -102,20 +105,20 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           100% { opacity: 0; transform: scale(0.97); }
         }
         @keyframes pageExitFwd {
-          from { transform: perspective(900px) translateX(0) rotateY(0deg); opacity: 1; }
-          to   { transform: perspective(900px) translateX(-22px) rotateY(-10deg); opacity: 0; }
+          from { transform: scaleX(1);    filter: brightness(1); }
+          to   { transform: scaleX(0.01); filter: brightness(0.3); }
         }
         @keyframes pageEnterFwd {
-          from { transform: perspective(900px) translateX(22px) rotateY(10deg); opacity: 0; }
-          to   { transform: perspective(900px) translateX(0) rotateY(0deg); opacity: 1; }
+          from { transform: scaleX(0.01); filter: brightness(0.3); }
+          to   { transform: scaleX(1);    filter: brightness(1); }
         }
         @keyframes pageExitBwd {
-          from { transform: perspective(900px) translateX(0) rotateY(0deg); opacity: 1; }
-          to   { transform: perspective(900px) translateX(22px) rotateY(10deg); opacity: 0; }
+          from { transform: scaleX(1);    filter: brightness(1); }
+          to   { transform: scaleX(0.01); filter: brightness(0.3); }
         }
         @keyframes pageEnterBwd {
-          from { transform: perspective(900px) translateX(-22px) rotateY(-10deg); opacity: 0; }
-          to   { transform: perspective(900px) translateX(0) rotateY(0deg); opacity: 1; }
+          from { transform: scaleX(0.01); filter: brightness(0.3); }
+          to   { transform: scaleX(1);    filter: brightness(1); }
         }
       `}</style>
 
@@ -271,7 +274,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               </div>
 
               {/* Scrollable page content */}
-              <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", animation: pageAnim }}>
+              <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", animation: pageAnim, transformOrigin: pageOrigin }}>
                 {isSample && (
                   <div style={{ padding: "12px 20px 0" }}>
                     <div style={{
