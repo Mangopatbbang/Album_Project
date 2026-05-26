@@ -110,11 +110,11 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
         {onThisDayEntries.length > 0 && filter === "all" && !isSample && (
           <div style={{
             marginBottom: 32,
-            background: "linear-gradient(150deg, #fff8f7 0%, #fff3f1 100%)",
-            border: "1px solid rgba(138,45,36,0.18)",
+            background: "rgba(var(--accent-rgb), 0.04)",
+            border: "1px solid rgba(var(--accent-rgb), 0.18)",
             borderRadius: 4,
             padding: "14px 16px",
-            boxShadow: "1px 2px 8px rgba(20,14,6,0.06)",
+            boxShadow: "1px 2px 8px rgba(var(--diary-ink-rgb), 0.06)",
           }}>
             <p style={{
               color: "var(--accent)", fontSize: 10, fontWeight: 700,
@@ -217,8 +217,8 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                     <span style={{
                       fontSize: 10, fontWeight: 700,
                       color: "var(--accent)", opacity: 0.85,
-                      backgroundColor: "rgba(196,170,124,0.1)",
-                      border: "1px solid rgba(196,170,124,0.25)",
+                      backgroundColor: "rgba(var(--accent-rgb), 0.1)",
+                      border: "1px solid rgba(var(--accent-rgb), 0.25)",
                       borderRadius: 4, padding: "2px 7px",
                       letterSpacing: "0.04em",
                     }}>

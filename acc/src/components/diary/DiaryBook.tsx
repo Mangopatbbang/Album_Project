@@ -51,12 +51,12 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [coverOpen, setCoverOpen] = useState(false);
 
   const frameBg = theme === "light"
-    ? "radial-gradient(ellipse 90% 70% at 50% 50%, #c8c0b6 0%, #b4ac9f 100%)"
-    : "radial-gradient(ellipse 90% 70% at 50% 50%, #1C1410 0%, #0D0A07 100%)";
+    ? "radial-gradient(ellipse 90% 70% at 50% 50%, #e0d8cc 0%, #cec6ba 100%)"
+    : "radial-gradient(ellipse 90% 70% at 50% 50%, #2c241a 0%, #1c1610 100%)";
 
   const spineBg = theme === "light"
-    ? "linear-gradient(90deg, #6a5c50 0%, #8c7c6e 38%, #7e6e60 62%, #6a5c50 100%)"
-    : "linear-gradient(90deg, #0A0806 0%, #1E160E 38%, #1A1209 62%, #0A0806 100%)";
+    ? "linear-gradient(90deg, #8a7a6a 0%, #aa9888 38%, #9a8878 62%, #8a7a6a 100%)"
+    : "linear-gradient(90deg, #1a1410 0%, #302618 38%, #281e14 62%, #1a1410 100%)";
 
   const bookShadow = theme === "light"
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"

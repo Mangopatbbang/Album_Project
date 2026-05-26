@@ -137,22 +137,22 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
     <>
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid rgba(20,14,6,0.12)",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-light)",
           borderRadius: 4,
           padding: "14px 16px",
-          boxShadow: "1px 2px 8px rgba(20,14,6,0.08), 0 1px 1px rgba(20,14,6,0.04)",
+          boxShadow: "1px 2px 8px rgba(var(--diary-ink-rgb), 0.08), 0 1px 1px rgba(var(--diary-ink-rgb), 0.04)",
           transition: "border-color 0.15s, box-shadow 0.15s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "rgba(20,14,6,0.24)";
-          el.style.boxShadow = "2px 4px 14px rgba(20,14,6,0.12), 0 1px 1px rgba(20,14,6,0.06)";
+          el.style.borderColor = "var(--border)";
+          el.style.boxShadow = "2px 4px 14px rgba(var(--diary-ink-rgb), 0.12), 0 1px 1px rgba(var(--diary-ink-rgb), 0.06)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget;
-          el.style.borderColor = "rgba(20,14,6,0.12)";
-          el.style.boxShadow = "1px 2px 8px rgba(20,14,6,0.08), 0 1px 1px rgba(20,14,6,0.04)";
+          el.style.borderColor = "var(--border-light)";
+          el.style.boxShadow = "1px 2px 8px rgba(var(--diary-ink-rgb), 0.08), 0 1px 1px rgba(var(--diary-ink-rgb), 0.04)";
         }}
       >
         {/* 앨범 + 액션 */}
@@ -161,8 +161,8 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           <div style={{
             width: 52, height: 52, borderRadius: 4,
             overflow: "hidden", flexShrink: 0,
-            backgroundColor: "#f0eeea",
-            border: "1px solid rgba(20,14,6,0.14)",
+            backgroundColor: "var(--bg-elevated)",
+            border: "1px solid var(--border-light)",
           }}>
             {entry.albums?.cover_url
               // eslint-disable-next-line @next/next/no-img-element
@@ -264,7 +264,7 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
           <div style={{
             marginTop: 12,
             paddingLeft: 12,
-            borderLeft: "2px solid rgba(138,45,36,0.45)",
+            borderLeft: "2px solid rgba(var(--accent-rgb), 0.45)",
           }}>
             <p style={{
               color: "var(--text-muted)", fontSize: 13, lineHeight: 1.9,
