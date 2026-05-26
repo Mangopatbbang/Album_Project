@@ -12,6 +12,7 @@ import { scoreColor, SCORE_COLORS } from "@/lib/score";
 import { apiFetch } from "@/lib/apiFetch";
 import { trackAlbumVisit, trackFeatureClick } from "@/lib/track";
 import StoryCardPreviewModal from "@/components/album/StoryCardPreviewModal";
+import DiaryEntryModal from "@/components/diary/DiaryEntryModal";
 import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
@@ -111,6 +112,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [evictScore, setEvictScore] = useState<number | null>(null);
   const [evicting, setEvicting] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState<"loaded" | "error" | false>(false);
+  const [diaryOpen, setDiaryOpen] = useState(false);
   const coverImgRef = useRef<HTMLImageElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -656,6 +658,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               {/* 데스크탑 전용 액션 버튼 */}
               {profile && (
                 <div className="hidden sm:flex items-center gap-1.5">
+                  <button
+                    onClick={() => setDiaryOpen(true)}
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                      padding: "4px 10px", borderRadius: 5,
+                      border: "1px solid var(--border)",
+                      transition: "all 0.15s", whiteSpace: "nowrap",
+                    }}
+                    className="hover:!border-[var(--accent)] hover:!text-[var(--accent)]"
+                  >
+                    ✎ 청음 기록
+                  </button>
                   {!ratings.find((r) => r.user_id === profile.id) && (
                     <button
                       onClick={handleToggleWatchlist}
@@ -877,6 +892,18 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             {/* 액션 버튼 행 — 모바일 전용 */}
             {profile && (
               <div className="flex sm:hidden items-center gap-1.5 flex-wrap" style={{ marginTop: 10 }}>
+                <button
+                  onClick={() => setDiaryOpen(true)}
+                  style={{
+                    background: "none", cursor: "pointer",
+                    color: "var(--text-sub)", fontSize: 13, lineHeight: 1,
+                    padding: "6px 12px", borderRadius: 6,
+                    border: "1px solid var(--border)",
+                    transition: "all 0.15s", whiteSpace: "nowrap", fontWeight: 500,
+                  }}
+                >
+                  ✎ 청음 기록
+                </button>
                 {!ratings.find((r) => r.user_id === profile.id) && (
                   <button
                     onClick={handleToggleWatchlist}
@@ -1750,6 +1777,20 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               if (updated && Array.isArray(updated.ratings)) setFull(updated);
             }
             onSaved?.(album.id);
+          }}
+        />
+      )}
+
+      {diaryOpen && (
+        <DiaryEntryModal
+          onClose={() => setDiaryOpen(false)}
+          onSaved={() => setDiaryOpen(false)}
+          initialAlbum={{
+            id: album.id,
+            title: album.title,
+            artist: album.artist,
+            cover_url: album.cover_url ?? null,
+            score: myScore ?? 0,
           }}
         />
       )}

@@ -36,7 +36,7 @@ function todayKST() {
 
 export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], initialAlbum, editEntry }: Props) {
   const isEdit = !!editEntry;
-  const [step, setStep] = useState(isEdit ? 1 : 0);
+  const [step, setStep] = useState(isEdit ? 1 : initialAlbum ? 1 : 0);
 
   // Step 0 — 앨범 선택
   const [query, setQuery] = useState("");

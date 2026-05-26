@@ -75,7 +75,7 @@ export default async function RootLayout({
       lang="ko"
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-dvh flex flex-col sm:pb-0">
+      <body className="min-h-dvh flex flex-col pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
         <AuthProvider>
           <UsersProvider initialUsers={initialUsers}>
           <UserAvatarsProvider initialAvatarMap={initialAvatarMap}>

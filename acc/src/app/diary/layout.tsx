@@ -36,6 +36,7 @@ export default function DiaryLayout({ children }: { children: React.ReactNode })
         "--text-sub": "rgba(21,15,6,0.3)",
         "--accent": "#8a2d24",
         "--accent-rgb": "138,45,36",
+        colorScheme: "light",
       } as React.CSSProperties}
     >
       <DiaryHeader />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DiaryEntry } from "@/types/diary";
 import RecordsTab from "./tabs/RecordsTab";
 import CalendarTab from "./tabs/CalendarTab";
@@ -58,6 +58,29 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const t = setTimeout(() => setCoverOpen(true), 200);
     return () => clearTimeout(t);
   }, []);
+
+  const monthCount = useMemo(() => {
+    if (isSample) return 0;
+    const prefix = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+    return displayEntries.filter((e) => e.listened_at.startsWith(prefix)).length;
+  }, [displayEntries, isSample]);
+
+  const streak = useMemo(() => {
+    if (isSample || displayEntries.length === 0) return 0;
+    const dates = [...new Set(displayEntries.map((e) => e.listened_at))].sort().reverse();
+    const kst = new Date(Date.now() + 9 * 3600000);
+    const today = kst.toISOString().slice(0, 10);
+    const yesterday = new Date(kst.getTime() - 86400000).toISOString().slice(0, 10);
+    if (dates[0] !== today && dates[0] !== yesterday) return 0;
+    let s = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const prev = new Date(dates[i - 1] + "T00:00:00");
+      const curr = new Date(dates[i] + "T00:00:00");
+      if (Math.round((prev.getTime() - curr.getTime()) / 86400000) === 1) s++;
+      else break;
+    }
+    return s;
+  }, [displayEntries, isSample]);
 
   const handleTabClick = (tab: Tab) => {
     if (tab === activeTab || flipPhase !== "idle") return;
@@ -249,6 +272,29 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }}>
                 私記
               </span>
+
+              {/* 미니 통계 */}
+              {!isSample && (monthCount > 0 || streak > 0) && (
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, rgba(138,45,36,0.35), transparent)" }} />
+                  {monthCount > 0 && (
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 15, color: "#241b14", fontWeight: 400, lineHeight: 1 }}>
+                        {monthCount}
+                      </p>
+                      <p style={{ fontSize: 9, color: "rgba(43,34,24,0.45)", letterSpacing: "0.08em", marginTop: 3 }}>이달</p>
+                    </div>
+                  )}
+                  {streak > 1 && (
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 13, color: "rgba(138,45,36,0.8)", fontWeight: 400, lineHeight: 1 }}>
+                        {streak}
+                      </p>
+                      <p style={{ fontSize: 9, color: "rgba(43,34,24,0.45)", letterSpacing: "0.08em", marginTop: 3 }}>연속</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 제본 스티치 — 오른쪽 가장자리 */}
@@ -505,6 +551,28 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 );
               })}
             </div>
+
+            {/* ── 데스크탑 새 기록 버튼 ── */}
+            <button
+              onClick={onNewEntry}
+              className="hidden sm:flex"
+              style={{
+                position: "absolute", right: -40, bottom: 60,
+                flexDirection: "column", alignItems: "center", gap: 3,
+                zIndex: 15,
+                width: 32, padding: "10px 0",
+                border: "none", cursor: "pointer",
+                clipPath: "polygon(0 14%, 50% 0%, 100% 14%, 100% 100%, 0 100%)",
+                background: "linear-gradient(180deg, #9f2f21 0%, #7a2219 100%)",
+                color: "#f7efd8",
+                fontSize: 14,
+                filter: "drop-shadow(2px 0 6px rgba(138,45,36,0.45))",
+                transition: "filter 0.15s",
+              }}
+              aria-label="새 기록"
+            >
+              ✎
+            </button>
           </div>
         </div>
       </div>

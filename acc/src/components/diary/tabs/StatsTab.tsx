@@ -95,9 +95,9 @@ function SummaryCards({ total, albums, relisten, mounted }: { total: number; alb
       {items.map((item) => (
         <div key={item.label} style={{
           backgroundColor: "var(--bg-card)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          border: "1px solid rgba(20,14,6,0.12)",
           borderRadius: 10, padding: "16px 0", textAlign: "center",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+          boxShadow: "1px 2px 8px rgba(20,14,6,0.08)",
         }}>
           <p style={{
             color: "var(--text)", fontSize: 26, fontWeight: 800,
