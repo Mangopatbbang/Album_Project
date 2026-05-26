@@ -28,8 +28,6 @@ type Props = {
   onNewEntry: () => void;
 };
 
-const hanji = "linear-gradient(160deg, var(--diary-page-from) 0%, var(--diary-page-mid) 55%, var(--diary-page-to) 100%)";
-
 const noise =
   'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'140\' height=\'140\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.72\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'140\' height=\'140\' filter=\'url(%23n)\' opacity=\'0.28\'/%3E%3C/svg%3E")';
 
@@ -50,8 +48,14 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
 
+  const hanji = theme === "light"
+    ? "linear-gradient(160deg, #ffffff 0%, #ffffff 55%, #fafafa 100%)"
+    : "linear-gradient(160deg, var(--diary-page-from) 0%, var(--diary-page-mid) 55%, var(--diary-page-to) 100%)";
+
+  const noiseOpacity = theme === "light" ? 0.04 : 0.13;
+
   const frameBg = theme === "light"
-    ? "radial-gradient(ellipse 90% 70% at 50% 50%, #e0d8cc 0%, #cec6ba 100%)"
+    ? "radial-gradient(ellipse 90% 70% at 50% 50%, #f2ede6 0%, #e8e2da 100%)"
     : "radial-gradient(ellipse 90% 70% at 50% 50%, #2c241a 0%, #1c1610 100%)";
 
   const spineBg = theme === "light"
@@ -178,7 +182,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               overflow: "hidden",
             }}
           >
-            <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.13, mixBlendMode: "multiply", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
 
             {Array.from({ length: 26 }).map((_, i) => (
               <div key={i} style={{
@@ -337,7 +341,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               boxShadow: "inset 5px 0 18px rgba(0,0,0,0.07), 0 0 0 1px var(--diary-page-inset) inset",
               zIndex: 0,
             }}>
-              <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.1, mixBlendMode: "multiply", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
             </div>
 
             {/* 모바일 탭 바 */}
@@ -445,7 +449,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       ? "inset 6px 0 18px rgba(0,0,0,0.09)"
                       : "inset -6px 0 18px rgba(0,0,0,0.09)",
                   }}>
-                    <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.12, mixBlendMode: "multiply" }} />
+                    <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply" }} />
                     {/* 빈 줄 */}
                     {Array.from({ length: 22 }).map((_, i) => (
                       <div key={i} style={{
