@@ -225,13 +225,17 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           overflow: "hidden",
         }}
       >
+        {/* 래퍼 — 책 + 리본을 감싸되 리본은 clip 밖에 */}
+        <div style={{ position: "relative", height: "100%", width: "min(920px, 100%)" }}>
         <div style={{
           display: "flex",
           height: "100%",
-          width: "min(920px, 100%)",
+          width: "100%",
           position: "relative",
           boxShadow: bookShadow,
           borderRadius: 10,
+          clipPath: "inset(0 round 10px)",
+          overflow: "hidden",
         }}>
 
           {/* ── 왼쪽 페이지 ── */}
@@ -600,44 +604,45 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               </div>
             </div>
 
-            {/* ── 데스크탑 리본 책갈피 탭 ── */}
-            <div
-              className="hidden sm:flex"
-              style={{
-                position: "absolute", right: -40, top: 24,
-                flexDirection: "column", gap: 6, zIndex: 15,
-              }}
-            >
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabClick(tab.id)}
-                    style={{
-                      writingMode: "vertical-rl", textOrientation: "mixed",
-                      padding: "16px 9px 20px", border: "none", cursor: "pointer",
-                      clipPath: "polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%)",
-                      background: isActive
-                        ? "linear-gradient(180deg, var(--diary-page-from) 0%, var(--diary-page-to) 100%)"
-                        : "linear-gradient(180deg, #8a8070 0%, #7a7060 100%)",
-                      color: isActive ? "var(--text)" : "rgba(250,248,244,0.75)",
-                      fontSize: 10, fontWeight: isActive ? 700 : 500,
-                      fontFamily: "var(--font-song, serif)", letterSpacing: "0.12em",
-                      transition: "all 0.2s ease",
-                      transform: isActive ? "translateX(5px)" : "translateX(0)",
-                      filter: isActive
-                        ? "drop-shadow(3px 0 8px rgba(var(--diary-ink-rgb), 0.28))"
-                        : "drop-shadow(2px 0 5px rgba(0,0,0,0.5))",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
           </div>
+        </div>
+        {/* ── 데스크탑 리본 책갈피 탭 (clip 범위 밖) ── */}
+        <div
+          className="hidden sm:flex"
+          style={{
+            position: "absolute", right: -40, top: 24,
+            flexDirection: "column", gap: 6, zIndex: 15,
+          }}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                style={{
+                  writingMode: "vertical-rl", textOrientation: "mixed",
+                  padding: "16px 9px 20px", border: "none", cursor: "pointer",
+                  clipPath: "polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%)",
+                  background: isActive
+                    ? "linear-gradient(180deg, var(--diary-page-from) 0%, var(--diary-page-to) 100%)"
+                    : "linear-gradient(180deg, #8a8070 0%, #7a7060 100%)",
+                  color: isActive ? "var(--text)" : "rgba(250,248,244,0.75)",
+                  fontSize: 10, fontWeight: isActive ? 700 : 500,
+                  fontFamily: "var(--font-song, serif)", letterSpacing: "0.12em",
+                  transition: "all 0.2s ease",
+                  transform: isActive ? "translateX(5px)" : "translateX(0)",
+                  filter: isActive
+                    ? "drop-shadow(3px 0 8px rgba(var(--diary-ink-rgb), 0.28))"
+                    : "drop-shadow(2px 0 5px rgba(0,0,0,0.5))",
+                  flexShrink: 0,
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
         </div>
       </div>
 
