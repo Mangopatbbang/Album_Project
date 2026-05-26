@@ -43,16 +43,16 @@ const STITCH_POS = [8, 22, 38, 54, 70, 84, 94];
 
 /* 멀티스트립 책 커버 — 각 조각이 다른 각도로 회전해 실제 종이 곡률 재현 */
 const STRIP_N = 5;
-const STRIP_END_ROTS = [-12, -38, -66, -90, -110]; // 척추→바깥 끝, 바깥이 가장 많이 회전
-const _KP = [0,  15,  48,   70,   87,  100]; // keyframe %
-const _KR = [0, -18, -65,  -90, -104, -110]; // 기준 rotateY (바깥 끝 기준)
-const _KO = [1,   1,   1, 0.95, 0.28,    0]; // opacity
-const STRIP_KEYFRAMES = STRIP_END_ROTS.map((end, i) => {
-  const s = end / -110;
-  const frames = _KP.map((p, j) =>
-    `  ${p}%{transform:rotateY(${(_KR[j]*s).toFixed(2)}deg);opacity:${_KO[j]};}`
-  ).join("");
-  return `@keyframes cs${i}{${frames}}`;
+// 출발: 우측 패널, 바깥(i=4) 선행 → 모두 -90°(엣지온) 정지
+const DEPART_KF = Array.from({ length: STRIP_N }, (_, i) => {
+  const mid = (-52 - (i / (STRIP_N - 1)) * 14).toFixed(1);
+  return `@keyframes csd${i}{0%{transform:rotateY(0deg);}42%{transform:rotateY(${mid}deg);}100%{transform:rotateY(-90deg);}}`;
+}).join("");
+// 착지: 좌측 패널, 척추(j=0) 선착 → 바깥(j=4) 나중, 바운스 후 페이드아웃
+const ARRIVE_KF = Array.from({ length: STRIP_N }, (_, j) => {
+  const b = (4.5 + j * 1.6).toFixed(1);
+  const sb = (parseFloat(b) * 0.3).toFixed(1);
+  return `@keyframes csa${j}{0%{transform:rotateY(90deg);opacity:0;}14%{opacity:1;}56%{transform:rotateY(-${b}deg);opacity:1;}73%{transform:rotateY(${sb}deg);opacity:1;}84%{transform:rotateY(0deg);opacity:1;}100%{transform:rotateY(0deg);opacity:0;}}`;
 }).join("");
 
 let _audioCtx: AudioContext | null = null;
@@ -94,6 +94,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [flippingFrom, setFlippingFrom] = useState<Tab | null>(null);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
+  const [coverFlipped, setCoverFlipped] = useState(false);
   const [coverDone, setCoverDone] = useState(false);
   const flipQueueRef = useRef<Array<{ from: Tab; to: Tab; dir: 1 | -1 }>>([]);
 
@@ -114,6 +115,13 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const bookShadow = theme === "light"
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
     : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
+
+  /* 표지 착지 — 출발 완료 시 착지 사운드 */
+  useEffect(() => {
+    if (!coverFlipped) return;
+    const t = setTimeout(playPageSound, 60);
+    return () => clearTimeout(t);
+  }, [coverFlipped]);
 
   /* 플립 완료 후 다음 큐 처리 */
   useEffect(() => {
@@ -194,7 +202,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   return (
     <>
       <style>{`
-        ${STRIP_KEYFRAMES}
+        ${DEPART_KF}${ARRIVE_KF}
         @keyframes coverHint {
           0%, 100% { opacity: 0.5; transform: translateY(0px); }
           50% { opacity: 0.85; transform: translateY(4px); }
@@ -373,6 +381,75 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 }} />
               ))}
             </div>
+
+            {/* ── 표지 착지 오버레이 (좌측 패널, 데스크탑 전용) ── */}
+            {coverFlipped && !coverDone && (
+              <div style={{ position: "absolute", inset: 0, zIndex: 10, perspective: "1400px", pointerEvents: "none" }}>
+                {Array.from({ length: STRIP_N }).map((_, j) => {
+                  // j=0: 척추 근접(우측), j=4: 바깥쪽(좌측) — 척추부터 착지
+                  const lp = ((STRIP_N - 1 - j) / STRIP_N) * 100;
+                  const wp = 100 / STRIP_N;
+                  const delay = j * 0.028;
+                  return (
+                    <div
+                      key={j}
+                      style={{
+                        position: "absolute", top: 0, bottom: 0,
+                        left: `${lp}%`, width: `${wp}%`,
+                        overflow: "hidden",
+                        transformOrigin: `${(j + 1) * 100}% 50%`,
+                        zIndex: STRIP_N - j,
+                        animation: `csa${j} 0.72s cubic-bezier(0.25,0.1,0.25,1) ${delay}s both`,
+                      }}
+                      onAnimationEnd={j === STRIP_N - 1 ? () => setCoverDone(true) : undefined}
+                    >
+                      {/* 속표지 전체 너비 콘텐츠 — 올바른 슬라이스만 노출 */}
+                      <div style={{
+                        position: "absolute", top: 0, bottom: 0,
+                        left: `-${(STRIP_N - 1 - j) * 100}%`,
+                        width: `${STRIP_N * 100}%`,
+                        background: theme === "light"
+                          ? "linear-gradient(160deg,#f6f0df 0%,#eee4c6 50%,#e4d8b2 100%)"
+                          : "linear-gradient(160deg,#231b0e 0%,#1d1609 50%,#170e04 100%)",
+                      }}>
+                        <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity * 1.4, mixBlendMode: "multiply", pointerEvents: "none" }} />
+                        {Array.from({ length: 20 }).map((_, li) => (
+                          <div key={li} style={{
+                            position: "absolute", left: 0, right: 0,
+                            top: `${7 + li * 4.5}%`, height: 1,
+                            background: "linear-gradient(90deg,transparent,rgba(var(--diary-ink-rgb),0.1) 25%,rgba(var(--diary-ink-rgb),0.1) 75%,transparent)",
+                          }} />
+                        ))}
+                        {/* 바인딩 선 */}
+                        <div style={{
+                          position: "absolute", right: 0, top: "5%", bottom: "5%", width: 1,
+                          background: "linear-gradient(180deg,transparent,rgba(var(--diary-ink-rgb),0.18) 15%,rgba(var(--diary-ink-rgb),0.18) 85%,transparent)",
+                        }} />
+                        {/* 속표지 장서인 */}
+                        <div style={{
+                          position: "absolute", left: "50%", top: "50%",
+                          transform: "translate(-50%,-50%)",
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                          opacity: 0.38,
+                        }}>
+                          <div style={{
+                            width: 58, height: 70, borderRadius: "50%",
+                            border: "1px solid rgba(var(--diary-ink-rgb),0.55)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            <span style={{
+                              fontFamily: "var(--font-song,serif)", fontSize: 13,
+                              color: "rgba(var(--diary-ink-rgb),0.75)",
+                              writingMode: "vertical-rl", letterSpacing: "0.1em",
+                            }}>蔵書</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── 책등 ── */}
@@ -535,8 +612,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               )}
             </div>
 
-            {/* ── 표지 — 멀티스트립 종이 곡률 ── */}
-            {!coverDone && (
+            {/* ── 표지 — 출발 (우측) ── */}
+            {!coverFlipped && (
               <div
                 style={{
                   position: "absolute", inset: 0, zIndex: 20,
@@ -562,10 +639,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         transformOrigin: `${-i * 100}% 50%`,
                         zIndex: STRIP_N - i,
                         animation: coverOpen
-                          ? `cs${i} 0.72s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards`
+                          ? `csd${i} 0.50s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards`
                           : "none",
                       }}
-                      onAnimationEnd={i === 0 ? () => setCoverDone(true) : undefined}
+                      onAnimationEnd={coverOpen && i === 0 ? () => setCoverFlipped(true) : undefined}
                     >
                       {/* 스트립 내부: 커버 전체 너비 콘텐츠를 올바른 구간만 보이도록 오프셋 */}
                       <div style={{
