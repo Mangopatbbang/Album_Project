@@ -49,10 +49,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [coverOpen, setCoverOpen] = useState(false);
 
   const hanji = theme === "light"
-    ? "linear-gradient(160deg, #ffffff 0%, #ffffff 55%, #fafafa 100%)"
+    ? "linear-gradient(160deg, #fefefe 0%, #fdfcfa 55%, #f9f8f3 100%)"
     : "linear-gradient(160deg, var(--diary-page-from) 0%, var(--diary-page-mid) 55%, var(--diary-page-to) 100%)";
 
-  const noiseOpacity = theme === "light" ? 0.04 : 0.13;
+  const noiseOpacity = theme === "light" ? 0.09 : 0.13;
 
   const frameBg = theme === "light"
     ? "radial-gradient(ellipse 90% 70% at 50% 50%, #f2ede6 0%, #e8e2da 100%)"
@@ -134,15 +134,17 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           0%   { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0.97); }
         }
-        /* 앞으로 — 왼쪽 끝을 축으로 앞장이 뒤로 넘어감 */
+        /* 앞으로 — 왼쪽 끝을 축으로 앞장이 뒤로 넘어감 (-105도에서 페이드아웃) */
         @keyframes flipFwd {
-          from { transform: rotateY(0deg); }
-          to   { transform: rotateY(-180deg); }
+          from { transform: rotateY(0deg); opacity: 1; }
+          70%  { opacity: 1; }
+          to   { transform: rotateY(-105deg); opacity: 0; }
         }
-        /* 뒤로 — 오른쪽 끝을 축으로 앞장이 뒤로 넘어감 */
-        @keyframes flipBwd {
-          from { transform: rotateY(0deg); }
-          to   { transform: rotateY(180deg); }
+        /* 뒤로 — 왼쪽 끝을 축으로 좌측에서 우측으로 펼쳐짐 */
+        @keyframes flipBwdIn {
+          from { transform: rotateY(-105deg); opacity: 0; }
+          30%  { opacity: 1; }
+          to   { transform: rotateY(0deg); opacity: 1; }
         }
       `}</style>
 
@@ -390,7 +392,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 zIndex: 1,
               }}
             >
-              {/* 새 내용 — 항상 아래에 깔려있음 */}
+              {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용 */}
               <div style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0 }}>
                 {isSample && (
                   <div style={{ padding: "12px 20px 0" }}>
@@ -407,24 +409,24 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                     </div>
                   </div>
                 )}
-                {renderContent(activeTab)}
+                {renderContent(flipDir === -1 && flippingFrom !== null ? flippingFrom : activeTab)}
               </div>
 
-              {/* 이전 내용 — 3D 카드로 뒤집혀 나감 */}
+              {/* flip layer — 앞방향: 이전 내용이 왼쪽으로 넘어감 / 뒷방향: 새 내용이 왼쪽에서 펼쳐짐 */}
               {flippingFrom !== null && (
                 <div
                   style={{
                     position: "absolute", inset: 0,
                     zIndex: 5,
-                    transformOrigin: flipDir === 1 ? "left center" : "right center",
+                    transformOrigin: "left center",
                     transformStyle: "preserve-3d",
                     animation: flipDir === 1
                       ? "flipFwd 0.52s cubic-bezier(0.4,0,0.6,1) forwards"
-                      : "flipBwd 0.52s cubic-bezier(0.4,0,0.6,1) forwards",
+                      : "flipBwdIn 0.52s cubic-bezier(0.4,0,0.6,1) forwards",
                     pointerEvents: "none",
                   }}
                 >
-                  {/* 앞면: 이전 내용 (0° → 90°에서 보임) */}
+                  {/* 앞면 — 앞방향: 이전 내용 / 뒷방향: 새 내용 */}
                   <div style={{
                     position: "absolute", inset: 0,
                     overflowY: "hidden",
@@ -435,22 +437,19 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       ? "inset -6px 0 18px rgba(0,0,0,0.09)"
                       : "inset 6px 0 18px rgba(0,0,0,0.09)",
                   }}>
-                    {renderContent(flippingFrom)}
+                    {flipDir === 1 ? renderContent(flippingFrom) : renderContent(activeTab)}
                   </div>
 
-                  {/* 뒷면: 빈 한지 (90° → 180°에서 보임) */}
+                  {/* 뒷면: 빈 한지 */}
                   <div style={{
                     position: "absolute", inset: 0,
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
                     background: hanji,
-                    boxShadow: flipDir === 1
-                      ? "inset 6px 0 18px rgba(0,0,0,0.09)"
-                      : "inset -6px 0 18px rgba(0,0,0,0.09)",
+                    boxShadow: "inset 6px 0 18px rgba(0,0,0,0.09)",
                   }}>
                     <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply" }} />
-                    {/* 빈 줄 */}
                     {Array.from({ length: 22 }).map((_, i) => (
                       <div key={i} style={{
                         position: "absolute", left: 24, right: 24,
