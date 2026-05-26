@@ -80,6 +80,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [flippingFrom, setFlippingFrom] = useState<Tab | null>(null);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
+  const [coverDone, setCoverDone] = useState(false);
   const flipQueueRef = useRef<Array<{ from: Tab; to: Tab; dir: 1 | -1 }>>([]);
 
   const hanji = theme === "light"
@@ -99,11 +100,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const bookShadow = theme === "light"
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
     : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
-
-  useEffect(() => {
-    const t = setTimeout(() => setCoverOpen(true), 200);
-    return () => clearTimeout(t);
-  }, []);
 
   /* 플립 완료 후 다음 큐 처리 */
   useEffect(() => {
@@ -184,15 +180,16 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   return (
     <>
       <style>{`
-        @keyframes bookCoverOpen {
-          0%   { transform: rotateY(0deg); opacity: 1; }
-          45%  { opacity: 1; }
-          80%  { opacity: 0.3; }
-          100% { transform: rotateY(-115deg); opacity: 0; }
+        @keyframes coverFlip {
+          0%   { transform: perspective(700px) rotateY(0deg) skewY(0deg); opacity: 1; }
+          28%  { transform: perspective(700px) rotateY(-48deg) skewY(-4deg); opacity: 1; }
+          58%  { transform: perspective(700px) rotateY(-86deg) skewY(4deg); opacity: 1; }
+          78%  { transform: perspective(700px) rotateY(-100deg) skewY(1deg); opacity: 0.7; }
+          100% { transform: perspective(700px) rotateY(-105deg) skewY(0deg); opacity: 0; }
         }
-        @keyframes mobileCoverFade {
-          0%   { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(0.97); }
+        @keyframes coverHint {
+          0%, 100% { opacity: 0.55; transform: translateY(0px); }
+          50% { opacity: 0.9; transform: translateY(5px); }
         }
         /* 앞으로 — 왼쪽 끝 축, 종이가 휘며 넘어가는 효과 */
         @keyframes flipFwd {
@@ -530,79 +527,63 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               )}
             </div>
 
-            {/* ── 표지 — 데스크탑 3D ── */}
-            <div
-              className="hidden sm:block"
-              style={{
-                position: "absolute", inset: 0,
-                transformOrigin: "left center",
-                animation: coverOpen
-                  ? "bookCoverOpen 1.0s cubic-bezier(0.4,0,0.2,1) 0.3s forwards"
-                  : "none",
-                zIndex: 20,
-                pointerEvents: coverOpen ? "none" : "auto",
-                borderRadius: "0 10px 10px 0",
-                overflow: "hidden",
-              }}
-            >
-              <div style={{
-                width: "100%", height: "100%",
-                background: [
-                  "repeating-linear-gradient(89deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px)",
-                  "repeating-linear-gradient(1deg, transparent, transparent 6px, rgba(255,255,255,0.01) 6px, rgba(255,255,255,0.01) 7px)",
-                  "linear-gradient(160deg, #1A1007 0%, #231608 30%, #1E1309 60%, #150E06 100%)",
-                ].join(", "),
-                display: "flex", alignItems: "center", justifyContent: "center",
-                position: "relative", overflow: "hidden",
-              }}>
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <div key={i} style={{
-                    position: "absolute", left: 0, right: 0, top: `${i * 5.6}%`, height: 1,
-                    background: "linear-gradient(90deg, transparent, rgba(80,55,20,0.28) 30%, rgba(80,55,20,0.28) 70%, transparent)",
-                  }} />
-                ))}
-                <div style={{ position: "absolute", inset: 20, border: "1px solid rgba(180,140,60,0.2)", borderRadius: 3 }} />
-                <div style={{ position: "absolute", inset: 28, border: "1px solid rgba(180,140,60,0.1)", borderRadius: 2 }} />
-                <div style={{ textAlign: "center", zIndex: 1 }}>
-                  <div style={{
-                    fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
-                    fontSize: 26, color: "#C4AA7C",
-                    writingMode: "vertical-rl", letterSpacing: "0.22em",
-                    textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 -1px 1px rgba(220,180,80,0.15)",
-                  }}>
-                    청음일기
+            {/* ── 표지 (우측 패널 — 탭 플립과 동일 크기/축) ── */}
+            {!coverDone && (
+              <div
+                style={{
+                  position: "absolute", inset: 0, zIndex: 20,
+                  transformOrigin: "left center",
+                  animation: coverOpen ? "coverFlip 0.52s cubic-bezier(0.45,0,0.55,1) forwards" : "none",
+                  cursor: coverOpen ? "default" : "pointer",
+                  pointerEvents: coverOpen ? "none" : "auto",
+                  borderRadius: "0 10px 10px 0",
+                  overflow: "hidden",
+                }}
+                onClick={() => { if (!coverOpen) { playPageSound(); setCoverOpen(true); } }}
+                onAnimationEnd={() => setCoverDone(true)}
+              >
+                <div style={{
+                  width: "100%", height: "100%",
+                  background: [
+                    "repeating-linear-gradient(89deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px)",
+                    "repeating-linear-gradient(1deg, transparent, transparent 6px, rgba(255,255,255,0.01) 6px, rgba(255,255,255,0.01) 7px)",
+                    "linear-gradient(160deg, #1A1007 0%, #231608 30%, #1E1309 60%, #150E06 100%)",
+                  ].join(", "),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "relative", overflow: "hidden",
+                }}>
+                  {Array.from({ length: 18 }).map((_, i) => (
+                    <div key={i} style={{
+                      position: "absolute", left: 0, right: 0, top: `${i * 5.6}%`, height: 1,
+                      background: "linear-gradient(90deg, transparent, rgba(80,55,20,0.28) 30%, rgba(80,55,20,0.28) 70%, transparent)",
+                    }} />
+                  ))}
+                  <div style={{ position: "absolute", inset: 20, border: "1px solid rgba(180,140,60,0.2)", borderRadius: 3 }} />
+                  <div style={{ position: "absolute", inset: 28, border: "1px solid rgba(180,140,60,0.1)", borderRadius: 2 }} />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, zIndex: 1 }}>
+                    <div style={{
+                      fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
+                      fontSize: 26, color: "#C4AA7C",
+                      writingMode: "vertical-rl", letterSpacing: "0.22em",
+                      textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 -1px 1px rgba(220,180,80,0.15)",
+                    }}>
+                      청음일기
+                    </div>
+                    {!coverOpen && (
+                      <div style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                        animation: "coverHint 2.2s ease-in-out infinite",
+                      }}>
+                        <div style={{ width: 1, height: 22, background: "linear-gradient(180deg, transparent, rgba(196,170,124,0.5), transparent)" }} />
+                        <span style={{ fontSize: 9, color: "rgba(196,170,124,0.6)", letterSpacing: "0.22em", fontFamily: "var(--font-song, serif)" }}>
+                          열기
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* ── 표지 — 모바일 페이드 ── */}
-            <div
-              className="sm:hidden"
-              style={{
-                position: "absolute", inset: 0,
-                background: "linear-gradient(160deg, #1A1007 0%, #231608 50%, #150E06 100%)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                animation: coverOpen ? "mobileCoverFade 0.7s ease-out 0.3s forwards" : "none",
-                zIndex: 20,
-                pointerEvents: coverOpen ? "none" : "auto",
-              }}
-            >
-              <div style={{ textAlign: "center" }}>
-                <div style={{
-                  fontFamily: "var(--font-song, serif)",
-                  fontSize: 26, color: "#C4AA7C",
-                  writingMode: "vertical-rl", letterSpacing: "0.22em",
-                  textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                }}>
-                  청음일기
-                </div>
-                <div style={{
-                  width: 1, height: 28, margin: "12px auto 0",
-                  background: "linear-gradient(180deg, transparent, rgba(180,140,60,0.45), transparent)",
-                }} />
-              </div>
-            </div>
+            )}
 
           </div>
         </div>
