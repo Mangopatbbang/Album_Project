@@ -181,15 +181,16 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     <>
       <style>{`
         @keyframes coverFlip {
-          0%   { transform: perspective(700px) rotateY(0deg) skewY(0deg); opacity: 1; }
-          28%  { transform: perspective(700px) rotateY(-48deg) skewY(-4deg); opacity: 1; }
-          58%  { transform: perspective(700px) rotateY(-86deg) skewY(4deg); opacity: 1; }
-          78%  { transform: perspective(700px) rotateY(-100deg) skewY(1deg); opacity: 0.7; }
-          100% { transform: perspective(700px) rotateY(-105deg) skewY(0deg); opacity: 0; }
+          0%   { transform: perspective(1400px) rotateY(0deg) skewY(0deg); opacity: 1; }
+          15%  { transform: perspective(1400px) rotateY(-18deg) skewY(-1.2deg); opacity: 1; }
+          48%  { transform: perspective(1400px) rotateY(-65deg) skewY(2deg); opacity: 1; }
+          70%  { transform: perspective(1400px) rotateY(-90deg) skewY(0.5deg); opacity: 0.95; }
+          87%  { transform: perspective(1400px) rotateY(-104deg) skewY(0deg); opacity: 0.28; }
+          100% { transform: perspective(1400px) rotateY(-110deg) skewY(0deg); opacity: 0; }
         }
         @keyframes coverHint {
-          0%, 100% { opacity: 0.55; transform: translateY(0px); }
-          50% { opacity: 0.9; transform: translateY(5px); }
+          0%, 100% { opacity: 0.5; transform: translateY(0px); }
+          50% { opacity: 0.85; transform: translateY(4px); }
         }
         /* 앞으로 — 왼쪽 끝 축, 종이가 휘며 넘어가는 효과 */
         @keyframes flipFwd {
@@ -533,24 +534,24 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 style={{
                   position: "absolute", inset: 0, zIndex: 20,
                   transformOrigin: "left center",
-                  animation: coverOpen ? "coverFlip 0.52s cubic-bezier(0.45,0,0.55,1) forwards" : "none",
+                  animation: coverOpen ? "coverFlip 0.72s cubic-bezier(0.25,0.1,0.2,1) forwards" : "none",
                   cursor: coverOpen ? "default" : "pointer",
                   pointerEvents: coverOpen ? "none" : "auto",
-                  borderRadius: "0 10px 10px 0",
-                  overflow: "hidden",
                 }}
                 onClick={() => { if (!coverOpen) { playPageSound(); setCoverOpen(true); } }}
                 onAnimationEnd={() => setCoverDone(true)}
               >
                 <div style={{
                   width: "100%", height: "100%",
+                  borderRadius: "0 10px 10px 0",
+                  overflow: "hidden",
                   background: [
                     "repeating-linear-gradient(89deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px)",
                     "repeating-linear-gradient(1deg, transparent, transparent 6px, rgba(255,255,255,0.01) 6px, rgba(255,255,255,0.01) 7px)",
                     "linear-gradient(160deg, #1A1007 0%, #231608 30%, #1E1309 60%, #150E06 100%)",
                   ].join(", "),
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  position: "relative", overflow: "hidden",
+                  position: "relative",
                 }}>
                   {Array.from({ length: 18 }).map((_, i) => (
                     <div key={i} style={{
