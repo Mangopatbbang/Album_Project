@@ -8,7 +8,6 @@ import AlbumsTab from "./tabs/AlbumsTab";
 import StatsTab from "./tabs/StatsTab";
 
 type Tab = "records" | "calendar" | "albums" | "stats";
-type FlipPhase = "idle" | "exit" | "enter";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "records", label: "기록" },
@@ -28,14 +27,11 @@ type Props = {
   onNewEntry: () => void;
 };
 
-/* 한지 배경 — CSS 변수로 테마 연동 */
 const hanji = "linear-gradient(160deg, var(--diary-page-from) 0%, var(--diary-page-mid) 55%, var(--diary-page-to) 100%)";
 
-/* SVG 노이즈 — 극미세 종이 결 */
 const noise =
   'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'140\' height=\'140\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.72\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'140\' height=\'140\' filter=\'url(%23n)\' opacity=\'0.28\'/%3E%3C/svg%3E")';
 
-/* 코너 장식 — CSS 변수로 테마 연동 */
 const INK = "rgba(var(--diary-ink-rgb), 0.3)";
 const corners: React.CSSProperties[] = [
   { top: 16, left: 16, borderTop: `1px solid ${INK}`, borderLeft: `1px solid ${INK}` },
@@ -44,13 +40,11 @@ const corners: React.CSSProperties[] = [
   { bottom: 16, right: 16, borderBottom: `1px solid ${INK}`, borderRight: `1px solid ${INK}` },
 ];
 
-/* 제본 스티치 위치 (%) */
 const STITCH_POS = [8, 22, 38, 54, 70, 84, 94];
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("records");
-  const [visibleTab, setVisibleTab] = useState<Tab>("records");
-  const [flipPhase, setFlipPhase] = useState<FlipPhase>("idle");
+  const [flippingFrom, setFlippingFrom] = useState<Tab | null>(null);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
 
@@ -58,6 +52,13 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const t = setTimeout(() => setCoverOpen(true), 200);
     return () => clearTimeout(t);
   }, []);
+
+  /* flippingFrom 설정되면 애니메이션 끝난 후 정리 */
+  useEffect(() => {
+    if (flippingFrom === null) return;
+    const t = setTimeout(() => setFlippingFrom(null), 560);
+    return () => clearTimeout(t);
+  }, [flippingFrom]);
 
   const monthCount = useMemo(() => {
     if (isSample) return 0;
@@ -83,36 +84,14 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   }, [displayEntries, isSample]);
 
   const handleTabClick = (tab: Tab) => {
-    if (tab === activeTab || flipPhase !== "idle") return;
-    const dir = (TAB_IDX[tab] > TAB_IDX[activeTab] ? 1 : -1) as 1 | -1;
-    setFlipDir(dir);
-    setActiveTab(tab);
-    setFlipPhase("exit");
+    if (tab === activeTab || flippingFrom !== null) return;
+    setFlipDir(TAB_IDX[tab] > TAB_IDX[activeTab] ? 1 : -1);
+    setFlippingFrom(activeTab); /* 이전 탭이 3D로 뒤집혀 나감 */
+    setActiveTab(tab);          /* 새 탭이 즉시 아래 레이어에 깔림 */
   };
 
-  useEffect(() => {
-    if (flipPhase !== "exit") return;
-    const t = setTimeout(() => { setVisibleTab(activeTab); setFlipPhase("enter"); }, 280);
-    return () => clearTimeout(t);
-  }, [flipPhase, activeTab]);
-
-  useEffect(() => {
-    if (flipPhase !== "enter") return;
-    const t = setTimeout(() => setFlipPhase("idle"), 280);
-    return () => clearTimeout(t);
-  }, [flipPhase]);
-
-  const pageAnim =
-    flipPhase === "exit"
-      ? (flipDir === 1 ? "pageExitFwd 0.28s ease-in forwards" : "pageExitBwd 0.28s ease-in forwards")
-      : flipPhase === "enter"
-      ? (flipDir === 1 ? "pageEnterFwd 0.28s ease-out forwards" : "pageEnterBwd 0.28s ease-out forwards")
-      : "none";
-
-  const animOrigin = flipPhase === "idle" ? "50% 50%" : flipDir === 1 ? "left center" : "right center";
-
-  const renderContent = () => {
-    switch (visibleTab) {
+  const renderContent = (tab: Tab) => {
+    switch (tab) {
       case "records":
         return <RecordsTab entries={displayEntries} loading={loading} onEdit={onEdit} onDelete={onDelete} onNewEntry={onNewEntry} isSample={isSample} />;
       case "calendar":
@@ -137,25 +116,18 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           0%   { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0.97); }
         }
-        @keyframes pageExitFwd {
-          from { transform: perspective(1400px) rotateY(0deg);   opacity: 1; }
-          to   { transform: perspective(1400px) rotateY(-90deg); opacity: 0.1; }
+        /* 앞으로 — 왼쪽 끝을 축으로 앞장이 뒤로 넘어감 */
+        @keyframes flipFwd {
+          from { transform: rotateY(0deg); }
+          to   { transform: rotateY(-180deg); }
         }
-        @keyframes pageEnterFwd {
-          from { transform: perspective(1400px) rotateY(90deg);  opacity: 0.1; }
-          to   { transform: perspective(1400px) rotateY(0deg);   opacity: 1; }
-        }
-        @keyframes pageExitBwd {
-          from { transform: perspective(1400px) rotateY(0deg);   opacity: 1; }
-          to   { transform: perspective(1400px) rotateY(90deg);  opacity: 0.1; }
-        }
-        @keyframes pageEnterBwd {
-          from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.1; }
-          to   { transform: perspective(1400px) rotateY(0deg);   opacity: 1; }
+        /* 뒤로 — 오른쪽 끝을 축으로 앞장이 뒤로 넘어감 */
+        @keyframes flipBwd {
+          from { transform: rotateY(0deg); }
+          to   { transform: rotateY(180deg); }
         }
       `}</style>
 
-      {/* 외부 어두운 프레임 — 나무/가죽 재질의 독서대 */}
       <div
         className="sm:pr-[54px]"
         style={{
@@ -169,7 +141,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           overflow: "hidden",
         }}
       >
-        {/* 책 본체 */}
         <div style={{
           display: "flex",
           height: "100%",
@@ -180,7 +151,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           borderRadius: 10,
         }}>
 
-          {/* ── 왼쪽 페이지 — 한지 (데스크탑) ── */}
+          {/* ── 왼쪽 페이지 ── */}
           <div
             className="hidden sm:block"
             style={{
@@ -194,16 +165,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               overflow: "hidden",
             }}
           >
-            {/* 종이 결 노이즈 오버레이 */}
-            <div style={{
-              position: "absolute", inset: 0,
-              backgroundImage: noise,
-              opacity: 0.13,
-              mixBlendMode: "multiply",
-              pointerEvents: "none",
-            }} />
+            <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.13, mixBlendMode: "multiply", pointerEvents: "none" }} />
 
-            {/* 가로 줄 — 먹선 */}
             {Array.from({ length: 26 }).map((_, i) => (
               <div key={i} style={{
                 position: "absolute", left: 32, right: 20,
@@ -212,70 +175,48 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }} />
             ))}
 
-            {/* 붉은 여백선 */}
             <div style={{
               position: "absolute", left: 58, top: "6%", bottom: "6%", width: 1,
               background: "linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.48) 10%, rgba(var(--accent-rgb), 0.48) 90%, transparent)",
             }} />
 
-            {/* 코너 장식 */}
             {corners.map((s, i) => (
               <div key={i} style={{ position: "absolute", width: 16, height: 16, ...s }} />
             ))}
 
-            {/* 표제지 라벨 — 세로쓰기 "청음일기" */}
             <div style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
+              position: "absolute", left: "50%", top: "50%",
               transform: "translate(-50%, -50%)",
-              zIndex: 2,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 12,
+              zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
             }}>
-              {/* 이중 테두리 표제 상자 */}
               <div style={{
                 border: "1px solid rgba(var(--diary-ink-rgb), 0.65)",
                 padding: 5,
                 backgroundColor: "var(--diary-label-bg)",
                 boxShadow: "1px 2px 6px rgba(var(--diary-ink-rgb), 0.18)",
               }}>
-                <div style={{
-                  border: "1px solid rgba(var(--diary-ink-rgb), 0.45)",
-                  padding: "14px 8px",
-                }}>
+                <div style={{ border: "1px solid rgba(var(--diary-ink-rgb), 0.45)", padding: "14px 8px" }}>
                   <h1 style={{
-                    writingMode: "vertical-rl",
-                    textOrientation: "upright",
+                    writingMode: "vertical-rl", textOrientation: "upright",
                     fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
-                    fontSize: 20,
-                    color: "var(--diary-label-text)",
-                    letterSpacing: "0.22em",
-                    lineHeight: 1,
-                    margin: 0,
-                    fontWeight: 400,
+                    fontSize: 20, color: "var(--diary-label-text)",
+                    letterSpacing: "0.22em", lineHeight: 1, margin: 0, fontWeight: 400,
                   }}>
                     청음일기
                   </h1>
                 </div>
               </div>
 
-              {/* 私記 인장 */}
               <span style={{
                 display: "inline-block",
                 border: "2px solid rgba(var(--accent-rgb), 0.72)",
                 padding: "3px 7px",
                 fontFamily: "var(--font-song, serif)",
-                fontSize: 11,
-                color: "rgba(var(--accent-rgb), 0.72)",
-                letterSpacing: "0.12em",
+                fontSize: 11, color: "rgba(var(--accent-rgb), 0.72)", letterSpacing: "0.12em",
               }}>
                 私記
               </span>
 
-              {/* 미니 통계 */}
               {!isSample && (monthCount > 0 || streak > 0) && (
                 <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.35), transparent)" }} />
@@ -299,43 +240,32 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               )}
             </div>
 
-            {/* 새 기록 — 데스크탑 왼쪽 패널 하단 */}
+            {/* 새 기록 버튼 */}
             <button
               onClick={onNewEntry}
               className="hidden sm:flex"
               style={{
-                position: "absolute",
-                bottom: "12%",
-                left: "50%",
+                position: "absolute", bottom: "12%", left: "50%",
                 transform: "translateX(-50%)",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2,
-                background: "none",
-                border: "1px solid rgba(var(--accent-rgb), 0.4)",
-                padding: "8px 6px",
-                cursor: "pointer",
-                zIndex: 2,
-                opacity: 0.55,
-                transition: "opacity 0.15s",
+                flexDirection: "column", alignItems: "center", gap: 2,
+                background: "none", border: "1px solid rgba(var(--accent-rgb), 0.4)",
+                padding: "8px 6px", cursor: "pointer", zIndex: 2,
+                opacity: 0.55, transition: "opacity 0.15s",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.55")}
               aria-label="새 기록"
             >
               <span style={{
-                writingMode: "vertical-rl",
-                textOrientation: "upright",
+                writingMode: "vertical-rl", textOrientation: "upright",
                 fontFamily: "var(--font-song, serif)",
-                fontSize: 10,
-                color: "rgba(var(--accent-rgb), 0.85)",
-                letterSpacing: "0.14em",
+                fontSize: 10, color: "rgba(var(--accent-rgb), 0.85)", letterSpacing: "0.14em",
               }}>
                 新記
               </span>
             </button>
 
-            {/* 제본 스티치 — 오른쪽 가장자리 */}
+            {/* 제본 스티치 */}
             <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 22, zIndex: 1 }}>
               <div style={{
                 position: "absolute", left: "50%", top: "6%", bottom: "6%", width: 1,
@@ -343,8 +273,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }} />
               {STITCH_POS.map((top) => (
                 <div key={top} style={{
-                  position: "absolute",
-                  left: "50%", top: `${top}%`,
+                  position: "absolute", left: "50%", top: `${top}%`,
                   width: 6, height: 6, borderRadius: "50%",
                   border: "1px solid rgba(var(--diary-ink-rgb), 0.5)",
                   backgroundColor: "rgba(var(--diary-ink-rgb), 0.32)",
@@ -354,19 +283,16 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             </div>
           </div>
 
-          {/* ── 책등 (데스크탑) ── */}
+          {/* ── 책등 ── */}
           <div
             className="hidden sm:block"
             style={{
-              width: 20,
-              flexShrink: 0,
+              width: 20, flexShrink: 0,
               background: "linear-gradient(90deg, #0A0806 0%, #1E160E 38%, #1A1209 62%, #0A0806 100%)",
               boxShadow: "inset 2px 0 5px rgba(0,0,0,0.8), inset -2px 0 5px rgba(0,0,0,0.8)",
-              position: "relative",
-              overflow: "hidden",
+              position: "relative", overflow: "hidden",
             }}
           >
-            {/* 가죽 밴드 — 금박 강조선 */}
             {[0.1, 0.25, 0.75, 0.9].map((pos) => (
               <div key={pos} style={{
                 position: "absolute", left: 0, right: 0, top: `${pos * 100}%`, height: 4,
@@ -375,18 +301,17 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             ))}
           </div>
 
-          {/* ── 오른쪽 패널 wrapper (overflow: visible — 책갈피 돌출용) ── */}
+          {/* ── 오른쪽 패널 ── */}
           <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
 
-            {/* 페이지 단면 — 종이 두께 표현 */}
+            {/* 페이지 단면 */}
             <div style={{
               position: "absolute", right: -3, top: 2, bottom: 2, width: 5,
               background: "linear-gradient(90deg, rgba(180,155,100,0.15) 0%, rgba(200,175,115,0.3) 50%, rgba(130,100,55,0.12) 100%)",
-              borderRadius: "0 4px 4px 0",
-              zIndex: 5,
+              borderRadius: "0 4px 4px 0", zIndex: 5,
             }} />
 
-            {/* 페이지 비주얼 쉘 — 배경/테두리/노이즈만, overflow:hidden으로 border-radius 클리핑 */}
+            {/* 페이지 배경/테두리 쉘 */}
             <div style={{
               position: "absolute", inset: 0,
               background: hanji,
@@ -397,17 +322,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               boxShadow: "inset 5px 0 18px rgba(0,0,0,0.07), 0 0 0 1px var(--diary-page-inset) inset",
               zIndex: 0,
             }}>
-              {/* 종이 결 오버레이 */}
-              <div style={{
-                position: "absolute", inset: 0,
-                backgroundImage: noise,
-                opacity: 0.1,
-                mixBlendMode: "multiply",
-                pointerEvents: "none",
-              }} />
+              <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.1, mixBlendMode: "multiply", pointerEvents: "none" }} />
             </div>
 
-            {/* 모바일 탭 바 — 고정 레이어, 애니메이션과 무관 */}
+            {/* 모바일 탭 바 */}
             <div
               className="sm:hidden"
               style={{
@@ -415,7 +333,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 display: "flex",
                 borderBottom: "1px solid rgba(var(--diary-ink-rgb), 0.12)",
                 backgroundColor: "var(--bg-elevated)",
-                zIndex: 5,
+                zIndex: 10,
               }}
             >
               {TABS.map((tab) => {
@@ -441,35 +359,89 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               })}
             </div>
 
-            {/* 스크롤 가능한 페이지 내용 — overflow:hidden 쉘 밖에 위치해 책등 너머로 슬라이드 가능 */}
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                페이지 영역 — perspective 컨텍스트
+                base layer (새 내용) + flip layer (이전 내용 3D 카드)
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <div
               className="sm:top-0 top-[40px]"
               style={{
-                position: "absolute",
-                left: 0, right: 0, bottom: 0,
-                overflowY: "auto", overflowX: "hidden",
-                animation: pageAnim,
-                transformOrigin: animOrigin,
-                background: hanji,
+                position: "absolute", left: 0, right: 0, bottom: 0,
+                perspective: "1000px",
                 zIndex: 1,
               }}
             >
-              {isSample && (
-                <div style={{ padding: "12px 20px 0" }}>
+              {/* 새 내용 — 항상 아래에 깔려있음 */}
+              <div style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0 }}>
+                {isSample && (
+                  <div style={{ padding: "12px 20px 0" }}>
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      backgroundColor: "rgba(var(--accent-rgb), 0.05)",
+                      border: "1px solid rgba(var(--accent-rgb), 0.2)",
+                      borderRadius: 4, padding: "8px 12px",
+                    }}>
+                      <span style={{ color: "var(--accent)", fontSize: 10, opacity: 0.65, flexShrink: 0 }}>✦</span>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11, margin: 0 }}>
+                        예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {renderContent(activeTab)}
+              </div>
+
+              {/* 이전 내용 — 3D 카드로 뒤집혀 나감 */}
+              {flippingFrom !== null && (
+                <div
+                  style={{
+                    position: "absolute", inset: 0,
+                    zIndex: 5,
+                    transformOrigin: flipDir === 1 ? "left center" : "right center",
+                    transformStyle: "preserve-3d",
+                    animation: flipDir === 1
+                      ? "flipFwd 0.52s cubic-bezier(0.4,0,0.6,1) forwards"
+                      : "flipBwd 0.52s cubic-bezier(0.4,0,0.6,1) forwards",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {/* 앞면: 이전 내용 (0° → 90°에서 보임) */}
                   <div style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    backgroundColor: "rgba(var(--accent-rgb), 0.05)",
-                    border: "1px solid rgba(var(--accent-rgb), 0.2)",
-                    borderRadius: 4, padding: "8px 12px",
+                    position: "absolute", inset: 0,
+                    overflowY: "hidden",
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    background: hanji,
+                    boxShadow: flipDir === 1
+                      ? "inset -6px 0 18px rgba(0,0,0,0.09)"
+                      : "inset 6px 0 18px rgba(0,0,0,0.09)",
                   }}>
-                    <span style={{ color: "var(--accent)", fontSize: 10, opacity: 0.65, flexShrink: 0 }}>✦</span>
-                    <p style={{ color: "var(--text-muted)", fontSize: 11, margin: 0 }}>
-                      예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
-                    </p>
+                    {renderContent(flippingFrom)}
+                  </div>
+
+                  {/* 뒷면: 빈 한지 (90° → 180°에서 보임) */}
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    background: hanji,
+                    boxShadow: flipDir === 1
+                      ? "inset 6px 0 18px rgba(0,0,0,0.09)"
+                      : "inset -6px 0 18px rgba(0,0,0,0.09)",
+                  }}>
+                    <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: 0.12, mixBlendMode: "multiply" }} />
+                    {/* 빈 줄 */}
+                    {Array.from({ length: 22 }).map((_, i) => (
+                      <div key={i} style={{
+                        position: "absolute", left: 24, right: 24,
+                        top: `${8 + i * 4.2}%`, height: 1,
+                        background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.09) 15%, rgba(var(--diary-ink-rgb), 0.09) 85%, transparent)",
+                      }} />
+                    ))}
                   </div>
                 </div>
               )}
-              {renderContent()}
             </div>
 
             {/* ── 표지 — 데스크탑 3D ── */}
@@ -508,10 +480,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 <div style={{ textAlign: "center", zIndex: 1 }}>
                   <div style={{
                     fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
-                    fontSize: 26,
-                    color: "#C4AA7C",
-                    writingMode: "vertical-rl",
-                    letterSpacing: "0.22em",
+                    fontSize: 26, color: "#C4AA7C",
+                    writingMode: "vertical-rl", letterSpacing: "0.22em",
                     textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 -1px 1px rgba(220,180,80,0.15)",
                   }}>
                     청음일기
@@ -536,8 +506,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 <div style={{
                   fontFamily: "var(--font-song, serif)",
                   fontSize: 26, color: "#C4AA7C",
-                  writingMode: "vertical-rl",
-                  letterSpacing: "0.22em",
+                  writingMode: "vertical-rl", letterSpacing: "0.22em",
                   textShadow: "0 1px 3px rgba(0,0,0,0.9)",
                 }}>
                   청음일기
@@ -564,20 +533,15 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                     key={tab.id}
                     onClick={() => handleTabClick(tab.id)}
                     style={{
-                      writingMode: "vertical-rl",
-                      textOrientation: "mixed",
-                      padding: "16px 9px 20px",
-                      border: "none",
-                      cursor: "pointer",
+                      writingMode: "vertical-rl", textOrientation: "mixed",
+                      padding: "16px 9px 20px", border: "none", cursor: "pointer",
                       clipPath: "polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%)",
                       background: isActive
                         ? "linear-gradient(180deg, var(--diary-page-from) 0%, var(--diary-page-to) 100%)"
                         : "linear-gradient(180deg, #8a8070 0%, #7a7060 100%)",
                       color: isActive ? "var(--text)" : "rgba(250,248,244,0.75)",
-                      fontSize: 10,
-                      fontWeight: isActive ? 700 : 500,
-                      fontFamily: "var(--font-song, serif)",
-                      letterSpacing: "0.12em",
+                      fontSize: 10, fontWeight: isActive ? 700 : 500,
+                      fontFamily: "var(--font-song, serif)", letterSpacing: "0.12em",
                       transition: "all 0.2s ease",
                       transform: isActive ? "translateX(5px)" : "translateX(0)",
                       filter: isActive
