@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useDiaryTheme } from "@/components/diary/DiaryThemeProvider";
 
 export default function DiaryHeader() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { theme, toggle } = useDiaryTheme();
 
   const handleBack = () => {
     if (window.history.length > 1) router.back();
@@ -65,20 +67,44 @@ export default function DiaryHeader() {
             청음일기
           </p>
 
-          {/* 私記 인장 뱃지 */}
-          <span style={{
-            display: "inline-flex",
-            border: "1.5px solid var(--accent)",
-            padding: "2px 6px",
-            fontSize: 9,
-            fontWeight: 700,
-            color: "var(--accent)",
-            letterSpacing: "0.14em",
-            opacity: 0.75,
-            fontFamily: "var(--font-song, serif)",
-          }}>
-            私記
-          </span>
+          {/* 오른쪽: 테마 토글 + 私記 뱃지 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={toggle}
+              title={theme === "light" ? "다크 모드로" : "라이트 모드로"}
+              style={{
+                background: "none", border: "1px solid var(--border)",
+                padding: "2px 7px", cursor: "pointer",
+                color: "var(--text-muted)", fontSize: 11,
+                fontFamily: "var(--font-song, serif)",
+                letterSpacing: "0.1em",
+                transition: "color 0.15s, border-color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "var(--text)";
+                e.currentTarget.style.borderColor = "var(--accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "var(--text-muted)";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              {theme === "light" ? "夜" : "晝"}
+            </button>
+            <span style={{
+              display: "inline-flex",
+              border: "1.5px solid var(--accent)",
+              padding: "2px 6px",
+              fontSize: 9,
+              fontWeight: 700,
+              color: "var(--accent)",
+              letterSpacing: "0.14em",
+              opacity: 0.75,
+              fontFamily: "var(--font-song, serif)",
+            }}>
+              私記
+            </span>
+          </div>
         </div>
       </header>
     </>
