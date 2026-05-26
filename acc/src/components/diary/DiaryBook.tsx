@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { DiaryEntry } from "@/types/diary";
 import { useDiaryTheme } from "@/components/diary/DiaryThemeProvider";
 import RecordsTab from "./tabs/RecordsTab";
@@ -41,12 +41,46 @@ const corners: React.CSSProperties[] = [
 
 const STITCH_POS = [8, 22, 38, 54, 70, 84, 94];
 
+let _audioCtx: AudioContext | null = null;
+function playPageSound() {
+  try {
+    if (!_audioCtx || _audioCtx.state === "closed") {
+      _audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    }
+    const ctx = _audioCtx;
+    if (ctx.state === "suspended") ctx.resume();
+    const dur = 0.18;
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < d.length; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + w * 0.0555179;
+      b1 = 0.99332 * b1 + w * 0.0750759;
+      b2 = 0.96900 * b2 + w * 0.1538520;
+      d[i] = (b0 + b1 + b2 + w * 0.5362) * 0.11;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 2800;
+    bp.Q.value = 1.2;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.45, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch (_) { /* 오디오 미지원 환경 무시 */ }
+}
+
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
   const { theme } = useDiaryTheme();
   const [activeTab, setActiveTab] = useState<Tab>("records");
   const [flippingFrom, setFlippingFrom] = useState<Tab | null>(null);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
+  const flipQueueRef = useRef<Array<{ from: Tab; to: Tab; dir: 1 | -1 }>>([]);
 
   const hanji = theme === "light"
     ? "linear-gradient(160deg, #fefefe 0%, #fdfcfa 55%, #f9f8f3 100%)"
@@ -71,10 +105,23 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     return () => clearTimeout(t);
   }, []);
 
-  /* flippingFrom 설정되면 애니메이션 끝난 후 정리 */
+  /* 플립 완료 후 다음 큐 처리 */
   useEffect(() => {
     if (flippingFrom === null) return;
-    const t = setTimeout(() => setFlippingFrom(null), 560);
+    const t = setTimeout(() => {
+      setFlippingFrom(null);
+      const queue = flipQueueRef.current;
+      if (queue.length > 0) {
+        const [next, ...rest] = queue;
+        flipQueueRef.current = rest;
+        setTimeout(() => {
+          playPageSound();
+          setFlipDir(next.dir);
+          setFlippingFrom(next.from);
+          setActiveTab(next.to);
+        }, 50);
+      }
+    }, 540);
     return () => clearTimeout(t);
   }, [flippingFrom]);
 
@@ -103,9 +150,22 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
 
   const handleTabClick = (tab: Tab) => {
     if (tab === activeTab || flippingFrom !== null) return;
-    setFlipDir(TAB_IDX[tab] > TAB_IDX[activeTab] ? 1 : -1);
-    setFlippingFrom(activeTab); /* 이전 탭이 3D로 뒤집혀 나감 */
-    setActiveTab(tab);          /* 새 탭이 즉시 아래 레이어에 깔림 */
+    const fromIdx = TAB_IDX[activeTab];
+    const toIdx = TAB_IDX[tab];
+    const dir: 1 | -1 = toIdx > fromIdx ? 1 : -1;
+    /* 건너뛰는 탭 수만큼 플립 시퀀스 생성 */
+    const steps: Array<{ from: Tab; to: Tab; dir: 1 | -1 }> = [];
+    for (let i = fromIdx + dir; dir > 0 ? i <= toIdx : i >= toIdx; i += dir) {
+      const prev = steps.length > 0 ? steps[steps.length - 1].to : activeTab;
+      const next = (Object.keys(TAB_IDX) as Tab[]).find(k => TAB_IDX[k] === i)!;
+      steps.push({ from: prev, to: next, dir });
+    }
+    const [first, ...rest] = steps;
+    flipQueueRef.current = rest;
+    playPageSound();
+    setFlipDir(first.dir);
+    setFlippingFrom(first.from);
+    setActiveTab(first.to);
   };
 
   const renderContent = (tab: Tab) => {
@@ -134,17 +194,21 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           0%   { opacity: 1; transform: scale(1); }
           100% { opacity: 0; transform: scale(0.97); }
         }
-        /* 앞으로 — 왼쪽 끝을 축으로 앞장이 뒤로 넘어감 (-105도에서 페이드아웃) */
+        /* 앞으로 — 왼쪽 끝 축, 종이가 휘며 넘어가는 효과 */
         @keyframes flipFwd {
-          from { transform: rotateY(0deg); opacity: 1; }
-          70%  { opacity: 1; }
-          to   { transform: rotateY(-105deg); opacity: 0; }
+          0%   { transform: rotateY(0deg) skewY(0deg); opacity: 1; }
+          28%  { transform: rotateY(-48deg) skewY(-4deg); opacity: 1; }
+          58%  { transform: rotateY(-86deg) skewY(4deg); opacity: 1; }
+          78%  { transform: rotateY(-100deg) skewY(1deg); opacity: 0.7; }
+          100% { transform: rotateY(-105deg) skewY(0deg); opacity: 0; }
         }
-        /* 뒤로 — 왼쪽 끝을 축으로 좌측에서 우측으로 펼쳐짐 */
+        /* 뒤로 — 왼쪽에서 오른쪽으로 종이가 펼쳐지며 넘어오는 효과 */
         @keyframes flipBwdIn {
-          from { transform: rotateY(-105deg); opacity: 0; }
-          30%  { opacity: 1; }
-          to   { transform: rotateY(0deg); opacity: 1; }
+          0%   { transform: rotateY(-105deg) skewY(0deg); opacity: 0; }
+          22%  { transform: rotateY(-100deg) skewY(1deg); opacity: 0.7; }
+          42%  { transform: rotateY(-86deg) skewY(4deg); opacity: 1; }
+          72%  { transform: rotateY(-48deg) skewY(-4deg); opacity: 1; }
+          100% { transform: rotateY(0deg) skewY(0deg); opacity: 1; }
         }
       `}</style>
 
@@ -174,8 +238,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           <div
             className="hidden sm:block"
             style={{
-              width: "36%",
-              flexShrink: 0,
+              flex: 1,
+              minWidth: 0,
               background: hanji,
               borderRadius: "10px 0 0 10px",
               border: "1px solid rgba(var(--diary-ink-rgb), 0.15)",
@@ -388,7 +452,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               className="sm:top-0 top-[40px]"
               style={{
                 position: "absolute", left: 0, right: 0, bottom: 0,
-                perspective: "1000px",
+                perspective: "700px",
                 zIndex: 1,
               }}
             >
@@ -421,8 +485,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                     transformOrigin: "left center",
                     transformStyle: "preserve-3d",
                     animation: flipDir === 1
-                      ? "flipFwd 0.52s cubic-bezier(0.4,0,0.6,1) forwards"
-                      : "flipBwdIn 0.52s cubic-bezier(0.4,0,0.6,1) forwards",
+                      ? "flipFwd 0.52s cubic-bezier(0.45,0,0.55,1) forwards"
+                      : "flipBwdIn 0.52s cubic-bezier(0.45,0,0.55,1) forwards",
                     pointerEvents: "none",
                   }}
                 >
