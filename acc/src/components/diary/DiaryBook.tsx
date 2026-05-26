@@ -41,6 +41,20 @@ const corners: React.CSSProperties[] = [
 
 const STITCH_POS = [8, 22, 38, 54, 70, 84, 94];
 
+/* 멀티스트립 책 커버 — 각 조각이 다른 각도로 회전해 실제 종이 곡률 재현 */
+const STRIP_N = 5;
+const STRIP_END_ROTS = [-12, -38, -66, -90, -110]; // 척추→바깥 끝, 바깥이 가장 많이 회전
+const _KP = [0,  15,  48,   70,   87,  100]; // keyframe %
+const _KR = [0, -18, -65,  -90, -104, -110]; // 기준 rotateY (바깥 끝 기준)
+const _KO = [1,   1,   1, 0.95, 0.28,    0]; // opacity
+const STRIP_KEYFRAMES = STRIP_END_ROTS.map((end, i) => {
+  const s = end / -110;
+  const frames = _KP.map((p, j) =>
+    `  ${p}%{transform:rotateY(${(_KR[j]*s).toFixed(2)}deg);opacity:${_KO[j]};}`
+  ).join("");
+  return `@keyframes cs${i}{${frames}}`;
+}).join("");
+
 let _audioCtx: AudioContext | null = null;
 function playPageSound() {
   try {
@@ -180,14 +194,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   return (
     <>
       <style>{`
-        @keyframes coverFlip {
-          0%   { transform: perspective(1400px) rotateY(0deg) skewY(0deg); opacity: 1; }
-          15%  { transform: perspective(1400px) rotateY(-18deg) skewY(-1.2deg); opacity: 1; }
-          48%  { transform: perspective(1400px) rotateY(-65deg) skewY(2deg); opacity: 1; }
-          70%  { transform: perspective(1400px) rotateY(-90deg) skewY(0.5deg); opacity: 0.95; }
-          87%  { transform: perspective(1400px) rotateY(-104deg) skewY(0deg); opacity: 0.28; }
-          100% { transform: perspective(1400px) rotateY(-110deg) skewY(0deg); opacity: 0; }
-        }
+        ${STRIP_KEYFRAMES}
         @keyframes coverHint {
           0%, 100% { opacity: 0.5; transform: translateY(0px); }
           50% { opacity: 0.85; transform: translateY(4px); }
@@ -528,61 +535,84 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               )}
             </div>
 
-            {/* ── 표지 (우측 패널 — 탭 플립과 동일 크기/축) ── */}
+            {/* ── 표지 — 멀티스트립 종이 곡률 ── */}
             {!coverDone && (
               <div
                 style={{
                   position: "absolute", inset: 0, zIndex: 20,
-                  transformOrigin: "left center",
-                  animation: coverOpen ? "coverFlip 0.72s cubic-bezier(0.25,0.1,0.2,1) forwards" : "none",
+                  perspective: "1400px",
                   cursor: coverOpen ? "default" : "pointer",
                   pointerEvents: coverOpen ? "none" : "auto",
                 }}
                 onClick={() => { if (!coverOpen) { playPageSound(); setCoverOpen(true); } }}
-                onAnimationEnd={() => setCoverDone(true)}
               >
-                <div style={{
-                  width: "100%", height: "100%",
-                  borderRadius: "0 10px 10px 0",
-                  overflow: "hidden",
-                  background: [
-                    "repeating-linear-gradient(89deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px)",
-                    "repeating-linear-gradient(1deg, transparent, transparent 6px, rgba(255,255,255,0.01) 6px, rgba(255,255,255,0.01) 7px)",
-                    "linear-gradient(160deg, #1A1007 0%, #231608 30%, #1E1309 60%, #150E06 100%)",
-                  ].join(", "),
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  position: "relative",
-                }}>
-                  {Array.from({ length: 18 }).map((_, i) => (
-                    <div key={i} style={{
-                      position: "absolute", left: 0, right: 0, top: `${i * 5.6}%`, height: 1,
-                      background: "linear-gradient(90deg, transparent, rgba(80,55,20,0.28) 30%, rgba(80,55,20,0.28) 70%, transparent)",
-                    }} />
-                  ))}
-                  <div style={{ position: "absolute", inset: 20, border: "1px solid rgba(180,140,60,0.2)", borderRadius: 3 }} />
-                  <div style={{ position: "absolute", inset: 28, border: "1px solid rgba(180,140,60,0.1)", borderRadius: 2 }} />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, zIndex: 1 }}>
-                    <div style={{
-                      fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
-                      fontSize: 26, color: "#C4AA7C",
-                      writingMode: "vertical-rl", letterSpacing: "0.22em",
-                      textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 -1px 1px rgba(220,180,80,0.15)",
-                    }}>
-                      청음일기
-                    </div>
-                    {!coverOpen && (
+                {Array.from({ length: STRIP_N }).map((_, i) => {
+                  const lp = (i / STRIP_N) * 100;
+                  const wp = 100 / STRIP_N;
+                  /* 바깥 끝(i=N-1)이 먼저, 척추(i=0)가 마지막에 넘어감 */
+                  const delay = (STRIP_N - 1 - i) * 0.02;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        position: "absolute", top: 0, bottom: 0,
+                        left: `${lp}%`, width: `${wp}%`,
+                        overflow: "hidden",
+                        /* 각 스트립의 회전 축 = 커버 척추(맨 왼쪽) */
+                        transformOrigin: `${-i * 100}% 50%`,
+                        zIndex: STRIP_N - i,
+                        animation: coverOpen
+                          ? `cs${i} 0.72s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards`
+                          : "none",
+                      }}
+                      onAnimationEnd={i === 0 ? () => setCoverDone(true) : undefined}
+                    >
+                      {/* 스트립 내부: 커버 전체 너비 콘텐츠를 올바른 구간만 보이도록 오프셋 */}
                       <div style={{
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                        animation: "coverHint 2.2s ease-in-out infinite",
+                        position: "absolute", top: 0, bottom: 0,
+                        left: `-${i * 100}%`,
+                        width: `${STRIP_N * 100}%`,
+                        background: [
+                          "repeating-linear-gradient(89deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px)",
+                          "repeating-linear-gradient(1deg, transparent, transparent 6px, rgba(255,255,255,0.01) 6px, rgba(255,255,255,0.01) 7px)",
+                          "linear-gradient(160deg, #1A1007 0%, #231608 30%, #1E1309 60%, #150E06 100%)",
+                        ].join(", "),
+                        display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
-                        <div style={{ width: 1, height: 22, background: "linear-gradient(180deg, transparent, rgba(196,170,124,0.5), transparent)" }} />
-                        <span style={{ fontSize: 9, color: "rgba(196,170,124,0.6)", letterSpacing: "0.22em", fontFamily: "var(--font-song, serif)" }}>
-                          열기
-                        </span>
+                        {Array.from({ length: 18 }).map((_, li) => (
+                          <div key={li} style={{
+                            position: "absolute", left: 0, right: 0, top: `${li * 5.6}%`, height: 1,
+                            background: "linear-gradient(90deg, transparent, rgba(80,55,20,0.28) 30%, rgba(80,55,20,0.28) 70%, transparent)",
+                          }} />
+                        ))}
+                        <div style={{ position: "absolute", inset: 20, border: "1px solid rgba(180,140,60,0.2)", borderRadius: 3 }} />
+                        <div style={{ position: "absolute", inset: 28, border: "1px solid rgba(180,140,60,0.1)", borderRadius: 2 }} />
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28, zIndex: 1 }}>
+                          <div style={{
+                            fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
+                            fontSize: 26, color: "#C4AA7C",
+                            writingMode: "vertical-rl", letterSpacing: "0.22em",
+                            textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 -1px 1px rgba(220,180,80,0.15)",
+                          }}>
+                            청음일기
+                          </div>
+                          {/* 열기 힌트는 중앙 스트립에만 */}
+                          {!coverOpen && i === Math.floor(STRIP_N / 2) && (
+                            <div style={{
+                              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                              animation: "coverHint 2.2s ease-in-out infinite",
+                            }}>
+                              <div style={{ width: 1, height: 22, background: "linear-gradient(180deg, transparent, rgba(196,170,124,0.5), transparent)" }} />
+                              <span style={{ fontSize: 9, color: "rgba(196,170,124,0.6)", letterSpacing: "0.22em", fontFamily: "var(--font-song, serif)" }}>
+                                열기
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
