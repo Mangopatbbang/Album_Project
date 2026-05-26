@@ -21,12 +21,12 @@ const LIGHT = {
   "--accent-rgb": "138,45,36",
   colorScheme: "light",
   "--diary-ink-rgb": "20,14,6",
-  "--diary-page-from": "#fafaf8",
-  "--diary-page-mid": "#f8f7f4",
-  "--diary-page-to": "#f5f4f0",
-  "--diary-label-bg": "#f7efd8",
-  "--diary-label-text": "#241b14",
-  "--diary-page-inset": "rgba(255,255,255,0.4)",
+  "--diary-page-from": "#ffffff",
+  "--diary-page-mid": "#fefdfb",
+  "--diary-page-to": "#f9f8f4",
+  "--diary-label-bg": "#f5ecd6",
+  "--diary-label-text": "#1e1510",
+  "--diary-page-inset": "rgba(255,255,255,0.6)",
 };
 
 const DARK = {

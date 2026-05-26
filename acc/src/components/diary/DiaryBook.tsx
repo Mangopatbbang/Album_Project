@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { DiaryEntry } from "@/types/diary";
+import { useDiaryTheme } from "@/components/diary/DiaryThemeProvider";
 import RecordsTab from "./tabs/RecordsTab";
 import CalendarTab from "./tabs/CalendarTab";
 import AlbumsTab from "./tabs/AlbumsTab";
@@ -43,10 +44,23 @@ const corners: React.CSSProperties[] = [
 const STITCH_POS = [8, 22, 38, 54, 70, 84, 94];
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
+  const { theme } = useDiaryTheme();
   const [activeTab, setActiveTab] = useState<Tab>("records");
   const [flippingFrom, setFlippingFrom] = useState<Tab | null>(null);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
   const [coverOpen, setCoverOpen] = useState(false);
+
+  const frameBg = theme === "light"
+    ? "radial-gradient(ellipse 90% 70% at 50% 50%, #c8c0b6 0%, #b4ac9f 100%)"
+    : "radial-gradient(ellipse 90% 70% at 50% 50%, #1C1410 0%, #0D0A07 100%)";
+
+  const spineBg = theme === "light"
+    ? "linear-gradient(90deg, #6a5c50 0%, #8c7c6e 38%, #7e6e60 62%, #6a5c50 100%)"
+    : "linear-gradient(90deg, #0A0806 0%, #1E160E 38%, #1A1209 62%, #0A0806 100%)";
+
+  const bookShadow = theme === "light"
+    ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
+    : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
 
   useEffect(() => {
     const t = setTimeout(() => setCoverOpen(true), 200);
@@ -135,7 +149,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           alignItems: "center",
           justifyContent: "center",
           height: "calc(100dvh - 52px)",
-          background: "radial-gradient(ellipse 90% 70% at 50% 50%, #1C1410 0%, #0D0A07 100%)",
+          background: frameBg,
           padding: "16px",
           boxSizing: "border-box",
           overflow: "hidden",
@@ -146,8 +160,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           height: "100%",
           width: "min(920px, 100%)",
           position: "relative",
-          boxShadow:
-            "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)",
+          boxShadow: bookShadow,
           borderRadius: 10,
         }}>
 
@@ -288,15 +301,17 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             className="hidden sm:block"
             style={{
               width: 20, flexShrink: 0,
-              background: "linear-gradient(90deg, #0A0806 0%, #1E160E 38%, #1A1209 62%, #0A0806 100%)",
-              boxShadow: "inset 2px 0 5px rgba(0,0,0,0.8), inset -2px 0 5px rgba(0,0,0,0.8)",
+              background: spineBg,
+              boxShadow: "inset 2px 0 5px rgba(0,0,0,0.5), inset -2px 0 5px rgba(0,0,0,0.5)",
               position: "relative", overflow: "hidden",
             }}
           >
             {[0.1, 0.25, 0.75, 0.9].map((pos) => (
               <div key={pos} style={{
                 position: "absolute", left: 0, right: 0, top: `${pos * 100}%`, height: 4,
-                background: "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(160,120,50,0.14) 50%, rgba(0,0,0,0.5) 100%)",
+                background: theme === "light"
+                  ? "linear-gradient(90deg, rgba(0,0,0,0.15) 0%, rgba(160,120,50,0.22) 50%, rgba(0,0,0,0.15) 100%)"
+                  : "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(160,120,50,0.14) 50%, rgba(0,0,0,0.5) 100%)",
               }} />
             ))}
           </div>
