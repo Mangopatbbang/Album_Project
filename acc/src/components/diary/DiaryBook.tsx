@@ -183,6 +183,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   useEffect(() => {
     if (flippingFrom === null) return;
     const t = setTimeout(() => {
+      if (pageContentRef.current) pageContentRef.current.scrollTop = 0;
       setFlippingFrom(null);
       setFlipSnap(null);
       const queue = flipQueueRef.current;
@@ -202,11 +203,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     return () => clearTimeout(t);
   }, [flippingFrom]);
 
-  /* 플립 완료 시 새 페이지 스크롤 맨 위로 리셋 */
-  useEffect(() => {
-    if (flippingFrom !== null) return;
-    if (pageContentRef.current) pageContentRef.current.scrollTop = 0;
-  }, [flippingFrom]);
 
   const monthCount = useMemo(() => {
     if (isSample) return 0;
@@ -280,7 +276,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
       if (e.key === "ArrowRight") handleTabClick(TABS[Math.min(TAB_IDX[activeTab] + 1, TABS.length - 1)].id);
       if (e.key === "ArrowLeft")  handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
       if (e.key === "Escape") {
-        setCoverDone(false); setCoverFlipped(false); setCoverOpen(false);
+        setCoverDone(false); setCoverFlipped(false); setCoverOpen(false); setCoverClosing(false);
         setActiveTab("records"); setDragX(null);
         flipQueueRef.current = []; setFlippingFrom(null); setFlipSnap(null); setSnapBackPhase(null);
       }
@@ -859,8 +855,18 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 else        handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
               }}
             >
-              {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용 */}
-              <div ref={pageContentRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0, paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box" }}>
+              {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용을 보여주다가 strip 착지 직전 fade-out, 완료 후 새 내용으로 fade-in */}
+              <div ref={pageContentRef} style={{
+                position: "absolute", inset: 0,
+                overflowY: "auto", overflowX: "hidden",
+                background: hanji, zIndex: 0,
+                paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0,
+                boxSizing: "border-box",
+                opacity: flipDir === -1 && flippingFrom !== null ? 0 : 1,
+                /* 뒷방향 시작: 0.40s 후 0.08s 동안 fade-out (strip 착지 완료 전 사라짐) */
+                /* 뒷방향 완료: 즉시 0.08s fade-in */
+                transition: flipDir === -1 && flippingFrom !== null ? "opacity 0.08s 0.40s" : "opacity 0.08s",
+              }}>
                 {renderPageContent(flipDir === -1 && flippingFrom !== null ? flippingFrom : activeTab)}
               </div>
 
@@ -887,7 +893,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       zIndex: isForward ? 5 + STRIP_N - i : 5 + i,
                       animation: anim,
                       pointerEvents: "none",
-                      willChange: "transform",
                     }}
                   >
                     <div style={{
@@ -929,7 +934,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       transform: `rotateY(-${rotDeg}deg)`,
                       zIndex: 5 + STRIP_N - i,
                       pointerEvents: "none",
-                      willChange: "transform",
                     }}>
                       <div style={{
                         position: "absolute", inset: 0,
@@ -966,7 +970,6 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       transition: snapBackPhase === "to" ? `transform 0.26s cubic-bezier(0.34,1.08,0.64,1) ${i * 0.012}s` : "none",
                       zIndex: 5 + STRIP_N - i,
                       pointerEvents: "none",
-                      willChange: "transform",
                     }}>
                       <div style={{
                         position: "absolute", inset: 0,
