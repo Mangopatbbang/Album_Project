@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { openOnboarding } from "@/components/ui/SpotlightTour";
 
 const STORAGE_KEY = "acs_tutorial_dismissed_v1";
 
@@ -395,8 +396,9 @@ export default function TutorialModal() {
           borderTop: "1px solid var(--border)",
           flexShrink: 0,
           paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-          display: "flex", gap: 8,
+          display: "flex", flexDirection: "column", gap: 8,
         }}>
+          <div style={{ display: "flex", gap: 8 }}>
             {page > 0 && (
               <button
                 onClick={() => setPage(page - 1)}
@@ -434,6 +436,21 @@ export default function TutorialModal() {
                 다음 →
               </button>
             )}
+          </div>
+          {/* 단계별 투어 */}
+          <button
+            onClick={() => { dismiss(); openOnboarding(); }}
+            style={{
+              background: "none", border: "1px solid var(--border)",
+              borderRadius: 10, padding: "9px 0",
+              color: "var(--text-muted)", fontSize: 12, cursor: "pointer",
+              transition: "color 0.15s, border-color 0.15s",
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(var(--accent-rgb),0.5)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}
+          >
+            버튼 하나씩 직접 둘러보기 →
+          </button>
         </div>
       </div>
     </div>

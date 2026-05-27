@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openTutorial } from "@/components/ui/TutorialModal";
+import { openOnboarding } from "@/components/ui/SpotlightTour";
 import { useAuth } from "@/context/AuthContext";
 
 type Announcement = {
@@ -197,6 +198,18 @@ export default function FloatingActions() {
                   NEW
                 </span>
               )}
+            </button>
+
+            {/* 튜토리얼 */}
+            <button
+              onClick={() => { openOnboarding(); setOpen(false); }}
+              style={btnStyle}
+              className="active:opacity-60 hover:opacity-80"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              튜토리얼
             </button>
 
             {/* 가이드 */}
