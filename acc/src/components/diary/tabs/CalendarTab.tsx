@@ -27,6 +27,7 @@ function toDateStr(year: number, month: number, day: number): string {
 }
 
 const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
+const DAY_COLORS: (string | undefined)[] = [undefined, undefined, undefined, undefined, undefined, "var(--color-saturday)", "var(--color-sunday)"];
 
 export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Props) {
   const kstNow = new Date(Date.now() + 9 * 3600000);
@@ -104,9 +105,11 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
 
         {/* 요일 헤더 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4, marginTop: 16 }}>
-          {DAY_LABELS.map((d) => (
+          {DAY_LABELS.map((d, i) => (
             <div key={d} style={{
-              textAlign: "center", color: "var(--text-muted)",
+              textAlign: "center",
+              color: DAY_COLORS[i] ?? "var(--text-muted)",
+              opacity: DAY_COLORS[i] ? 0.7 : 1,
               fontSize: 11, fontWeight: 600, padding: "4px 0",
             }}>
               {d}
@@ -122,6 +125,8 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
             const hasEntry = entryByDate.has(dateStr);
             const isToday = dateStr === todayStr;
             const isSelected = dateStr === selectedDate;
+            const colIdx = i % 7;
+            const weekdayColor = DAY_COLORS[colIdx];
 
             return (
               <div
@@ -144,8 +149,13 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
                 }}>
                   <span style={{
                     fontSize: 13,
-                    color: isSelected ? "#1C1917" : hasEntry ? "var(--text)" : "var(--text-muted)",
+                    color: isSelected
+                      ? "#1C1917"
+                      : hasEntry
+                        ? (weekdayColor ?? "var(--text)")
+                        : (weekdayColor ? `${weekdayColor}88` : "var(--text-muted)"),
                     fontWeight: hasEntry ? 600 : 400,
+                    opacity: weekdayColor && !hasEntry ? 0.55 : 1,
                   }}>
                     {day}
                   </span>

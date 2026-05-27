@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
+
 type Props = {
   onConfirm: () => void;
   onCancel: () => void;
 };
 
 export default function DeleteConfirmModal({ onConfirm, onCancel }: Props) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onCancel]);
+
   return (
     <div
       onClick={onCancel}
@@ -37,6 +45,15 @@ export default function DeleteConfirmModal({ onConfirm, onCancel }: Props) {
               flex: 1, padding: "9px 0",
               backgroundColor: "transparent", border: "1px solid var(--border)",
               borderRadius: 8, color: "var(--text)", fontSize: 13, cursor: "pointer",
+              transition: "background-color 0.12s, border-color 0.12s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-elevated)";
+              e.currentTarget.style.borderColor = "var(--text-sub)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.borderColor = "var(--border)";
             }}
           >
             취소
@@ -47,7 +64,10 @@ export default function DeleteConfirmModal({ onConfirm, onCancel }: Props) {
               flex: 1, padding: "9px 0",
               backgroundColor: "#c0392b", border: "none",
               borderRadius: 8, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              transition: "background-color 0.12s",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#a93226"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#c0392b"; }}
           >
             삭제
           </button>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DIARY_CATEGORIES, MAX_TAGS } from "@/lib/diaryTags";
+import { getTagStyle } from "@/lib/diaryTagStyles";
 
 type Props = {
   selected: string[];
@@ -130,19 +131,25 @@ export default function TagSelector({ selected, onChange, recentTags = [] }: Pro
                   ▾
                 </span>
               </button>
-              {isOpen && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 12 }}>
-                  {cat.tags.map((tag) => (
-                    <TagChip
-                      key={tag}
-                      tag={tag}
-                      selected={selected.includes(tag)}
-                      disabled={!selected.includes(tag) && selected.length >= MAX_TAGS}
-                      onToggle={toggle}
-                    />
-                  ))}
+              <div style={{
+                display: "grid",
+                gridTemplateRows: isOpen ? "1fr" : "0fr",
+                transition: "grid-template-rows 0.2s ease",
+              }}>
+                <div style={{ overflow: "hidden" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingBottom: 12 }}>
+                    {cat.tags.map((tag) => (
+                      <TagChip
+                        key={tag}
+                        tag={tag}
+                        selected={selected.includes(tag)}
+                        disabled={!selected.includes(tag) && selected.length >= MAX_TAGS}
+                        onToggle={toggle}
+                      />
+                    ))}
+                  </div>
                 </div>
-              )}
+              </div>
               <div style={{ borderTop: "1px solid var(--border)" }} />
             </div>
           );
@@ -163,6 +170,7 @@ function TagChip({
   disabled: boolean;
   onToggle: (tag: string) => void;
 }) {
+  const s = getTagStyle(tag);
   return (
     <button
       onClick={() => onToggle(tag)}
@@ -179,8 +187,12 @@ function TagChip({
         opacity: disabled && !selected ? 0.4 : 1,
         transition: "background-color 0.12s, color 0.12s, opacity 0.12s",
         whiteSpace: "nowrap",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: s.isPreset ? 4 : 0,
       }}
     >
+      {s.isPreset && <span style={{ fontSize: 11, lineHeight: 1 }}>{s.icon}</span>}
       {tag}
     </button>
   );

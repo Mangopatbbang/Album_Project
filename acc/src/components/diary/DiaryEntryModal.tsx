@@ -221,6 +221,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
                       border: i > step ? "1px solid var(--border)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0,
+                      transition: "background-color 0.18s, border-color 0.18s",
                     }}>
                       {i < step
                         ? <span style={{ color: "var(--bg)", fontSize: 10, fontWeight: 700 }}>✓</span>

@@ -38,6 +38,7 @@ function getLast6Months(entries: DiaryEntry[]) {
     const prefix = `${year}-${String(month).padStart(2, "0")}`;
     return {
       label: `${month}월`,
+      year,
       count: entries.filter((e) => e.listened_at.startsWith(prefix)).length,
       isCurrent: i === 5,
     };
@@ -95,9 +96,9 @@ function SummaryCards({ total, albums, relisten, mounted }: { total: number; alb
       {items.map((item) => (
         <div key={item.label} style={{
           backgroundColor: "var(--bg-card)",
-          border: "1px solid rgba(20,14,6,0.12)",
+          border: "1px solid var(--border-light)",
           borderRadius: 10, padding: "16px 0", textAlign: "center",
-          boxShadow: "1px 2px 8px rgba(20,14,6,0.08)",
+          boxShadow: "1px 2px 8px rgba(var(--diary-ink-rgb,20,14,6), 0.08)",
         }}>
           <p style={{
             color: "var(--text)", fontSize: 26, fontWeight: 800,
@@ -163,7 +164,7 @@ export default function StatsTab({ entries }: Props) {
           marginBottom: 24,
           background: "rgba(var(--accent-rgb), 0.05)",
           border: "1px solid rgba(var(--accent-rgb), 0.18)",
-          borderRadius: 12, padding: "20px 24px",
+          borderRadius: 10, padding: "20px 24px",
           display: "flex", alignItems: "center", gap: 18,
         }}>
           <p style={{
@@ -212,20 +213,28 @@ export default function StatsTab({ entries }: Props) {
           월별 기록
         </p>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 88 }}>
-          {monthData.map((m, i) => (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 5 }}>
-              <div style={{
-                width: "100%", borderRadius: "3px 3px 0 0",
-                height: mounted && m.count > 0 ? `${Math.max((m.count / maxBar) * 100, 10)}%` : "3px",
-                backgroundColor: m.count > 0 ? "var(--accent)" : "var(--border)",
-                opacity: m.isCurrent ? 1 : 0.45,
-                transition: `height 0.55s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`,
-              }} />
-              <span style={{ fontSize: 9, color: m.isCurrent ? "var(--text-muted)" : "var(--text-sub)", letterSpacing: "0.02em" }}>
-                {m.label}
-              </span>
-            </div>
-          ))}
+          {monthData.map((m, i) => {
+            const showYear = i === 0 || monthData[i - 1].year !== m.year;
+            return (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: 5 }}>
+                <div style={{
+                  width: "100%", borderRadius: "3px 3px 0 0",
+                  height: mounted && m.count > 0 ? `${Math.max((m.count / maxBar) * 100, 10)}%` : "3px",
+                  backgroundColor: m.count > 0 ? "var(--accent)" : "var(--border)",
+                  opacity: m.isCurrent ? 1 : 0.45,
+                  transition: `height 0.55s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s`,
+                }} />
+                <div style={{ textAlign: "center", lineHeight: 1.2 }}>
+                  {showYear && (
+                    <p style={{ fontSize: 8, color: "var(--text-sub)", opacity: 0.6, letterSpacing: 0 }}>{m.year}</p>
+                  )}
+                  <span style={{ fontSize: 9, color: m.isCurrent ? "var(--text-muted)" : "var(--text-sub)", letterSpacing: "0.02em" }}>
+                    {m.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

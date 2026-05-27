@@ -73,8 +73,24 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 20px", display: "flex", flexDirection: "column", gap: 40 }}>
         {[1, 2].map((i) => (
           <div key={i}>
-            <div className="skeleton-shimmer" style={{ height: 18, width: 120, borderRadius: 4, marginBottom: 20 }} />
-            <div className="skeleton-shimmer" style={{ height: 80, borderRadius: 8 }} />
+            {/* 날짜 헤더 스켈레톤 */}
+            <div style={{ marginBottom: 16 }}>
+              <div className="skeleton-shimmer" style={{ height: 10, width: 36, borderRadius: 3, marginBottom: 6 }} />
+              <div className="skeleton-shimmer" style={{ height: 22, width: 110, borderRadius: 4 }} />
+            </div>
+            {/* 카드 스켈레톤 — 52px 커버 + 텍스트 블록 */}
+            <div style={{
+              border: "1px solid var(--border-light)", borderRadius: 4,
+              padding: "14px 16px", display: "flex", gap: 12,
+            }}>
+              <div className="skeleton-shimmer" style={{ width: 52, height: 52, borderRadius: 4, flexShrink: 0 }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, paddingTop: 2 }}>
+                <div className="skeleton-shimmer" style={{ height: 14, width: "60%", borderRadius: 3 }} />
+                <div className="skeleton-shimmer" style={{ height: 11, width: "40%", borderRadius: 3 }} />
+                <div className="skeleton-shimmer" style={{ height: 11, width: "85%", borderRadius: 3, marginTop: 4 }} />
+                <div className="skeleton-shimmer" style={{ height: 11, width: "70%", borderRadius: 3 }} />
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -136,7 +152,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {onThisDayEntries.map((e) => {
                 const { year } = parseDateParts(e.listened_at);
-                const yearsAgo = new Date().getFullYear() - year;
+                const yearsAgo = new Date(Date.now() + 9 * 3600000).getUTCFullYear() - year;
                 return (
                   <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
@@ -205,7 +221,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
               key={date}
               style={{
                 marginBottom: 52,
-                animation: `feedItemIn 0.25s ease-out ${groupIdx * 0.07}s both`,
+                animation: `feedItemIn 0.22s ease-out ${groupIdx * 0.07}s both`,
               }}
             >
               <div style={{ marginBottom: 20 }}>

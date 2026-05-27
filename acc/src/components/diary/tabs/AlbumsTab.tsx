@@ -54,7 +54,17 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
   if (entries.length === 0) {
     return (
       <div style={{ padding: "80px 24px", textAlign: "center" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 13, opacity: 0.5 }}>기록된 앨범이 없어요</p>
+        <p style={{ fontSize: 36, marginBottom: 20, opacity: 0.3, color: "var(--accent)" }}>♪</p>
+        <p style={{
+          color: "var(--text)", fontSize: 17, fontWeight: 700,
+          letterSpacing: "-0.03em", marginBottom: 10,
+          fontFamily: "var(--font-playfair, serif)",
+        }}>
+          기록된 앨범이 없어요
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.8 }}>
+          청음일기를 남기면 앨범별로 모아볼 수 있어요.
+        </p>
       </div>
     );
   }
@@ -79,8 +89,8 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
             <div style={{
               width: 60, height: 60, borderRadius: 4,
               overflow: "hidden", flexShrink: 0,
-              border: "1px solid rgba(20,14,6,0.14)", backgroundColor: "#f0eeea",
-              boxShadow: "1px 2px 6px rgba(20,14,6,0.08)",
+              border: "1px solid var(--border-light)", backgroundColor: "var(--bg-elevated)",
+              boxShadow: "1px 2px 6px rgba(var(--diary-ink-rgb,20,14,6), 0.08)",
             }}>
               {selectedGroup.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
@@ -148,19 +158,19 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
                 position: "relative",
                 aspectRatio: "1/1",
                 borderRadius: 3,
-                backgroundColor: "#f0eeea",
-                border: "1px solid rgba(20,14,6,0.14)",
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border-light)",
                 marginBottom: 6,
-                boxShadow: "1px 2px 6px rgba(20,14,6,0.08)",
+                boxShadow: "1px 2px 6px rgba(var(--diary-ink-rgb,20,14,6), 0.08)",
                 transition: "border-color 0.15s, box-shadow 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(20,14,6,0.28)";
-                e.currentTarget.style.boxShadow = "2px 4px 10px rgba(20,14,6,0.12)";
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.boxShadow = "2px 4px 10px rgba(var(--diary-ink-rgb,20,14,6), 0.14)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(20,14,6,0.14)";
-                e.currentTarget.style.boxShadow = "1px 2px 6px rgba(20,14,6,0.08)";
+                e.currentTarget.style.borderColor = "var(--border-light)";
+                e.currentTarget.style.boxShadow = "1px 2px 6px rgba(var(--diary-ink-rgb,20,14,6), 0.08)";
               }}
             >
               {group.cover_url

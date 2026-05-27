@@ -37,12 +37,11 @@ export default function DiaryHeader() {
           alignItems: "center",
           justifyContent: "space-between",
         }}>
-          {/* 돌아가기 — 데스크탑만 */}
+          {/* 돌아가기 */}
           <button
             onClick={handleBack}
-            className="hidden sm:flex"
             style={{
-              alignItems: "center", gap: 5,
+              display: "flex", alignItems: "center", gap: 5,
               background: "none", border: "none",
               color: "var(--text-muted)", fontSize: 13,
               cursor: "pointer", padding: "4px 0",
@@ -52,10 +51,8 @@ export default function DiaryHeader() {
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
           >
             <span style={{ fontSize: 15, lineHeight: 1 }}>←</span>
-            <span>돌아가기</span>
+            <span className="hidden sm:inline">돌아가기</span>
           </button>
-          {/* 모바일 — 빈 공간 확보 */}
-          <div className="sm:hidden" style={{ width: 40 }} />
 
           {/* 타이틀 */}
           <p style={{

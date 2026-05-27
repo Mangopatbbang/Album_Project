@@ -453,6 +453,19 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 }}
               />
             )}
+            {/* 이전 탭 코너 컬 — 좌측 하단 귀접기 (이전 탭 있을 때) */}
+            {coverDone && leftPageTab !== null && (
+              <div
+                className="hidden sm:block"
+                style={{
+                  position: "absolute", bottom: 0, left: 0,
+                  width: 0, height: 0, zIndex: 6, pointerEvents: "none",
+                  borderRight: "14px solid rgba(var(--diary-ink-rgb), 0.1)",
+                  borderTop: "14px solid transparent",
+                  filter: "drop-shadow(1px -1px 2px rgba(0,0,0,0.10))",
+                }}
+              />
+            )}
 
             {/* 착지 후 settle 래퍼 — key 고정으로 coverDone 시 딱 한 번 실행 */}
             <div
@@ -1128,7 +1141,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                           {!coverOpen && i === Math.floor(STRIP_N / 2) && (
                             <div style={{
                               display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                              animation: "coverHint 2.2s ease-in-out infinite",
+                              animation: "coverHint 2.2s ease-in-out 5",
                             }}>
                               <div style={{ width: 1, height: 22, background: "linear-gradient(180deg, transparent, rgba(196,170,124,0.5), transparent)" }} />
                               <span style={{ fontSize: 9, color: "rgba(196,170,124,0.6)", letterSpacing: "0.22em", fontFamily: "var(--font-song, serif)" }}>
