@@ -37,16 +37,15 @@ function toModal(a: { id: string; title: string; artist: string; artist_display?
 export default function InsightSection({ disagreeAlbums, personalHiddenGems }: Props) {
   const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
 
-  if (disagreeAlbums.length === 0 && personalHiddenGems.length === 0) return null;
-
   return (
     <>
-      {disagreeAlbums.length > 0 && (
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-          <div style={{ marginBottom: 14 }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>이견 앨범</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>내 평가와 커뮤니티 평균이 2점 이상 차이나는 앨범</p>
-          </div>
+      {/* 이견 앨범 */}
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>이견 앨범</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>내 평가와 커뮤니티 평균이 2점 이상 차이나는 앨범</p>
+        </div>
+        {disagreeAlbums.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {disagreeAlbums.map((a) => (
               <div
@@ -78,15 +77,20 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
+            같은 앨범을 커뮤니티에서 2명 이상 평가하고, 내 점수와 2점 이상 차이가 날 때 나타나요
+          </p>
+        )}
+      </div>
 
-      {personalHiddenGems.length > 0 && (
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-          <div style={{ marginBottom: 14 }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>내 숨은 명반</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>7점 이상이지만 아직 발굴되지 않은 앨범</p>
-          </div>
+      {/* 숨은 명반 */}
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>내 숨은 명반</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3 }}>7점 이상이지만 아직 발굴되지 않은 앨범</p>
+        </div>
+        {personalHiddenGems.length > 0 ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {personalHiddenGems.map((a) => (
               <div
@@ -107,8 +111,12 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
+            7점 이상으로 평가했지만 아직 커뮤니티에서 발굴되지 않은 앨범이 없어요
+          </p>
+        )}
+      </div>
 
       {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_insight" />}
     </>

@@ -497,32 +497,9 @@ export default async function ProfilePage({
       </div>
 
       {/* ── InsightSection: 이견 앨범 + 숨은 명반 ── */}
-      {(disagreeAlbums.length > 0 || personalHiddenGems.length > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
-        </div>
-      )}
-
-      {/* ── 인연으로 만난 앨범 ── */}
-      {encounterAlbums.length > 0 && (
-        <div style={{ borderRadius: 12, marginBottom: 16, overflow: "hidden", border: "1px solid var(--border)" }}>
-          <div style={{
-            background: "linear-gradient(135deg, rgba(160,140,200,0.1) 0%, rgba(160,140,200,0.03) 100%)",
-            borderBottom: "1px solid var(--border)",
-            padding: "14px 24px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "var(--text-sub)", fontSize: 15 }}>◇</span>
-              <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em" }}>인연으로 만난 앨범</span>
-              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{encounterAlbums.length}장</span>
-            </div>
-          </div>
-          <div style={{ backgroundColor: "var(--bg-card)", padding: "20px 24px" }}>
-            <EncounterSection albums={encounterAlbums} />
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
+      </div>
 
       {/* ── 점수 분포 + 청음 캘린더 ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -594,20 +571,20 @@ export default async function ProfilePage({
           <ListeningLogsSection logs={listeningLogs} />
 
           {/* 청음집 */}
-          {userPlaylists.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-                  청음집
-                </p>
-                <Link
-                  href="/themes"
-                  style={{ color: "var(--text-muted)", fontSize: 11 }}
-                  className="hover:text-[var(--accent)] transition-colors"
-                >
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                청음집
+              </p>
+              {userPlaylists.length > 0 && (
+                <Link href="/themes" style={{ color: "var(--text-muted)", fontSize: 11 }} className="hover:text-[var(--accent)] transition-colors">
                   전체 →
                 </Link>
-              </div>
+              )}
+            </div>
+            {userPlaylists.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 청음집이 없어요</p>
+            ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {userPlaylists.map((pl) => {
                   const entries = [...pl.playlist_entries].sort((a, b) => a.sort_order - b.sort_order);
@@ -620,7 +597,6 @@ export default async function ProfilePage({
                       style={{ display: "flex", gap: 10, alignItems: "center", textDecoration: "none" }}
                       className="hover:opacity-75 transition-opacity"
                     >
-                      {/* 미니 커버 2×2 */}
                       <div style={{
                         flexShrink: 0, width: 40, height: 40, borderRadius: 6,
                         overflow: "hidden", display: "grid",
@@ -640,35 +616,45 @@ export default async function ProfilePage({
                         ))}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {pl.title}
-                        </p>
-                        <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
-                          {count}장
-                        </p>
+                        <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pl.title}</p>
+                        <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>{count}장</p>
                       </div>
                       <span style={{ color: "var(--text-muted)", fontSize: 16, flexShrink: 0 }}>›</span>
                     </Link>
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 최근 한줄 소감 */}
-          {recentReviews.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
-                최근 한줄 소감
-              </p>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 14 }}>
+              최근 한줄 소감
+            </p>
+            {recentReviews.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 한줄 소감이 없어요</p>
+            ) : (
               <RecentReviewsSection items={recentReviews.map((r) => ({
                 id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
                 artist_display: r.albums!.artist_display,
                 year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
                 score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
               }))} />
+            )}
+          </div>
+
+          {/* 인연으로 만난 앨범 */}
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ color: "var(--text-sub)", fontSize: 13 }}>◇</span>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>인연으로 만난 앨범</p>
+              {encounterAlbums.length > 0 && (
+                <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{encounterAlbums.length}장</span>
+              )}
             </div>
-          )}
+            <EncounterSection albums={encounterAlbums} />
+          </div>
         </div>
 
         {/* 오른쪽 — 통계 & 분석 */}
@@ -757,11 +743,13 @@ export default async function ProfilePage({
           <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />
 
           {/* 연도별 청음 리캡 */}
-          {yearlyRecap.length > 0 && (
-            <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-                연도별 청음
-              </p>
+          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
+              연도별 청음
+            </p>
+            {yearlyRecap.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 데이터가 없어요</p>
+            ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {yearlyRecap.map((recap) => (
                   <div key={recap.year}>
@@ -814,8 +802,8 @@ export default async function ProfilePage({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       </div>

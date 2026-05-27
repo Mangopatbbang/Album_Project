@@ -34,8 +34,6 @@ function formatDate(dateStr: string): string {
 export default function ListeningLogsSection({ logs }: Props) {
   const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
 
-  if (!logs || logs.length === 0) return null;
-
   const openAlbum = (a: LogAlbum) => {
     setSelected({ id: a.id, title: a.title, artist: a.artist, cover_url: a.cover_url ?? undefined, ratings: [] });
   };
@@ -47,8 +45,13 @@ export default function ListeningLogsSection({ logs }: Props) {
           재청음 기록
           <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 6 }}>총 {logs.length}회</span>
         </p>
+        {(!logs || logs.length === 0) ? (
+          <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
+            아직 재청음 기록이 없어요
+          </p>
+        ) : null}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {logs.map((log) => (
+          {(logs ?? []).map((log) => (
             <div
               key={log.id}
               onClick={() => log.albums && openAlbum(log.albums)}

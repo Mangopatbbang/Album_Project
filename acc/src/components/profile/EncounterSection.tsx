@@ -36,6 +36,14 @@ export default function EncounterSection({ albums }: { albums: EncounterAlbum[] 
     setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [] } as unknown as AlbumWithRatings);
   };
 
+  if (albums.length === 0) {
+    return (
+      <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
+        아직 인연으로 만난 앨범이 없어요
+      </p>
+    );
+  }
+
   return (
     <>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
