@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DiaryEntry } from "@/types/diary";
 import DiaryEntryCard from "@/components/diary/DiaryEntryCard";
 import DeleteConfirmModal from "@/components/diary/DeleteConfirmModal";
@@ -30,6 +30,16 @@ function parseDateParts(dateStr: string) {
 export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEntry, isSample }: Props) {
   const [filter, setFilter] = useState<Filter>("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  /* 새로 추가된 엔트리 감지 — prevIds와 현재 entries 비교 */
+  const [prevIds, setPrevIds] = useState<Set<string>>(new Set());
+  const freshIds = useMemo(() => {
+    if (prevIds.size === 0) return new Set<string>();
+    return new Set(entries.filter((e) => !prevIds.has(e.id)).map((e) => e.id));
+  }, [entries, prevIds]);
+  useEffect(() => {
+    setPrevIds(new Set(entries.map((e) => e.id)));
+  }, [entries]);
 
   const onThisDayEntries = useMemo(() => {
     const now = new Date(Date.now() + 9 * 3600000);
@@ -241,6 +251,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                       onEdit={() => onEdit(entry)}
                       onDeleteRequest={() => setDeleteConfirm(entry.id)}
                       isSample={isSample}
+                      isNew={freshIds.has(entry.id)}
                     />
                   </div>
                 ))}

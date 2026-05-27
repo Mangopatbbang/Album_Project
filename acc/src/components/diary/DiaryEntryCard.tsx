@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DiaryEntry } from "@/types/diary";
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
   onEdit: () => void;
   onDeleteRequest: () => void;
   isSample?: boolean;
+  isNew?: boolean;
 };
 
 const NOTE_LIMIT = 160;
@@ -124,7 +125,7 @@ function getTagStyle(tag: string): TagStyle & { isPreset: boolean } {
   return { icon: "", ...c, isPreset: false };
 }
 
-export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample }: Props) {
+export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSample, isNew }: Props) {
   const [noteExpanded, setNoteExpanded] = useState(false);
   const [imageExpanded, setImageExpanded] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
@@ -132,6 +133,46 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
   const note = entry.note ?? "";
   const isLong = note.length > NOTE_LIMIT;
   const displayNote = noteExpanded || !isLong ? note : note.slice(0, NOTE_LIMIT) + "...";
+
+  /* ── 잉크 번짐 애니메이션 ── */
+  const [revealPct, setRevealPct] = useState(110);
+  const [inkActive, setInkActive] = useState(false);
+  const animStarted = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  useEffect(() => {
+    if (!isNew || !note || animStarted.current) return;
+    animStarted.current = true;
+    setRevealPct(0);
+    setInkActive(true);
+
+    const duration = Math.min(Math.max(note.length * 22, 1400), 4500);
+    let startTime: number | null = null;
+
+    const tick = (now: number) => {
+      if (!mounted.current) return;
+      if (!startTime) startTime = now;
+      const t = Math.min((now - startTime) / duration, 1);
+      /* ease-in-out-cubic: 자연스러운 필기 리듬 */
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      setRevealPct(eased * 108);
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        setRevealPct(110);
+        setInkActive(false);
+      }
+    };
+    requestAnimationFrame(tick);
+  }, [isNew]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isAnimating = inkActive && revealPct < 108;
+  const P = revealPct;
+  /* reveal mask: 왼쪽 선명 → 88° 사선으로 soft fade → 오른쪽 숨김 */
+  const sharpMask = `linear-gradient(88deg, black calc(${P}% - 14%), rgba(0,0,0,0.45) calc(${P}% - 7%), transparent ${P}%)`;
+  /* wet-ink mask: leading edge 앞뒤로만 노출되는 blur zone */
+  const inkMask = `linear-gradient(88deg, transparent calc(${P}% - 22%), rgba(0,0,0,0.6) calc(${P}% - 14%), black calc(${P}% - 5%), transparent ${P}%)`;
 
   return (
     <>
@@ -265,17 +306,61 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
             marginTop: 12,
             paddingLeft: 12,
             borderLeft: "2px solid rgba(var(--accent-rgb), 0.45)",
+            position: "relative",
           }}>
+            {/* ── 선명한 텍스트 (reveal mask 적용) ── */}
             <p style={{
               color: "var(--text-muted)", fontSize: 13, lineHeight: 1.9,
               whiteSpace: "pre-wrap", wordBreak: "break-word",
               letterSpacing: "-0.005em",
               fontStyle: "italic",
               fontFamily: "var(--font-lora, Georgia, serif)",
+              margin: 0,
+              ...(isAnimating && {
+                WebkitMaskImage: sharpMask,
+                maskImage: sharpMask,
+              }),
             }}>
-              {displayNote}
+              {isAnimating ? note : displayNote}
             </p>
-            {isLong && (
+
+            {/* ── wet-ink blur 오버레이 ── */}
+            {isAnimating && (
+              <p
+                aria-hidden
+                style={{
+                  position: "absolute", top: 0, left: 0, right: 0,
+                  color: "var(--text-muted)", fontSize: 13, lineHeight: 1.9,
+                  whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  letterSpacing: "-0.005em",
+                  fontStyle: "italic",
+                  fontFamily: "var(--font-lora, Georgia, serif)",
+                  margin: 0,
+                  filter: "blur(2.5px)",
+                  opacity: 0.55,
+                  WebkitMaskImage: inkMask,
+                  maskImage: inkMask,
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              >
+                {note}
+              </p>
+            )}
+
+            {/* ── 잉크 glow (leading edge 빛 번짐) ── */}
+            {isAnimating && (
+              <div style={{
+                position: "absolute", top: 0, bottom: 0,
+                left: `calc(${P}% - 8%)`,
+                width: "14%",
+                background: "radial-gradient(ellipse at 40% 50%, rgba(var(--accent-rgb), 0.09), transparent 70%)",
+                pointerEvents: "none",
+              }} />
+            )}
+
+            {/* ── 더 보기 버튼 (애니메이션 중엔 숨김) ── */}
+            {!isAnimating && isLong && (
               <button
                 onClick={() => setNoteExpanded((p) => !p)}
                 style={{

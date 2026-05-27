@@ -135,7 +135,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
         res = await apiFetch("/api/listening-logs", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editEntry!.id, note: note.trim() || null, context: tags, imageUrl }),
+          body: JSON.stringify({ id: editEntry!.id, listenedAt, context: tags, imageUrl }),
         });
       } else {
         res = await apiFetch("/api/listening-logs", {
@@ -246,8 +246,123 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
 
         {/* 컨텐츠 */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+
+          {/* ── 수정 모드: 단일 화면 ── */}
+          {isEdit && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+              {/* 앨범 요약 (읽기 전용) */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", backgroundColor: "var(--bg-elevated)", borderRadius: 10 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
+                  {editEntry!.album.cover_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={editEntry!.album.cover_url} alt={editEntry!.album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>♪</span>
+                  }
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{editEntry!.album.title}</p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 11 }}>{editEntry!.album.artist} · {SCORES[editEntry!.album.score]}</p>
+                </div>
+              </div>
+
+              {/* 날짜 */}
+              <div>
+                <label style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                  들은 날짜
+                </label>
+                <input
+                  type="date"
+                  value={listenedAt}
+                  max={todayKST()}
+                  onChange={(e) => setListenedAt(e.target.value)}
+                  style={{
+                    backgroundColor: "var(--bg-elevated)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: "9px 12px",
+                    color: "var(--text)",
+                    fontSize: 14,
+                    outline: "none",
+                    colorScheme: "dark",
+                  }}
+                />
+              </div>
+
+              {/* 메모 — 읽기 전용 */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <label style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" }}>
+                    메모
+                  </label>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.5 }}>수정할 수 없어요</span>
+                </div>
+                <div style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  color: "var(--text)",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  opacity: 0.5,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  minHeight: 44,
+                  cursor: "default",
+                  userSelect: "text",
+                }}>
+                  {editEntry?.note
+                    ? editEntry.note
+                    : <span style={{ fontStyle: "italic" }}>메모 없음</span>
+                  }
+                </div>
+              </div>
+
+              {/* 사진 */}
+              <div>
+                <label style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", display: "block", marginBottom: 8 }}>
+                  사진 <span style={{ fontWeight: 400, opacity: 0.6 }}>(선택, 1장)</span>
+                </label>
+                {imagePreview ? (
+                  <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid var(--border)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePreview} alt="첨부 사진" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
+                    <button
+                      onClick={handleRemoveImage}
+                      style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >✕</button>
+                    {imageUploading && (
+                      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <p style={{ color: "#fff", fontSize: 12 }}>업로드 중...</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    style={{ width: "100%", padding: "20px 0", backgroundColor: "var(--bg-elevated)", border: "1px dashed var(--border)", borderRadius: 10, color: "var(--text-muted)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  >
+                    <span style={{ fontSize: 16 }}>📷</span>
+                    사진 추가
+                  </button>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
+              </div>
+
+              {/* 태그 */}
+              <div>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", marginBottom: 12 }}>
+                  태그 <span style={{ fontWeight: 400, opacity: 0.6 }}>(선택)</span>
+                </p>
+                <TagSelector selected={tags} onChange={setTags} recentTags={recentTags} />
+              </div>
+
+            </div>
+          )}
+
           {/* ── Step 0: 앨범 선택 ── */}
-          {step === 0 && (
+          {!isEdit && step === 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {selectedAlbum ? (
                 <SelectedAlbumCard album={selectedAlbum} onClear={() => setSelectedAlbum(null)} />
@@ -343,7 +458,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
           )}
 
           {/* ── Step 1: 메모 + 사진 ── */}
-          {step === 1 && (
+          {!isEdit && step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* 선택한 앨범 요약 */}
               {selectedAlbum && (
@@ -454,7 +569,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
           )}
 
           {/* ── Step 2: 태그 ── */}
-          {step === 2 && (
+          {!isEdit && step === 2 && (
             <div>
               <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 16, lineHeight: 1.6 }}>
                 이 청음을 표현하는 태그를 골라요 <span style={{ opacity: 0.6 }}>(최대 {MAX_TAGS}개, 건너뛰어도 돼요)</span>

@@ -89,28 +89,31 @@ export async function POST(req: NextRequest) {
 }
 
 // PATCH /api/listening-logs
-// body: { id, note?, context?: string[], imageUrl? }
+// body: { id, listenedAt?, context?: string[], imageUrl? }
+// note는 수정 불가
 export async function PATCH(req: NextRequest) {
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { id, note, context, imageUrl } = body as {
+  const { id, listenedAt, context, imageUrl } = body as {
     id: string;
-    note?: string;
+    listenedAt?: string;
     context?: string[];
     imageUrl?: string | null;
   };
 
   if (!id) return NextResponse.json({ error: "id 필수" }, { status: 400 });
 
+  const updateData: Record<string, unknown> = {
+    context: context && context.length > 0 ? context : null,
+    image_url: imageUrl ?? null,
+  };
+  if (listenedAt) updateData.listened_at = listenedAt;
+
   const { error } = await supabaseServer
     .from("listening_logs")
-    .update({
-      note: note ?? null,
-      context: context && context.length > 0 ? context : null,
-      image_url: imageUrl ?? null,
-    })
+    .update(updateData)
     .eq("id", id)
     .eq("user_id", authed.id);
 
