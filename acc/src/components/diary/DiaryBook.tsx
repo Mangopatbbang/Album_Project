@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import html2canvas from "html2canvas";
 import { DiaryEntry } from "@/types/diary";
 import { useDiaryTheme } from "@/components/diary/DiaryThemeProvider";
 import RecordsTab from "./tabs/RecordsTab";
@@ -60,13 +61,19 @@ const PAGE_BWD_KF = Array.from({ length: STRIP_N }, (_, i) => {
 }).join("");
 
 let _audioCtx: AudioContext | null = null;
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === "closed") {
+    _audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  }
+  const ctx = _audioCtx;
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+/* 탭 넘기기 — 얇고 바삭한 종이 소리 */
 function playPageSound() {
   try {
-    if (!_audioCtx || _audioCtx.state === "closed") {
-      _audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    }
-    const ctx = _audioCtx;
-    if (ctx.state === "suspended") ctx.resume();
+    const ctx = getAudioCtx();
     const dur = 0.18;
     const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
     const d = buf.getChannelData(0);
@@ -81,15 +88,43 @@ function playPageSound() {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.frequency.value = 2800;
-    bp.Q.value = 1.2;
+    bp.type = "bandpass"; bp.frequency.value = 2800; bp.Q.value = 1.2;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.45, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
     src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
     src.start();
-  } catch (_) { /* 오디오 미지원 환경 무시 */ }
+  } catch (_) {}
+}
+
+/* 표지 착지 — 두껍고 묵직한 충격음 */
+function playCoverThud() {
+  try {
+    const ctx = getAudioCtx();
+    const dur = 0.32;
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < d.length; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + w * 0.0555179;
+      b1 = 0.99332 * b1 + w * 0.0750759;
+      b2 = 0.96900 * b2 + w * 0.1538520;
+      d[i] = (b0 + b1 + b2 + w * 0.5362) * 0.14;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    /* 저역 강조 필터 — 두꺼운 표지감 */
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 700; lp.Q.value = 0.8;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = 320; bp.Q.value = 1.5;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.7, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    src.connect(lp); lp.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch (_) {}
 }
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
@@ -101,6 +136,19 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [coverFlipped, setCoverFlipped] = useState(false);
   const [coverDone, setCoverDone] = useState(false);
   const flipQueueRef = useRef<Array<{ from: Tab; to: Tab; dir: 1 | -1 }>>([]);
+  const pageContentRef = useRef<HTMLDivElement>(null);
+  const [flipSnap, setFlipSnap] = useState<string | null>(null);
+
+  const [cornerHover, setCornerHover] = useState(false);
+
+  const leftTabIdx = TAB_IDX[activeTab] - 1;
+  const leftPageTab: Tab | null = leftTabIdx >= 0
+    ? ((Object.keys(TAB_IDX) as Tab[]).find((k) => TAB_IDX[k as Tab] === leftTabIdx) ?? null)
+    : null;
+  const nextTabId: Tab | null = TAB_IDX[activeTab] < TABS.length - 1
+    ? TABS[TAB_IDX[activeTab] + 1].id
+    : null;
+  const toRoman = (n: number) => (["I","II","III","IV","V","VI","VII","VIII"] as const)[n - 1] ?? String(n);
 
   const hanji = theme === "light"
     ? "linear-gradient(160deg, #fefefe 0%, #fdfcfa 55%, #f9f8f3 100%)"
@@ -120,18 +168,28 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
     : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
 
-  /* 표지 착지 — 출발 완료 시 착지 사운드 */
+  /* 표지 착지 — 출발 완료 시 묵직한 충격음 */
   useEffect(() => {
     if (!coverFlipped) return;
-    const t = setTimeout(playPageSound, 60);
+    const t = setTimeout(playCoverThud, 60);
     return () => clearTimeout(t);
   }, [coverFlipped]);
+
+  /* 모바일 스와이프 */
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  /* 드래그 플립 */
+  const [dragX, setDragX] = useState<number | null>(null);
+  const dragStartX = useRef<number | null>(null);
+  const dragPageW = useRef<number>(460);
 
   /* 플립 완료 후 다음 큐 처리 */
   useEffect(() => {
     if (flippingFrom === null) return;
     const t = setTimeout(() => {
       setFlippingFrom(null);
+      setFlipSnap(null);
       const queue = flipQueueRef.current;
 
       if (queue.length > 0) {
@@ -171,12 +229,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     return s;
   }, [displayEntries, isSample]);
 
-  const handleTabClick = (tab: Tab) => {
+  const handleTabClick = useCallback(async (tab: Tab, preSnap?: string | null) => {
     if (tab === activeTab || flippingFrom !== null) return;
     const fromIdx = TAB_IDX[activeTab];
     const toIdx = TAB_IDX[tab];
     const dir: 1 | -1 = toIdx > fromIdx ? 1 : -1;
-    /* 건너뛰는 탭 수만큼 플립 시퀀스 생성 */
     const steps: Array<{ from: Tab; to: Tab; dir: 1 | -1 }> = [];
     for (let i = fromIdx + dir; dir > 0 ? i <= toIdx : i >= toIdx; i += dir) {
       const prev = steps.length > 0 ? steps[steps.length - 1].to : activeTab;
@@ -185,11 +242,58 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     }
     const [first, ...rest] = steps;
     flipQueueRef.current = rest;
+
+    /* 앞방향 플립: preSnap 있으면 재사용, 없으면 새로 찍기 */
+    let snap: string | null = preSnap ?? null;
+    if (!snap && dir === 1 && pageContentRef.current) {
+      try {
+        const canvas = await html2canvas(pageContentRef.current, {
+          useCORS: true, allowTaint: true,
+          scale: window.devicePixelRatio || 1,
+          backgroundColor: null, logging: false,
+        });
+        snap = canvas.toDataURL("image/webp", 0.85);
+      } catch (_) {}
+    }
+    setFlipSnap(snap);
     playPageSound();
     setFlipDir(first.dir);
     setFlippingFrom(first.from);
     setActiveTab(first.to);
-  };
+  }, [activeTab, flippingFrom]);
+
+  /* 키보드 내비게이션 — 화살표 좌/우로 탭 이동 */
+  useEffect(() => {
+    if (!coverDone) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") handleTabClick(TABS[Math.min(TAB_IDX[activeTab] + 1, TABS.length - 1)].id);
+      if (e.key === "ArrowLeft")  handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [coverDone, activeTab, handleTabClick]);
+
+  /* 드래그 중 window 이벤트 — mousemove/mouseup 글로벌 추적 */
+  useEffect(() => {
+    if (dragX === null) return;
+    const onMove = (e: MouseEvent) => setDragX(e.clientX);
+    const onUp = (e: MouseEvent) => {
+      const ratio = dragStartX.current !== null
+        ? Math.max(0, Math.min(1, (dragStartX.current - e.clientX) / dragPageW.current))
+        : 0;
+      const snap = flipSnap;
+      dragStartX.current = null;
+      setDragX(null);
+      if (ratio > 0.38 && nextTabId) {
+        handleTabClick(nextTabId, snap);
+      } else {
+        setFlipSnap(null);
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [dragX, nextTabId, handleTabClick, flipSnap]);
 
   const renderContent = (tab: Tab) => {
     switch (tab) {
@@ -212,6 +316,16 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           0%, 100% { opacity: 0.5; transform: translateY(0px); }
           50% { opacity: 0.85; transform: translateY(4px); }
         }
+        @keyframes pageSettle {
+          0%   { transform: translateX(-4px) scaleX(1.008); opacity: 0.92; }
+          55%  { transform: translateX(1.5px) scaleX(0.999); opacity: 1; }
+          78%  { transform: translateX(-0.5px) scaleX(1.001); }
+          100% { transform: translateX(0) scaleX(1); opacity: 1; }
+        }
+        @keyframes dogEarIn {
+          0%   { opacity: 0; transform: scaleX(0.4) scaleY(0.4); }
+          100% { opacity: 1; transform: scaleX(1) scaleY(1); }
+        }
       `}</style>
 
       <div
@@ -233,7 +347,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           height: "100%",
           width: "100%",
           maxWidth: coverOpen ? 920 : 460,
-          transition: "max-width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
+          transition: "max-width 0.52s cubic-bezier(0.32,0.72,0,1)",
         }}>
         <div style={{
           display: "flex",
@@ -254,7 +368,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               minWidth: 0,
               maxWidth: coverOpen ? 440 : 0,
               overflow: "hidden",
-              transition: "max-width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
+              transition: "max-width 0.52s cubic-bezier(0.32,0.72,0,1)",
               background: hanji,
               borderRadius: "10px 0 0 10px",
               border: "1px solid rgba(var(--diary-ink-rgb), 0.15)",
@@ -264,106 +378,198 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           >
             <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
 
-            {Array.from({ length: 26 }).map((_, i) => (
-              <div key={i} style={{
-                position: "absolute", left: 32, right: 20,
-                top: `${6 + i * 3.6}%`, height: 1,
-                background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.13) 12%, rgba(var(--diary-ink-rgb), 0.13) 88%, transparent)",
-              }} />
-            ))}
-
+            {/* 거터 그림자 — 척추 쪽 */}
             <div style={{
-              position: "absolute", left: 58, top: "6%", bottom: "6%", width: 1,
-              background: "linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.48) 10%, rgba(var(--accent-rgb), 0.48) 90%, transparent)",
+              position: "absolute", right: 0, top: 0, bottom: 0, width: 36,
+              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.07))",
+              zIndex: 4, pointerEvents: "none",
             }} />
 
-            {corners.map((s, i) => (
-              <div key={i} style={{ position: "absolute", width: 16, height: 16, ...s }} />
-            ))}
+            {/* dog-ear — 좌측 상단 귀접기 (표지 착지 후 등장) */}
+            {coverDone && (
+              <div
+                className="hidden sm:block"
+                style={{
+                  position: "absolute", top: 0, right: 22,
+                  width: 0, height: 0, zIndex: 6, pointerEvents: "none",
+                  borderRight: "16px solid rgba(var(--diary-ink-rgb), 0.13)",
+                  borderBottom: "16px solid transparent",
+                  animation: "dogEarIn 0.35s ease-out forwards",
+                  filter: "drop-shadow(-1px 1px 2px rgba(0,0,0,0.12))",
+                }}
+              />
+            )}
 
-            <div style={{
-              position: "absolute", left: "50%", top: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-            }}>
-              <div style={{
-                border: "1px solid rgba(var(--diary-ink-rgb), 0.65)",
-                padding: 5,
-                backgroundColor: "var(--diary-label-bg)",
-                boxShadow: "1px 2px 6px rgba(var(--diary-ink-rgb), 0.18)",
-              }}>
-                <div style={{ border: "1px solid rgba(var(--diary-ink-rgb), 0.45)", padding: "14px 8px" }}>
-                  <h1 style={{
-                    writingMode: "vertical-rl", textOrientation: "upright",
-                    fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
-                    fontSize: 20, color: "var(--diary-label-text)",
-                    letterSpacing: "0.22em", lineHeight: 1, margin: 0, fontWeight: 400,
+            {/* 착지 후 settle 래퍼 — key 고정으로 coverDone 시 딱 한 번 실행 */}
+            <div
+              key={coverDone ? "settled" : "waiting"}
+              style={{
+                position: "absolute", inset: 0,
+                animation: coverDone ? "pageSettle 0.6s cubic-bezier(0.34,1.08,0.64,1) forwards" : "none",
+                transformOrigin: "right center",
+              }}
+            >
+
+            {leftPageTab === null ? (
+              // ── 속표지: 청음일기 타이틀 페이지 ──
+              <>
+                {Array.from({ length: 26 }).map((_, i) => (
+                  <div key={i} style={{
+                    position: "absolute", left: 32, right: 20,
+                    top: `${6 + i * 3.6}%`, height: 1,
+                    background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.13) 12%, rgba(var(--diary-ink-rgb), 0.13) 88%, transparent)",
+                  }} />
+                ))}
+                <div style={{
+                  position: "absolute", left: 58, top: "6%", bottom: "6%", width: 1,
+                  background: "linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.48) 10%, rgba(var(--accent-rgb), 0.48) 90%, transparent)",
+                }} />
+                {corners.map((s, i) => (
+                  <div key={i} style={{ position: "absolute", width: 16, height: 16, ...s }} />
+                ))}
+                <div style={{
+                  position: "absolute", left: "50%", top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                }}>
+                  <div style={{
+                    border: "1px solid rgba(var(--diary-ink-rgb), 0.65)",
+                    padding: 5,
+                    backgroundColor: "var(--diary-label-bg)",
+                    boxShadow: "1px 2px 6px rgba(var(--diary-ink-rgb), 0.18)",
                   }}>
-                    청음일기
-                  </h1>
-                </div>
-              </div>
+                    <div style={{ border: "1px solid rgba(var(--diary-ink-rgb), 0.45)", padding: "14px 8px" }}>
+                      <h1 style={{
+                        writingMode: "vertical-rl", textOrientation: "upright",
+                        fontFamily: "var(--font-song, 'Nanum Myeongjo', serif)",
+                        fontSize: 20, color: "var(--diary-label-text)",
+                        letterSpacing: "0.22em", lineHeight: 1, margin: 0, fontWeight: 400,
+                      }}>
+                        청음일기
+                      </h1>
+                    </div>
+                  </div>
+                  <span style={{
+                    display: "inline-block",
+                    border: "2px solid rgba(var(--accent-rgb), 0.72)",
+                    padding: "3px 7px",
+                    fontFamily: "var(--font-song, serif)",
+                    fontSize: 11, color: "rgba(var(--accent-rgb), 0.72)", letterSpacing: "0.12em",
+                  }}>
+                    私記
+                  </span>
 
-              <span style={{
-                display: "inline-block",
-                border: "2px solid rgba(var(--accent-rgb), 0.72)",
-                padding: "3px 7px",
-                fontFamily: "var(--font-song, serif)",
-                fontSize: 11, color: "rgba(var(--accent-rgb), 0.72)", letterSpacing: "0.12em",
-              }}>
-                私記
-              </span>
+                  {/* 목차 */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, marginTop: 8 }}>
+                    <div style={{ width: 28, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.2), transparent)", marginBottom: 3 }} />
+                    {TABS.map((tab, i) => (
+                      <div key={tab.id} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontFamily: "var(--font-song, serif)", fontSize: 8, color: "rgba(var(--diary-ink-rgb), 0.3)", letterSpacing: "0.06em", minWidth: 14, textAlign: "right" }}>
+                          {toRoman(i * 2 + 1)}
+                        </span>
+                        <span style={{ fontFamily: "var(--font-song, serif)", fontSize: 9, color: "rgba(var(--diary-ink-rgb), 0.48)", letterSpacing: "0.12em" }}>
+                          {tab.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
 
-              {!isSample && (monthCount > 0 || streak > 0) && (
-                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.35), transparent)" }} />
-                  {monthCount > 0 && (
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 15, color: "var(--diary-label-text)", fontWeight: 400, lineHeight: 1 }}>
-                        {monthCount}
-                      </p>
-                      <p style={{ fontSize: 9, color: "rgba(var(--diary-ink-rgb), 0.45)", letterSpacing: "0.08em", marginTop: 3 }}>이달</p>
+                  {!isSample && (monthCount > 0 || streak > 0) && (
+                    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.35), transparent)" }} />
+                      {monthCount > 0 && (
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 15, color: "var(--diary-label-text)", fontWeight: 400, lineHeight: 1 }}>
+                            {monthCount}
+                          </p>
+                          <p style={{ fontSize: 9, color: "rgba(var(--diary-ink-rgb), 0.45)", letterSpacing: "0.08em", marginTop: 3 }}>이달</p>
+                        </div>
+                      )}
+                      {streak > 1 && (
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 13, color: "rgba(var(--accent-rgb), 0.8)", fontWeight: 400, lineHeight: 1 }}>
+                            {streak}
+                          </p>
+                          <p style={{ fontSize: 9, color: "rgba(var(--diary-ink-rgb), 0.45)", letterSpacing: "0.08em", marginTop: 3 }}>연속</p>
+                        </div>
+                      )}
                     </div>
                   )}
-                  {streak > 1 && (
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontFamily: "var(--font-song, serif)", fontSize: 13, color: "rgba(var(--accent-rgb), 0.8)", fontWeight: 400, lineHeight: 1 }}>
-                        {streak}
-                      </p>
-                      <p style={{ fontSize: 9, color: "rgba(var(--diary-ink-rgb), 0.45)", letterSpacing: "0.08em", marginTop: 3 }}>연속</p>
-                    </div>
-                  )}
                 </div>
-              )}
+                <button
+                  onClick={onNewEntry}
+                  className="hidden sm:flex"
+                  style={{
+                    position: "absolute", bottom: "12%", left: "50%",
+                    transform: "translateX(-50%)",
+                    flexDirection: "column", alignItems: "center", gap: 2,
+                    background: "none", border: "1px solid rgba(var(--accent-rgb), 0.4)",
+                    padding: "8px 6px", cursor: "pointer", zIndex: 2,
+                    opacity: 0.55, transition: "opacity 0.15s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.55")}
+                  aria-label="새 기록"
+                >
+                  <span style={{
+                    writingMode: "vertical-rl", textOrientation: "upright",
+                    fontFamily: "var(--font-song, serif)",
+                    fontSize: 10, color: "rgba(var(--accent-rgb), 0.85)", letterSpacing: "0.14em",
+                  }}>
+                    新記
+                  </span>
+                </button>
+              </>
+            ) : (
+              // ── 이전 탭 내용 — 읽은 페이지처럼 흐리게 ──
+              <>
+                <div style={{
+                  position: "absolute", top: 14, left: 0, right: 0, zIndex: 3,
+                  display: "flex", justifyContent: "center", pointerEvents: "none",
+                }}>
+                  <span style={{
+                    fontFamily: "var(--font-song, serif)", fontSize: 9,
+                    color: "rgba(var(--diary-ink-rgb), 0.32)", letterSpacing: "0.22em",
+                  }}>
+                    {TABS.find(t => t.id === leftPageTab)?.label ?? ""}
+                  </span>
+                </div>
+                <div style={{
+                  position: "absolute", top: 27, left: 20, right: 20, height: 1,
+                  background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.1), transparent)",
+                  zIndex: 2, pointerEvents: "none",
+                }} />
+                <div style={{
+                  position: "absolute", top: 36, left: 0, right: 0, bottom: 36,
+                  overflow: "hidden", zIndex: 1, pointerEvents: "none",
+                  opacity: 0.42, filter: "sepia(0.12) contrast(0.88) brightness(1.03)",
+                }}>
+                  {renderContent(leftPageTab)}
+                </div>
+                <div style={{
+                  position: "absolute", bottom: 27, left: 20, right: 20, height: 1,
+                  background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.1), transparent)",
+                  zIndex: 2, pointerEvents: "none",
+                }} />
+                <div style={{
+                  position: "absolute", bottom: 14, left: 0, right: 0, zIndex: 3,
+                  display: "flex", justifyContent: "center", pointerEvents: "none",
+                }}>
+                  <span style={{
+                    fontFamily: "var(--font-song, serif)", fontSize: 9,
+                    color: "rgba(var(--diary-ink-rgb), 0.28)", letterSpacing: "0.15em",
+                  }}>
+                    {toRoman(TAB_IDX[activeTab] * 2)}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {/* settle 래퍼 닫기 */}
             </div>
 
-            {/* 새 기록 버튼 */}
-            <button
-              onClick={onNewEntry}
-              className="hidden sm:flex"
-              style={{
-                position: "absolute", bottom: "12%", left: "50%",
-                transform: "translateX(-50%)",
-                flexDirection: "column", alignItems: "center", gap: 2,
-                background: "none", border: "1px solid rgba(var(--accent-rgb), 0.4)",
-                padding: "8px 6px", cursor: "pointer", zIndex: 2,
-                opacity: 0.55, transition: "opacity 0.15s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.55")}
-              aria-label="새 기록"
-            >
-              <span style={{
-                writingMode: "vertical-rl", textOrientation: "upright",
-                fontFamily: "var(--font-song, serif)",
-                fontSize: 10, color: "rgba(var(--accent-rgb), 0.85)", letterSpacing: "0.14em",
-              }}>
-                新記
-              </span>
-            </button>
-
-            {/* 제본 스티치 */}
-            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 22, zIndex: 1 }}>
+            {/* 제본 스티치 — 항상 표시, settle 래퍼 밖 */}
+            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 22, zIndex: 6 }}>
               <div style={{
                 position: "absolute", left: "50%", top: "6%", bottom: "6%", width: 1,
                 background: "linear-gradient(180deg, transparent, rgba(var(--accent-rgb), 0.5) 8%, rgba(var(--accent-rgb), 0.5) 92%, transparent)",
@@ -456,7 +662,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               width: coverOpen ? 20 : 0,
               flexShrink: 0,
               overflow: "hidden",
-              transition: "width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
+              transition: "width 0.52s cubic-bezier(0.32,0.72,0,1)",
               background: spineBg,
               boxShadow: "inset 2px 0 5px rgba(0,0,0,0.5), inset -2px 0 5px rgba(0,0,0,0.5)",
               position: "relative",
@@ -470,17 +676,38 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                   : "linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(160,120,50,0.14) 50%, rgba(0,0,0,0.5) 100%)",
               }} />
             ))}
+            {/* 척추 진행 게이지 — 현재 탭 위치 표시 */}
+            {coverDone && (
+              <div style={{
+                position: "absolute", left: "50%",
+                top: `${10 + (TAB_IDX[activeTab] / (TABS.length - 1)) * 80}%`,
+                transform: "translate(-50%, -50%) rotate(45deg)",
+                width: 6, height: 6, zIndex: 2,
+                background: "rgba(180,140,60,0.75)",
+                boxShadow: "0 0 5px rgba(0,0,0,0.45)",
+                transition: "top 0.45s cubic-bezier(0.25,0.1,0.25,1)",
+              }} />
+            )}
           </div>
 
           {/* ── 오른쪽 패널 ── */}
           <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
 
-            {/* 페이지 단면 */}
-            <div style={{
-              position: "absolute", right: -3, top: 2, bottom: 2, width: 5,
-              background: "linear-gradient(90deg, rgba(180,155,100,0.15) 0%, rgba(200,175,115,0.3) 50%, rgba(130,100,55,0.12) 100%)",
-              borderRadius: "0 4px 4px 0", zIndex: 5,
-            }} />
+            {/* 페이지 스택 두께 — 겹쳐진 종이 엣지 */}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{
+                position: "absolute",
+                right: -(2 + i * 1.6),
+                top: 3 + i * 0.8,
+                bottom: 3 + i * 0.8,
+                width: 2,
+                background: theme === "light"
+                  ? `rgba(${190 - i * 10},${165 - i * 8},${110 - i * 6},${(0.32 - i * 0.04).toFixed(2)})`
+                  : `rgba(${70 - i * 8},${55 - i * 6},${35 - i * 4},${(0.42 - i * 0.06).toFixed(2)})`,
+                borderRadius: "0 2px 2px 0",
+                zIndex: 6 - i,
+              }} />
+            ))}
 
             {/* 페이지 배경/테두리 쉘 */}
             <div style={{
@@ -491,7 +718,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               borderLeft: coverOpen ? "none" : "1px solid rgba(var(--diary-ink-rgb), 0.14)",
               overflow: "hidden",
               boxShadow: coverOpen
-                ? "inset 5px 0 18px rgba(0,0,0,0.07), 0 0 0 1px var(--diary-page-inset) inset"
+                ? "inset 10px 0 28px rgba(0,0,0,0.1), 0 0 0 1px var(--diary-page-inset) inset"
                 : "0 0 0 1px var(--diary-page-inset) inset",
               transition: "border-radius 0.5s, box-shadow 0.5s",
               zIndex: 0,
@@ -543,10 +770,36 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 position: "absolute", left: 0, right: 0, bottom: 0,
                 perspective: "700px",
                 zIndex: 1,
+                userSelect: dragX !== null ? "none" : "auto",
+                cursor: dragX !== null ? "ew-resize" : "auto",
+              }}
+              onMouseDown={(e) => {
+                if (!coverDone || !nextTabId || flippingFrom !== null) return;
+                dragStartX.current = e.clientX;
+                dragPageW.current = e.currentTarget.getBoundingClientRect().width;
+                setDragX(e.clientX);
+                if (pageContentRef.current) {
+                  html2canvas(pageContentRef.current, { scale: 1, logging: false, useCORS: true, backgroundColor: null })
+                    .then(c => setFlipSnap(c.toDataURL("image/webp", 0.8)))
+                    .catch(() => {});
+                }
+              }}
+              onTouchStart={(e) => {
+                touchStartX.current = e.touches[0].clientX;
+                touchStartY.current = e.touches[0].clientY;
+              }}
+              onTouchEnd={(e) => {
+                if (touchStartX.current === null || touchStartY.current === null) return;
+                const dx = e.changedTouches[0].clientX - touchStartX.current;
+                const dy = e.changedTouches[0].clientY - touchStartY.current;
+                touchStartX.current = null; touchStartY.current = null;
+                if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                if (dx < 0) handleTabClick(TABS[Math.min(TAB_IDX[activeTab] + 1, TABS.length - 1)].id);
+                else        handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
               }}
             >
               {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용 */}
-              <div style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0 }}>
+              <div ref={pageContentRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0 }}>
                 {isSample && (
                   <div style={{ padding: "12px 20px 0" }}>
                     <div style={{
@@ -596,16 +849,117 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       width: `${STRIP_N * 100}%`,
                       overflowY: "hidden",
                       background: hanji,
+                      /* 앞방향 + 스냅샷 있을 때: 이미지로 렌더링 대체 */
+                      backgroundImage: isForward && flipSnap ? `url(${flipSnap})` : "none",
+                      backgroundSize: "100% 100%",
+                      backgroundRepeat: "no-repeat",
                       boxShadow: isForward
                         ? "inset -4px 0 12px rgba(0,0,0,0.08)"
                         : "inset 4px 0 12px rgba(0,0,0,0.08)",
                     }}>
-                      {renderContent(isForward ? flippingFrom : activeTab)}
+                      {!(isForward && flipSnap) && renderContent(isForward ? flippingFrom : activeTab)}
                     </div>
                   </div>
                 );
               })}
+              {/* 드래그 플립 — 실시간 커서 당김 */}
+              {dragX !== null && dragStartX.current !== null && flippingFrom === null && (
+                Array.from({ length: STRIP_N }).map((_, i) => {
+                  const rawRatio = Math.max(0, Math.min(1,
+                    (dragStartX.current! - dragX) / dragPageW.current
+                  ));
+                  const rotDeg = rawRatio * 90 * (0.5 + 0.1 * i);
+                  return (
+                    <div key={`drag-${i}`} style={{
+                      position: "absolute", top: 0, bottom: 0,
+                      left: `${(i / STRIP_N) * 100}%`, width: `${100 / STRIP_N}%`,
+                      overflow: "hidden",
+                      transformOrigin: `${-i * 100}% 50%`,
+                      transform: `rotateY(-${rotDeg}deg)`,
+                      zIndex: 5 + STRIP_N - i,
+                      pointerEvents: "none",
+                    }}>
+                      <div style={{
+                        position: "absolute", inset: 0,
+                        left: `-${i * 100}%`, width: `${STRIP_N * 100}%`,
+                        background: hanji,
+                        backgroundImage: flipSnap ? `url(${flipSnap})` : "none",
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                        boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
+                      }}>
+                        {!flipSnap && renderContent(activeTab)}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+
+            {/* 코너 컬 힌트 — 다음 탭 넘기기 */}
+            {coverDone && nextTabId && flippingFrom === null && (
+              <div
+                className="hidden sm:block"
+                style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: cornerHover ? 38 : 26, height: cornerHover ? 38 : 26,
+                  zIndex: 8, cursor: "pointer",
+                  transition: "width 0.22s ease, height 0.22s ease",
+                }}
+                onMouseEnter={() => setCornerHover(true)}
+                onMouseLeave={() => setCornerHover(false)}
+                onClick={() => nextTabId && handleTabClick(nextTabId)}
+              >
+                <div style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: "100%", height: "100%",
+                  background: theme === "light"
+                    ? "linear-gradient(135deg, transparent 50%, rgba(210,190,140,0.55) 50%)"
+                    : "linear-gradient(135deg, transparent 50%, rgba(90,70,40,0.6) 50%)",
+                  boxShadow: cornerHover
+                    ? "-3px -3px 8px rgba(0,0,0,0.18)"
+                    : "-1px -1px 4px rgba(0,0,0,0.09)",
+                  borderRadius: "0 0 10px 0",
+                  transition: "box-shadow 0.22s",
+                }} />
+              </div>
+            )}
+
+            {/* 우측 페이지 챕터 헤더 */}
+            {coverDone && (
+              <div
+                className="hidden sm:flex"
+                style={{
+                  position: "absolute", top: 8, left: 0, right: 0,
+                  justifyContent: "center", zIndex: 2, pointerEvents: "none",
+                }}
+              >
+                <span style={{
+                  fontFamily: "var(--font-song, serif)", fontSize: 9,
+                  color: "rgba(var(--diary-ink-rgb), 0.3)", letterSpacing: "0.22em",
+                }}>
+                  {TABS.find(t => t.id === activeTab)?.label}
+                </span>
+              </div>
+            )}
+
+            {/* 우측 페이지 번호 */}
+            {coverDone && (
+              <div
+                className="hidden sm:flex"
+                style={{
+                  position: "absolute", bottom: 8, left: 0, right: 0,
+                  justifyContent: "center", zIndex: 2, pointerEvents: "none",
+                }}
+              >
+                <span style={{
+                  fontFamily: "var(--font-song, serif)", fontSize: 9,
+                  color: "rgba(var(--diary-ink-rgb), 0.28)", letterSpacing: "0.15em",
+                }}>
+                  {toRoman(TAB_IDX[activeTab] * 2 + 1)}
+                </span>
+              </div>
+            )}
 
             {/* ── 표지 — 출발 (우측) ── */}
             {!coverFlipped && (
