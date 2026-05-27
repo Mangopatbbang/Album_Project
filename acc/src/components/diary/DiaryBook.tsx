@@ -70,83 +70,79 @@ function getAudioCtx() {
   return ctx;
 }
 
-/* 고주파 노이즈 버퍼 생성 — 종이 마찰음의 공통 재료 */
-function _makeNoiseBuf(ctx: AudioContext, dur: number): AudioBuffer {
+function _noise(ctx: AudioContext, dur: number): AudioBuffer {
   const sr = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
   const d = buf.getChannelData(0);
-  let pk = 0;
-  for (let i = 0; i < d.length; i++) {
-    const w = Math.random() * 2 - 1;
-    pk = pk * 0.97 + w * 0.03;           // 가벼운 핑크 틴트
-    d[i] = w * 0.92 + pk * 0.08;
-  }
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   return buf;
 }
 
-/* 탭 넘기기 — 얇은 종이 스치는 소리 (85ms) */
+/* 탭 넘기기 — 50ms, 고주파(6500Hz+), 조용하게 */
 function playPageSound() {
   try {
     const ctx = getAudioCtx();
-    const dur = 0.085;
+    const dur = 0.05;
     const src = ctx.createBufferSource();
-    src.buffer = _makeNoiseBuf(ctx, dur);
+    src.buffer = _noise(ctx, dur);
     const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 4800; hp.Q.value = 0.6;
+    hp.type = "highpass"; hp.frequency.value = 6500; hp.Q.value = 0.5;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.30, ctx.currentTime + 0.003);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.001);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
     src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
 
-/* 표지 열기 — 두꺼운 종이 서서히 넘어가는 소리 (220ms) */
+/* 표지 열기 — 170ms, 중고주파 */
 function playCoverOpen() {
   try {
     const ctx = getAudioCtx();
-    const dur = 0.22;
+    const dur = 0.17;
     const src = ctx.createBufferSource();
-    src.buffer = _makeNoiseBuf(ctx, dur);
+    src.buffer = _noise(ctx, dur);
     const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 3200; hp.Q.value = 0.5;
+    hp.type = "highpass"; hp.frequency.value = 4000; hp.Q.value = 0.5;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.26, ctx.currentTime + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.13, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
     src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
 
-/* 표지 착지 — 두꺼운 종이 덮이는 소리 (180ms, 저역 포함) */
+/* 표지 착지 — 고역(종이) + 저역(무게감) 2레이어 */
 function playCoverThud() {
   try {
     const ctx = getAudioCtx();
-    const dur = 0.18;
+    const now = ctx.currentTime;
     // 고역: 종이 마찰
-    const src1 = ctx.createBufferSource();
-    src1.buffer = _makeNoiseBuf(ctx, dur);
+    const s1 = ctx.createBufferSource();
+    s1.buffer = _noise(ctx, 0.14);
     const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 2800; hp.Q.value = 0.5;
+    hp.type = "highpass"; hp.frequency.value = 3000; hp.Q.value = 0.5;
     const g1 = ctx.createGain();
-    g1.gain.setValueAtTime(0, ctx.currentTime);
-    g1.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.008);
-    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    src1.connect(hp); hp.connect(g1); g1.connect(ctx.destination);
-    src1.start();
-    // 저역: 종이 무게감 (짧은 탁 느낌)
-    const src2 = ctx.createBufferSource();
-    src2.buffer = _makeNoiseBuf(ctx, 0.05);
+    g1.gain.setValueAtTime(0, now);
+    g1.gain.linearRampToValueAtTime(0.18, now + 0.006);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    s1.connect(hp); hp.connect(g1); g1.connect(ctx.destination);
+    s1.start();
+    // 저역: 종이 무게감
+    const s2 = ctx.createBufferSource();
+    s2.buffer = _noise(ctx, 0.04);
     const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass"; lp.frequency.value = 320; lp.Q.value = 0.8;
+    lp.type = "lowpass"; lp.frequency.value = 250; lp.Q.value = 0.7;
     const g2 = ctx.createGain();
-    g2.gain.setValueAtTime(0, ctx.currentTime);
-    g2.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.005);
-    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    src2.connect(lp); lp.connect(g2); g2.connect(ctx.destination);
-    src2.start();
+    g2.gain.setValueAtTime(0, now);
+    g2.gain.linearRampToValueAtTime(0.11, now + 0.004);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    s2.connect(lp); lp.connect(g2); g2.connect(ctx.destination);
+    s2.start();
   } catch (_) {}
 }
 
@@ -914,7 +910,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         ? "inset -4px 0 12px rgba(0,0,0,0.08)"
                         : "inset 4px 0 12px rgba(0,0,0,0.08)",
                     }}>
-                      {!(isForward && flipSnap) && renderContent(isForward ? flippingFrom : activeTab)}
+                      {!(isForward && flipSnap) && (
+                        <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                          {renderContent(isForward ? flippingFrom : activeTab)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -945,7 +945,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         backgroundRepeat: "no-repeat",
                         boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
                       }}>
-                        {!flipSnap && renderContent(activeTab)}
+                        {!flipSnap && (
+                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                            {renderContent(activeTab)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -977,7 +981,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         backgroundRepeat: "no-repeat",
                         boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
                       }}>
-                        {!flipSnap && renderContent(activeTab)}
+                        {!flipSnap && (
+                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                            {renderContent(activeTab)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
