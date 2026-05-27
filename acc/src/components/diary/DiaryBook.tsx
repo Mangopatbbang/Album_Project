@@ -239,7 +239,13 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
         }}
       >
         {/* 래퍼 — 책 + 리본을 감싸되 리본은 clip 밖에 */}
-        <div style={{ position: "relative", height: "100%", width: "min(920px, 100%)" }}>
+        <div style={{
+          position: "relative",
+          height: "100%",
+          width: "100%",
+          maxWidth: coverOpen ? 920 : 460,
+          transition: "max-width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
+        }}>
         <div style={{
           display: "flex",
           height: "100%",
@@ -257,12 +263,14 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             style={{
               flex: 1,
               minWidth: 0,
+              maxWidth: coverOpen ? 440 : 0,
+              overflow: "hidden",
+              transition: "max-width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
               background: hanji,
               borderRadius: "10px 0 0 10px",
               border: "1px solid rgba(var(--diary-ink-rgb), 0.15)",
               borderRight: "none",
               position: "relative",
-              overflow: "hidden",
             }}
           >
             <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
@@ -456,10 +464,13 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           <div
             className="hidden sm:block"
             style={{
-              width: 20, flexShrink: 0,
+              width: coverOpen ? 20 : 0,
+              flexShrink: 0,
+              overflow: "hidden",
+              transition: "width 0.50s cubic-bezier(0.25,0.1,0.25,1)",
               background: spineBg,
               boxShadow: "inset 2px 0 5px rgba(0,0,0,0.5), inset -2px 0 5px rgba(0,0,0,0.5)",
-              position: "relative", overflow: "hidden",
+              position: "relative",
             }}
           >
             {[0.1, 0.25, 0.75, 0.9].map((pos) => (
@@ -486,11 +497,14 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             <div style={{
               position: "absolute", inset: 0,
               background: hanji,
-              borderRadius: "0 10px 10px 0",
+              borderRadius: coverOpen ? "0 10px 10px 0" : 10,
               border: "1px solid rgba(var(--diary-ink-rgb), 0.14)",
-              borderLeft: "none",
+              borderLeft: coverOpen ? "none" : "1px solid rgba(var(--diary-ink-rgb), 0.14)",
               overflow: "hidden",
-              boxShadow: "inset 5px 0 18px rgba(0,0,0,0.07), 0 0 0 1px var(--diary-page-inset) inset",
+              boxShadow: coverOpen
+                ? "inset 5px 0 18px rgba(0,0,0,0.07), 0 0 0 1px var(--diary-page-inset) inset"
+                : "0 0 0 1px var(--diary-page-inset) inset",
+              transition: "border-radius 0.5s, box-shadow 0.5s",
               zIndex: 0,
             }}>
               <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
@@ -701,6 +715,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           style={{
             position: "absolute", right: -40, top: 24,
             flexDirection: "column", gap: 6, zIndex: 15,
+            opacity: coverOpen ? 1 : 0,
+            transition: "opacity 0.4s ease",
+            pointerEvents: coverOpen ? "auto" : "none",
           }}
         >
           {TABS.map((tab) => {
