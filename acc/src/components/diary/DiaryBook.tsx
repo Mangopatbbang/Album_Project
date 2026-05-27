@@ -70,80 +70,46 @@ function getAudioCtx() {
   return ctx;
 }
 
-/* 탭 넘기기 — 얇고 바삭한 종이 소리 (attack 6ms → 클릭음 방지) */
-function playPageSound() {
+/*
+ * 종이 소리 공통 구조:
+ *  - 핑크 노이즈 (화이트보다 자연스러운 스펙트럼)
+ *  - 비대칭 엔벨로프 — 빠른 어택 후 완만한 스르륵 릴리즈
+ *  - 밴드패스 주파수 스윕 (밝은 쪽→어두운 쪽) — 페이지가 호를 그리며 움직이는 느낌
+ *  - 중간 Q(1.1) — 한지 특유의 살짝 공명 있는 질감
+ */
+function _paperSound(freqStart: number, freqEnd: number, dur: number, vol: number) {
   try {
     const ctx = getAudioCtx();
     const sr = ctx.sampleRate;
-    const dur = 0.2;
     const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
+    let pk = 0;
     for (let i = 0; i < d.length; i++) {
       const t = i / sr;
-      const atk = Math.min(1, t / 0.006);        // 6ms 소프트 어택
-      const env = atk * Math.exp(-14 * t);        // 빠른 감쇠
-      d[i] = (Math.random() * 2 - 1) * env;
+      const w = Math.random() * 2 - 1;
+      pk = pk * 0.96 + w * 0.04;
+      const env = (1 - Math.exp(-t * 45)) * Math.exp(-t / (dur * 0.42));
+      d[i] = (w * 0.78 + pk * 0.22) * env;
     }
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 2200; hp.Q.value = 0.5;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.Q.value = 1.1;
+    bp.frequency.setValueAtTime(freqStart, ctx.currentTime);
+    bp.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
     const gain = ctx.createGain();
-    gain.gain.value = 0.55;
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
+    gain.gain.value = vol;
+    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
 
-/* 표지 열기 — 부드럽게 넘기는 소리 */
-function playCoverOpen() {
-  try {
-    const ctx = getAudioCtx();
-    const sr = ctx.sampleRate;
-    const dur = 0.32;
-    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) {
-      const t = i / sr;
-      const atk = Math.min(1, t / 0.018);
-      const env = atk * Math.exp(-7 * t);
-      d[i] = (Math.random() * 2 - 1) * env;
-    }
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 1400; hp.Q.value = 0.4;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.45;
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
-    src.start();
-  } catch (_) {}
-}
-
-/* 표지 착지 — 두껍고 느린 종이 소리 (타격음 없이) */
-function playCoverThud() {
-  try {
-    const ctx = getAudioCtx();
-    const sr = ctx.sampleRate;
-    const dur = 0.38;
-    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) {
-      const t = i / sr;
-      const atk = Math.min(1, t / 0.014);      // 14ms 어택 — 표지 무게감
-      const env = atk * Math.exp(-8 * t);
-      d[i] = (Math.random() * 2 - 1) * env;
-    }
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 900; hp.Q.value = 0.4;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.52;
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
-    src.start();
-  } catch (_) {}
-}
+/* 탭 넘기기 — 얇고 빠른 스르륵 */
+function playPageSound()  { _paperSound(3000, 1900, 0.24, 0.42); }
+/* 표지 열기 — 느리고 넓은 스르륵 */
+function playCoverOpen()  { _paperSound(2800, 1500, 0.30, 0.42); }
+/* 표지 착지 — 두껍고 낮은 스르륵 */
+function playCoverThud()  { _paperSound(2200, 1000, 0.34, 0.50); }
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
   const { theme } = useDiaryTheme();
@@ -192,10 +158,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
     : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
 
-  /* 표지 착지 — 출발 완료 시 묵직한 충격음 */
+  /* 표지 착지 — 착지 애니메이션 84% 완료 시점(≈580ms)에 맞춰 재생 */
   useEffect(() => {
     if (!coverFlipped) return;
-    const t = setTimeout(playCoverThud, 60);
+    const t = setTimeout(playCoverThud, 580);
     return () => clearTimeout(t);
   }, [coverFlipped]);
 
@@ -294,7 +260,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
       if (e.key === "ArrowLeft")  handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
       if (e.key === "Escape") {
         setCoverDone(false); setCoverFlipped(false); setCoverOpen(false);
-        setActiveTab("records");
+        setActiveTab("records"); setDragX(null);
         flipQueueRef.current = []; setFlippingFrom(null); setFlipSnap(null); setSnapBackPhase(null);
       }
     };
@@ -326,7 +292,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
         setSnapBackPhase("from");
         requestAnimationFrame(() => requestAnimationFrame(() => {
           setSnapBackPhase("to");
-          setTimeout(() => { setSnapBackPhase(null); setFlipSnap(null); }, 320);
+          setTimeout(() => { setSnapBackPhase(null); }, 320);
         }));
       } else {
         setFlipSnap(null);
@@ -456,7 +422,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }}
             >
 
-            <div key={leftPageTab ?? "title"} style={{ position: "absolute", inset: 0, animation: coverDone ? "leftFadeIn 0.32s ease-out forwards" : "none" }}>
+            <div key={leftPageTab ?? "title"} style={{ position: "absolute", inset: 0, animation: coverDone && leftPageTab !== null ? "leftFadeIn 0.32s ease-out forwards" : "none" }}>
             {leftPageTab === null ? (
               // ── 속표지: 청음일기 타이틀 페이지 ──
               <>
