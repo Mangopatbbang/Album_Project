@@ -54,6 +54,10 @@ const ARRIVE_KF = Array.from({ length: STRIP_N }, (_, j) => {
   const sb = (parseFloat(b) * 0.3).toFixed(1);
   return `@keyframes csa${j}{0%{transform:rotateY(90deg);opacity:0;}14%{opacity:1;}56%{transform:rotateY(-${b}deg);opacity:1;}73%{transform:rotateY(${sb}deg);opacity:1;}84%{transform:rotateY(0deg);opacity:1;}100%{transform:rotateY(0deg);opacity:0;}}`;
 }).join("");
+// 탭 역방향: 새 내용이 왼쪽 엣지에서 오른쪽으로 펼쳐짐 (-90°→0°, 바운스 없음)
+const PAGE_BWD_KF = Array.from({ length: STRIP_N }, (_, i) => {
+  return `@keyframes pgb${i}{0%{transform:rotateY(-90deg);}100%{transform:rotateY(0deg);}}`;
+}).join("");
 
 let _audioCtx: AudioContext | null = null;
 function playPageSound() {
@@ -129,6 +133,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const t = setTimeout(() => {
       setFlippingFrom(null);
       const queue = flipQueueRef.current;
+
       if (queue.length > 0) {
         const [next, ...rest] = queue;
         flipQueueRef.current = rest;
@@ -139,7 +144,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
           setActiveTab(next.to);
         }, 50);
       }
-    }, 540);
+    }, 580);
     return () => clearTimeout(t);
   }, [flippingFrom]);
 
@@ -202,26 +207,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   return (
     <>
       <style>{`
-        ${DEPART_KF}${ARRIVE_KF}
+        ${DEPART_KF}${ARRIVE_KF}${PAGE_BWD_KF}
         @keyframes coverHint {
           0%, 100% { opacity: 0.5; transform: translateY(0px); }
           50% { opacity: 0.85; transform: translateY(4px); }
-        }
-        /* 앞으로 — 왼쪽 끝 축, 종이가 휘며 넘어가는 효과 */
-        @keyframes flipFwd {
-          0%   { transform: rotateY(0deg) skewY(0deg); opacity: 1; }
-          28%  { transform: rotateY(-48deg) skewY(-4deg); opacity: 1; }
-          58%  { transform: rotateY(-86deg) skewY(4deg); opacity: 1; }
-          78%  { transform: rotateY(-100deg) skewY(1deg); opacity: 0.7; }
-          100% { transform: rotateY(-105deg) skewY(0deg); opacity: 0; }
-        }
-        /* 뒤로 — 왼쪽에서 오른쪽으로 종이가 펼쳐지며 넘어오는 효과 */
-        @keyframes flipBwdIn {
-          0%   { transform: rotateY(-105deg) skewY(0deg); opacity: 0; }
-          22%  { transform: rotateY(-100deg) skewY(1deg); opacity: 0.7; }
-          42%  { transform: rotateY(-86deg) skewY(4deg); opacity: 1; }
-          72%  { transform: rotateY(-48deg) skewY(-4deg); opacity: 1; }
-          100% { transform: rotateY(0deg) skewY(0deg); opacity: 1; }
         }
       `}</style>
 
@@ -576,54 +565,46 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 {renderContent(flipDir === -1 && flippingFrom !== null ? flippingFrom : activeTab)}
               </div>
 
-              {/* flip layer — 앞방향: 이전 내용이 왼쪽으로 넘어감 / 뒷방향: 새 내용이 왼쪽에서 펼쳐짐 */}
-              {flippingFrom !== null && (
-                <div
-                  style={{
-                    position: "absolute", inset: 0,
-                    zIndex: 5,
-                    transformOrigin: "left center",
-                    transformStyle: "preserve-3d",
-                    animation: flipDir === 1
-                      ? "flipFwd 0.52s cubic-bezier(0.45,0,0.55,1) forwards"
-                      : "flipBwdIn 0.52s cubic-bezier(0.45,0,0.55,1) forwards",
-                    pointerEvents: "none",
-                  }}
-                >
-                  {/* 앞면 — 앞방향: 이전 내용 / 뒷방향: 새 내용 */}
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    overflowY: "hidden",
-                    backfaceVisibility: "hidden",
-                    WebkitBackfaceVisibility: "hidden",
-                    background: hanji,
-                    boxShadow: flipDir === 1
-                      ? "inset -6px 0 18px rgba(0,0,0,0.09)"
-                      : "inset 6px 0 18px rgba(0,0,0,0.09)",
-                  }}>
-                    {flipDir === 1 ? renderContent(flippingFrom) : renderContent(activeTab)}
+              {/* flip layer — 멀티스트립 페이지 넘기기 (표지와 동일한 파동 곡률) */}
+              {flippingFrom !== null && Array.from({ length: STRIP_N }).map((_, i) => {
+                const isForward = flipDir === 1;
+                const lp = (i / STRIP_N) * 100;
+                const wp = 100 / STRIP_N;
+                // 앞방향: 바깥(i=4) 먼저 출발 / 뒷방향: 척추(i=0) 먼저 도착
+                const delay = isForward
+                  ? (STRIP_N - 1 - i) * 0.02
+                  : i * 0.02;
+                const anim = isForward
+                  ? `csd${i} 0.48s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards`
+                  : `pgb${i} 0.48s cubic-bezier(0.0,0.0,0.2,1) ${delay}s both`;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      position: "absolute", top: 0, bottom: 0,
+                      left: `${lp}%`, width: `${wp}%`,
+                      overflow: "hidden",
+                      transformOrigin: `${-i * 100}% 50%`,
+                      zIndex: isForward ? 5 + STRIP_N - i : 5 + i,
+                      animation: anim,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      left: `-${i * 100}%`,
+                      width: `${STRIP_N * 100}%`,
+                      overflowY: "hidden",
+                      background: hanji,
+                      boxShadow: isForward
+                        ? "inset -4px 0 12px rgba(0,0,0,0.08)"
+                        : "inset 4px 0 12px rgba(0,0,0,0.08)",
+                    }}>
+                      {renderContent(isForward ? flippingFrom : activeTab)}
+                    </div>
                   </div>
-
-                  {/* 뒷면: 빈 한지 */}
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    backfaceVisibility: "hidden",
-                    WebkitBackfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)",
-                    background: hanji,
-                    boxShadow: "inset 6px 0 18px rgba(0,0,0,0.09)",
-                  }}>
-                    <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply" }} />
-                    {Array.from({ length: 22 }).map((_, i) => (
-                      <div key={i} style={{
-                        position: "absolute", left: 24, right: 24,
-                        top: `${8 + i * 4.2}%`, height: 1,
-                        background: "linear-gradient(90deg, transparent, rgba(var(--diary-ink-rgb), 0.09) 15%, rgba(var(--diary-ink-rgb), 0.09) 85%, transparent)",
-                      }} />
-                    ))}
-                  </div>
-                </div>
-              )}
+                );
+              })}
             </div>
 
             {/* ── 표지 — 출발 (우측) ── */}
