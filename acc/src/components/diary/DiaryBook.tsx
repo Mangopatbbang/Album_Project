@@ -70,59 +70,77 @@ function getAudioCtx() {
   return ctx;
 }
 
-/* 탭 넘기기 — 얇고 바삭한 종이 소리 */
+/* 탭 넘기기 — 얇고 바삭한 종이 소리 (attack 6ms → 클릭음 방지) */
 function playPageSound() {
   try {
     const ctx = getAudioCtx();
-    const dur = 0.18;
-    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+    const sr = ctx.sampleRate;
+    const dur = 0.2;
+    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0;
     for (let i = 0; i < d.length; i++) {
-      const w = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + w * 0.0555179;
-      b1 = 0.99332 * b1 + w * 0.0750759;
-      b2 = 0.96900 * b2 + w * 0.1538520;
-      d[i] = (b0 + b1 + b2 + w * 0.5362) * 0.11;
+      const t = i / sr;
+      const atk = Math.min(1, t / 0.006);        // 6ms 소프트 어택
+      const env = atk * Math.exp(-14 * t);        // 빠른 감쇠
+      d[i] = (Math.random() * 2 - 1) * env;
     }
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass"; bp.frequency.value = 2800; bp.Q.value = 1.2;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 2200; hp.Q.value = 0.5;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.45, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    gain.gain.value = 0.55;
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
 
-/* 표지 착지 — 두껍고 묵직한 충격음 */
-function playCoverThud() {
+/* 표지 열기 — 부드럽게 넘기는 소리 */
+function playCoverOpen() {
   try {
     const ctx = getAudioCtx();
+    const sr = ctx.sampleRate;
     const dur = 0.32;
-    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
     const d = buf.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0;
     for (let i = 0; i < d.length; i++) {
-      const w = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + w * 0.0555179;
-      b1 = 0.99332 * b1 + w * 0.0750759;
-      b2 = 0.96900 * b2 + w * 0.1538520;
-      d[i] = (b0 + b1 + b2 + w * 0.5362) * 0.14;
+      const t = i / sr;
+      const atk = Math.min(1, t / 0.018);
+      const env = atk * Math.exp(-7 * t);
+      d[i] = (Math.random() * 2 - 1) * env;
     }
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    /* 저역 강조 필터 — 두꺼운 표지감 */
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass"; lp.frequency.value = 700; lp.Q.value = 0.8;
-    const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass"; bp.frequency.value = 320; bp.Q.value = 1.5;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 1400; hp.Q.value = 0.4;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.7, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    src.connect(lp); lp.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    gain.gain.value = 0.45;
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch (_) {}
+}
+
+/* 표지 착지 — 두껍고 느린 종이 소리 (타격음 없이) */
+function playCoverThud() {
+  try {
+    const ctx = getAudioCtx();
+    const sr = ctx.sampleRate;
+    const dur = 0.38;
+    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      const t = i / sr;
+      const atk = Math.min(1, t / 0.014);      // 14ms 어택 — 표지 무게감
+      const env = atk * Math.exp(-8 * t);
+      d[i] = (Math.random() * 2 - 1) * env;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 900; hp.Q.value = 0.4;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.52;
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
@@ -571,7 +589,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 <div style={{
                   position: "absolute", top: 36, left: 0, right: 0, bottom: 36,
                   overflow: "hidden", zIndex: 1, pointerEvents: "none",
-                  opacity: 0.42, filter: "sepia(0.12) contrast(0.88) brightness(1.03)",
+                  opacity: 0.28,
+                  filter: "sepia(0.22) contrast(0.8) brightness(1.08) blur(0.4px)",
+                  transform: "scaleX(-1)",
                 }}>
                   {renderContent(leftPageTab)}
                 </div>
@@ -1038,7 +1058,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                   cursor: coverOpen ? "default" : "pointer",
                   pointerEvents: coverOpen ? "none" : "auto",
                 }}
-                onClick={() => { if (!coverOpen) { playPageSound(); setCoverOpen(true); } }}
+                onClick={() => { if (!coverOpen) { playCoverOpen(); setCoverOpen(true); } }}
               >
                 {Array.from({ length: STRIP_N }).map((_, i) => {
                   const lp = (i / STRIP_N) * 100;
