@@ -70,81 +70,42 @@ function getAudioCtx() {
   return ctx;
 }
 
-function _noise(ctx: AudioContext, dur: number): AudioBuffer {
-  const sr = ctx.sampleRate;
-  const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  return buf;
-}
+/* 실제 녹음 샘플 기반 — /sounds/page-turn.mp3 (CC0, bigsoundbank.com) */
+let _pageTurnBuf: AudioBuffer | null = null;
 
-/* 탭 넘기기 — 50ms, 고주파(6500Hz+), 조용하게 */
-function playPageSound() {
+async function _ensurePageTurnBuf(): Promise<AudioBuffer | null> {
+  if (_pageTurnBuf) return _pageTurnBuf;
   try {
     const ctx = getAudioCtx();
-    const dur = 0.05;
-    const src = ctx.createBufferSource();
-    src.buffer = _noise(ctx, dur);
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 6500; hp.Q.value = 0.5;
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.15, now + 0.001);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
-    src.start();
-  } catch (_) {}
+    const res = await fetch("/sounds/page-turn.mp3");
+    const ab = await res.arrayBuffer();
+    _pageTurnBuf = await ctx.decodeAudioData(ab);
+    return _pageTurnBuf;
+  } catch (_) { return null; }
 }
 
-/* 표지 열기 — 170ms, 중고주파 */
-function playCoverOpen() {
-  try {
-    const ctx = getAudioCtx();
-    const dur = 0.17;
-    const src = ctx.createBufferSource();
-    src.buffer = _noise(ctx, dur);
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 4000; hp.Q.value = 0.5;
-    const gain = ctx.createGain();
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.13, now + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
-    src.start();
-  } catch (_) {}
+function _playSample(rate: number, vol: number, offset = 0, dur?: number) {
+  _ensurePageTurnBuf().then(buf => {
+    if (!buf) return;
+    try {
+      const ctx = getAudioCtx();
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = rate;
+      const gain = ctx.createGain();
+      gain.gain.value = vol;
+      src.connect(gain); gain.connect(ctx.destination);
+      src.start(0, offset, dur);
+    } catch (_) {}
+  });
 }
 
-/* 표지 착지 — 고역(종이) + 저역(무게감) 2레이어 */
-function playCoverThud() {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-    // 고역: 종이 마찰
-    const s1 = ctx.createBufferSource();
-    s1.buffer = _noise(ctx, 0.14);
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 3000; hp.Q.value = 0.5;
-    const g1 = ctx.createGain();
-    g1.gain.setValueAtTime(0, now);
-    g1.gain.linearRampToValueAtTime(0.18, now + 0.006);
-    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-    s1.connect(hp); hp.connect(g1); g1.connect(ctx.destination);
-    s1.start();
-    // 저역: 종이 무게감
-    const s2 = ctx.createBufferSource();
-    s2.buffer = _noise(ctx, 0.04);
-    const lp = ctx.createBiquadFilter();
-    lp.type = "lowpass"; lp.frequency.value = 250; lp.Q.value = 0.7;
-    const g2 = ctx.createGain();
-    g2.gain.setValueAtTime(0, now);
-    g2.gain.linearRampToValueAtTime(0.11, now + 0.004);
-    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    s2.connect(lp); lp.connect(g2); g2.connect(ctx.destination);
-    s2.start();
-  } catch (_) {}
-}
+/* 탭 넘기기 — 빠르게, 앞부분만 */
+function playPageSound()  { _playSample(1.25, 0.55, 0, 0.30); }
+/* 표지 열기 — 천천히, 전체 */
+function playCoverOpen()  { _playSample(0.85, 0.48, 0, 0.75); }
+/* 표지 착지 — 느리고 낮게, 중간부터 */
+function playCoverThud()  { _playSample(0.70, 0.52, 0.25, 0.50); }
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
   const { theme } = useDiaryTheme();
@@ -192,6 +153,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const bookShadow = theme === "light"
     ? "0 20px 48px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)"
     : "0 40px 80px rgba(0,0,0,0.9), 0 12px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5)";
+
+  /* 컴포넌트 마운트 시 샘플 미리 로드 — 첫 클릭 지연 방지 */
+  useEffect(() => { _ensurePageTurnBuf(); }, []);
 
   /* 표지 착지 — 착지 애니메이션 84% 완료 시점(≈580ms)에 맞춰 재생 */
   useEffect(() => {
