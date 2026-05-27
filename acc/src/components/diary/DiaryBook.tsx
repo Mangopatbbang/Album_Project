@@ -58,6 +58,11 @@ const ARRIVE_KF = Array.from({ length: STRIP_N }, (_, j) => {
 const PAGE_BWD_KF = Array.from({ length: STRIP_N }, (_, i) => {
   return `@keyframes pgb${i}{0%{transform:rotateY(-90deg);}100%{transform:rotateY(0deg);}}`;
 }).join("");
+// 커버 닫기: -90°에서 0°로 복귀, 약간의 바운스로 자연스럽게 안착
+const COVER_CLOSE_KF = Array.from({ length: STRIP_N }, (_, i) => {
+  const ov = (3 + (i / (STRIP_N - 1)) * 5).toFixed(1);
+  return `@keyframes csc${i}{0%{transform:rotateY(-90deg);}65%{transform:rotateY(${ov}deg);}100%{transform:rotateY(0deg);}}`;
+}).join("");
 
 let _audioCtx: AudioContext | null = null;
 function getAudioCtx() {
@@ -114,6 +119,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [coverOpen, setCoverOpen] = useState(false);
   const [coverFlipped, setCoverFlipped] = useState(false);
   const [coverDone, setCoverDone] = useState(false);
+  const [coverClosing, setCoverClosing] = useState(false);
   const flipQueueRef = useRef<Array<{ from: Tab; to: Tab; dir: 1 | -1 }>>([]);
   const pageContentRef = useRef<HTMLDivElement>(null);
   const [flipSnap, setFlipSnap] = useState<string | null>(null);
@@ -239,14 +245,33 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const [first, ...rest] = steps;
     flipQueueRef.current = rest;
 
-    /* 스크롤 위치 저장 — 스트립 콘텐츠 translateY 보정에 사용 */
+    /* 스크롤 위치 저장 — forward flip 스트립 translateY 보정에 사용 */
     savedScrollTopRef.current = pageContentRef.current?.scrollTop ?? 0;
     setFlipSnap(preSnap ?? null);
     playPageSound();
     setFlipDir(first.dir);
     setFlippingFrom(first.from);
     setActiveTab(first.to);
+    /* forward flip: base layer가 새 탭 내용을 즉시 scrollTop=0에서 렌더하도록 리셋 */
+    if (first.dir === 1) {
+      requestAnimationFrame(() => {
+        if (pageContentRef.current) pageContentRef.current.scrollTop = 0;
+      });
+    }
   }, [activeTab, flippingFrom]);
+
+  const handleCoverClose = useCallback(() => {
+    if (coverClosing || !coverDone) return;
+    setCoverDone(false);
+    setCoverFlipped(false);
+    setCoverClosing(true);
+    setActiveTab("records");
+    flipQueueRef.current = [];
+    setFlippingFrom(null);
+    setFlipSnap(null);
+    setSnapBackPhase(null);
+    setDragX(null);
+  }, [coverClosing, coverDone]);
 
   /* 키보드 내비게이션 — 화살표 좌/우로 탭 이동 */
   useEffect(() => {
@@ -315,7 +340,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   return (
     <>
       <style>{`
-        ${DEPART_KF}${ARRIVE_KF}${PAGE_BWD_KF}
+        ${DEPART_KF}${ARRIVE_KF}${PAGE_BWD_KF}${COVER_CLOSE_KF}
         @keyframes coverHint {
           0%, 100% { opacity: 0.5; transform: translateY(0px); }
           50% { opacity: 0.85; transform: translateY(4px); }
@@ -382,7 +407,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               border: "1px solid rgba(var(--diary-ink-rgb), 0.15)",
               borderRight: "none",
               position: "relative",
+              cursor: coverDone ? "pointer" : "default",
             }}
+            onClick={() => { if (coverDone && !coverClosing) handleCoverClose(); }}
           >
             <div style={{ position: "absolute", inset: 0, backgroundImage: noise, opacity: noiseOpacity, mixBlendMode: "multiply", pointerEvents: "none" }} />
 
@@ -870,7 +897,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         : "inset 4px 0 12px rgba(0,0,0,0.08)",
                     }}>
                       {!(isForward && flipSnap) && (
-                        <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
+                        <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: isForward ? `translateY(-${savedScrollTopRef.current}px)` : "none" }}>
                           {renderContent(isForward ? flippingFrom : activeTab)}
                         </div>
                       )}
@@ -1023,21 +1050,20 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               </div>
             )}
 
-            {/* ── 표지 — 출발 (우측) ── */}
-            {!coverFlipped && (
+            {/* ── 표지 — 출발 (우측) / 닫기 복귀 (우측) ── */}
+            {(!coverFlipped || coverClosing) && (
               <div
                 style={{
                   position: "absolute", inset: 0, zIndex: 20,
                   perspective: "1400px",
-                  cursor: coverOpen ? "default" : "pointer",
-                  pointerEvents: coverOpen ? "none" : "auto",
+                  cursor: coverOpen && !coverClosing ? "default" : "pointer",
+                  pointerEvents: coverOpen && !coverClosing ? "none" : "auto",
                 }}
-                onClick={() => { if (!coverOpen) { playCoverOpen(); setCoverOpen(true); } }}
+                onClick={() => { if (!coverOpen && !coverClosing) { playCoverOpen(); setCoverOpen(true); } }}
               >
                 {Array.from({ length: STRIP_N }).map((_, i) => {
                   const lp = (i / STRIP_N) * 100;
                   const wp = 100 / STRIP_N;
-                  /* 바깥 끝(i=N-1)이 먼저, 척추(i=0)가 마지막에 넘어감 */
                   const delay = (STRIP_N - 1 - i) * 0.02;
                   return (
                     <div
@@ -1046,14 +1072,17 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         position: "absolute", top: 0, bottom: 0,
                         left: `${lp}%`, width: `${wp}%`,
                         overflow: "hidden",
-                        /* 각 스트립의 회전 축 = 커버 척추(맨 왼쪽) */
                         transformOrigin: `${-i * 100}% 50%`,
                         zIndex: STRIP_N - i,
-                        animation: coverOpen
-                          ? `csd${i} 0.50s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards`
-                          : "none",
+                        animation: coverClosing
+                          ? `csc${i} 0.50s cubic-bezier(0.25,0.1,0.2,1) ${delay}s both`
+                          : (coverOpen ? `csd${i} 0.50s cubic-bezier(0.25,0.1,0.2,1) ${delay}s forwards` : "none"),
                       }}
-                      onAnimationEnd={coverOpen && i === 0 ? () => setCoverFlipped(true) : undefined}
+                      onAnimationEnd={
+                        coverClosing && i === 0
+                          ? () => { setCoverClosing(false); setCoverOpen(false); }
+                          : (!coverClosing && coverOpen && i === 0 ? () => setCoverFlipped(true) : undefined)
+                      }
                     >
                       {/* 스트립 내부: 커버 전체 너비 콘텐츠를 올바른 구간만 보이도록 오프셋 */}
                       <div style={{
