@@ -337,6 +337,29 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     }
   };
 
+  /* 베이스 레이어·스트립 모두 동일한 수직 구조 유지 — isSample 배너 포함 */
+  const renderPageContent = (tab: Tab) => (
+    <>
+      {isSample && (
+        <div style={{ padding: "12px 20px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            backgroundColor: "rgba(var(--accent-rgb), 0.05)",
+            border: "1px solid rgba(var(--accent-rgb), 0.2)",
+            borderRadius: 4, padding: "8px 12px",
+          }}>
+            <span style={{ color: "var(--accent)", fontSize: 10, opacity: 0.65, flexShrink: 0 }}>✦</span>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, margin: 0 }}>
+              예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
+            </p>
+          </div>
+        </div>
+      )}
+      {renderContent(tab)}
+    </>
+  );
+
+
   return (
     <>
       <style>{`
@@ -838,22 +861,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             >
               {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용 */}
               <div ref={pageContentRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0, paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box" }}>
-                {isSample && (
-                  <div style={{ padding: "12px 20px 0" }}>
-                    <div style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      backgroundColor: "rgba(var(--accent-rgb), 0.05)",
-                      border: "1px solid rgba(var(--accent-rgb), 0.2)",
-                      borderRadius: 4, padding: "8px 12px",
-                    }}>
-                      <span style={{ color: "var(--accent)", fontSize: 10, opacity: 0.65, flexShrink: 0 }}>✦</span>
-                      <p style={{ color: "var(--text-muted)", fontSize: 11, margin: 0 }}>
-                        예시 기록입니다. 앨범 커버는 실제 기록에서 표시돼요.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {renderContent(flipDir === -1 && flippingFrom !== null ? flippingFrom : activeTab)}
+                {renderPageContent(flipDir === -1 && flippingFrom !== null ? flippingFrom : activeTab)}
               </div>
 
               {/* flip layer — 멀티스트립 페이지 넘기기 (표지와 동일한 파동 곡률) */}
@@ -898,7 +906,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                     }}>
                       {!(isForward && flipSnap) && (
                         <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: isForward ? `translateY(-${savedScrollTopRef.current}px)` : "none" }}>
-                          {renderContent(isForward ? flippingFrom : activeTab)}
+                          {renderPageContent(isForward ? flippingFrom : activeTab)}
                         </div>
                       )}
                     </div>
@@ -934,7 +942,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       }}>
                         {!flipSnap && (
                           <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
-                            {renderContent(activeTab)}
+                            {renderPageContent(activeTab)}
                           </div>
                         )}
                       </div>
@@ -971,7 +979,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       }}>
                         {!flipSnap && (
                           <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
-                            {renderContent(activeTab)}
+                            {renderPageContent(activeTab)}
                           </div>
                         )}
                       </div>
