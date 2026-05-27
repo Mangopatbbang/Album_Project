@@ -62,7 +62,7 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
               <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {r.title}
               </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 <span
                   onClick={(e) => { e.stopPropagation(); setArtistModal({ name: r.artist, display: r.artist_display ?? r.artist }); }}
                   style={{ cursor: "pointer" }}

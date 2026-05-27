@@ -101,6 +101,7 @@ export default function ThemesPageClient({
         </p>
         {profile && (
           <button
+            data-tour="themes-new-btn"
             onClick={() => setShowEditor(true)}
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",

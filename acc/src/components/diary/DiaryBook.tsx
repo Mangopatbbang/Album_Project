@@ -565,6 +565,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                   )}
                 </div>
                 <button
+                  data-tour="diary-new-btn"
                   onClick={onNewEntry}
                   className="hidden sm:flex"
                   style={{
@@ -811,9 +812,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
             >
               {TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
+                const tabTour = tab.id === "calendar" ? "diary-tab-calendar" : tab.id === "albums" ? "diary-tab-albums" : tab.id === "stats" ? "diary-tab-stats" : undefined;
                 return (
                   <button
                     key={tab.id}
+                    {...(tabTour ? { "data-tour": tabTour } : {})}
                     onClick={() => handleTabClick(tab.id)}
                     style={{
                       flex: 1, padding: "11px 0", border: "none",

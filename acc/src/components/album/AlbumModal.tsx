@@ -671,7 +671,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   >
                     ✎ 청음 기록
                   </button>
-                  {!ratings.find((r) => r.user_id === profile.id) && (
+                  {(isWatchlisted || !ratings.find((r) => r.user_id === profile.id)) && (
                     <button
                       onClick={handleToggleWatchlist}
                       style={{
@@ -904,7 +904,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                 >
                   ✎ 청음 기록
                 </button>
-                {!ratings.find((r) => r.user_id === profile.id) && (
+                {(isWatchlisted || !ratings.find((r) => r.user_id === profile.id)) && (
                   <button
                     onClick={handleToggleWatchlist}
                     style={{

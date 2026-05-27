@@ -334,7 +334,7 @@ export default async function HomePage() {
         </section>
 
         {/* 리뷰 티커 */}
-        <div style={{ ...containerStyle, padding: "0 24px" }}>
+        <div data-tour="home-ticker" style={{ ...containerStyle, padding: "0 24px" }}>
           <ReviewTicker items={tickerItems} inline />
         </div>
 
@@ -367,7 +367,7 @@ export default async function HomePage() {
                   더 보기 →
                 </Link>
               </div>
-              <div style={{
+              <div data-tour="home-feed" style={{
                 backgroundColor: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 borderRadius: 12,
@@ -382,12 +382,12 @@ export default async function HomePage() {
           {/* Row 2: 나중에 들을 앨범 + 갑론을박 — 데스크탑 전용 */}
           <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6" style={{ marginTop: 24 }}>
             {/* 나중에 들을 앨범 */}
-            <div className="mb-8 sm:mb-0" style={{ display: "flex", flexDirection: "column" }}>
+            <div data-tour="home-watchlist" className="mb-8 sm:mb-0" style={{ display: "flex", flexDirection: "column" }}>
               <HomeWatchlistSection />
             </div>
 
             {/* 갑론을박 */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
+            <div data-tour="home-controversial" style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em" }}>
                   갑론을박

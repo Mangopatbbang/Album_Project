@@ -9,6 +9,7 @@ export default function HomeDiaryBanner() {
 
   return (
     <div
+      data-tour="home-diary-banner"
       className="hidden sm:block"
       style={{
         position: "fixed",

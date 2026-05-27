@@ -109,7 +109,7 @@ export default async function MembersPage() {
               >
                 <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14 }}>{user.display_name}</p>
+                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.display_name}</p>
                   <div style={{ display: "flex", gap: 4, marginTop: 3, flexWrap: "wrap" }}>
                     {topGenres.map((g) => {
                       const gColor = GENRE_COLOR[g] ?? "#94a3b8";
@@ -148,10 +148,10 @@ export default async function MembersPage() {
                   className="transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                       <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
-                      <div>
-                        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>{user.display_name}</p>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.display_name}</p>
                         <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>{total}장 청음</p>
                       </div>
                     </div>

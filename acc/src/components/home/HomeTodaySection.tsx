@@ -126,6 +126,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       </h2>
       <div
         key={album.id}
+        data-tour="today-card"
         className="sm:flex-1"
         style={{
           backgroundColor: "var(--bg-card)",
@@ -332,6 +333,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               pointerEvents: streamingOpen ? "none" : "auto",
             }}>
               <button
+                data-tour="today-streaming-btn"
                 onClick={() => setStreamingOpen(true)}
                 style={{ flex: 1, backgroundColor: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em" }}
                 className="hover:opacity-85 active:opacity-70 transition-opacity"
@@ -346,31 +348,21 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 평가하기
               </button>
               <button
+                data-tour="today-shuffle-btn"
                 onClick={shuffle}
                 disabled={loading}
-                title="다른 인연"
                 style={{
                   backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
-                  border: "1px solid var(--border)", borderRadius: "50%",
-                  width: 44, height: 44, flexShrink: 0,
+                  border: "1px solid var(--border)", borderRadius: 8,
+                  padding: "0 12px", height: 44, flexShrink: 0,
                   cursor: loading ? "default" : "pointer",
                   opacity: loading ? 0.4 : 1,
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, whiteSpace: "nowrap",
                   transition: "all 0.15s",
                 }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
               >
-                {loading ? (
-                  <span style={{ fontSize: 14 }}>···</span>
-                ) : (
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="2.2"/>
-                    <ellipse cx="12" cy="6.5" rx="2" ry="3" opacity="0.65"/>
-                    <ellipse cx="12" cy="17.5" rx="2" ry="3" opacity="0.65"/>
-                    <ellipse cx="6.5" cy="12" rx="3" ry="2" opacity="0.65"/>
-                    <ellipse cx="17.5" cy="12" rx="3" ry="2" opacity="0.65"/>
-                  </svg>
-                )}
+                {loading ? "···" : "다른 인연"}
               </button>
             </div>
 
@@ -409,10 +401,10 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               </button>
               <button
                 onClick={() => setStreamingOpen(false)}
-                style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "0 11px", fontSize: 14, color: "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}
+                style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "0 11px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
               >
-                ✕
+                취소
               </button>
             </div>
 

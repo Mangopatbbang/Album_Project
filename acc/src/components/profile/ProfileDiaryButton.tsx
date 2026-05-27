@@ -12,6 +12,7 @@ export default function ProfileDiaryButton({ userId }: Props) {
   return (
     <Link
       href="/diary"
+      data-tour="profile-diary-btn"
       style={{
         display: "inline-flex",
         alignItems: "center",

@@ -497,14 +497,14 @@ export default async function ProfilePage({
       </div>
 
       {/* ── InsightSection: 이견 앨범 + 숨은 명반 ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div data-tour="profile-insight" className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
       </div>
 
       {/* ── 점수 분포 + 청음 캘린더 ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         {/* 점수 분포 — 클릭하면 음반고로 이동 */}
-        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
+        <div data-tour="profile-score-dist" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12 }} className="p-4 sm:p-5">
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
             점수 분포
           </p>
@@ -661,7 +661,7 @@ export default async function ProfilePage({
         <div className="order-1 lg:order-none" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 나중에 들을 앨범 */}
-          <WatchlistSection userId={userId} />
+          <div data-tour="profile-watchlist"><WatchlistSection userId={userId} /></div>
 
           {/* 장르 분포 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
@@ -740,7 +740,7 @@ export default async function ProfilePage({
           </div>
 
           {/* 취향 궁합 + 멤버 비교 */}
-          <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />
+          <div data-tour="profile-comparison"><ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} /></div>
 
           {/* 연도별 청음 리캡 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>

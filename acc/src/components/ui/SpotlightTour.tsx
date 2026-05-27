@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const STORAGE_KEY = "acs_onboarding_v1";
 const GUIDE_STORAGE_KEY = "acs_tutorial_dismissed_v1";
@@ -13,72 +14,402 @@ type TourStep = {
   title: string;
   body: string;
   selector: string;
-  altSelector?: string; // fallback for desktop when primary is sm:hidden
+  altSelector?: string;
   navigate?: string;
 };
 
-const STEPS: TourStep[] = [
-  {
-    id: "nav-albums",
-    title: "음반고",
-    body: "저장된 모든 앨범을 탐색해보세요. 검색·장르·정렬 필터로 원하는 앨범을 찾을 수 있어요.",
-    selector: '[data-tour="nav-albums"]',
-    navigate: "/albums",
-  },
-  {
-    id: "albums-filter",
-    title: "검색 & 필터",
-    body: "제목이나 아티스트명으로 실시간 검색이 가능해요. 장르·정렬·점수 필터도 자유롭게 조합할 수 있어요.",
-    selector: '[data-tour="albums-filter"]',
-  },
-  {
-    id: "album-card",
-    title: "앨범 카드",
-    body: "클릭하면 상세 화면이 열려요. 1~8점 평가, 한줄평, 북마크, 수록곡 좋아요를 남길 수 있어요.",
-    selector: '[data-tour="album-card"]',
-  },
-  {
-    // Nav item is always in Header/BottomNav — no navigate needed, show on current page
-    id: "nav-best",
-    title: "청음감 — 명반 랭킹",
-    body: "전체·연도별·장르별·아티스트별 랭킹을 볼 수 있어요. 국내/해외 필터도 지원돼요.",
-    selector: '[data-tour="nav-best"]',
-  },
-  {
-    // Navigate to /best HERE so page content is loaded for this step
-    id: "best-tabs",
-    title: "랭킹 보기 전환",
-    body: "통합 랭킹부터 연도별·장르별·아티스트별로 다양하게 볼 수 있어요.",
-    selector: '[data-tour="best-tabs"]',
-    altSelector: '[data-tour="best-main"]',
-    navigate: "/best",
-  },
-  {
-    // Nav item in Header/BottomNav — we're already on /best, no new navigate needed
-    id: "nav-reviews",
-    title: "청음평 — 한줄평 피드",
-    body: "모든 멤버의 한줄평을 피드로 볼 수 있어요. 공감하거나 댓글을 달 수도 있어요.",
-    selector: '[data-tour="nav-reviews"]',
-  },
-  {
-    id: "nav-members",
-    title: "청음인 — 멤버 현황",
-    body: "모임 멤버들의 평가 현황과 취향 궁합을 확인할 수 있어요.",
-    selector: '[data-tour="nav-members"]',
-  },
-  {
-    id: "nav-profile",
-    title: "청음록 — 내 프로필",
-    body: "내 평점 통계, 청음 캘린더, 뱃지, 북마크 목록이 여기에 있어요. 로그인 후 사용할 수 있어요.",
-    selector: '[data-tour="nav-profile"]',
-  },
-  {
-    id: "floating-actions",
-    title: "··· 메뉴",
-    body: "공지사항, 튜토리얼 다시 보기, 이용 가이드, 문의 게시판에 접근할 수 있어요.",
-    selector: '[data-tour="floating-actions"]',
-  },
-];
+function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
+  if (isDesktop) {
+    return [
+      // ── 홈 ──────────────────────────────────────────────────
+      {
+        id: "home-ticker",
+        title: "리뷰 티커",
+        body: "멤버들의 최신 한줄평이 실시간으로 흐릅니다. 클릭하면 해당 앨범의 상세 화면으로 이동해요.",
+        selector: '[data-tour="home-ticker"]',
+        navigate: "/",
+      },
+      {
+        id: "today-card",
+        title: "오늘의 인연",
+        body: "매일 새로운 앨범을 랜덤으로 추천받아요. 커버를 클릭하면 상세 정보와 평가 화면이 열려요.",
+        selector: '[data-tour="today-card"]',
+      },
+      {
+        id: "today-streaming-btn",
+        title: "감상하기",
+        body: "Spotify, Apple Music, YouTube Music 중 원하는 서비스로 바로 이동해요.",
+        selector: '[data-tour="today-streaming-btn"]',
+      },
+      {
+        id: "today-shuffle-btn",
+        title: "다른 인연",
+        body: "오늘의 추천 앨범이 마음에 안 들면 다른 앨범으로 바꿀 수 있어요.",
+        selector: '[data-tour="today-shuffle-btn"]',
+      },
+      {
+        id: "home-feed",
+        title: "최근 청음 피드",
+        body: "멤버들이 최근에 평가한 앨범 목록이에요. 클릭하면 해당 앨범 상세 화면으로 이동해요.",
+        selector: '[data-tour="home-feed"]',
+      },
+      {
+        id: "home-watchlist",
+        title: "나중에 들을 앨범",
+        body: "앨범에 북마크를 달아두면 여기에 모아서 볼 수 있어요.",
+        selector: '[data-tour="home-watchlist"]',
+      },
+      {
+        id: "home-controversial",
+        title: "갑론을박",
+        body: "멤버들 사이에서 평점이 엇갈리는 앨범들이에요. 의견이 다양하게 나뉜 음반들을 한눈에 볼 수 있어요.",
+        selector: '[data-tour="home-controversial"]',
+      },
+      {
+        id: "home-diary-banner",
+        title: "청음일기 배너",
+        body: "상단 배너를 통해 청음일기 페이지로 빠르게 이동할 수 있어요.",
+        selector: '[data-tour="home-diary-banner"]',
+      },
+      // ── 음반고 ───────────────────────────────────────────────
+      {
+        id: "nav-albums",
+        title: "음반고",
+        body: "저장된 모든 앨범을 탐색하는 공간이에요. 검색·장르·정렬 필터로 원하는 앨범을 찾을 수 있어요.",
+        selector: '[data-tour="nav-albums"]',
+        navigate: "/albums",
+      },
+      {
+        id: "albums-filter",
+        title: "검색 & 필터",
+        body: "제목이나 아티스트명으로 실시간 검색이 가능해요. 장르·정렬 필터도 자유롭게 조합할 수 있어요.",
+        selector: '[data-tour="albums-filter"]',
+      },
+      {
+        id: "albums-score-filter",
+        title: "점수 & 지역 필터",
+        body: "국내/해외 구분과 미청음만 보기 필터로 취향에 맞는 앨범을 좁혀볼 수 있어요.",
+        selector: '[data-tour="albums-score-filter"]',
+      },
+      {
+        id: "albums-import",
+        title: "입고",
+        body: "새 앨범을 직접 추가할 수 있어요. 로그인 후 사용 가능해요.",
+        selector: '[data-tour="albums-import"]',
+      },
+      {
+        id: "album-card",
+        title: "앨범 카드",
+        body: "클릭하면 상세 화면이 열려요. 1~8점 평가, 한줄평, 북마크, 수록곡 좋아요를 남길 수 있어요.",
+        selector: '[data-tour="album-card"]',
+      },
+      // ── 청음감 ───────────────────────────────────────────────
+      {
+        id: "nav-best",
+        title: "청음감 — 명반 랭킹",
+        body: "멤버들의 평가를 집계한 명반 랭킹 페이지예요. 전체/연도별/장르별/아티스트별로 볼 수 있어요.",
+        selector: '[data-tour="nav-best"]',
+        navigate: "/best",
+      },
+      {
+        id: "best-region-filter",
+        title: "국내 / 해외 필터",
+        body: "국내 앨범과 해외 앨범을 구분해서 랭킹을 볼 수 있어요.",
+        selector: '[data-tour="best-region-filter"]',
+      },
+      {
+        id: "best-main",
+        title: "랭킹 보기 전환",
+        body: "통합 랭킹부터 연도별·장르별·아티스트별로 다양하게 확인할 수 있어요.",
+        selector: '[data-tour="best-main"]',
+      },
+      // ── 청음평 ───────────────────────────────────────────────
+      {
+        id: "nav-reviews",
+        title: "청음평 — 한줄평 피드",
+        body: "모든 멤버의 한줄평을 피드로 볼 수 있어요. 앨범별로 묶어보거나 최신순으로 볼 수 있어요.",
+        selector: '[data-tour="nav-reviews"]',
+        navigate: "/reviews",
+      },
+      {
+        id: "reviews-filter",
+        title: "피드 필터",
+        body: "멤버별·점수별 필터와 키워드 검색으로 원하는 소감을 찾아볼 수 있어요.",
+        selector: '[data-tour="reviews-filter"]',
+      },
+      {
+        id: "reviews-reactions",
+        title: "공감 & 댓글",
+        body: "마음에 드는 소감에 공감을 남기거나 댓글을 달 수 있어요. 로그인 후 사용 가능해요.",
+        selector: '[data-tour="reviews-reactions"]',
+      },
+      // ── 청음인 ───────────────────────────────────────────────
+      {
+        id: "nav-members",
+        title: "청음인 — 멤버 현황",
+        body: "모임 멤버들의 평가 현황을 한눈에 볼 수 있는 페이지예요.",
+        selector: '[data-tour="nav-members"]',
+        navigate: "/members",
+      },
+      {
+        id: "members-compat",
+        title: "취향 궁합",
+        body: "멤버들 간의 평점 상관관계를 분석해 취향이 가장 비슷한 짝을 찾아줘요.",
+        selector: '[data-tour="members-compat"]',
+      },
+      // ── 청음록(프로필) ────────────────────────────────────────
+      {
+        id: "nav-profile",
+        title: "청음록 — 내 프로필",
+        body: "내 평점 통계, 청음 캘린더, 뱃지, 북마크 목록이 여기에 있어요.",
+        selector: '[data-tour="nav-profile"]',
+        navigate: profilePath,
+      },
+      {
+        id: "profile-diary-btn",
+        title: "청음일기 바로가기",
+        body: "프로필에서 내 청음일기로 바로 이동할 수 있어요.",
+        selector: '[data-tour="profile-diary-btn"]',
+      },
+      {
+        id: "profile-edit",
+        title: "프로필 편집",
+        body: "닉네임, 프로필 사진, 소개글을 수정할 수 있어요.",
+        selector: '[data-tour="profile-edit"]',
+      },
+      {
+        id: "profile-insight",
+        title: "인사이트",
+        body: "나와 평점이 가장 다른 앨범과 남들보다 높게 평가한 숨은 명반을 볼 수 있어요.",
+        selector: '[data-tour="profile-insight"]',
+      },
+      {
+        id: "profile-score-dist",
+        title: "점수 분포",
+        body: "내가 준 점수별 앨범 수를 한눈에 볼 수 있어요. 클릭하면 해당 점수 앨범 목록으로 이동해요.",
+        selector: '[data-tour="profile-score-dist"]',
+      },
+      {
+        id: "profile-watchlist",
+        title: "나중에 들을 앨범",
+        body: "앨범을 북마크해두면 프로필에서 한번에 확인할 수 있어요.",
+        selector: '[data-tour="profile-watchlist"]',
+      },
+      {
+        id: "profile-comparison",
+        title: "취향 궁합 (프로필)",
+        body: "나와 취향이 가장 비슷한 멤버와 차이가 큰 멤버를 확인할 수 있어요.",
+        selector: '[data-tour="profile-comparison"]',
+      },
+      // ── 청음일기 ─────────────────────────────────────────────
+      {
+        id: "diary-new-btn",
+        title: "청음일기 — 새 기록",
+        body: "나만의 음악 감상 일기를 기록하는 공간이에요. 커버의 新記 버튼으로 새 기록을 추가하고, 캘린더·앨범·통계 탭으로 기록을 탐색해요.",
+        selector: '[data-tour="diary-new-btn"]',
+        navigate: "/diary",
+      },
+      // ── 청음집 ───────────────────────────────────────────────
+      {
+        id: "themes-new-btn",
+        title: "청음집",
+        body: "테마별 앨범 컬렉션을 만들 수 있어요. 로그인 후 직접 청음집을 제작할 수 있어요.",
+        selector: '[data-tour="themes-new-btn"]',
+        navigate: "/themes",
+      },
+      // ── 메뉴 ─────────────────────────────────────────────────
+      {
+        id: "floating-actions",
+        title: "··· 메뉴",
+        body: "공지사항, 튜토리얼 다시 보기, 이용 가이드, 문의 게시판에 접근할 수 있어요.",
+        selector: '[data-tour="floating-actions"]',
+      },
+    ];
+  }
+
+  // ── Mobile steps ─────────────────────────────────────────────
+  return [
+    // ── 홈 ──────────────────────────────────────────────────
+    {
+      id: "today-card",
+      title: "오늘의 인연",
+      body: "매일 새로운 앨범을 랜덤으로 추천받아요. 커버를 탭하면 상세 정보와 평가 화면이 열려요.",
+      selector: '[data-tour="today-card"]',
+      navigate: "/",
+    },
+    {
+      id: "today-streaming-btn",
+      title: "감상하기",
+      body: "Spotify, Apple Music, YouTube Music 중 원하는 서비스로 바로 이동해요.",
+      selector: '[data-tour="today-streaming-btn"]',
+    },
+    {
+      id: "today-shuffle-btn",
+      title: "다른 인연",
+      body: "오늘의 추천 앨범이 마음에 안 들면 다른 앨범으로 바꿀 수 있어요.",
+      selector: '[data-tour="today-shuffle-btn"]',
+    },
+    {
+      id: "home-feed",
+      title: "최근 청음 피드",
+      body: "멤버들이 최근에 평가한 앨범 목록이에요. 탭하면 해당 앨범 상세 화면으로 이동해요.",
+      selector: '[data-tour="home-feed"]',
+    },
+    // ── 음반고 ───────────────────────────────────────────────
+    {
+      id: "nav-albums",
+      title: "음반고",
+      body: "저장된 모든 앨범을 탐색하는 공간이에요. 검색·장르·점수 필터를 자유롭게 조합할 수 있어요.",
+      selector: '[data-tour="nav-albums"]',
+      navigate: "/albums",
+    },
+    {
+      id: "albums-filter",
+      title: "검색 & 필터",
+      body: "제목이나 아티스트명으로 검색하고 장르·정렬 필터도 조합할 수 있어요.",
+      selector: '[data-tour="albums-filter"]',
+    },
+    {
+      id: "albums-score-filter",
+      title: "지역 & 미청음 필터",
+      body: "국내/해외 구분과 미청음만 보기 필터로 취향에 맞는 앨범을 좁혀볼 수 있어요.",
+      selector: '[data-tour="albums-score-filter"]',
+    },
+    {
+      id: "album-card",
+      title: "앨범 카드",
+      body: "탭하면 상세 화면이 열려요. 1~8점 평가, 한줄평, 북마크, 수록곡 좋아요를 남길 수 있어요.",
+      selector: '[data-tour="album-card"]',
+    },
+    // ── 청음감 ───────────────────────────────────────────────
+    {
+      id: "nav-best",
+      title: "청음감 — 명반 랭킹",
+      body: "멤버들의 평가를 집계한 명반 랭킹 페이지예요.",
+      selector: '[data-tour="nav-best"]',
+      navigate: "/best",
+    },
+    {
+      id: "best-tabs",
+      title: "랭킹 필터",
+      body: "국내/해외 필터와 통합·연도별·장르별·아티스트별 보기를 선택할 수 있어요.",
+      selector: '[data-tour="best-tabs"]',
+    },
+    // ── 청음평 ───────────────────────────────────────────────
+    {
+      id: "nav-reviews",
+      title: "청음평 — 한줄평 피드",
+      body: "모든 멤버의 한줄평을 피드로 볼 수 있어요.",
+      selector: '[data-tour="nav-reviews"]',
+      navigate: "/reviews",
+    },
+    {
+      id: "reviews-filter",
+      title: "피드 필터",
+      body: "멤버별·점수별 필터와 키워드 검색으로 원하는 소감을 찾아볼 수 있어요.",
+      selector: '[data-tour="reviews-filter"]',
+    },
+    {
+      id: "reviews-reactions",
+      title: "공감 & 댓글",
+      body: "마음에 드는 소감에 공감을 남기거나 댓글을 달 수 있어요. 로그인 후 사용 가능해요.",
+      selector: '[data-tour="reviews-reactions"]',
+    },
+    // ── 청음인 ───────────────────────────────────────────────
+    {
+      id: "nav-members",
+      title: "청음인 — 멤버 현황",
+      body: "모임 멤버들의 평가 현황을 한눈에 볼 수 있는 페이지예요.",
+      selector: '[data-tour="nav-members"]',
+      navigate: "/members",
+    },
+    {
+      id: "members-compat",
+      title: "취향 궁합",
+      body: "멤버들 간의 평점 상관관계를 분석해 취향이 가장 비슷한 짝을 찾아줘요.",
+      selector: '[data-tour="members-compat"]',
+    },
+    // ── 청음록(프로필) ────────────────────────────────────────
+    {
+      id: "nav-profile",
+      title: "청음록 — 내 프로필",
+      body: "내 평점 통계, 청음 캘린더, 뱃지, 북마크 목록이 여기에 있어요.",
+      selector: '[data-tour="nav-profile"]',
+      navigate: profilePath,
+    },
+    {
+      id: "profile-diary-btn",
+      title: "청음일기 바로가기",
+      body: "프로필에서 내 청음일기로 바로 이동할 수 있어요.",
+      selector: '[data-tour="profile-diary-btn"]',
+    },
+    {
+      id: "profile-edit",
+      title: "프로필 편집",
+      body: "닉네임, 프로필 사진, 소개글을 수정할 수 있어요.",
+      selector: '[data-tour="profile-edit"]',
+    },
+    {
+      id: "profile-insight",
+      title: "인사이트",
+      body: "나와 평점이 가장 다른 앨범과 남들보다 높게 평가한 숨은 명반을 볼 수 있어요.",
+      selector: '[data-tour="profile-insight"]',
+    },
+    {
+      id: "profile-score-dist",
+      title: "점수 분포",
+      body: "내가 준 점수별 앨범 수를 한눈에 볼 수 있어요.",
+      selector: '[data-tour="profile-score-dist"]',
+    },
+    {
+      id: "profile-watchlist",
+      title: "나중에 들을 앨범",
+      body: "앨범을 북마크해두면 프로필에서 한번에 확인할 수 있어요.",
+      selector: '[data-tour="profile-watchlist"]',
+    },
+    {
+      id: "profile-comparison",
+      title: "취향 궁합 (프로필)",
+      body: "나와 취향이 가장 비슷한 멤버와 차이가 큰 멤버를 확인할 수 있어요.",
+      selector: '[data-tour="profile-comparison"]',
+    },
+    // ── 청음일기 ─────────────────────────────────────────────
+    {
+      id: "diary-tab-calendar",
+      title: "청음일기 — 캘린더",
+      body: "나만의 음악 감상 일기를 기록하는 공간이에요. 날짜별로 청음 기록을 볼 수 있어요.",
+      selector: '[data-tour="diary-tab-calendar"]',
+      navigate: "/diary",
+    },
+    {
+      id: "diary-tab-albums",
+      title: "앨범 탭",
+      body: "일기에 기록한 앨범들을 모아서 한눈에 볼 수 있어요.",
+      selector: '[data-tour="diary-tab-albums"]',
+    },
+    {
+      id: "diary-tab-stats",
+      title: "통계 탭",
+      body: "청음 통계와 연속 기록 스트릭을 확인할 수 있어요.",
+      selector: '[data-tour="diary-tab-stats"]',
+    },
+    // ── 청음집 ───────────────────────────────────────────────
+    {
+      id: "themes",
+      title: "청음집",
+      body: "테마별 앨범 컬렉션을 만들고 공유할 수 있는 페이지예요.",
+      selector: '[data-tour="themes-new-btn"]',
+      navigate: "/themes",
+    },
+    // ── 메뉴 ─────────────────────────────────────────────────
+    {
+      id: "floating-actions",
+      title: "··· 메뉴",
+      body: "공지사항, 튜토리얼 다시 보기, 이용 가이드, 문의 게시판에 접근할 수 있어요.",
+      selector: '[data-tour="floating-actions"]',
+    },
+  ];
+}
 
 // ── Element finder ─────────────────────────────────────────────
 
@@ -156,7 +487,6 @@ function Callout({
   const cx = rect.left + rect.width / 2;
   const left = Math.max(sidePad, Math.min(cx - boxW / 2, W - boxW - sidePad));
 
-  // Prefer below if enough space, else above
   const spaceBelow = H - (rect.bottom + 14);
   const spaceAbove = rect.top - 14;
   const below = spaceBelow >= 180 || spaceBelow >= spaceAbove;
@@ -171,7 +501,6 @@ function Callout({
       width: boxW,
       zIndex: 302,
     }}>
-      {/* Arrow (above box when below=true, below box when below=false) */}
       {below && (
         <div style={{
           position: "absolute",
@@ -185,7 +514,6 @@ function Callout({
         }} />
       )}
 
-      {/* Box */}
       <div style={{
         position: "relative",
         zIndex: 1,
@@ -196,7 +524,6 @@ function Callout({
         overflow: "hidden",
       }}>
         <div style={{ padding: "14px 16px 10px" }}>
-          {/* Dots */}
           <div style={{ display: "flex", gap: 4, marginBottom: 10, alignItems: "center" }}>
             {Array.from({ length: totalSteps }, (_, i) => (
               <div key={i} style={{
@@ -232,7 +559,6 @@ function Callout({
         </div>
       </div>
 
-      {/* Arrow (below box when below=false) */}
       {!below && (
         <div style={{
           position: "absolute",
@@ -306,8 +632,23 @@ export default function SpotlightTour() {
   const [stepIdx, setStepIdx] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [history, setHistory] = useState<number[]>([]);
+  const [steps, setSteps] = useState<TourStep[]>([]);
+  const stepsRef = useRef<TourStep[]>([]);
   const router = useRouter();
   const processingRef = useRef(false);
+  const { profile } = useAuth();
+  const profileRef = useRef(profile);
+
+  // Keep refs current
+  useEffect(() => { profileRef.current = profile; }, [profile]);
+  useEffect(() => { stepsRef.current = steps; }, [steps]);
+
+  // Build step list whenever auth state changes
+  useEffect(() => {
+    const isDesktop = window.innerWidth >= 640;
+    const profilePath = profile?.id ? `/profile/${profile.id}` : undefined;
+    setSteps(makeSteps(isDesktop, profilePath));
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) {
@@ -320,10 +661,17 @@ export default function SpotlightTour() {
       setStepIdx(0);
       setHistory([]);
       setRect(null);
+      // Rebuild steps using current profile (from ref, not stale closure)
+      const isDesktop = window.innerWidth >= 640;
+      const profilePath = profileRef.current?.id ? `/profile/${profileRef.current.id}` : undefined;
+      const freshSteps = makeSteps(isDesktop, profilePath);
+      setSteps(freshSteps);
+      stepsRef.current = freshSteps;
       setOpen(true);
     };
     window.addEventListener("open-onboarding", handleOpen);
     return () => window.removeEventListener("open-onboarding", handleOpen);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -334,15 +682,15 @@ export default function SpotlightTour() {
 
   // Re-measure on resize
   useEffect(() => {
-    if (phase !== "step") return;
-    const step = STEPS[stepIdx];
+    if (phase !== "step" || steps.length === 0) return;
+    const step = steps[stepIdx];
     const update = () => {
       const el = document.querySelector(step.selector);
       if (el) setRect(el.getBoundingClientRect());
     };
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [phase, stepIdx]);
+  }, [phase, stepIdx, steps]);
 
   const close = () => {
     localStorage.setItem(STORAGE_KEY, "1");
@@ -355,21 +703,20 @@ export default function SpotlightTour() {
     processingRef.current = true;
 
     try {
-      if (idx >= STEPS.length) { setPhase("end"); return; }
+      const currentSteps = stepsRef.current;
+      if (idx >= currentSteps.length) { setPhase("end"); return; }
 
       setPhase("loading");
       setRect(null);
 
-      const step = STEPS[idx];
+      const step = currentSteps[idx];
       if (step.navigate) {
         router.push(step.navigate);
         await new Promise((r) => setTimeout(r, 600));
       }
 
-      // Navigated steps get more time for the page to finish rendering
-      const found = await findVisible(step.selector, step.altSelector, step.navigate ? 4000 : 2500);
+      const found = await findVisible(step.selector, step.altSelector, step.navigate ? 4000 : 700);
       if (!found) {
-        // Element not visible (hidden on this breakpoint) — skip
         processingRef.current = false;
         await goToIdx(idx + 1);
         return;
@@ -414,7 +761,6 @@ export default function SpotlightTour() {
   const darkOverlay = (
     <div style={{ position: "fixed", inset: 0, zIndex: 299, backgroundColor: "rgba(0,0,0,0.78)" }} />
   );
-  // Blocks all page interactions during the tour
   const blocker = (
     <div style={{ position: "fixed", inset: 0, zIndex: 301 }} />
   );
@@ -475,8 +821,7 @@ export default function SpotlightTour() {
     );
   }
 
-  // phase === "step"
-  if (!rect) return null;
+  if (!rect || steps.length === 0) return null;
 
   return (
     <>
@@ -484,14 +829,14 @@ export default function SpotlightTour() {
       {blocker}
       <Callout
         rect={rect}
-        step={STEPS[stepIdx]}
+        step={steps[stepIdx]}
         stepIdx={stepIdx}
-        totalSteps={STEPS.length}
+        totalSteps={steps.length}
         onPrev={goPrev}
         onNext={goNext}
         onSkip={close}
         canGoBack={history.length > 0}
-        isLast={stepIdx === STEPS.length - 1}
+        isLast={stepIdx === steps.length - 1}
       />
     </>
   );

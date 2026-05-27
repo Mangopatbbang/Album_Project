@@ -64,6 +64,7 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
     <>
       <button
         onClick={() => setSheetOpen(true)}
+        data-tour="profile-edit"
         className="sm:hidden"
         style={{
           background: "none",

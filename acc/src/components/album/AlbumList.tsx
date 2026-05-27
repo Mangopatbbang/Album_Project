@@ -314,6 +314,7 @@ return (
           {/* 입고 버튼 */}
           {profile && (
             <button
+              data-tour="albums-import"
               onClick={() => setShowAddModal(true)}
               style={{
                 backgroundColor: "var(--accent)",
@@ -372,7 +373,7 @@ return (
           <div className="hidden sm:block flex-shrink-0" style={{ width: 1, height: 18, backgroundColor: "var(--border)" }} />
 
           {/* 국내 / 해외 / 미청음만 / 모바일 내평점 — 우측 고정 */}
-          <div style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
+          <div data-tour="albums-score-filter" style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
             {(["국내", "해외"] as const).map((r) => (
               <button
                 key={r}

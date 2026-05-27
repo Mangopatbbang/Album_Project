@@ -266,7 +266,7 @@ export default function ReviewsClient() {
       )}
 
       {/* 필터 바 */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
+      <div data-tour="reviews-filter" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
         {/* 소감 검색 */}
         <div
           className="min-h-[36px] sm:min-h-0"
@@ -577,7 +577,7 @@ function ReviewRow({
         </div>
 
         {/* 우측 메타 */}
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
+        <div data-tour="reviews-reactions" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
           <a
             href={`/profile/${item.userId}`}
             style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}

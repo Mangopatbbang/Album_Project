@@ -103,7 +103,7 @@ export function PairsSection({ pairs, avatarMap }: { pairs: PairData[]; avatarMa
   const hidden = pairs.length - PREVIEW;
 
   return (
-    <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
+    <div data-tour="members-compat" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px", marginBottom: 24 }}>
       <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>취향 궁합</p>
       <div className={pairs.length > 3 ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
         {preview.map((pair) => (

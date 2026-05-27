@@ -26,11 +26,14 @@ function similarityLabel(pearson: number): string {
   return "취향이 달라요";
 }
 
+const INITIAL_COMPARISON = 5;
+
 export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Props) {
   const [comparisons, setComparisons] = useState<ComparisonItem[] | null>(null);
   const [bestMatch, setBestMatch] = useState<ComparisonItem | null>(null);
   const [barWidths, setBarWidths] = useState<Record<string, number>>({});
   const [fetchError, setFetchError] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const loadedRef = useRef(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -200,7 +203,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
             멤버 비교
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {comparisons!.map(({ user: other, commonCount, pearson }) => {
+            {(showAll ? comparisons! : comparisons!.slice(0, INITIAL_COMPARISON)).map(({ user: other, commonCount, pearson }) => {
               const pct = pearson !== null ? Math.round(Math.max(0, pearson) * 100) : null;
               return (
                 <div
@@ -209,6 +212,7 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    gap: 8,
                     padding: "10px 0",
                     borderBottom: "1px solid var(--border)",
                   }}
@@ -216,14 +220,18 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
                 >
                   <Link
                     href={`/profile/${other.id}`}
-                    style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+                    style={{ color: "var(--text-sub)", fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}
                     className="hover:text-[var(--accent)] transition-colors"
                   >
                     <UserAvatar avatarUrl={avatarMap?.[other.id]} size={18} />
-                    {other.display_name}
-                    {genreBadges(other.id)}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                      {other.display_name}
+                    </span>
+                    <span style={{ display: "inline-flex", gap: 4, flexShrink: 0 }}>
+                      {genreBadges(other.id)}
+                    </span>
                   </Link>
-                  <div style={{ textAlign: "right" }}>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {commonCount}장</p>
                     {pct !== null ? (
                       <p style={{
@@ -240,6 +248,18 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
               );
             })}
           </div>
+          {comparisons!.length > INITIAL_COMPARISON && (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              style={{
+                marginTop: 10, background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", fontSize: 12,
+                textDecoration: "underline", textUnderlineOffset: 3, padding: 0,
+              }}
+            >
+              {showAll ? "접기" : `+${comparisons!.length - INITIAL_COMPARISON}명 더보기`}
+            </button>
+          )}
         </div>
       )}
     </div>

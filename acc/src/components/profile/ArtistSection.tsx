@@ -55,11 +55,11 @@ export default function ArtistSection({
         {list.map(({ artist, artist_display, count, avg }, i) => (
           <div key={artist}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 10, width: 12 }}>{i + 1}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                <span style={{ color: "var(--text-muted)", fontSize: 10, width: 12, flexShrink: 0 }}>{i + 1}</span>
                 <span
                   onClick={() => setArtistModal({ name: artist, display: artist_display ?? artist })}
-                  style={{ color: "var(--text-sub)", fontSize: 12, cursor: "pointer" }}
+                  style={{ color: "var(--text-sub)", fontSize: 12, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}
                   className="hover:underline"
                 >{artist_display ?? artist}</span>
               </div>

@@ -187,6 +187,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
       {!isControlled && (
         <button
           onClick={() => setOpen(true)}
+          data-tour="profile-edit"
           style={{
             background: "none",
             border: "1px solid var(--border)",
