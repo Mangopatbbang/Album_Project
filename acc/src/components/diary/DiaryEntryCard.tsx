@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { DiaryEntry } from "@/types/diary";
 import { getTagStyle } from "@/lib/diaryTagStyles";
 
+const NOTE_LIMIT = 120;
+
 type Props = {
   entry: DiaryEntry;
   onEdit: () => void;
