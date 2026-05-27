@@ -70,46 +70,85 @@ function getAudioCtx() {
   return ctx;
 }
 
-/*
- * 종이 소리 공통 구조:
- *  - 핑크 노이즈 (화이트보다 자연스러운 스펙트럼)
- *  - 비대칭 엔벨로프 — 빠른 어택 후 완만한 스르륵 릴리즈
- *  - 밴드패스 주파수 스윕 (밝은 쪽→어두운 쪽) — 페이지가 호를 그리며 움직이는 느낌
- *  - 중간 Q(1.1) — 한지 특유의 살짝 공명 있는 질감
- */
-function _paperSound(freqStart: number, freqEnd: number, dur: number, vol: number) {
+/* 고주파 노이즈 버퍼 생성 — 종이 마찰음의 공통 재료 */
+function _makeNoiseBuf(ctx: AudioContext, dur: number): AudioBuffer {
+  const sr = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
+  const d = buf.getChannelData(0);
+  let pk = 0;
+  for (let i = 0; i < d.length; i++) {
+    const w = Math.random() * 2 - 1;
+    pk = pk * 0.97 + w * 0.03;           // 가벼운 핑크 틴트
+    d[i] = w * 0.92 + pk * 0.08;
+  }
+  return buf;
+}
+
+/* 탭 넘기기 — 얇은 종이 스치는 소리 (85ms) */
+function playPageSound() {
   try {
     const ctx = getAudioCtx();
-    const sr = ctx.sampleRate;
-    const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr);
-    const d = buf.getChannelData(0);
-    let pk = 0;
-    for (let i = 0; i < d.length; i++) {
-      const t = i / sr;
-      const w = Math.random() * 2 - 1;
-      pk = pk * 0.96 + w * 0.04;
-      const env = (1 - Math.exp(-t * 45)) * Math.exp(-t / (dur * 0.42));
-      d[i] = (w * 0.78 + pk * 0.22) * env;
-    }
+    const dur = 0.085;
     const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const bp = ctx.createBiquadFilter();
-    bp.type = "bandpass"; bp.Q.value = 1.1;
-    bp.frequency.setValueAtTime(freqStart, ctx.currentTime);
-    bp.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
+    src.buffer = _makeNoiseBuf(ctx, dur);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 4800; hp.Q.value = 0.6;
     const gain = ctx.createGain();
-    gain.gain.value = vol;
-    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.30, ctx.currentTime + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
     src.start();
   } catch (_) {}
 }
 
-/* 탭 넘기기 — 얇고 빠른 스르륵 */
-function playPageSound()  { _paperSound(3000, 1900, 0.24, 0.42); }
-/* 표지 열기 — 느리고 넓은 스르륵 */
-function playCoverOpen()  { _paperSound(2800, 1500, 0.30, 0.42); }
-/* 표지 착지 — 두껍고 낮은 스르륵 */
-function playCoverThud()  { _paperSound(2200, 1000, 0.34, 0.50); }
+/* 표지 열기 — 두꺼운 종이 서서히 넘어가는 소리 (220ms) */
+function playCoverOpen() {
+  try {
+    const ctx = getAudioCtx();
+    const dur = 0.22;
+    const src = ctx.createBufferSource();
+    src.buffer = _makeNoiseBuf(ctx, dur);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 3200; hp.Q.value = 0.5;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.26, ctx.currentTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
+    src.start();
+  } catch (_) {}
+}
+
+/* 표지 착지 — 두꺼운 종이 덮이는 소리 (180ms, 저역 포함) */
+function playCoverThud() {
+  try {
+    const ctx = getAudioCtx();
+    const dur = 0.18;
+    // 고역: 종이 마찰
+    const src1 = ctx.createBufferSource();
+    src1.buffer = _makeNoiseBuf(ctx, dur);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 2800; hp.Q.value = 0.5;
+    const g1 = ctx.createGain();
+    g1.gain.setValueAtTime(0, ctx.currentTime);
+    g1.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.008);
+    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    src1.connect(hp); hp.connect(g1); g1.connect(ctx.destination);
+    src1.start();
+    // 저역: 종이 무게감 (짧은 탁 느낌)
+    const src2 = ctx.createBufferSource();
+    src2.buffer = _makeNoiseBuf(ctx, 0.05);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 320; lp.Q.value = 0.8;
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0, ctx.currentTime);
+    g2.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.005);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    src2.connect(lp); lp.connect(g2); g2.connect(ctx.destination);
+    src2.start();
+  } catch (_) {}
+}
 
 export default function DiaryBook({ displayEntries, loading, isSample, onEdit, onDelete, onNewEntry }: Props) {
   const { theme } = useDiaryTheme();
