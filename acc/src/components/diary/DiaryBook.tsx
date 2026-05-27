@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import html2canvas from "html2canvas";
 import { DiaryEntry } from "@/types/diary";
 import { useDiaryTheme } from "@/components/diary/DiaryThemeProvider";
 import RecordsTab from "./tabs/RecordsTab";
@@ -122,6 +121,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [cornerHover, setCornerHover] = useState(false);
   const [snapBackPhase, setSnapBackPhase] = useState<"from" | "to" | null>(null);
   const snapBackFromRatioRef = useRef<number>(0);
+  const savedScrollTopRef = useRef<number>(0);
 
   const leftTabIdx = TAB_IDX[activeTab] - 1;
   const leftPageTab: Tab | null = leftTabIdx >= 0
@@ -185,6 +185,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
         const [next, ...rest] = queue;
         flipQueueRef.current = rest;
         setTimeout(() => {
+          savedScrollTopRef.current = pageContentRef.current?.scrollTop ?? 0;
           playPageSound();
           setFlipDir(next.dir);
           setFlippingFrom(next.from);
@@ -193,6 +194,12 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
       }
     }, 580);
     return () => clearTimeout(t);
+  }, [flippingFrom]);
+
+  /* 플립 완료 시 새 페이지 스크롤 맨 위로 리셋 */
+  useEffect(() => {
+    if (flippingFrom !== null) return;
+    if (pageContentRef.current) pageContentRef.current.scrollTop = 0;
   }, [flippingFrom]);
 
   const monthCount = useMemo(() => {
@@ -218,7 +225,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     return s;
   }, [displayEntries, isSample]);
 
-  const handleTabClick = useCallback(async (tab: Tab, preSnap?: string | null) => {
+  const handleTabClick = useCallback((tab: Tab, preSnap?: string | null) => {
     if (tab === activeTab || flippingFrom !== null) return;
     const fromIdx = TAB_IDX[activeTab];
     const toIdx = TAB_IDX[tab];
@@ -232,19 +239,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const [first, ...rest] = steps;
     flipQueueRef.current = rest;
 
-    /* 앞방향 플립: preSnap 있으면 재사용, 없으면 새로 찍기 */
-    let snap: string | null = preSnap ?? null;
-    if (!snap && dir === 1 && pageContentRef.current) {
-      try {
-        const canvas = await html2canvas(pageContentRef.current, {
-          useCORS: true,
-          scale: window.devicePixelRatio || 1,
-          backgroundColor: null, logging: false,
-        });
-        snap = canvas.toDataURL("image/webp", 0.85);
-      } catch (_) {}
-    }
-    setFlipSnap(snap);
+    /* 스크롤 위치 저장 — 스트립 콘텐츠 translateY 보정에 사용 */
+    savedScrollTopRef.current = pageContentRef.current?.scrollTop ?? 0;
+    setFlipSnap(preSnap ?? null);
     playPageSound();
     setFlipDir(first.dir);
     setFlippingFrom(first.from);
@@ -794,12 +791,9 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 if (!nextTabId && !prevTabId) return;
                 dragStartX.current = e.clientX;
                 dragPageW.current = e.currentTarget.getBoundingClientRect().width;
+                savedScrollTopRef.current = pageContentRef.current?.scrollTop ?? 0;
+                setFlipSnap(null);
                 setDragX(e.clientX);
-                if (pageContentRef.current) {
-                  html2canvas(pageContentRef.current, { scale: 1, logging: false, useCORS: true, backgroundColor: null })
-                    .then(c => setFlipSnap(c.toDataURL("image/webp", 0.8)))
-                    .catch(() => {});
-                }
               }}
               onTouchStart={(e) => {
                 touchStartX.current = e.touches[0].clientX;
@@ -858,6 +852,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       zIndex: isForward ? 5 + STRIP_N - i : 5 + i,
                       animation: anim,
                       pointerEvents: "none",
+                      willChange: "transform",
                     }}
                   >
                     <div style={{
@@ -875,7 +870,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         : "inset 4px 0 12px rgba(0,0,0,0.08)",
                     }}>
                       {!(isForward && flipSnap) && (
-                        <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                        <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
                           {renderContent(isForward ? flippingFrom : activeTab)}
                         </div>
                       )}
@@ -899,6 +894,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       transform: `rotateY(-${rotDeg}deg)`,
                       zIndex: 5 + STRIP_N - i,
                       pointerEvents: "none",
+                      willChange: "transform",
                     }}>
                       <div style={{
                         position: "absolute", inset: 0,
@@ -910,7 +906,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
                       }}>
                         {!flipSnap && (
-                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
                             {renderContent(activeTab)}
                           </div>
                         )}
@@ -935,6 +931,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                       transition: snapBackPhase === "to" ? `transform 0.26s cubic-bezier(0.34,1.08,0.64,1) ${i * 0.012}s` : "none",
                       zIndex: 5 + STRIP_N - i,
                       pointerEvents: "none",
+                      willChange: "transform",
                     }}>
                       <div style={{
                         position: "absolute", inset: 0,
@@ -946,7 +943,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                         boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
                       }}>
                         {!flipSnap && (
-                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", height: "100%", overflow: "hidden" }}>
+                          <div style={{ paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box", transform: `translateY(-${savedScrollTopRef.current}px)` }}>
                             {renderContent(activeTab)}
                           </div>
                         )}
