@@ -140,6 +140,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const [flipSnap, setFlipSnap] = useState<string | null>(null);
 
   const [cornerHover, setCornerHover] = useState(false);
+  const [snapBackPhase, setSnapBackPhase] = useState<"from" | "to" | null>(null);
+  const snapBackFromRatioRef = useRef<number>(0);
 
   const leftTabIdx = TAB_IDX[activeTab] - 1;
   const leftPageTab: Tab | null = leftTabIdx >= 0
@@ -148,6 +150,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
   const nextTabId: Tab | null = TAB_IDX[activeTab] < TABS.length - 1
     ? TABS[TAB_IDX[activeTab] + 1].id
     : null;
+  const prevTabId: Tab | null = TAB_IDX[activeTab] > 0
+    ? TABS[TAB_IDX[activeTab] - 1].id
+    : null;
+  const aheadRatio = (TABS.length - 1 - TAB_IDX[activeTab]) / (TABS.length - 1);
   const toRoman = (n: number) => (["I","II","III","IV","V","VI","VII","VIII"] as const)[n - 1] ?? String(n);
 
   const hanji = theme === "light"
@@ -248,7 +254,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     if (!snap && dir === 1 && pageContentRef.current) {
       try {
         const canvas = await html2canvas(pageContentRef.current, {
-          useCORS: true, allowTaint: true,
+          useCORS: true,
           scale: window.devicePixelRatio || 1,
           backgroundColor: null, logging: false,
         });
@@ -268,6 +274,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") handleTabClick(TABS[Math.min(TAB_IDX[activeTab] + 1, TABS.length - 1)].id);
       if (e.key === "ArrowLeft")  handleTabClick(TABS[Math.max(TAB_IDX[activeTab] - 1, 0)].id);
+      if (e.key === "Escape") {
+        setCoverDone(false); setCoverFlipped(false); setCoverOpen(false);
+        setActiveTab("records");
+        flipQueueRef.current = []; setFlippingFrom(null); setFlipSnap(null); setSnapBackPhase(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -278,14 +289,27 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     if (dragX === null) return;
     const onMove = (e: MouseEvent) => setDragX(e.clientX);
     const onUp = (e: MouseEvent) => {
-      const ratio = dragStartX.current !== null
+      const fwdRatio = dragStartX.current !== null
         ? Math.max(0, Math.min(1, (dragStartX.current - e.clientX) / dragPageW.current))
+        : 0;
+      const bwdRatio = dragStartX.current !== null
+        ? Math.max(0, Math.min(1, (e.clientX - dragStartX.current) / dragPageW.current))
         : 0;
       const snap = flipSnap;
       dragStartX.current = null;
       setDragX(null);
-      if (ratio > 0.38 && nextTabId) {
+      if (fwdRatio > 0.38 && nextTabId) {
         handleTabClick(nextTabId, snap);
+      } else if (bwdRatio > 0.38 && prevTabId) {
+        setFlipSnap(null);
+        handleTabClick(prevTabId);
+      } else if (fwdRatio > 0.05) {
+        snapBackFromRatioRef.current = fwdRatio;
+        setSnapBackPhase("from");
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          setSnapBackPhase("to");
+          setTimeout(() => { setSnapBackPhase(null); setFlipSnap(null); }, 320);
+        }));
       } else {
         setFlipSnap(null);
       }
@@ -293,7 +317,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [dragX, nextTabId, handleTabClick, flipSnap]);
+  }, [dragX, nextTabId, prevTabId, handleTabClick, flipSnap]);
 
   const renderContent = (tab: Tab) => {
     switch (tab) {
@@ -325,6 +349,10 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
         @keyframes dogEarIn {
           0%   { opacity: 0; transform: scaleX(0.4) scaleY(0.4); }
           100% { opacity: 1; transform: scaleX(1) scaleY(1); }
+        }
+        @keyframes leftFadeIn {
+          from { opacity: 0; transform: translateX(-6px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
 
@@ -392,7 +420,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 style={{
                   position: "absolute", top: 0, right: 22,
                   width: 0, height: 0, zIndex: 6, pointerEvents: "none",
-                  borderRight: "16px solid rgba(var(--diary-ink-rgb), 0.13)",
+                  borderLeft: "16px solid rgba(var(--diary-ink-rgb), 0.13)",
                   borderBottom: "16px solid transparent",
                   animation: "dogEarIn 0.35s ease-out forwards",
                   filter: "drop-shadow(-1px 1px 2px rgba(0,0,0,0.12))",
@@ -410,6 +438,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }}
             >
 
+            <div key={leftPageTab ?? "title"} style={{ position: "absolute", inset: 0, animation: coverDone ? "leftFadeIn 0.32s ease-out forwards" : "none" }}>
             {leftPageTab === null ? (
               // ── 속표지: 청음일기 타이틀 페이지 ──
               <>
@@ -564,6 +593,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 </div>
               </>
             )}
+            </div>
 
             {/* settle 래퍼 닫기 */}
             </div>
@@ -702,10 +732,11 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 bottom: 3 + i * 0.8,
                 width: 2,
                 background: theme === "light"
-                  ? `rgba(${190 - i * 10},${165 - i * 8},${110 - i * 6},${(0.32 - i * 0.04).toFixed(2)})`
-                  : `rgba(${70 - i * 8},${55 - i * 6},${35 - i * 4},${(0.42 - i * 0.06).toFixed(2)})`,
+                  ? `rgba(${190 - i * 10},${165 - i * 8},${110 - i * 6},${((0.32 - i * 0.04) * (0.15 + aheadRatio * 0.85)).toFixed(2)})`
+                  : `rgba(${70 - i * 8},${55 - i * 6},${35 - i * 4},${((0.42 - i * 0.06) * (0.15 + aheadRatio * 0.85)).toFixed(2)})`,
                 borderRadius: "0 2px 2px 0",
                 zIndex: 6 - i,
+                transition: "background 0.45s",
               }} />
             ))}
 
@@ -774,7 +805,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 cursor: dragX !== null ? "ew-resize" : "auto",
               }}
               onMouseDown={(e) => {
-                if (!coverDone || !nextTabId || flippingFrom !== null) return;
+                if (!coverDone || flippingFrom !== null) return;
+                if (!nextTabId && !prevTabId) return;
                 dragStartX.current = e.clientX;
                 dragPageW.current = e.currentTarget.getBoundingClientRect().width;
                 setDragX(e.clientX);
@@ -799,7 +831,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
               }}
             >
               {/* base layer — 앞방향: 새 내용 / 뒷방향: 이전 내용 */}
-              <div ref={pageContentRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0 }}>
+              <div ref={pageContentRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overflowX: "hidden", background: hanji, zIndex: 0, paddingTop: coverDone ? 26 : 0, paddingBottom: coverDone ? 26 : 0, boxSizing: "border-box" }}>
                 {isSample && (
                   <div style={{ padding: "12px 20px 0" }}>
                     <div style={{
@@ -894,6 +926,38 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                   );
                 })
               )}
+              {/* 스냅백 — 드래그 취소 시 복귀 애니메이션 */}
+              {snapBackPhase !== null && flippingFrom === null && (
+                Array.from({ length: STRIP_N }).map((_, i) => {
+                  const rotDeg = snapBackPhase === "from"
+                    ? snapBackFromRatioRef.current * 90 * (0.5 + 0.1 * i)
+                    : 0;
+                  return (
+                    <div key={`sb-${i}`} style={{
+                      position: "absolute", top: 0, bottom: 0,
+                      left: `${(i / STRIP_N) * 100}%`, width: `${100 / STRIP_N}%`,
+                      overflow: "hidden",
+                      transformOrigin: `${-i * 100}% 50%`,
+                      transform: `rotateY(-${rotDeg}deg)`,
+                      transition: snapBackPhase === "to" ? `transform 0.26s cubic-bezier(0.34,1.08,0.64,1) ${i * 0.012}s` : "none",
+                      zIndex: 5 + STRIP_N - i,
+                      pointerEvents: "none",
+                    }}>
+                      <div style={{
+                        position: "absolute", inset: 0,
+                        left: `-${i * 100}%`, width: `${STRIP_N * 100}%`,
+                        background: hanji,
+                        backgroundImage: flipSnap ? `url(${flipSnap})` : "none",
+                        backgroundSize: "100% 100%",
+                        backgroundRepeat: "no-repeat",
+                        boxShadow: "inset -4px 0 12px rgba(0,0,0,0.08)",
+                      }}>
+                        {!flipSnap && renderContent(activeTab)}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             {/* 코너 컬 힌트 — 다음 탭 넘기기 */}
@@ -908,7 +972,7 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 }}
                 onMouseEnter={() => setCornerHover(true)}
                 onMouseLeave={() => setCornerHover(false)}
-                onClick={() => nextTabId && handleTabClick(nextTabId)}
+                onClick={() => { if (flippingFrom !== null) return; nextTabId && handleTabClick(nextTabId); }}
               >
                 <div style={{
                   position: "absolute", bottom: 0, right: 0,
@@ -932,6 +996,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 style={{
                   position: "absolute", top: 8, left: 0, right: 0,
                   justifyContent: "center", zIndex: 2, pointerEvents: "none",
+                  opacity: flippingFrom !== null ? 0 : 1,
+                  transition: "opacity 0.12s",
                 }}
               >
                 <span style={{
@@ -950,6 +1016,8 @@ export default function DiaryBook({ displayEntries, loading, isSample, onEdit, o
                 style={{
                   position: "absolute", bottom: 8, left: 0, right: 0,
                   justifyContent: "center", zIndex: 2, pointerEvents: "none",
+                  opacity: flippingFrom !== null ? 0 : 1,
+                  transition: "opacity 0.12s",
                 }}
               >
                 <span style={{
