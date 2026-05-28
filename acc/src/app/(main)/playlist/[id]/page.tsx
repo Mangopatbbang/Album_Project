@@ -20,7 +20,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
       id, title, user_id, created_at, is_public,
       playlist_entries(
         id, sort_order, comment, recommended_tracks,
-        albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, tracklist)
+        albums(id, title, artist, use_artist_variant, release_date, genre, cover_url, spotify_id, tracklist)
       )
     `)
     .eq("id", id)
@@ -109,7 +109,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {(entries as any[]).map((entry: {
             id: string; sort_order: number; comment: string; recommended_tracks: string | null;
-            albums: { id: string; title: string; artist: string; year?: string; release_date?: string; genre?: string; cover_url?: string; spotify_id?: string | null; tracklist?: string | null } | null;
+            albums: { id: string; title: string; artist: string; release_date?: string; genre?: string; cover_url?: string; spotify_id?: string | null; tracklist?: string | null } | null;
           }, idx: number) => {
             if (Array.isArray(entry.albums)) entry = { ...entry, albums: entry.albums[0] ?? null };
             const album = entry.albums;
@@ -157,9 +157,9 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
                     <p style={{ color: "var(--text-sub)", fontSize: 13 }}>
                       {artistDisplayMap.get(album.id) ?? album.artist}
-                      {(album.release_date || album.year) && (
+                      {album.release_date && (
                         <span style={{ color: "var(--text-muted)", marginLeft: 8 }}>
-                          {album.release_date ? album.release_date.slice(0, 4) : album.year}
+                          {album.release_date.slice(0, 4)}
                         </span>
                       )}
                       {album.genre && (

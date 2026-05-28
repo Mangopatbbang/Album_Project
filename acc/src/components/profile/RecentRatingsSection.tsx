@@ -11,7 +11,6 @@ type RatingItem = {
   title: string;
   artist: string;
   artist_display?: string;
-  year: string | null;
   genre: string | null;
   cover_url: string | null;
   score: number;
@@ -20,7 +19,7 @@ type RatingItem = {
 };
 
 function toModal(a: RatingItem): AlbumWithRatings {
-  return { id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year ?? undefined, genre: a.genre ?? undefined, cover_url: a.cover_url ?? undefined, ratings: [] };
+  return { id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, genre: a.genre ?? undefined, cover_url: a.cover_url ?? undefined, ratings: [] };
 }
 
 const INITIAL_COUNT = 8;
@@ -97,7 +96,7 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
         </button>
       )}
       {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} source="profile_ratings" />}
-      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelected({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display, year: album.year ?? null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, score: 0, one_line_review: null, updated_at: "" }); }} source="profile_ratings" />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelected({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display, genre: album.genre ?? null, cover_url: album.cover_url ?? null, score: 0, one_line_review: null, updated_at: "" }); }} source="profile_ratings" />}
     </>
   );
 }

@@ -115,7 +115,6 @@ export default function HomeWatchlistSection() {
           items.slice(0, SHOW_COUNT).map(({ album_id, albums }) => {
             const album: AlbumWithRatings = {
               ...albums,
-              year: albums.year ?? undefined,
               genre: albums.genre ?? undefined,
               cover_url: albums.cover_url ?? undefined,
               spotify_id: albums.spotify_id ?? undefined,

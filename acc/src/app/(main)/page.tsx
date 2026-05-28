@@ -51,7 +51,7 @@ async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
 
   const { data, error } = await supabaseServer
     .from("albums")
-    .select("id, title, artist, use_artist_variant, year, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+    .select("id, title, artist, use_artist_variant, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
     .order("id")
     .range(offset, offset)
     .single();

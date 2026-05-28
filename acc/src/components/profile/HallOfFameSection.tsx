@@ -10,7 +10,6 @@ type HallAlbum = {
   title: string;
   artist: string;
   artist_display?: string;
-  year: string | null;
   genre: string | null;
   cover_url: string | null;
   score: number;
@@ -30,7 +29,7 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
   };
 
   const open = (a: HallAlbum) => {
-    setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
+    setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, genre: a.genre, cover_url: a.cover_url, ratings: [], avg: undefined } as unknown as AlbumWithRatings);
   };
 
   const visible = showAll ? albums : albums.slice(0, INITIAL_LIMIT);

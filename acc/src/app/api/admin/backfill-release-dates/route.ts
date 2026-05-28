@@ -70,10 +70,9 @@ export async function POST(req: NextRequest) {
     const release_date: string | null = data.release_date ?? null;
     if (!release_date) { failed++; continue; }
 
-    const year = release_date.slice(0, 4);
     const { error: updateErr } = await supabaseServer
       .from("albums")
-      .update({ release_date, year })
+      .update({ release_date })
       .eq("id", album.id);
 
     if (updateErr) { failed++; } else { success++; }

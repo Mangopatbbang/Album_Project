@@ -8,7 +8,7 @@ import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 const LIMIT = 30;
-const SELECT = "id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
+const SELECT = "id, title, artist, use_artist_variant, extra_artists, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
 
 // PostgREST .or() 쿼리 안에서 파서를 깨는 특수문자 제거 + SQL LIKE 와일드카드 이스케이프
 function escapeSearch(s: string) {
@@ -256,7 +256,7 @@ export async function POST(req: NextRequest) {
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
   const body = await req.json();
-  const { title, artist, extra_artists, year, release_date, genre, region, cover_url, tracklist, track_durations, spotify_id, soundcloud_url } = body;
+  const { title, artist, extra_artists, release_date, genre, region, cover_url, tracklist, track_durations, spotify_id, soundcloud_url } = body;
   const added_by = authed.id;
   if (!title?.trim() || !artist?.trim()) return NextResponse.json({ error: "title and artist required" }, { status: 400 });
   if (tracklist) {
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
   const newId = crypto.randomUUID();
   const { data, error } = await supabaseServer
     .from("albums")
-    .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, year, release_date, genre, region: region || null, cover_url, tracklist, track_durations: track_durations || null, spotify_id: spotify_id || null, soundcloud_url: soundcloud_url || null, added_by: added_by || null })
+    .insert({ id: newId, title: title.trim(), artist: artist.trim(), extra_artists: extra_artists || null, release_date, genre, region: region || null, cover_url, tracklist, track_durations: track_durations || null, spotify_id: spotify_id || null, soundcloud_url: soundcloud_url || null, added_by: added_by || null })
     .select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -318,7 +318,7 @@ export async function POST(req: NextRequest) {
 function mapAlbum(album: {
   id: string; title: string; artist: string; artist_display?: string;
   use_artist_variant?: boolean | null;
-  year?: string | null; release_date?: string | null;
+  release_date?: string | null;
   genre?: string | null; cover_url?: string | null; spotify_id?: string | null;
   created_at?: string | null;
   ratings?: { user_id: string; score: number }[];
@@ -331,7 +331,7 @@ function mapAlbum(album: {
     artist: album.artist,
     artist_display: album.artist_display ?? album.artist,
     use_artist_variant: album.use_artist_variant ?? false,
-    year: album.year, release_date: album.release_date ?? null,
+    release_date: album.release_date ?? null,
     genre: album.genre, cover_url: album.cover_url, spotify_id: album.spotify_id,
     created_at: album.created_at ?? null,
     ratings, avg,

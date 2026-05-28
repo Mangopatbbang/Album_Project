@@ -13,7 +13,7 @@ export default async function InterceptedAlbumPage({
   const { data, error } = await supabaseServer
     .from("albums")
     .select(
-      "id, title, artist, use_artist_variant, year, release_date, genre, tracklist, cover_url, spotify_id, soundcloud_url, ratings(id, user_id, score, one_line_review, created_at, updated_at)"
+      "id, title, artist, use_artist_variant, release_date, genre, tracklist, cover_url, spotify_id, soundcloud_url, ratings(id, user_id, score, one_line_review, created_at, updated_at)"
     )
     .eq("id", id)
     .single();

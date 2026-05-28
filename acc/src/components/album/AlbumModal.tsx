@@ -847,12 +847,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       </span>
                     );
                   })()}
-                  {((full as FullAlbum)?.release_date || data.year) && (
+                  {(full as FullAlbum)?.release_date && (
                     <span style={{ color: "var(--text-muted)" }}>
                       {" · "}
-                      {(full as FullAlbum)?.release_date
-                        ? formatReleaseDate((full as FullAlbum).release_date!)
-                        : data.year}
+                      {formatReleaseDate((full as FullAlbum).release_date!)}
                     </span>
                   )}
                 </p>
@@ -1830,7 +1828,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             artist: data.artist,
             use_artist_variant: data.use_artist_variant ?? false,
             extra_artists: data.extra_artists ?? null,
-            year: data.year ?? null,
             release_date: (full as FullAlbum)?.release_date ?? null,
             genre: data.genre ?? null,
             region: (full as FullAlbum)?.region ?? null,

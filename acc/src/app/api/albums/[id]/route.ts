@@ -16,7 +16,7 @@ export async function PATCH(
   if (!authed) return NextResponse.json({ error: "관리자 권한 필요" }, { status: 403 });
 
   const body = await req.json();
-  const allowed = ["spotify_id", "cover_url", "tracklist", "track_durations", "title", "artist", "extra_artists", "year", "release_date", "genre", "region", "use_artist_variant"];
+  const allowed = ["spotify_id", "cover_url", "tracklist", "track_durations", "title", "artist", "extra_artists", "release_date", "genre", "region", "use_artist_variant"];
   const update: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) update[key] = body[key];
@@ -40,13 +40,7 @@ export async function PATCH(
     }
   }
 
-  // release_date가 제공되면 year 자동 동기화 (year가 별도로 지정되지 않은 경우)
-  if ("release_date" in update && !("year" in update)) {
-    const rd = update.release_date as string | null;
-    update.year = rd ? rd.slice(0, 4) : null;
-  }
-
-  // spotify_id가 새로 설정되고 tracklist가 없으면 자동으로 트랙리스트 가져오기
+// spotify_id가 새로 설정되고 tracklist가 없으면 자동으로 트랙리스트 가져오기
   if (update.spotify_id && !update.tracklist) {
     try {
       const token = await getAccessToken();
@@ -108,7 +102,7 @@ export async function GET(
   const [albumResult, commentResult] = await Promise.all([
     supabaseServer
       .from("albums")
-      .select("id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, track_durations, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
+      .select("id, title, artist, use_artist_variant, extra_artists, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, track_durations, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
       .eq("id", id)
       .single(),
     supabaseServer

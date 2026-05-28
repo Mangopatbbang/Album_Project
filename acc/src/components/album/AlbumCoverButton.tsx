@@ -9,7 +9,6 @@ type BasicAlbum = {
   title: string;
   artist: string;
   cover_url?: string | null;
-  year?: string | null;
   genre?: string | null;
 };
 
@@ -30,7 +29,6 @@ export default function AlbumCoverButton({ album, children, style, className, ho
     title: album.title,
     artist: album.artist,
     cover_url: album.cover_url ?? undefined,
-    year: album.year ?? undefined,
     genre: album.genre ?? undefined,
     ratings: [],
   };

@@ -51,7 +51,6 @@ export async function POST() {
         id: row["id"],
         title: row["title"],
         artist: row["artist"] || "",
-        year: row["year"] || null,
         genre: row["genre"] || null,
         tracklist: row["tracklist"] || null,
       }));

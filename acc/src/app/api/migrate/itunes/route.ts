@@ -42,7 +42,6 @@ async function phase1(offset: number) {
         cover_url: result.cover_url || null,
         tracklist: result.tracklist,
         release_date: result.release_date,
-        year: result.release_date ? result.release_date.slice(0, 4) : null,
       };
 
       // 장르: Spotify가 주면 사용, 없으면 기존 값 유지
@@ -110,7 +109,6 @@ async function phase2(offset: number) {
           const update: Record<string, string | null> = { tracklist };
           if (detail.release_date) {
             update.release_date = detail.release_date;
-            update.year = detail.release_date.slice(0, 4);
           }
           if (detail.genres?.length > 0) update.genre = detail.genres[0];
           await supabaseServer.from("albums").update(update).eq("id", album.id);
@@ -136,7 +134,6 @@ async function phase2(offset: number) {
         const update: Record<string, string | null> = { tracklist };
         if (detail.release_date) {
           update.release_date = detail.release_date;
-          update.year = detail.release_date.slice(0, 4);
         }
         if (detail.genres?.length > 0) update.genre = detail.genres[0];
         await supabaseServer.from("albums").update(update).eq("id", album.id);

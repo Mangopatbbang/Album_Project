@@ -9,13 +9,13 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from("watchlist")
-    .select("album_id, created_at, albums(id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id)")
+    .select("album_id, created_at, albums(id, title, artist, use_artist_variant, release_date, genre, cover_url, spotify_id)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  type WatchlistRow = { album_id: string; created_at: string; albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; year: string | null; release_date: string | null; genre: string | null; cover_url: string | null; spotify_id: string | null; artist_display?: string } | null };
+  type WatchlistRow = { album_id: string; created_at: string; albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; release_date: string | null; genre: string | null; cover_url: string | null; spotify_id: string | null; artist_display?: string } | null };
   const items = (data ?? []) as unknown as WatchlistRow[];
   const albumObjs = items.map((i) => i.albums).filter((a): a is NonNullable<typeof a> => a != null);
   if (albumObjs.length > 0) {

@@ -10,7 +10,6 @@ export type EncounterAlbum = {
   title: string;
   artist: string;
   artist_display?: string;
-  year: string | null;
   genre: string | null;
   cover_url: string | null;
   score: number;
@@ -33,7 +32,7 @@ export default function EncounterSection({ albums }: { albums: EncounterAlbum[] 
   const visible = showAll ? sorted : sorted.slice(0, INITIAL_LIMIT);
 
   const open = (a: EncounterAlbum) => {
-    setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, year: a.year, genre: a.genre, cover_url: a.cover_url, ratings: [] } as unknown as AlbumWithRatings);
+    setSelected({ id: a.id, title: a.title, artist: a.artist, artist_display: a.artist_display, genre: a.genre, cover_url: a.cover_url, ratings: [] } as unknown as AlbumWithRatings);
   };
 
   if (albums.length === 0) {

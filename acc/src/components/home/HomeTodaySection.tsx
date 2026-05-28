@@ -114,7 +114,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
       : null;
 
-  const year = album.release_date?.slice(0, 4) ?? album.year ?? null;
+  const year = album.release_date?.slice(0, 4) ?? null;
   const tracks = parseTracklist(album.tracklist);
   const COLLAPSED_SHOW = 4;
   const tagStyle = { fontSize: 10, color: "var(--text-muted)" as const, backgroundColor: "var(--bg-elevated)" as const, borderRadius: 4, padding: "2px 7px", fontWeight: 600 };

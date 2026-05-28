@@ -142,7 +142,6 @@ function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
     title: a.title,
     artist: a.artist,
     artist_display: a.artist_display,
-    year: a.year ?? undefined,
     genre: a.genre ?? undefined,
     cover_url: a.cover_url ?? undefined,
     spotify_id: a.spotify_id ?? undefined,
@@ -764,7 +763,7 @@ export default function BestPageClient({
           artistName={artistModal.name}
           displayName={artistModal.display}
           onClose={() => setArtistModal(null)}
-          onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display ?? album.artist, year: album.year ?? null, release_date: null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, spotify_id: album.spotify_id ?? null, avg: parseFloat(album.avg ?? "0"), count: album.ratings.length, variance: 0 }); }}
+          onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display ?? album.artist, year: album.release_date?.slice(0, 4) ?? null, release_date: null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, spotify_id: album.spotify_id ?? null, avg: parseFloat(album.avg ?? "0"), count: album.ratings.length, variance: 0 }); }}
           source="best"
         />
       )}

@@ -78,7 +78,6 @@ export type ProfileRatingRow = {
     artist_display?: string;
     use_artist_variant?: boolean | null;
     extra_artists?: string | null;
-    year: string | null;
     release_date: string | null;
     genre: string | null;
     cover_url: string | null;
@@ -92,7 +91,7 @@ const _fetchProfileRatings = unstable_cache(
     for (let page = 0; ; page++) {
       const { data } = await supabaseServer
         .from("ratings")
-        .select("score, one_line_review, updated_at, encounter_date, albums(id, title, artist, use_artist_variant, extra_artists, year, release_date, genre, cover_url, region)")
+        .select("score, one_line_review, updated_at, encounter_date, albums(id, title, artist, use_artist_variant, extra_artists, release_date, genre, cover_url, region)")
         .eq("user_id", userId)
         .order("updated_at", { ascending: false })
         .range(page * 1000, (page + 1) * 1000 - 1);
@@ -192,7 +191,6 @@ type RawAlbum = {
   artist: string;
   artist_display?: string;
   use_artist_variant?: boolean | null;
-  year?: string | null;
   release_date?: string | null;
   genre?: string | null;
   cover_url?: string | null;
@@ -206,7 +204,7 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
   for (let page = 0; ; page++) {
     const { data } = await supabaseServer
       .from("albums")
-      .select("id, title, artist, use_artist_variant, year, release_date, genre, cover_url, spotify_id, soundcloud_url, region, ratings(user_id, score)")
+      .select("id, title, artist, use_artist_variant, release_date, genre, cover_url, spotify_id, soundcloud_url, region, ratings(user_id, score)")
       .range(page * 1000, (page + 1) * 1000 - 1);
     if (!data || data.length === 0) break;
     result.push(...(data as RawAlbum[]));
@@ -236,7 +234,7 @@ function toStat(album: RawAlbum): AlbumStat & { variance: number } {
     title: album.title,
     artist: album.artist,
     artist_display: album.artist_display ?? album.artist,
-    year: album.release_date ? album.release_date.slice(0, 4) : (album.year ? album.year.slice(0, 4) : null),
+    year: album.release_date ? album.release_date.slice(0, 4) : null,
     release_date: album.release_date ?? null,
     genre: album.genre ?? null,
     cover_url: album.cover_url ?? null,

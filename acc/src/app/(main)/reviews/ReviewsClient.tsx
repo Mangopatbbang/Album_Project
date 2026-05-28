@@ -16,7 +16,7 @@ import FilterSelect from "@/components/ui/FilterSelect";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
-  year?: string; release_date?: string; genre?: string;
+  release_date?: string; genre?: string;
   cover_url?: string; spotify_id?: string;
   ratings: []; avg?: string;
 };
@@ -163,7 +163,7 @@ export default function ReviewsClient() {
     const d = await res.json();
     setSelectedAlbum({
       id: albumId, title: albumTitle, artist, artist_display: artistDisplay ?? undefined,
-      year: d.year ?? undefined, release_date: d.release_date ?? undefined, genre: d.genre ?? undefined,
+      release_date: d.release_date ?? undefined, genre: d.genre ?? undefined,
       cover_url: coverUrl ?? undefined, spotify_id: d.spotify_id ?? undefined,
       ratings: d.ratings ?? [], avg: d.avg ?? undefined,
     });

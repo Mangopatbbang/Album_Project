@@ -254,7 +254,6 @@ export default async function ProfilePage({
       title: r.albums!.title,
       artist: r.albums!.artist,
       artist_display: r.albums!.artist_display,
-      year: r.albums!.year ?? null,
       genre: r.albums!.genre ?? null,
       cover_url: r.albums!.cover_url ?? null,
       score: r.score,
@@ -562,7 +561,7 @@ export default async function ProfilePage({
             <RecentListSection items={recent.map((r) => ({
               id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
               artist_display: r.albums!.artist_display,
-              year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
+              genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
               score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
             }))} />
           </div>
@@ -645,7 +644,7 @@ export default async function ProfilePage({
               <RecentReviewsSection items={recentReviews.map((r) => ({
                 id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
                 artist_display: r.albums!.artist_display,
-                year: r.albums!.year ?? null, genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
+                genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
                 score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
               }))} />
             )}

@@ -272,7 +272,7 @@ function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatin
 
         <div className="flex items-center gap-1.5 mt-0.5">
           <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
-            {album.year ?? album.release_date?.slice(0, 4) ?? ""}
+            {album.release_date?.slice(0, 4) ?? ""}
           </span>
           {album.genre && (
             <span style={{

@@ -847,11 +847,10 @@ export default function AdminPage() {
   }
 
   async function applyItunesDate(m: ItunesMismatch) {
-    const year = m.itunesDate.slice(0, 4);
     const res = await apiFetch(`/api/albums/${m.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ release_date: m.itunesDate, year }),
+      body: JSON.stringify({ release_date: m.itunesDate }),
     });
     if (res.ok) {
       setItunesMismatches((prev) => prev.map((x) => x.id === m.id ? { ...x, fixed: true } : x));
