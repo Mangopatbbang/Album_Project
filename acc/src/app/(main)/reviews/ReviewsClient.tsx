@@ -250,7 +250,7 @@ export default function ReviewsClient() {
   const isFiltered = filterUser !== "" || filterAlbumId !== "" || filterReview !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
 
   return (
-    <div data-tour="reviews-main">
+    <div data-tour="reviews-main" {...(loading ? { "data-tour-wait": "true" } : {})}>
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>

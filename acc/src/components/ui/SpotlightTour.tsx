@@ -420,17 +420,26 @@ function rectIfVisible(el: Element): DOMRect | null {
   return rect.width > 0 || rect.height > 0 ? rect : null;
 }
 
+function hasWaitingAncestor(el: Element): boolean {
+  let node: Element | null = el;
+  while (node) {
+    if (node.getAttribute("data-tour-wait") === "true") return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
 async function findVisible(selector: string, altSelector?: string, timeout = 2500): Promise<DOMRect | null> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     for (const el of Array.from(document.querySelectorAll(selector))) {
       const r = rectIfVisible(el);
-      if (r) return r;
+      if (r && !hasWaitingAncestor(el)) return r;
     }
     if (altSelector) {
       for (const el of Array.from(document.querySelectorAll(altSelector))) {
         const r = rectIfVisible(el);
-        if (r) return r;
+        if (r && !hasWaitingAncestor(el)) return r;
       }
     }
     await new Promise((r) => setTimeout(r, 100));
@@ -463,7 +472,7 @@ function SpotlightMask({ rect }: { rect: DOMRect }) {
       width={W}
       height={H}
     >
-      <path d={`M 0,0 H ${W} V ${H} H 0 Z ${hole}`} fill="rgba(0,0,0,0.78)" fillRule="evenodd" />
+      <path d={`M 0,0 H ${W} V ${H} H 0 Z ${hole}`} fill="rgba(0,0,0,0.58)" fillRule="evenodd" />
       <rect x={x} y={y} width={w} height={h} rx={cr} fill="none" stroke="rgba(232,213,163,0.45)" strokeWidth="1.5" />
     </svg>
   );
@@ -778,7 +787,7 @@ export default function SpotlightTour() {
   if (!open) return null;
 
   const darkOverlay = (
-    <div style={{ position: "fixed", inset: 0, zIndex: 299, backgroundColor: "rgba(0,0,0,0.78)" }} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 299, backgroundColor: "rgba(0,0,0,0.58)" }} />
   );
   const blocker = (
     <div style={{ position: "fixed", inset: 0, zIndex: 301 }} />
