@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import AlbumModal from "@/components/album/AlbumModal";
@@ -101,9 +102,14 @@ export default function WatchlistSection({ userId }: Props) {
           나중에 들을 앨범 <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({items.length})</span>
         </p>
         {items.length === 0 ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            앨범 모달에서 &ldquo;+ 나중에&rdquo; 버튼으로 추가하세요
-          </p>
+          <div>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
+              앨범 상세에서 🔖 탭하면<br />여기 쌓여요
+            </p>
+            <Link href="/albums" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600 }}>
+              음반고 둘러보기 →
+            </Link>
+          </div>
         ) : null}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {items.slice(0, INITIAL_LIMIT).map(({ album_id, albums }) => {

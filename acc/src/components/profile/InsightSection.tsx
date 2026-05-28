@@ -78,8 +78,8 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
             ))}
           </div>
         ) : (
-          <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
-            같은 앨범을 커뮤니티에서 2명 이상 평가하고, 내 점수와 2점 이상 차이가 날 때 나타나요
+          <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7 }}>
+            평가가 쌓이면 커뮤니티와<br />시각이 크게 다른 앨범이 나타나요
           </p>
         )}
       </div>
@@ -112,8 +112,8 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
             ))}
           </div>
         ) : (
-          <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>
-            7점 이상으로 평가했지만 아직 커뮤니티에서 발굴되지 않은 앨범이 없어요
+          <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7 }}>
+            7점 이상 앨범 중 아직<br />다른 멤버가 발굴하지 않은 앨범이 없어요
           </p>
         )}
       </div>

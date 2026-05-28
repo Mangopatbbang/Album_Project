@@ -103,10 +103,14 @@ export default function HomeWatchlistSection() {
             불러오는 중...
           </p>
         ) : items.length === 0 ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 12, padding: "20px 0", textAlign: "center", lineHeight: 1.7 }}>
-            앨범 모달에서<br />
-            <span style={{ fontWeight: 600, color: "var(--text-sub)" }}>+ 나중에</span> 버튼으로 추가해요
-          </p>
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}>
+              앨범 상세에서 🔖 탭하면<br />여기 쌓여요
+            </p>
+            <Link href="/albums" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600 }}>
+              음반고 둘러보기 →
+            </Link>
+          </div>
         ) : (
           items.slice(0, SHOW_COUNT).map(({ album_id, albums }) => {
             const album: AlbumWithRatings = {

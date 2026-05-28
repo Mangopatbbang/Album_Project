@@ -435,7 +435,7 @@ export default async function ProfilePage({
           </p>
           <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
             음반고에서 앨범을 찾아 점수를 매겨보세요.<br />
-            기록이 쌓이면 나만의 청음 스타일이 보입니다.
+            평가가 쌓이면 나만의 취향 지도가 그려져요.
           </p>
           <a
             href="/albums"
@@ -583,7 +583,14 @@ export default async function ProfilePage({
               )}
             </div>
             {userPlaylists.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 청음집이 없어요</p>
+              <div>
+                <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
+                  아직 만든 청음집이 없어요
+                </p>
+                <Link href="/themes" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600 }}>
+                  청음집 만들러 가기 →
+                </Link>
+              </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {userPlaylists.map((pl) => {

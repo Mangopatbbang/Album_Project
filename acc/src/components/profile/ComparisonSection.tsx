@@ -196,8 +196,18 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
         );
       })()}
 
+      {/* 취향 데이터 부족 */}
+      {!isLoading && !fetchError && comparisons !== null && comparisons.length === 0 && !bestMatch && (
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>취향 궁합</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7 }}>
+            평가가 쌓이면 나와 취향이<br />비슷한 멤버를 찾아드려요
+          </p>
+        </div>
+      )}
+
       {/* 멤버 비교 */}
-      {!isLoading && !fetchError && (
+      {!isLoading && !fetchError && comparisons !== null && comparisons.length > 0 && (
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
             멤버 비교

@@ -199,7 +199,15 @@ export default function CalendarTab({ entries, onEdit, onDelete, isSample }: Pro
 
         {entries.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 13, opacity: 0.5 }}>기록이 없어요</p>
+            {isSample ? (
+              <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>
+                로그인하면 나만의<br />청음 캘린더를 채울 수 있어요
+              </p>
+            ) : (
+              <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>
+                들을 때마다 기록하면<br />내 청음의 역사가 돼요
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import AlbumCard from "./AlbumCard";
 import AlbumAddModal from "./AlbumAddModal";
@@ -473,6 +474,14 @@ return (
             >
               &ldquo;{search}&rdquo; 바로 추가하기
             </button>
+          )}
+          {search && (
+            <Link
+              href="/board"
+              style={{ color: "var(--text-muted)", fontSize: 12 }}
+            >
+              게시판에서 입고 요청하기 →
+            </Link>
           )}
         </div>
       ) : (
