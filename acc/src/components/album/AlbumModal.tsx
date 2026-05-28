@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
@@ -71,7 +72,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
-  const { showToast, showToastWithUndo } = useToast();
+  const { showToast, showToastWithUndo, showToastWithAction } = useToast();
+  const router = useRouter();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [glowingScore, setGlowingScore] = useState<number | null>(null);
@@ -312,7 +314,17 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ albumId: album.id }),
     });
-    showToast(adding ? "나중에 들을 목록에 추가했어요" : "목록에서 제거했어요", "info");
+    if (adding) {
+      const hintKey = "acs_hint_bookmark_v1";
+      if (typeof window !== "undefined" && !localStorage.getItem(hintKey)) {
+        localStorage.setItem(hintKey, "1");
+        showToast("나중에 들을 목록에 추가했어요 · 프로필 → 찜에서 확인해요", "info");
+      } else {
+        showToast("나중에 들을 목록에 추가했어요", "info");
+      }
+    } else {
+      showToast("목록에서 제거했어요", "info");
+    }
   };
 
   // 배경 스크롤 잠금
@@ -431,7 +443,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }
     if (!res.ok) return;
     trackFeatureClick("평점_저장", String(myScore));
-    showToast("청음을 기록했어요");
+    const wasFirstRating = initialScoreRef.current === null;
+    if (wasFirstRating && typeof window !== "undefined" && !localStorage.getItem("acs_hint_first_rating_v1")) {
+      localStorage.setItem("acs_hint_first_rating_v1", "1");
+      showToast("첫 청음 기록이에요! 평가가 쌓이면 취향 분석이 시작돼요");
+    } else {
+      showToastWithAction("청음을 기록했어요", "반응 보기 →", () => {
+        doClose();
+        router.push(`/reviews?albumId=${album.id}`);
+      });
+    }
     await afterSaveSuccess();
   };
 
@@ -873,17 +894,24 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   const gDisplay = koGenre(data.genre);
                   const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                   return (
-                    <span style={{
-                      backgroundColor: `${gColor}1a`,
-                      color: gColor,
-                      fontSize: 11,
-                      padding: "3px 8px",
-                      borderRadius: 4,
-                      border: `1px solid ${gColor}40`,
-                      fontWeight: 500,
-                    }}>
+                    <button
+                      onClick={() => { doClose(); router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`); }}
+                      style={{
+                        backgroundColor: `${gColor}1a`,
+                        color: gColor,
+                        fontSize: 11,
+                        padding: "3px 8px",
+                        borderRadius: 4,
+                        border: `1px solid ${gColor}40`,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "background-color 0.12s",
+                      }}
+                      title={`${gDisplay} 장르 앨범 보기`}
+                    >
                       {gDisplay}
-                    </span>
+                    </button>
                   );
                 })()}
               </div>
@@ -996,9 +1024,38 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
         {/* 멤버 평점 */}
         <div className="px-5 sm:px-8">
-          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: ratingScores.length >= 3 ? 8 : 12 }}>
             청음단 평점
           </p>
+          {ratingScores.length >= 3 && (() => {
+            const dist = new Map<number, number>();
+            for (const s of ratingScores) dist.set(s, (dist.get(s) ?? 0) + 1);
+            const maxCount = Math.max(...dist.values());
+            return (
+              <div style={{ display: "flex", gap: 3, marginBottom: 16, alignItems: "flex-end" }}>
+                {[1,2,3,4,5,6,7,8].map((s) => {
+                  const count = dist.get(s) ?? 0;
+                  const color = SCORE_COLORS[s];
+                  return (
+                    <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <div style={{ width: "100%", height: 20, display: "flex", alignItems: "flex-end" }}>
+                        <div style={{
+                          width: "100%",
+                          height: count > 0 ? Math.max(3, Math.round((count / maxCount) * 18)) + "px" : "2px",
+                          backgroundColor: count > 0 ? color : "var(--border)",
+                          borderRadius: "2px 2px 0 0",
+                          opacity: count > 0 ? 0.75 : 0.25,
+                        }} />
+                      </div>
+                      <span style={{ fontSize: 9, color: count > 0 ? color : "var(--text-muted)", opacity: count > 0 ? 0.8 : 0.35 }}>
+                        {s}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {visibleUsers.map((user) => {
               const r = ratings.find((rt) => rt.user_id === user.id);
@@ -1557,8 +1614,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             </>
           ) : (
             <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-              <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 8 }}>청음 기록을 남기려면 입문이 필요해요</p>
-              <Link href="/login" style={{ color: "var(--accent)", fontSize: 13 }}>입문하기 →</Link>
+              <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 8, lineHeight: 1.6 }}>
+                이 앨범을 내 기록에 담으려면<br />입문이 필요해요
+              </p>
+              <Link href="/login" onClick={doClose} style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>입문하기 →</Link>
             </div>
           )}
         </div>
@@ -1594,9 +1653,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
             <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
               {/* 섹션 헤더 */}
-              <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 12 }}>
-                수록곡 · {tracklist.length}곡{hasDurations ? ` · 총 ${formatTotalDuration(trackDurationsMs)}` : ""}
-              </p>
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+                  수록곡 · {tracklist.length}곡{hasDurations ? ` · 총 ${formatTotalDuration(trackDurationsMs)}` : ""}
+                </p>
+                {profile && ratings.find((r) => r.user_id === profile.id) && myLikedTracks.size === 0 && (
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 3, opacity: 0.6 }}>
+                    ♡ 탭하면 좋아하는 곡을 표시할 수 있어요
+                  </p>
+                )}
+              </div>
               <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 0 }}>
                 {tracklist.map((track, i) => {
                   const othersWhoLiked = users.filter((u) => {

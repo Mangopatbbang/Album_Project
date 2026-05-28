@@ -17,11 +17,13 @@ type ToastItem = {
 type ToastContextType = {
   showToast: (message: string, type?: ToastType) => void;
   showToastWithUndo: (message: string, onUndo: () => void) => void;
+  showToastWithAction: (message: string, actionLabel: string, onAction: () => void) => void;
 };
 
 const ToastContext = createContext<ToastContextType>({
   showToast: () => {},
   showToastWithUndo: () => {},
+  showToastWithAction: () => {},
 });
 
 export function useToast() {
@@ -55,6 +57,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     addToast(message, "info", { label: "실행취소", onClick: onUndo }, 5000);
   }, [addToast]);
 
+  const showToastWithAction = useCallback((message: string, actionLabel: string, onAction: () => void) => {
+    addToast(message, "success", { label: actionLabel, onClick: onAction }, 4000);
+  }, [addToast]);
+
   const iconMap: Record<ToastType, string> = { success: "✓", error: "✕", info: "·" };
   const colorMap: Record<ToastType, string> = {
     success: "var(--accent)",
@@ -63,7 +69,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ToastContext.Provider value={{ showToast, showToastWithUndo }}>
+    <ToastContext.Provider value={{ showToast, showToastWithUndo, showToastWithAction }}>
       {children}
       <div
         style={{

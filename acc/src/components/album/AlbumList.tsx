@@ -47,6 +47,7 @@ export default function AlbumList({
 
   // URL params로 초기 필터 지원
   const urlSearch = searchParams.get("search") ?? "";
+  const urlGenre = searchParams.get("genre") ?? "";
   const urlScore = searchParams.get("score") ? Number(searchParams.get("score")) : null;
   const urlScoreUserId = searchParams.get("scoreUserId") ?? null;
 
@@ -58,7 +59,7 @@ export default function AlbumList({
   const [fetchError, setFetchError] = useState(false);
 
   const [search, setSearch] = useState(urlSearch);
-  const [genre, setGenre] = useState("");
+  const [genre, setGenre] = useState(urlGenre);
   const [region, setRegion] = useState("");
   const [sort, setSort] = useState("newest");
   const [unrated, setUnrated] = useState(false);
@@ -160,6 +161,8 @@ const [filterLoading, setFilterLoading] = useState(false);
   useEffect(() => {
     if (urlSearch) {
       handleFilter(urlSearch, "", "", "newest", false, null);
+    } else if (urlGenre) {
+      handleFilter("", urlGenre, "", "newest", false, null);
     } else if (urlScore && urlScoreUserId) {
       handleFilter("", "", "", "newest", false, urlScore, urlScoreUserId);
     }
