@@ -48,6 +48,7 @@ export default function TimelineSection({ userId }: { userId: string }) {
   const [events, setEvents] = useState<TimelineEvent[] | null>(null);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const loadedRef = useRef(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +76,8 @@ export default function TimelineSection({ userId }: { userId: string }) {
   }, [userId]);
 
   const grouped = events ? groupEvents(events) : [];
+  const previewGroups = grouped.slice(0, 1); // 최근 1년만 인라인 표시
+  const hasMore = grouped.length > 1;
 
   return (
     <div ref={sectionRef}>
@@ -104,7 +107,7 @@ export default function TimelineSection({ userId }: { userId: string }) {
           </p>
         )}
 
-        {grouped.map((yearGroup) => (
+        {previewGroups.map((yearGroup) => (
           <div key={yearGroup.year} style={{ marginBottom: 28 }}>
             {/* 연도 헤더 */}
             <p style={{
@@ -204,7 +207,87 @@ export default function TimelineSection({ userId }: { userId: string }) {
             ))}
           </div>
         ))}
+
+        {(hasMore || (events && events.length > 0)) && (
+          <button
+            onClick={() => setShowModal(true)}
+            style={{
+              marginTop: 8, width: "100%", padding: "8px 0",
+              backgroundColor: "transparent", border: "1px solid var(--border)",
+              borderRadius: 8, color: "var(--text-muted)", fontSize: 12,
+              cursor: "pointer", fontFamily: "inherit",
+            }}
+            className="hover:border-[var(--border-light)] hover:text-[var(--text)] transition-all"
+          >
+            전체 연대기 보기 ({events?.length ?? 0}개)
+          </button>
+        )}
       </div>
+
+      {/* 전체 연대기 모달 */}
+      {showModal && (
+        <div
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)", zIndex: 300 }}
+          className="flex items-end sm:items-center justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div style={{
+            width: "100%", maxWidth: 600, maxHeight: "88dvh",
+            backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+            display: "flex", flexDirection: "column", overflow: "hidden",
+          }} className="rounded-t-2xl sm:rounded-2xl">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>청음 연대기 전체</p>
+              <button onClick={() => setShowModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "20px", flex: 1 }}>
+              {grouped.map((yearGroup) => (
+                <div key={yearGroup.year} style={{ marginBottom: 28 }}>
+                  <p style={{ color: "var(--text)", fontSize: 16, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 14, fontFamily: "var(--font-playfair, serif)" }}>
+                    {yearGroup.year}
+                  </p>
+                  {yearGroup.months.map((monthGroup) => (
+                    <div key={monthGroup.month} style={{ marginBottom: 16 }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>
+                        {MONTH_NAMES[parseInt(monthGroup.month.slice(5, 7)) - 1]}
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {monthGroup.events.map((event, i) => (
+                          <button
+                            key={`modal-${event.type}-${event.album.id}-${event.date}-${i}`}
+                            onClick={() => { setShowModal(false); setSelected({ id: event.album.id, title: event.album.title, artist: event.album.artist, cover_url: event.album.cover_url ?? undefined, genre: event.album.genre ?? undefined, ratings: [] }); }}
+                            style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: "5px 0", textAlign: "left", borderBottom: "1px solid var(--border)", transition: "opacity 0.12s" }}
+                            className="hover:opacity-70"
+                          >
+                            <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)" }}>
+                              {event.album.cover_url
+                                // eslint-disable-next-line @next/next/no-img-element
+                                ? <img src={event.album.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>♪</div>
+                              }
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.album.title}</p>
+                              <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
+                                {event.album.artist}{event.review && <span style={{ fontStyle: "italic" }}> · "{event.review}"</span>}
+                              </p>
+                            </div>
+                            <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                              {event.type === "rating" && event.score != null && <span style={{ fontSize: 13, fontWeight: 700, color: scoreColor(event.score) }}>{event.score}</span>}
+                              {event.type === "diary" && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>✎</span>}
+                              <span style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.6 }}>{event.date.slice(5).replace("-", "/")}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selected && (
         <AlbumModal
