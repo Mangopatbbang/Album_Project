@@ -382,6 +382,40 @@ function Page7() {
           <Item>규정은 사전 공지 후 변경될 수 있습니다. 규정 문의는 게시판으로 접수해주세요.</Item>
         </List>
       </Section>
+
+      <div style={{
+        display: "flex", gap: 8, marginTop: 8,
+        paddingTop: 20, borderTop: "1px solid var(--border)",
+      }}>
+        <a
+          href="/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: "9px 0", textAlign: "center",
+            backgroundColor: "var(--bg-elevated)",
+            border: "1px solid var(--border)", borderRadius: 8,
+            color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          이용약관
+        </a>
+        <a
+          href="/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1, padding: "9px 0", textAlign: "center",
+            backgroundColor: "var(--bg-elevated)",
+            border: "1px solid var(--border)", borderRadius: 8,
+            color: "var(--text-muted)", fontSize: 12, fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          개인정보처리방침
+        </a>
+      </div>
     </>
   );
 }
