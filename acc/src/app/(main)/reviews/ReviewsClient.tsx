@@ -13,6 +13,7 @@ import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
+import { useToast } from "@/components/ui/Toast";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
@@ -26,6 +27,7 @@ const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 export default function ReviewsClient() {
   const searchParams = useSearchParams();
   const { profile } = useAuth();
+  const { showToast } = useToast();
   const { users, getUserById } = useUsers();
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,7 @@ export default function ReviewsClient() {
   };
 
   const handleLike = async (item: ReviewItem) => {
-    if (!profile) return;
+    if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
     const key = `${item.albumId}-${item.userId}`;
     setLiking(key);
     try {

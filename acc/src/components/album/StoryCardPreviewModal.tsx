@@ -75,11 +75,12 @@ export default function StoryCardPreviewModal({
       const blob = await captureToBlob(cardRef.current);
       if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
 
-      if (isIOS && canShare) {
+      if (canShare) {
         const file = new File([blob], filename, { type: "image/png" });
         try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 */ }
       } else {
         downloadBlob(blob, filename);
+        showToast("이미지가 저장됐어요");
         onClose();
       }
     } catch {

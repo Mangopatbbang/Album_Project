@@ -185,7 +185,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const handleToggleLikeReview = async (reviewerId: string) => {
-    if (!profile || savingLike) return;
+    if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
+    if (savingLike) return;
     const next = new Set(myLikedReviews);
     if (next.has(reviewerId)) next.delete(reviewerId); else next.add(reviewerId);
     setMyLikedReviews(next);
@@ -757,6 +758,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     </button>
                   )}
                 </div>
+              )}
+              {full && profile && profile.role !== "admin" && (full as FullAlbum)?.added_by !== profile.id && (
+                <Link
+                  href="/board"
+                  onClick={doClose}
+                  style={{
+                    fontSize: 10, color: "var(--text-muted)", textDecoration: "none",
+                    opacity: 0.6, whiteSpace: "nowrap", paddingRight: 2,
+                  }}
+                  className="hover:opacity-100 transition-opacity"
+                >
+                  정보 오류?
+                </Link>
               )}
               <button
                 onClick={handleClose}

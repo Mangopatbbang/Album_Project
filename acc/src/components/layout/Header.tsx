@@ -248,7 +248,7 @@ export default function Header() {
                               key={n.id}
                               onClick={() => {
                                 setShowNotif(false);
-                                if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
+                                if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}${profile ? `&userId=${profile.id}` : ""}`);
                               }}
                               style={{
                                 padding: "10px 16px",

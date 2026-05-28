@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PairsSection, type PairData } from "./MembersSections";
 import { fetchAllUserAvatarUrls, fetchAllUsers, fetchAllMemberRatings } from "@/lib/stats";
 import UserAvatar from "@/components/ui/UserAvatar";
+import MembersMyCardHighlight from "@/components/ui/MembersMyCardHighlight";
 
 export const metadata: Metadata = {
   title: "청음인",
@@ -91,7 +92,7 @@ export default async function MembersPage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
-
+      <MembersMyCardHighlight />
       <main data-tour="members-main" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px calc(80px + env(safe-area-inset-bottom))" }}>
         <PageHeader title="청음인" subtitle="청음사 멤버 현황" />
 
@@ -100,6 +101,7 @@ export default async function MembersPage() {
           {memberStats.map(({ user, total, avg, topGenres }) => (
             <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
               <div
+                data-userid={user.id}
                 style={{
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
                   borderRadius: 12, padding: "12px 16px",
@@ -141,7 +143,9 @@ export default async function MembersPage() {
             const maxDist = Math.max(...scoreDist.map((d) => d.count), 1);
             return (
               <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
-                <div style={{
+                <div
+                  data-userid={user.id}
+                  style={{
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
                   borderRadius: 12, padding: "24px 28px", cursor: "pointer",
                 }}
