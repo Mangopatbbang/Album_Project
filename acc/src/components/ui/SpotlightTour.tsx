@@ -722,8 +722,27 @@ export default function SpotlightTour() {
         return;
       }
 
+      // 요소가 뷰포트 밖에 있으면 스크롤 후 rect 재측정
+      const inView = found.top >= 0 && found.bottom <= window.innerHeight;
+      let finalRect = found;
+      if (!inView) {
+        const selectors = [step.selector, step.altSelector].filter(Boolean) as string[];
+        let targetEl: Element | null = null;
+        for (const sel of selectors) {
+          targetEl = Array.from(document.querySelectorAll(sel)).find((el) => rectIfVisible(el)) ?? null;
+          if (targetEl) break;
+        }
+        if (targetEl) {
+          document.body.style.overflow = "";
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          await new Promise((r) => setTimeout(r, 450));
+          document.body.style.overflow = "hidden";
+          finalRect = targetEl.getBoundingClientRect();
+        }
+      }
+
       setStepIdx(idx);
-      setRect(found);
+      setRect(finalRect);
       setPhase("step");
     } finally {
       processingRef.current = false;
