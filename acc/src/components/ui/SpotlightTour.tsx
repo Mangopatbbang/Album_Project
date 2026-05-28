@@ -633,7 +633,7 @@ export function openOnboarding() {
 
 // ── Main component ─────────────────────────────────────────────
 
-type Phase = "intro" | "loading" | "step" | "end";
+type Phase = "banner" | "intro" | "loading" | "step" | "end";
 
 export default function SpotlightTour() {
   const [open, setOpen] = useState(false);
@@ -660,9 +660,13 @@ export default function SpotlightTour() {
   }, [profile?.id]);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (!localStorage.getItem(STORAGE_KEY)) {
       localStorage.setItem(GUIDE_STORAGE_KEY, "1");
-      setOpen(true);
+      timer = setTimeout(() => {
+        setPhase("banner");
+        setOpen(true);
+      }, 1200);
     }
     const handleOpen = () => {
       localStorage.setItem(GUIDE_STORAGE_KEY, "1");
@@ -679,15 +683,18 @@ export default function SpotlightTour() {
       setOpen(true);
     };
     window.addEventListener("open-onboarding", handleOpen);
-    return () => window.removeEventListener("open-onboarding", handleOpen);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("open-onboarding", handleOpen);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || phase === "banner") return;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
-  }, [open]);
+  }, [open, phase]);
 
   // Re-measure on resize
   useEffect(() => {
@@ -785,6 +792,44 @@ export default function SpotlightTour() {
   };
 
   if (!open) return null;
+
+  if (phase === "banner") {
+    return (
+      <div
+        className="fixed left-1/2 -translate-x-1/2 bottom-[calc(72px+env(safe-area-inset-bottom)+12px)] sm:bottom-6"
+        style={{ zIndex: 200, width: "calc(100% - 32px)", maxWidth: 420, animation: "modalIn 0.28s ease-out" }}
+      >
+        <div style={{
+          backgroundColor: "var(--bg-card)", border: "1px solid var(--border-light)",
+          borderRadius: 16, padding: "14px 16px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <span style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>🎵</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", margin: "0 0 2px 0" }}>처음 오셨나요?</p>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, lineHeight: 1.4 }}>주요 기능을 하나씩 안내해드릴게요.</p>
+          </div>
+          <button
+            onClick={startTour}
+            style={{
+              backgroundColor: "var(--accent)", border: "none", color: "var(--bg)",
+              borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700,
+              cursor: "pointer", flexShrink: 0, fontFamily: "inherit",
+            }}
+          >둘러보기 →</button>
+          <button
+            onClick={close}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 4, flexShrink: 0, lineHeight: 0 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const darkOverlay = (
     <div style={{ position: "fixed", inset: 0, zIndex: 299, backgroundColor: "rgba(0,0,0,0.58)" }} />
