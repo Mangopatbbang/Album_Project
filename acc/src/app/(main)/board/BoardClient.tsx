@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import FilterSelect from "@/components/ui/FilterSelect";
+import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 
 type Announcement = {
   id: number;
@@ -237,9 +238,22 @@ export default function BoardClient() {
 
       {/* 페이지 타이틀 */}
       <div style={{ marginBottom: 40 }}>
-        <h1 style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>
-          문의판
-        </h1>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+          <h1 style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>
+            문의판
+          </h1>
+          <button
+            onClick={() => openTutorial(RULES_PAGE_INDEX)}
+            style={{
+              background: "none", border: "1px solid var(--border)",
+              borderRadius: 6, padding: "3px 10px",
+              cursor: "pointer", color: "var(--text-muted)", fontSize: 11,
+              fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
+            }}
+          >
+            규정집 보기
+          </button>
+        </div>
         <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
           공지사항 및 문의 게시판
         </p>

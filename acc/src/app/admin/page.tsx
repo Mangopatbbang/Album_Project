@@ -1027,7 +1027,7 @@ export default function AdminPage() {
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>Admin</p>
           </div>
           <button
-            onClick={openTutorial}
+            onClick={() => openTutorial()}
             style={{
               padding: "6px 14px", borderRadius: 8,
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",

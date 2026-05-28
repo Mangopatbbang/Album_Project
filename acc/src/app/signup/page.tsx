@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -320,6 +321,17 @@ export default function SignupPage() {
               만 14세 이상임을 확인합니다{" "}
               <span style={{ color: "var(--text-muted)" }}>(필수)</span>
             </CustomCheckbox>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+              가입 전{" "}
+              <button
+                type="button"
+                onClick={() => openTutorial(RULES_PAGE_INDEX)}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--accent)", fontSize: 11, textDecoration: "underline" }}
+              >
+                커뮤니티 규정집
+              </button>
+              을 확인해주세요.
+            </p>
           </div>
 
           {error && (

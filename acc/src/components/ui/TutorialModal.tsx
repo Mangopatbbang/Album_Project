@@ -5,7 +5,7 @@ import { openOnboarding } from "@/components/ui/SpotlightTour";
 
 const STORAGE_KEY = "acs_tutorial_dismissed_v1";
 
-const PAGES = ["홈·음반고", "앨범 상세", "입고", "청음감·청음평", "청음인·청음록", "청음집·기타"] as const;
+const PAGES = ["홈·음반고", "앨범 상세", "입고", "청음감·청음평", "청음인·청음록", "청음집·기타", "규정집"] as const;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -293,15 +293,111 @@ function Page6() {
   );
 }
 
-const PAGE_COMPONENTS = [Page1, Page2, Page3, Page4, Page5, Page6];
+function ViolationRow({ level, label, items }: { level: string; label: string; items: string[] }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", marginBottom: 5 }}>
+        {level} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>{label}</span>
+      </p>
+      <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+        {items.map((item) => (
+          <li key={item} style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.7, paddingLeft: 10, position: "relative" }}>
+            <span style={{ position: "absolute", left: 0 }}>·</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Page7() {
+  return (
+    <>
+      <Section title="📋 서비스 목적">
+        <List>
+          <Item>아차청음사는 음악을 좋아하는 멤버들이 앨범을 함께 듣고, 평가하고, 기록을 나누는 청음 커뮤니티입니다.</Item>
+          <Item>좋은 음악을 발견하고 취향을 나누는 공간으로 유지하기 위해 아래 규정을 운영합니다.</Item>
+        </List>
+      </Section>
+
+      <Section title="📦 앨범 입고 규정">
+        <List>
+          <Item>수록곡 3곡 이상의 앨범만 입고 가능합니다 (싱글 불가).</Item>
+          <Item>Spotify 또는 SoundCloud에서 청취 가능한 앨범이어야 합니다.</Item>
+          <Item>이미 등록된 앨범은 중복 입고할 수 없습니다.</Item>
+          <Item>혐오·폭력·불법 콘텐츠를 주제로 한 앨범은 어드민 검토 후 삭제될 수 있습니다.</Item>
+        </List>
+      </Section>
+
+      <Section title="⭐ 평점 및 소감">
+        <List>
+          <Item>평점은 <b>본인이 직접 들은 앨범</b>에 한해 작성할 수 있습니다.</Item>
+          <Item>8점은 인생을 통틀어 손에 꼽을 명반에만 부여합니다. 최대 12장 제한이 있습니다.</Item>
+          <Item>혐오·차별 표현 또는 타인을 비방하는 소감은 신고 대상입니다.</Item>
+        </List>
+      </Section>
+
+      <Section title="🤝 커뮤니티 행동 강령">
+        <List>
+          <Item>음악적 의견 차이는 자연스러운 것입니다. 의견 충돌 시 음악에 대한 논의로 한정해주세요.</Item>
+          <Item>다른 멤버의 취향을 존중합니다. 낮은 평점 자체는 문제 없으나 인신공격은 금지됩니다.</Item>
+          <Item>스팸·도배(3회 이상 반복)·홍보 행위는 금지됩니다.</Item>
+          <Item>댓글은 해당 소감·앨범과 관련된 내용으로 작성해주세요.</Item>
+        </List>
+      </Section>
+
+      <Section title="⚠️ 위반 등급 및 조치">
+        <ViolationRow
+          level="🟡 경고"
+          label="(1등급)"
+          items={["도배·스팸 (동일 내용 3회 이상)", "주제와 무관한 댓글", "가벼운 비속어", "미청음 평가 의심"]}
+        />
+        <ViolationRow
+          level="🟠 7일 정지"
+          label="(2등급)"
+          items={["특정 멤버 인신공격·조롱", "의도적 스팸·홍보", "경고 후 동일 위반 반복"]}
+        />
+        <ViolationRow
+          level="🔴 14일 정지"
+          label="(3등급)"
+          items={["혐오·차별 표현 (첫 위반)", "7일 정지 이후 재발"]}
+        />
+        <ViolationRow
+          level="⚫ 영구 정지"
+          label="(4등급)"
+          items={["타인 개인정보 노출*", "불법 콘텐츠 유포", "14일 정지 이후 재발", "지속적인 서비스 운영 방해"]}
+        />
+        <Cautions>
+          <Caution>* 개인정보 노출(타인의 실명·연락처·위치 등)은 심각성에 따라 즉시 영구 정지될 수 있습니다.</Caution>
+          <Caution>같은 등급 위반이 반복되면 다음 등급 조치가 적용됩니다.</Caution>
+        </Cautions>
+      </Section>
+
+      <Section title="📝 처리 원칙">
+        <List>
+          <Item>처리 결과는 신고자·피신고자 모두에게 알림으로 전송됩니다.</Item>
+          <Item>이의 신청은 처리일로부터 7일 이내 게시판을 통해 접수할 수 있습니다.</Item>
+          <Item>최종 판단은 어드민의 재량에 따릅니다. 동일 위반이라도 맥락·심각성에 따라 조정될 수 있습니다.</Item>
+          <Item>규정은 사전 공지 후 변경될 수 있습니다. 규정 문의는 게시판으로 접수해주세요.</Item>
+        </List>
+      </Section>
+    </>
+  );
+}
+
+const PAGE_COMPONENTS = [Page1, Page2, Page3, Page4, Page5, Page6, Page7];
 
 export default function TutorialModal() {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    // OnboardingTutorial이 첫 방문 안내를 담당 — 가이드는 수동으로만 열림
-    const handler = () => { setOpen(true); setPage(0); };
+    const handler = (e: Event) => {
+      const p = (e as CustomEvent<{ page?: number }>).detail?.page ?? 0;
+      setOpen(true);
+      setPage(p);
+    };
     window.addEventListener("open-tutorial", handler);
     return () => window.removeEventListener("open-tutorial", handler);
   }, []);
@@ -457,7 +553,9 @@ export default function TutorialModal() {
   );
 }
 
-export function openTutorial() {
+export function openTutorial(page?: number) {
   localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new CustomEvent("open-tutorial"));
+  window.dispatchEvent(new CustomEvent("open-tutorial", { detail: { page } }));
 }
+
+export const RULES_PAGE_INDEX = 6;

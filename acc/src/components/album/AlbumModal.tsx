@@ -18,6 +18,7 @@ import AlbumEditModal from "@/components/album/AlbumEditModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import AppleMusicLink from "@/components/ui/AppleMusicLink";
+import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
@@ -1273,6 +1274,23 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   }}
                 >
                   기준 참고
+                </button>
+                <button
+                  onClick={() => openTutorial(RULES_PAGE_INDEX)}
+                  style={{
+                    background: "none",
+                    border: "1px solid var(--border)",
+                    borderRadius: 4,
+                    padding: "1px 6px",
+                    cursor: "pointer",
+                    color: "var(--text-muted)",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.04em",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  규정집
                 </button>
               </div>
 

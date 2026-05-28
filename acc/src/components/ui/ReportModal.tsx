@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { useToast } from "@/components/ui/Toast";
 import FilterSelect from "@/components/ui/FilterSelect";
+import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 
 const REASONS = [
   "비매너 행동",
@@ -92,7 +93,15 @@ export default function ReportModal({ onClose, defaultUserId }: Props) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 16, margin: 0 }}>멤버 신고</p>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 3 }}>접수된 신고는 어드민이 검토합니다</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 3 }}>
+              접수된 신고는 어드민이 검토합니다 ·{" "}
+              <button
+                onClick={() => openTutorial(RULES_PAGE_INDEX)}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--accent)", fontSize: 12, textDecoration: "underline" }}
+              >
+                규정집
+              </button>
+            </p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
