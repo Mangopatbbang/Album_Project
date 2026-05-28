@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
-import { koGenre } from "@/lib/bio";
 
 export type YearlyRecap = {
   year: number;
@@ -35,7 +34,7 @@ export function computeYearlyRecap(ratings: ProfileRatingRow[]): YearlyRecap[] {
     // 장르 집계
     const genreCount = new Map<string, number>();
     for (const r of rows) {
-      const g = koGenre(r.albums?.genre ?? "기타");
+      const g = r.albums?.genre ?? "Other";
       genreCount.set(g, (genreCount.get(g) ?? 0) + 1);
     }
     const topGenre = [...genreCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
@@ -153,7 +152,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
     }
     const byUser = new Map<string, Map<string, number>>();
     for (const r of all) {
-      const g = koGenre(r.albums?.genre ?? "기타");
+      const g = r.albums?.genre ?? "Other";
       if (!byUser.has(r.user_id)) byUser.set(r.user_id, new Map());
       const gm = byUser.get(r.user_id)!;
       gm.set(g, (gm.get(g) ?? 0) + 1);
@@ -163,7 +162,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
       result[userId] = [...gm.entries()]
         .sort((a, b) => b[1] - a[1])
         .slice(0, 2)
-        .map(([g]) => koGenre(g));
+        .map(([g]) => g);
     }
     return result;
   },
@@ -272,7 +271,7 @@ export function getBestByGenre(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   const valid = validAlbums(albums).filter((a) => a.genre);
   const map = new Map<string, AlbumStat[]>();
   for (const a of valid) {
-    const g = koGenre(a.genre!);
+    const g = a.genre!;
     if (!map.has(g)) map.set(g, []);
     map.get(g)!.push(a);
   }

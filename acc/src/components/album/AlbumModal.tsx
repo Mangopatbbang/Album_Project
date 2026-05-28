@@ -21,7 +21,7 @@ import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
-import { koGenre, GENRE_COLOR } from "@/lib/bio";
+import { GENRE_COLOR } from "@/lib/bio";
 
 const RATING_GUIDE_INTRO = "본인이 만든 창작물을 지인에게 들려준 경험이 있는가? '괜찮네' '좋네' 등의 반응으로는 그 작품의 완성도를 판단할 수 없다. 그러한 반응은 오히려 평작의 반응에 가까우며, 만든 사람의 기분을 생각해 예의를 차려준 표현에 가깝다. 각 티어의 이름은 그 앨범을 들었을 때 직관적으로 생기는 '리액션'에서 유래했다.";
 
@@ -891,7 +891,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   </span>
                 )}
                 {data.genre && (() => {
-                  const gDisplay = koGenre(data.genre);
+                  const gDisplay = data.genre;
                   const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                   return (
                     <button

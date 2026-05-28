@@ -7,7 +7,6 @@ import AlbumCard from "./AlbumCard";
 import AlbumAddModal from "./AlbumAddModal";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
-import { koGenre } from "@/lib/bio";
 import Spinner from "@/components/ui/Spinner";
 import { trackSearch, trackFeatureClick } from "@/lib/track";
 import FilterSelect from "@/components/ui/FilterSelect";
@@ -346,7 +345,7 @@ return (
             style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}
           >
             {(["", ...genres] as string[]).map((g) => {
-              const label = g === "" ? "전체" : koGenre(g);
+              const label = g === "" ? "전체" : g;
               const isSelected = g === genre;
               return (
                 <button

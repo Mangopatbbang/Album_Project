@@ -6,7 +6,6 @@ import AlbumList from "@/components/album/AlbumList";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
-import { koGenre } from "@/lib/bio";
 
 export const metadata: Metadata = {
   title: "음반고",
@@ -60,7 +59,7 @@ const getGenres = unstable_cache(
       .select("genre")
       .not("genre", "is", null)
       .limit(9999);
-    const unique = [...new Set((data ?? []).map((d) => d.genre).filter(Boolean).map((g) => koGenre(g as string)))].sort();
+    const unique = [...new Set((data ?? []).map((d) => d.genre).filter(Boolean) as string[])].sort();
     return unique as string[];
   },
   ["albums-page-genres"],

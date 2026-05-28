@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
-import { koGenre } from "@/lib/bio";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
 
@@ -83,7 +82,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
   const [artist, setArtist] = useState(album.artist);
   const [extraArtists, setExtraArtists] = useState(album.extra_artists ?? "");
   const [releaseDate, setReleaseDate] = useState(album.release_date ?? album.year ?? "");
-  const [genre, setGenre] = useState(koGenre(album.genre ?? ""));
+  const [genre, setGenre] = useState(album.genre ?? "");
   const [region, setRegion] = useState(album.region ?? "");
   const [coverUrl, setCoverUrl] = useState(album.cover_url ?? "");
   const [tracklist, setTracklist] = useState(album.tracklist ?? "");

@@ -7,7 +7,7 @@ import { scoreColor } from "@/lib/score";
 import HallOfFameSection from "@/components/profile/HallOfFameSection";
 import ArtistSection from "@/components/profile/ArtistSection";
 import { RecentListSection, RecentReviewsSection } from "@/components/profile/RecentRatingsSection";
-import { koGenre, GENRE_COLOR } from "@/lib/bio";
+import { GENRE_COLOR } from "@/lib/bio";
 import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import MobileLogoutButton from "@/components/profile/MobileLogoutButton";
@@ -216,7 +216,7 @@ export default async function ProfilePage({
   // 장르 분포
   const genreMap = new Map<string, { count: number; total: number; domestic: number; foreign: number }>();
   for (const r of validRatings) {
-    const g = koGenre(r.albums?.genre ?? "기타");
+    const g = r.albums?.genre ?? "Other";
     const region = r.albums?.region ?? null;
     const prev = genreMap.get(g) ?? { count: 0, total: 0, domestic: 0, foreign: 0 };
     genreMap.set(g, {
@@ -244,7 +244,7 @@ export default async function ProfilePage({
   const totalForeign = validRatings.filter((r) => r.albums?.region === "해외").length;
 
   // 상위 2 장르명
-  const topGenres = genreList.slice(0, 2).map(({ genre }) => koGenre(genre));
+  const topGenres = genreList.slice(0, 2).map(({ genre }) => genre);
 
   // 인연으로 만난 앨범
   const encounterAlbums: EncounterAlbum[] = validRatings
@@ -677,7 +677,7 @@ export default async function ProfilePage({
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>장르</p>
                   {topGenre && (
-                    <span style={{ color: "var(--accent)", fontSize: 11 }}>{koGenre(topGenre)} 최다</span>
+                    <span style={{ color: "var(--accent)", fontSize: 11 }}>{topGenre} 최다</span>
                   )}
                 </div>
                 {(totalDomestic > 0 || totalForeign > 0) && (
@@ -716,7 +716,7 @@ export default async function ProfilePage({
                 const pct = Math.round((count / total) * 100);
                 const barPct = (count / maxGenreCount) * 100;
                 const noRegion = count - domestic - foreign;
-                const gDisplay = koGenre(genre);
+                const gDisplay = genre;
                 const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                 return (
                   <div key={genre}>

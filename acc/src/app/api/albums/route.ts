@@ -4,7 +4,6 @@ import { supabaseServer } from "@/lib/supabase";
 import { resolveArtistDisplay, findArtistsByVariant } from "@/lib/artistDisplay";
 import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
-import { getRawGenreValues } from "@/lib/bio";
 import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
@@ -122,7 +121,7 @@ export async function GET(req: NextRequest) {
 
     let q = supabaseServer.from("albums").select(SELECT).in("id", scoreIds);
     if (safeSearch) q = q.or(buildSearchOr(safeSearch, aliasMatches, search ?? undefined));
-    if (genre) { const raws = getRawGenreValues(genre); q = raws.length === 1 ? q.eq("genre", raws[0]) : q.in("genre", raws); }
+    if (genre) { q = q.eq("genre", genre); }
     if (regionFilter) q = q.eq("region", regionFilter);
     q = q.order("created_at", { ascending: false });
     const { data, error } = await q;
@@ -140,7 +139,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseServer.from("albums").select(SELECT).range(offset, offset + limit);
   if (safeSearch) query = query.or(buildSearchOr(safeSearch, aliasMatches, search ?? undefined));
-  if (genre) { const raws = getRawGenreValues(genre); query = raws.length === 1 ? query.eq("genre", raws[0]) : query.in("genre", raws); }
+  if (genre) { query = query.eq("genre", genre); }
   if (regionFilter) query = query.eq("region", regionFilter);
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
 
@@ -181,7 +180,7 @@ async function handleMySort(params: {
 
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches, rawSearch ?? undefined));
-  if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
+  if (genre) { albumQuery = albumQuery.eq("genre", genre); }
   if (region) albumQuery = albumQuery.eq("region", region);
   const { data: allAlbums } = await albumQuery;
 
@@ -226,7 +225,7 @@ async function handleAvgSort(params: {
 
   let albumQuery = supabaseServer.from("albums").select("id");
   if (search) albumQuery = albumQuery.or(buildSearchOr(search, aliasMatches, rawSearch ?? undefined));
-  if (genre) { const raws = getRawGenreValues(genre); albumQuery = raws.length === 1 ? albumQuery.eq("genre", raws[0]) : albumQuery.in("genre", raws); }
+  if (genre) { albumQuery = albumQuery.eq("genre", genre); }
   if (region) albumQuery = albumQuery.eq("region", region);
   if (excludeIds.length > 0) albumQuery = albumQuery.not("id", "in", `(${excludeIds.join(",")})`);
   const { data: filteredAlbums } = await albumQuery;
