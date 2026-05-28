@@ -1119,7 +1119,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       {likedByUsers.length > 0 && (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                           {likedByUsers.map((u) => (
-                            <UserAvatar key={u.id} avatarUrl={avatarMap[u.id]} size={14} />
+                            <Link key={u.id} href={`/profile/${u.id}`} onClick={doClose} style={{ display: "inline-flex", opacity: 0.85 }} className="hover:opacity-100 transition-opacity">
+                              <UserAvatar avatarUrl={avatarMap[u.id]} size={14} />
+                            </Link>
                           ))}
                         </span>
                       )}

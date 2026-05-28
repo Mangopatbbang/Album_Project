@@ -56,6 +56,7 @@ export default function AlbumList({
   const [nextOffset, setNextOffset] = useState<number | null>(initialNextOffset);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
 
   const [search, setSearch] = useState(urlSearch);
   const [genre, setGenre] = useState(urlGenre);
@@ -135,6 +136,7 @@ const [filterLoading, setFilterLoading] = useState(false);
     if (!hasMore || loading) return;
     const gen = filterGenRef.current;
     setLoading(true);
+    setLoadMoreError(false);
     try {
       const data = await fetchAlbums({ search, genre, region, sort, unrated, myScore, scoreUserId, offset: nextOffset ?? 0 });
       // 필터가 변경되었으면 이 응답은 구버전 — 무시
@@ -148,7 +150,7 @@ const [filterLoading, setFilterLoading] = useState(false);
       setHasMore(data.hasMore);
       setNextOffset(data.nextOffset);
     } catch {
-      // 네트워크 오류 시 현재 목록 유지
+      if (filterGenRef.current === gen) setLoadMoreError(true);
     } finally {
       // stale 응답이면 loading 해제를 handleFilter에 맡김
       // (여기서 해제하면 handleFilter 진행 중에 loading=false → loadMore 재발동 위험)
@@ -505,6 +507,17 @@ return (
       {loading && albums.length > 0 && (
         <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
           <Spinner size={16} />
+        </div>
+      )}
+      {loadMoreError && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "16px 0" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>더 불러오지 못했어요</p>
+          <button
+            onClick={() => handleLoadMore()}
+            style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            다시 시도
+          </button>
         </div>
       )}
 
