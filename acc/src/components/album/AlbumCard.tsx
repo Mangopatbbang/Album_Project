@@ -97,7 +97,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
           <div
             style={{
               height: "100%",
-              width: `${(parseFloat(album.avg) / 10) * 100}%`,
+              width: `${(parseFloat(album.avg) / 8) * 100}%`,
               backgroundColor: scoreColor(album.avg),
               boxShadow: parseFloat(album.avg) >= 7
                 ? `0 0 6px ${scoreColor(album.avg)}`

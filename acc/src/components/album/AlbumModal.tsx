@@ -896,6 +896,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   return (
                     <button
                       onClick={() => { doClose(); router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`); }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}33`; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}1a`; }}
                       style={{
                         backgroundColor: `${gColor}1a`,
                         color: gColor,

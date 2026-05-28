@@ -150,7 +150,7 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
                   cursor: "pointer", padding: "2px 6px",
                   transition: "color 0.12s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-sub)")}
               >
                 편집
@@ -163,7 +163,7 @@ export default function DiaryEntryCard({ entry, onEdit, onDeleteRequest, isSampl
                   cursor: "pointer", padding: "2px 6px",
                   transition: "color 0.12s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-sub)")}
               >
                 삭제
