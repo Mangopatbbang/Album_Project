@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
-
-async function checkAdmin(userId: string) {
-  const { data } = await supabaseServer.from("users").select("role").eq("id", userId).single();
-  return data?.role === "admin";
-}
+import { validateAdmin } from "@/lib/validateAdmin";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
   const { id } = await params;
-  const { show_popup, userId } = await req.json();
-  if (!await checkAdmin(userId ?? "")) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+  const { show_popup } = await req.json();
 
   const { error } = await supabaseServer
     .from("announcements")
@@ -26,9 +22,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
   const { id } = await params;
-  const { userId } = await req.json();
-  if (!await checkAdmin(userId ?? "")) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   const { error } = await supabaseServer.from("announcements").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

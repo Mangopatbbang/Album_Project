@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 export async function GET() {
   const { data, error } = await supabaseServer
@@ -11,11 +12,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { content, show_popup, userId } = await req.json();
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
-  const { data: user } = await supabaseServer.from("users").select("role").eq("id", userId ?? "").single();
-  if (user?.role !== "admin") return NextResponse.json({ error: "권한 없음" }, { status: 403 });
-
+  const { content, show_popup } = await req.json();
   if (!content?.trim()) return NextResponse.json({ error: "내용을 입력해주세요" }, { status: 400 });
 
   const { data, error } = await supabaseServer

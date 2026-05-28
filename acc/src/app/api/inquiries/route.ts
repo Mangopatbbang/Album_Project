@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 export async function GET(req: NextRequest) {
-  const userId = new URL(req.url).searchParams.get("userId") ?? "";
-  const { data: user } = await supabaseServer.from("users").select("role").eq("id", userId).single();
-  if (user?.role !== "admin") return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+  if (!(await validateAdmin(req))) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   const { data, error } = await supabaseServer
     .from("inquiries")

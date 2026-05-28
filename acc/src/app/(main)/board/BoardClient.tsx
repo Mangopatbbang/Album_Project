@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
+import { apiFetch } from "@/lib/apiFetch";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import FilterSelect from "@/components/ui/FilterSelect";
@@ -89,7 +90,7 @@ export default function BoardClient() {
 
   const fetchInquiries = useCallback(async () => {
     if (!isAdmin || !profile) return;
-    const res = await fetch(`/api/inquiries?userId=${profile.id}`);
+    const res = await apiFetch("/api/inquiries");
     if (res.ok) setInquiries(await res.json());
   }, [isAdmin, profile]);
 
@@ -106,10 +107,10 @@ export default function BoardClient() {
   const handlePostNotice = async () => {
     if (!noticeContent.trim() || !profile) return;
     setSavingNotice(true);
-    const res = await fetch("/api/notices", {
+    const res = await apiFetch("/api/notices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: noticeContent, show_popup: noticePopup, userId: profile.id }),
+      body: JSON.stringify({ content: noticeContent, show_popup: noticePopup }),
     });
     setSavingNotice(false);
     if (res.ok) {
@@ -122,10 +123,10 @@ export default function BoardClient() {
 
   const handleTogglePopup = async (a: Announcement) => {
     if (!profile) return;
-    const res = await fetch(`/api/notices/${a.id}`, {
+    const res = await apiFetch(`/api/notices/${a.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ show_popup: !a.show_popup, userId: profile.id }),
+      body: JSON.stringify({ show_popup: !a.show_popup }),
     });
     if (res.ok) {
       setAnnouncements((prev) => prev.map((x) => x.id === a.id ? { ...x, show_popup: !x.show_popup } : x));
@@ -134,10 +135,8 @@ export default function BoardClient() {
 
   const handleDeleteNotice = async (id: number) => {
     if (!profile || !confirm("공지를 삭제할까요?")) return;
-    const res = await fetch(`/api/notices/${id}`, {
+    const res = await apiFetch(`/api/notices/${id}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: profile.id }),
     });
     if (res.ok) {
       setAnnouncements((prev) => prev.filter((a) => a.id !== id));
