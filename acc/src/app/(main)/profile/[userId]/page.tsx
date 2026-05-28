@@ -19,9 +19,10 @@ import CalendarSection from "@/components/profile/CalendarSection";
 import LikedTracksButton from "@/components/profile/LikedTracksButton";
 import ReportUserButton from "@/components/profile/ReportUserButton";
 import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
-import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, computeYearlyRecap, type ProfileRatingRow } from "@/lib/stats";
+import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
+import TimelineSection from "@/components/profile/TimelineSection";
 import ProfileDiaryButton from "@/components/profile/ProfileDiaryButton";
 import type { DayAlbum } from "@/components/profile/CalendarSection";
 
@@ -135,7 +136,6 @@ export default async function ProfilePage({
     arr.push(r.score);
     communityScoresByAlbum.set(r.album_id, arr);
   }
-  const yearlyRecap = computeYearlyRecap(validRatings);
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
@@ -748,68 +748,9 @@ export default async function ProfilePage({
           {/* 취향 궁합 + 멤버 비교 */}
           <div data-tour="profile-comparison"><ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} /></div>
 
-          {/* 연도별 청음 리캡 */}
-          <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-              연도별 청음
-            </p>
-            {yearlyRecap.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 데이터가 없어요</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {yearlyRecap.map((recap) => (
-                  <div key={recap.year}>
-                    <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
-                      {recap.year}년
-                    </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                        총 <span style={{ color: "var(--accent)", fontWeight: 600 }}>{recap.total}장</span>
-                      </span>
-                      <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                        평균 <span style={{ color: scoreColor(recap.avg), fontWeight: 600 }}>{recap.avg}점</span>
-                      </span>
-                      {recap.topGenre && (
-                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                          장르 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{recap.topGenre}</span>
-                        </span>
-                      )}
-                      {recap.topArtist && (
-                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                          아티스트 <span style={{ color: "var(--text-sub)", fontWeight: 500 }}>{recap.topArtist}</span>
-                        </span>
-                      )}
-                      {recap.hofCount > 0 && (
-                        <span style={{
-                          fontSize: 11, fontWeight: 700,
-                          color: "rgba(232,213,163,0.9)",
-                          backgroundColor: "rgba(232,213,163,0.08)",
-                          border: "1px solid rgba(232,213,163,0.25)",
-                          borderRadius: 4, padding: "1px 7px",
-                        }}>
-                          명반 {recap.hofCount}장
-                        </span>
-                      )}
-                    </div>
-                    {(recap.firstAlbum || recap.lastAlbum) && (
-                      <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                        {recap.firstAlbum && (
-                          <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
-                            첫 청음: <span style={{ color: "var(--text-sub)" }}>{recap.firstAlbum.title}</span> {recap.firstAlbum.date}
-                          </span>
-                        )}
-                        {recap.lastAlbum && (
-                          <span style={{ color: "var(--text-muted)", fontSize: 10 }}>
-                            마지막: <span style={{ color: "var(--text-sub)" }}>{recap.lastAlbum.title}</span> {recap.lastAlbum.date}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* 청음 연대기 — admin only (데이터 충분히 쌓이면 공개) */}
+          <TimelineSection userId={userId} />
+
         </div>
       </div>
       </div>
