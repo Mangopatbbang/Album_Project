@@ -12,7 +12,6 @@ export default function DeleteAccountModal({ onClose }: Props) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const backdropRef = { current: null as HTMLDivElement | null };
 
   const handleDelete = async () => {
     if (deleting || input !== "탈퇴합니다") return;

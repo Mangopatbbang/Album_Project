@@ -70,7 +70,7 @@ export type ProfileRatingRow = {
   score: number;
   one_line_review: string | null;
   updated_at: string;
-  created_at: string;
+  created_at?: string;
   encounter_date?: string | null;
   albums: {
     id: string;

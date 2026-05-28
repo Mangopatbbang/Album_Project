@@ -214,10 +214,10 @@ export default function Header() {
                       )}
                     </div>
                     <div style={{ maxHeight: "min(320px, 50dvh)", overflowY: "auto" }}>
-                      {notifications.length === 0 ? (
+                      {notifications.filter(n => n.type !== "comment").length === 0 ? (
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
-                        notifications.map((n) => {
+                        notifications.filter(n => n.type !== "comment").map((n) => {
                           const isSystemNotif = n.type !== "like";
                           const fromUser = isSystemNotif ? null : getUserById(n.fromUserId ?? "");
                           const nd = new Date(n.createdAt);

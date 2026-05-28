@@ -208,7 +208,7 @@ export default function TimelineSection({ userId }: { userId: string }) {
           </div>
         ))}
 
-        {(hasMore || (events && events.length > 0)) && (
+        {hasMore && (
           <button
             onClick={() => setShowModal(true)}
             style={{
