@@ -208,7 +208,7 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/?welcome=1");
     router.refresh();
   };
 
@@ -276,14 +276,23 @@ export default function SignupPage() {
                 : <HintText>영문·숫자·_ 만 가능 · 로그인에 사용됩니다</HintText>
               }
             </div>
-            <input
-              type="text"
-              placeholder="표시 이름 (선택 — 기본값: username)"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              style={inputStyle}
-              autoComplete="nickname"
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <input
+                type="text"
+                placeholder="표시 이름 (선택)"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                style={inputStyle}
+                autoComplete="nickname"
+              />
+              <HintText>
+                {displayName
+                  ? null
+                  : email.includes("@")
+                    ? <>비워두면 <span style={{ color: "var(--text-sub)", fontWeight: 600 }}>{email.split("@")[0]}</span>으로 표시됩니다</>
+                    : "이메일에서 자동 설정됩니다 (나중에 변경 가능)"}
+              </HintText>
+            </div>
           </div>
 
           {/* 약관 동의 */}

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
@@ -13,6 +14,7 @@ import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
 import HomeWatchlistSection from "@/components/home/HomeWatchlistSection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
 import HomeDiaryBanner from "@/components/home/HomeDiaryBanner";
+import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 
 async function getTotalCount() {
   const { count } = await supabaseServer
@@ -260,6 +262,7 @@ export default async function HomePage() {
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
+      <Suspense><WelcomeOnboarding /></Suspense>
       <HomeDiaryBanner />
 
       <main>
