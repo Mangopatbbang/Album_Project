@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from("ratings")
-    .select("score, albums(id, title, artist, cover_url, year, genre, spotify_id, tracklist)")
+    .select("score, albums(id, title, artist, cover_url, genre, spotify_id, tracklist)")
     .eq("user_id", authed.id)
     .order("score", { ascending: false });
 
@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
     title: string;
     artist: string;
     cover_url: string | null;
-    year: string | null;
     genre: string | null;
     spotify_id: string | null;
     tracklist: string | null;

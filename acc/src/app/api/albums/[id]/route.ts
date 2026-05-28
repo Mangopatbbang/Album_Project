@@ -99,16 +99,12 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const [albumResult, commentResult] = await Promise.all([
+  const [albumResult] = await Promise.all([
     supabaseServer
       .from("albums")
       .select("id, title, artist, use_artist_variant, extra_artists, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, track_durations, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
       .eq("id", id)
       .single(),
-    supabaseServer
-      .from("comments")
-      .select("reviewer_id")
-      .eq("album_id", id),
   ]);
 
   const { data, error } = albumResult;
@@ -133,13 +129,7 @@ export async function GET(
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
     : null;
 
-  const { data: commentRows } = commentResult;
-  const commentCounts: Record<string, number> = {};
-  for (const row of commentRows ?? []) {
-    commentCounts[row.reviewer_id] = (commentCounts[row.reviewer_id] ?? 0) + 1;
-  }
-
-  return NextResponse.json({ ...resolved, extra_artists_display, ratings, avg, commentCounts }, {
+  return NextResponse.json({ ...resolved, extra_artists_display, ratings, avg }, {
     headers: { "Cache-Control": "no-store" },
   });
 }

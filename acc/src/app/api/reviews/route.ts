@@ -15,7 +15,6 @@ export type ReviewItem = {
   review: string;
   likedBy: string[];
   updatedAt: string;
-  commentCount?: number;
 };
 
 const LIMIT = 20;
