@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { captureElement } from "@/lib/capture";
 import ProfileEditButton from "./ProfileEditButton";
 import SettingsModal from "@/components/ui/SettingsModal";
+import DeleteAccountModal from "@/components/ui/DeleteAccountModal";
 
 type Props = {
   userId: string;
@@ -19,7 +20,8 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showModeration, setShowModeration] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!profile || profile.id !== userId) return null;
 
@@ -49,14 +51,9 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
         data-tour="profile-edit"
         className="sm:hidden"
         style={{
-          background: "none",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          padding: "4px 10px",
-          cursor: "pointer",
-          color: "var(--text)",
-          fontSize: 11,
-          flexShrink: 0,
+          background: "none", border: "1px solid var(--border)",
+          borderRadius: 6, padding: "4px 10px",
+          cursor: "pointer", color: "var(--text)", fontSize: 11, flexShrink: 0,
         }}
       >
         설정
@@ -65,11 +62,7 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
       {sheetOpen && (
         <div
           onClick={() => setSheetOpen(false)}
-          style={{
-            position: "fixed", inset: 0,
-            backgroundColor: "rgba(0,0,0,0.55)",
-            zIndex: 300,
-          }}
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)", zIndex: 300 }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -90,62 +83,33 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
               설정
             </p>
 
-            <button
-              onClick={handleEditClick}
-              style={{
-                display: "flex", alignItems: "center",
-                width: "100%", padding: "16px 20px",
-                background: "none", border: "none", borderBottom: "1px solid var(--border)",
-                cursor: "pointer", color: "var(--text)", fontSize: 15, textAlign: "left",
-              }}
-            >
+            <button onClick={handleEditClick} style={{ display: "flex", alignItems: "center", width: "100%", padding: "16px 20px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontSize: 15, textAlign: "left" }}>
               프로필 편집
             </button>
-
-            <button
-              onClick={handleCapture}
-              disabled={capturing}
-              style={{
-                display: "flex", alignItems: "center",
-                width: "100%", padding: "16px 20px",
-                background: "none", border: "none", borderBottom: "1px solid var(--border)",
-                cursor: capturing ? "default" : "pointer",
-                color: capturing ? "var(--text-muted)" : "var(--text)",
-                fontSize: 15, textAlign: "left",
-                opacity: capturing ? 0.6 : 1,
-              }}
-            >
+            <button onClick={handleCapture} disabled={capturing} style={{ display: "flex", alignItems: "center", width: "100%", padding: "16px 20px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: capturing ? "default" : "pointer", color: capturing ? "var(--text-muted)" : "var(--text)", fontSize: 15, textAlign: "left", opacity: capturing ? 0.6 : 1 }}>
               {capturing ? "캡처 중..." : "프로필 캡처"}
             </button>
-
-            <button
-              onClick={handleLogout}
-              style={{
-                display: "flex", alignItems: "center",
-                width: "100%", padding: "16px 20px",
-                background: "none", border: "none", borderBottom: "1px solid var(--border)",
-                cursor: "pointer", color: "#e05050", fontSize: 15, textAlign: "left",
-              }}
-            >
+            <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", width: "100%", padding: "16px 20px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontSize: 15, textAlign: "left" }}>
               로그아웃
             </button>
-
             <button
-              onClick={() => { setSheetOpen(false); setSettingsOpen(true); }}
-              style={{
-                display: "flex", alignItems: "center",
-                width: "100%", padding: "14px 20px",
-                background: "none", border: "none",
-                cursor: "pointer", color: "var(--text-muted)", fontSize: 13, textAlign: "left",
-              }}
+              onClick={() => { setSheetOpen(false); setShowModeration(true); }}
+              style={{ display: "flex", alignItems: "center", width: "100%", padding: "16px 20px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontSize: 15, textAlign: "left" }}
             >
-              계정 설정
+              제재 이력
+            </button>
+            <button
+              onClick={() => { setSheetOpen(false); setShowDeleteConfirm(true); }}
+              style={{ display: "flex", alignItems: "center", width: "100%", padding: "14px 20px", background: "none", border: "none", cursor: "pointer", color: "var(--error)", fontSize: 13, textAlign: "left" }}
+            >
+              계정 탈퇴
             </button>
           </div>
         </div>
       )}
 
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {showModeration && <SettingsModal onClose={() => setShowModeration(false)} />}
+      {showDeleteConfirm && <DeleteAccountModal onClose={() => setShowDeleteConfirm(false)} />}
 
       <ProfileEditButton
         userId={userId}

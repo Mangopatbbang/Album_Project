@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
 import type { ReviewItem } from "@/app/api/reviews/route";
-import type { CommentItem } from "@/app/api/comments/route";
 import AlbumModal from "@/components/album/AlbumModal";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import Spinner from "@/components/ui/Spinner";
@@ -51,10 +50,6 @@ export default function ReviewsClient() {
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [comments, setComments] = useState<Record<string, CommentItem[]>>({});
-  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
   const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
 
   const fetchReviews = useCallback(async (params: {
@@ -124,7 +119,6 @@ export default function ReviewsClient() {
     setFilterUser(u); setFilterAlbumId(aid); setMinScore(mn); setMaxScore(mx); setSort(s);
     fetchReviews({ userId: u, albumId: aid, search: reviewVal, minScore: mn, maxScore: mx, sort: s, offset: 0 });
     setOffset(0);
-    setExpandedKey(null);
   };
 
   const handleReviewSearch = (val: string) => {
@@ -133,8 +127,7 @@ export default function ReviewsClient() {
     reviewSearchTimer.current = setTimeout(() => {
       fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: val, minScore, maxScore, sort, offset: 0 });
       setOffset(0);
-      setExpandedKey(null);
-    }, 350);
+      }, 350);
   };
 
   const handleLike = async (item: ReviewItem) => {
@@ -191,49 +184,6 @@ export default function ReviewsClient() {
     handleFilter("", "", 1, 8, "latest", "");
   };
 
-  const fetchComments = async (albumId: string, reviewerId: string) => {
-    const key = `${albumId}-${reviewerId}`;
-    const res = await fetch(`/api/comments?albumId=${albumId}&reviewerId=${reviewerId}`);
-    const data = await res.json();
-    setComments((prev) => ({ ...prev, [key]: data.comments ?? [] }));
-  };
-
-  const toggleExpand = (key: string, albumId: string, reviewerId: string) => {
-    if (expandedKey === key) {
-      setExpandedKey(null);
-    } else {
-      setExpandedKey(key);
-      if (!comments[key]) fetchComments(albumId, reviewerId);
-    }
-  };
-
-  const handleComment = async (item: ReviewItem) => {
-    const key = `${item.albumId}-${item.userId}`;
-    const inputVal = commentInputs[key]?.trim();
-    if (!profile || !inputVal) return;
-    setSubmitting(true);
-    try {
-      const res = await apiFetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          albumId: item.albumId, reviewerId: item.userId,
-          content: inputVal,
-        }),
-      });
-      if (res.ok) {
-        setCommentInputs((prev) => { const next = { ...prev }; delete next[key]; return next; });
-        await fetchComments(item.albumId, item.userId);
-        setItems((prev) => prev.map((r) =>
-          r.albumId === item.albumId && r.userId === item.userId
-            ? { ...r, commentCount: (r.commentCount ?? 0) + 1 }
-            : r
-        ));
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // 앨범별 그룹 보기: 기본 정렬 + 유저/앨범 필터 없을 때
   const isGroupedView = sort === "latest" && filterUser === "" && filterAlbumId === "";
@@ -415,16 +365,9 @@ export default function ReviewsClient() {
                       item={item}
                       myId={profile?.id ?? null}
                       liking={liking === key}
-                      expanded={expandedKey === key}
-                      rowComments={comments[key]}
-                      commentInput={commentInputs[key] ?? ""}
-                      submitting={submitting}
                       onLike={() => handleLike(item)}
                       onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                       onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
-                      onToggleExpand={() => toggleExpand(key, item.albumId, item.userId)}
-                      onCommentInput={(v) => setCommentInputs((prev) => ({ ...prev, [key]: v }))}
-                      onCommentSubmit={() => handleComment(item)}
                       isLast={idx === reviews.length - 1}
                       hideAlbumInfo
                     />
@@ -447,16 +390,9 @@ export default function ReviewsClient() {
                 item={item}
                 myId={profile?.id ?? null}
                 liking={liking === key}
-                expanded={expandedKey === key}
-                rowComments={comments[key]}
-                commentInput={commentInputs[key] ?? ""}
-                submitting={submitting}
                 onLike={() => handleLike(item)}
                 onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                 onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
-                onToggleExpand={() => toggleExpand(key, item.albumId, item.userId)}
-                onCommentInput={(v) => setCommentInputs((prev) => ({ ...prev, [key]: v }))}
-                onCommentSubmit={() => handleComment(item)}
                 isLast={idx === items.length - 1}
                 isNew={isNew}
                 newDelay={newDelay}
@@ -483,22 +419,15 @@ export default function ReviewsClient() {
 }
 
 function ReviewRow({
-  item, myId, liking, expanded, rowComments, commentInput, submitting,
-  onLike, onAlbumClick, onFilterByAlbum, onToggleExpand, onCommentInput, onCommentSubmit, isLast, hideAlbumInfo, isNew, newDelay,
+  item, myId, liking,
+  onLike, onAlbumClick, onFilterByAlbum, isLast, hideAlbumInfo, isNew, newDelay,
 }: {
   item: ReviewItem;
   myId: string | null;
   liking: boolean;
-  expanded: boolean;
-  rowComments: CommentItem[] | undefined;
-  commentInput: string;
-  submitting: boolean;
   onLike: () => void;
   onAlbumClick: () => void;
   onFilterByAlbum: () => void;
-  onToggleExpand: () => void;
-  onCommentInput: (v: string) => void;
-  onCommentSubmit: () => void;
   isLast: boolean;
   hideAlbumInfo?: boolean;
   isNew?: boolean;
@@ -510,7 +439,6 @@ function ReviewRow({
   const user = getUserById(item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
   const isMyReview = myId === item.userId;
-  const commentCount = item.commentCount ?? 0;
 
   const date = new Date(item.updatedAt);
   const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
@@ -518,7 +446,7 @@ function ReviewRow({
   return (
     <div
       style={{
-        borderBottom: isLast && !expanded ? "none" : "1px solid var(--border)",
+        borderBottom: isLast ? "none" : "1px solid var(--border)",
         ...(isNew ? { animation: "feedItemIn 0.22s ease-out both", animationDelay: `${newDelay ?? 0}s` } : {}),
       }}
     >
@@ -592,27 +520,6 @@ function ReviewRow({
           </a>
           <span style={{ fontSize: 10, color: "var(--text-muted)" }} className="hidden sm:inline">{dateStr}</span>
 
-          {/* 댓글 토글 */}
-          <button
-            onClick={onToggleExpand}
-            className="min-h-[36px] sm:min-h-0"
-            style={{
-              display: "flex", alignItems: "center", gap: 3,
-              background: "none", border: "none", cursor: "pointer",
-              color: expanded ? "var(--accent)" : "var(--text-muted)",
-              fontSize: 10, padding: "2px 5px", borderRadius: 20,
-              backgroundColor: expanded ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
-              transition: "all 0.15s",
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            {(commentCount > 0 || (rowComments && rowComments.length > 0)) && (
-              <span>{rowComments ? rowComments.length : commentCount}</span>
-            )}
-          </button>
-
           {/* 공감 */}
           {!isMyReview && myId ? (
             <button
@@ -639,72 +546,6 @@ function ReviewRow({
         </div>
       </div>
 
-      {/* 댓글 영역 */}
-      <div style={{
-        overflow: "hidden",
-        maxHeight: expanded ? 600 : 0,
-        transition: expanded
-          ? "max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1)"
-          : "max-height 0.18s cubic-bezier(0.4, 0, 1, 1)",
-      }}>
-        <div style={{ backgroundColor: "var(--bg-elevated)", borderTop: "1px solid var(--border)", padding: "10px 14px 10px 72px" }}>
-          {rowComments === undefined ? (
-            <p style={{ fontSize: 11, color: "var(--text-muted)", padding: "6px 0" }}>불러오는 중…</p>
-          ) : rowComments.length === 0 && !myId ? (
-            <p style={{ fontSize: 11, color: "var(--text-muted)", padding: "6px 0" }}>아직 댓글이 없어요</p>
-          ) : (
-            <>
-              {rowComments.map((c) => {
-                const cu = getUserById(c.commenterId);
-                const cd = new Date(c.createdAt);
-                const cdStr = `${String(cd.getMonth() + 1).padStart(2, "0")}.${String(cd.getDate()).padStart(2, "0")}`;
-                return (
-                  <div key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                    <UserAvatar avatarUrl={cu ? avatarMap[cu.id] : null} size={14} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-sub)", marginRight: 6 }}>
-                        {cu?.display_name ?? c.commenterId}
-                      </span>
-                      <span style={{ fontSize: 12, color: "var(--text)" }}>{c.content}</span>
-                    </div>
-                    <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{cdStr}</span>
-                  </div>
-                );
-              })}
-
-              {myId && (
-                <div style={{ display: "flex", gap: 8, marginTop: rowComments.length > 0 ? 8 : 0, paddingTop: rowComments.length > 0 ? 8 : 0, borderTop: rowComments.length > 0 ? "1px solid var(--border)" : "none" }}>
-                  <input
-                    value={commentInput}
-                    onChange={(e) => onCommentInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onCommentSubmit(); } }}
-                    placeholder="댓글 달기…"
-                    maxLength={200}
-                    style={{
-                      flex: 1, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-                      borderRadius: 6, padding: "6px 10px", fontSize: 12, color: "var(--text)",
-                      outline: "none",
-                    }}
-                  />
-                  <button
-                    onClick={onCommentSubmit}
-                    disabled={submitting || !commentInput.trim()}
-                    style={{
-                      backgroundColor: "var(--accent)", border: "none", borderRadius: 6,
-                      padding: "6px 12px", fontSize: 11, fontWeight: 600, color: "var(--bg)",
-                      cursor: submitting || !commentInput.trim() ? "not-allowed" : "pointer",
-                      opacity: submitting || !commentInput.trim() ? 0.5 : 1,
-                      flexShrink: 0,
-                    }}
-                  >
-                    작성
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

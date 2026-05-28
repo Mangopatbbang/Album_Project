@@ -9,6 +9,7 @@ import { useUsers } from "@/context/UsersContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import SettingsModal from "@/components/ui/SettingsModal";
+import DeleteAccountModal from "@/components/ui/DeleteAccountModal";
 
 
 export default function Header() {
@@ -32,6 +33,9 @@ export default function Header() {
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showModeration, setShowModeration] = useState(false);
 
   const navItems = [
     { href: "/albums", label: "음반고", tour: "nav-albums", desc: "보유한 모든 앨범 탐색" },
@@ -43,15 +47,15 @@ export default function Header() {
   ];
 
 
-  // 알림 외부 클릭 시 닫기
+  // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
-    if (!showNotif) return;
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotif(false);
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setShowSettings(false);
     };
-    document.addEventListener("mousedown", handler);
+    if (showNotif || showSettings) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [showNotif]);
+  }, [showNotif, showSettings]);
 
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -208,7 +212,7 @@ export default function Header() {
                         <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
                       ) : (
                         notifications.map((n) => {
-                          const isSystemNotif = n.type !== "comment" && n.type !== "like";
+                          const isSystemNotif = n.type !== "like";
                           const fromUser = isSystemNotif ? null : getUserById(n.fromUserId ?? "");
                           const nd = new Date(n.createdAt);
                           const ndStr = `${String(nd.getMonth() + 1).padStart(2, "0")}.${String(nd.getDate()).padStart(2, "0")}`;
@@ -273,9 +277,9 @@ export default function Header() {
                                 ) : (
                                   <>
                                     <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginBottom: 2 }}>
-                                      <span style={{ marginRight: 4 }}>{n.type === "comment" ? "💬" : "♥"}</span>
+                                      <span style={{ marginRight: 4 }}>♥</span>
                                       <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
-                                      {" "}님이 {n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요"}
+                                      {" "}님이 소감에 공감했어요
                                     </p>
                                     {n.albumTitle && (
                                       <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -300,8 +304,8 @@ export default function Header() {
                 <UserAvatar avatarUrl={profile.avatar_url} size={18} />
                 <span className="truncate">{profile.display_name}</span>
               </Link>
-              {/* 설정 */}
-              <div className="hidden sm:block">
+              {/* 설정 드롭다운 */}
+              <div ref={settingsRef} style={{ position: "relative" }} className="hidden sm:block">
                 <button
                   onClick={() => setShowSettings((v) => !v)}
                   style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", display: "flex", alignItems: "center" }}
@@ -312,6 +316,38 @@ export default function Header() {
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                   </svg>
                 </button>
+                {showSettings && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 8px)",
+                    width: 140, backgroundColor: "var(--bg-card)",
+                    border: "1px solid var(--border)", borderRadius: 10,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                    zIndex: 200, overflow: "hidden",
+                    animation: "modalIn 0.15s ease-out",
+                  }}>
+                    <button
+                      onClick={() => { setShowSettings(false); signOut(); }}
+                      style={{ display: "block", width: "100%", padding: "12px 16px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontSize: 13, textAlign: "left", fontFamily: "inherit" }}
+                      className="hover:bg-[var(--bg-elevated)] transition-colors"
+                    >
+                      로그아웃
+                    </button>
+                    <button
+                      onClick={() => { setShowSettings(false); setShowModeration(true); }}
+                      style={{ display: "block", width: "100%", padding: "12px 16px", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer", color: "var(--text)", fontSize: 13, textAlign: "left", fontFamily: "inherit" }}
+                      className="hover:bg-[var(--bg-elevated)] transition-colors"
+                    >
+                      제재 이력
+                    </button>
+                    <button
+                      onClick={() => { setShowSettings(false); setShowDeleteConfirm(true); }}
+                      style={{ display: "block", width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer", color: "var(--error)", fontSize: 13, textAlign: "left", fontFamily: "inherit" }}
+                      className="hover:bg-[var(--bg-elevated)] transition-colors"
+                    >
+                      계정 탈퇴
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -331,7 +367,8 @@ export default function Header() {
       `}</style>
     </header>
 
-    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    {showModeration && <SettingsModal onClose={() => setShowModeration(false)} />}
+    {showDeleteConfirm && <DeleteAccountModal onClose={() => setShowDeleteConfirm(false)} />}
     </>
   );
 }
