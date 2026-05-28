@@ -135,6 +135,7 @@ score >= 7: 0 0 8px rgba(48,160,184,0.45), 0 0 16px rgba(48,160,184,0.2)
 | `shimmer` | 스켈레톤 로딩 | 1.5s infinite |
 | `staggerFadeUp` | 리스트 순차 등장 | — |
 | `navBounce` | 하단 네비 바운스 | 0.3s |
+| `navDropIn` | 헤더 네비 드롭다운 (Header.tsx 인라인 정의) | 0.14s |
 | `rotationSpin` | 랜덤 버튼 회전 | 0.5s |
 
 ### 모달 애니메이션 분기

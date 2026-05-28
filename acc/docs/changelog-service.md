@@ -309,16 +309,33 @@
 
 ---
 
+### 2026-05-28 — 레거시 코드 전면 정리
+
+**장르 DB 마이그레이션**
+- 구형 한국어 장르값(힙합, 락, 팝 등) 1,236개 → 영문 정규화값으로 일괄 전환
+- 전체 1,471개 앨범이 동일한 영문 장르 체계로 통일
+- `koGenre()` / `getRawGenreValues()` / `GENRE_KO` 변환 레이어 삭제 (10개 파일)
+
+**DB 컬럼 제거**
+- `albums.year` 삭제 — `release_date` 앞 4자리와 100% 동일한 파생값이었음. 코드 28곳 정리
+- `albums.search_tags`, `albums.tags` 삭제 — DB에 데이터 0건, 코드 참조 0건인 방치 컬럼
+
+**디자인 버그 수정**
+- AlbumCard 점수 바 너비 계산 `/10 → /8` (8점 만점 기준)
+- AlbumModal 장르 버튼 hover 배경색 효과 추가
+- DiaryEntryCard 편집·삭제 버튼 hover 방향 수정 (더 어두워지던 것 → 더 밝아지게)
+
+**코드 정리**
+- globals.css의 `navDropIn` keyframe 중복 정의 제거 (Header.tsx 인라인 버전이 실사용)
+
+---
+
 ## 기술 부채 / 보류 중인 것들
 
 > 자세한 목록 → `memory/project_backlog.md`
 
 - 앨범 모달 URL 공유 시 배경 검정 현상 (백로그)
 - 칭호 시스템 기획 완료, 도입 여부 미결정 (백로그)
-- `track_durations` DB 컬럼 추가 필요:
-  ```sql
-  ALTER TABLE albums ADD COLUMN IF NOT EXISTS track_durations TEXT;
-  ```
 
 ---
 

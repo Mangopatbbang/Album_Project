@@ -56,8 +56,7 @@ albums ──────< artist_aliases (artist 컬럼 기준)
 | `artist_display` | TEXT | — | 계산값 (DB에는 없음, 앱 내 해상도) |
 | `use_artist_variant` | BOOLEAN | — | true면 한글명 표시 |
 | `extra_artists` | TEXT | — | 추가 아티스트 (세미콜론 구분) |
-| `year` | TEXT | — | 발매 연도 (YYYY) |
-| `release_date` | TEXT | — | 정확한 발매일 (YYYY-MM-DD) |
+| `release_date` | TEXT | — | 발매일 (YYYY-MM-DD 또는 YYYY-MM 또는 YYYY) |
 | `genre` | TEXT | — | 장르 (표준 목록 참고) |
 | `region` | TEXT | — | `국내` / `해외` |
 | `tracklist` | TEXT | — | 곡명 세미콜론 구분 |
@@ -360,15 +359,16 @@ Spotify API는 아티스트 이름을 영문 정식명으로만 반환한다.
 
 ## 장르 표준 목록
 
-앨범에 붙이는 장르는 자유 입력이 아닌 아래 목록에서 선택한다. 표준을 지켜야 장르 필터와 장르별 랭킹이 정확하게 동작하기 때문이다. `src/lib/bio.ts`의 `koGenre()` 함수가 영어 장르명을 한글로 정규화하고, `GENRE_COLOR` 맵이 각 장르에 고유한 색상을 할당한다.
+앨범에 붙이는 장르는 자유 입력이 아닌 아래 영문 목록에서 선택한다. 표준을 지켜야 장르 필터와 장르별 랭킹이 정확하게 동작하기 때문이다. `src/lib/bio.ts`의 `GENRE_COLOR` 맵이 각 장르에 고유한 색상을 할당한다.
 
 ```
-록 / 락    힙합    팝    R&B    재즈    클래식
-일렉트로닉   포크    인디    소울    메탈    발라드
-블루스    펑크    레게    컨트리    기타
+Hip-Hop    R&B    Pop    Rock    Electronic
+Folk    Alternative    Jazz    Country    OST    Compilation    Other
 ```
 
-> `src/lib/bio.ts`의 `GENRE_COLOR` 맵에 각 장르별 색상 정의.
+> 2026-05-28 DB 마이그레이션으로 구형 한국어 장르값(힙합, 락, 팝 등) 1,236개를 위 영문값으로 전환 완료.  
+> `koGenre()` / `getRawGenreValues()` 변환 함수는 이 마이그레이션 후 삭제됨.  
+> `GENRE_COLOR` 맵: `src/lib/bio.ts` 참고.
 
 ---
 
