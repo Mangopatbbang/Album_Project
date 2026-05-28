@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
@@ -445,13 +446,19 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               </button>
             </div>
           )}
-          <button
-            onClick={closeWithToast}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", textDecorationStyle: "dotted",
-            }}
-          >나중에</button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <button
+              onClick={closeWithToast}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 12, textDecoration: "underline", textDecorationStyle: "dotted", fontFamily: "inherit" }}
+            >나중에</button>
+            <Link
+              href={`/album/${addedAlbumId}`}
+              onClick={closeWithToast}
+              style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)", textDecoration: "none" }}
+            >
+              바로 평가하기 →
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -527,9 +534,12 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   이미 입고된 음반입니다
                 </p>
                 {duplicates.map((d) => (
-                  <p key={d.id} style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                    · {d.title} — {d.artist}
-                  </p>
+                  <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: "var(--text-muted)", fontSize: 12 }}>· {d.title} — {d.artist}</span>
+                    <Link href={`/album/${d.id}`} onClick={onClose} style={{ fontSize: 11, color: "var(--accent)", textDecoration: "none", flexShrink: 0, fontWeight: 600 }}>
+                      보러 가기 →
+                    </Link>
+                  </div>
                 ))}
               </div>
             )}

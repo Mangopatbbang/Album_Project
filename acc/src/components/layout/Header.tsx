@@ -29,7 +29,7 @@ export default function Header() {
     navHoverTimeout.current = setTimeout(() => setHoveredNav(null), 120);
   };
 
-  const { notifications, markAllRead } = useNotifications();
+  const { notifications, markAllRead, clearAll } = useNotifications();
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -204,7 +204,13 @@ export default function Header() {
                     <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>알림</span>
                       {notifications.length > 0 && (
-                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{notifications.length}개</span>
+                        <button
+                          onClick={clearAll}
+                          style={{ fontSize: 10, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontFamily: "inherit" }}
+                          className="hover:text-[var(--error)] transition-colors"
+                        >
+                          전체 삭제
+                        </button>
                       )}
                     </div>
                     <div style={{ maxHeight: "min(320px, 50dvh)", overflowY: "auto" }}>

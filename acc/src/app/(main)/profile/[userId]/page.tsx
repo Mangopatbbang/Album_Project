@@ -562,7 +562,7 @@ export default async function ProfilePage({
               id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
               artist_display: r.albums!.artist_display,
               genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
-              score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
+              score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at, created_at: r.created_at,
             }))} />
           </div>
 
@@ -645,7 +645,7 @@ export default async function ProfilePage({
                 id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,
                 artist_display: r.albums!.artist_display,
                 genre: r.albums!.genre ?? null, cover_url: r.albums!.cover_url ?? null,
-                score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at,
+                score: r.score, one_line_review: r.one_line_review, updated_at: r.updated_at, created_at: r.created_at,
               }))} />
             )}
           </div>

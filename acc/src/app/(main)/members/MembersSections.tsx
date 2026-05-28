@@ -85,12 +85,23 @@ function PairRow({ pair, avatarMap }: { pair: PairData; avatarMap: Record<string
         <UserAvatar avatarUrl={avatarMap[pair.b.id]} size={18} />
         <Link href={`/profile/${pair.b.id}`} style={{ color: "inherit", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 72 }} className="hover:text-[var(--accent)] transition-colors">{pair.b.display_name}</Link>
       </span>
-      <div style={{ textAlign: "right" }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {pair.commonCount}장</p>
-        {pair.diff !== null && (
-          <p style={{ color: pair.diff < 1.0 ? "var(--accent)" : "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
-            앨범당 {pair.diff.toFixed(2)}점 차이
-          </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <div style={{ textAlign: "right" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11 }}>공통 {pair.commonCount}장</p>
+          {pair.diff !== null && (
+            <p style={{ color: pair.diff < 1.0 ? "var(--accent)" : "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
+              {pair.diff.toFixed(2)}점 차이
+            </p>
+          )}
+        </div>
+        {pair.commonCount > 0 && (
+          <Link
+            href={`/profile/${pair.a.id}#comparison`}
+            style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "none", flexShrink: 0 }}
+            className="hover:text-[var(--accent)] transition-colors"
+          >
+            비교 →
+          </Link>
         )}
       </div>
     </div>

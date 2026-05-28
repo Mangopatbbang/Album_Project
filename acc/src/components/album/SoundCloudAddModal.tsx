@@ -176,6 +176,10 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
         {/* URL 입력 */}
         <div>
           <label style={labelStyle}>SOUNDCLOUD URL</label>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, lineHeight: 1.5 }}>
+            SoundCloud 앨범 페이지에서 주소창 URL을 복사해서 붙여넣으세요.
+            <br />예: <span style={{ fontFamily: "monospace", opacity: 0.8 }}>https://soundcloud.com/아티스트명/sets/앨범명</span>
+          </p>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               style={{ ...inputStyle, flex: 1 }}

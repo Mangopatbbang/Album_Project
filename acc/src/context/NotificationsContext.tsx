@@ -8,11 +8,13 @@ import { apiFetch } from "@/lib/apiFetch";
 type NotificationsContextType = {
   notifications: NotificationItem[];
   markAllRead: () => Promise<void>;
+  clearAll: () => Promise<void>;
 };
 
 const NotificationsContext = createContext<NotificationsContextType>({
   notifications: [],
   markAllRead: async () => {},
+  clearAll: async () => {},
 });
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
@@ -36,8 +38,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
+  const clearAll = useCallback(async () => {
+    await apiFetch("/api/notifications", { method: "DELETE" });
+    setNotifications([]);
+  }, []);
+
   return (
-    <NotificationsContext.Provider value={{ notifications, markAllRead }}>
+    <NotificationsContext.Provider value={{ notifications, markAllRead, clearAll }}>
       {children}
     </NotificationsContext.Provider>
   );

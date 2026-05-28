@@ -16,6 +16,7 @@ type RatingItem = {
   score: number;
   one_line_review: string | null;
   updated_at: string;
+  created_at?: string;
 };
 
 function toModal(a: RatingItem): AlbumWithRatings {
@@ -72,6 +73,9 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
             </div>
             <span style={{ color: "var(--text-muted)", fontSize: 11, flexShrink: 0 }}>
               {new Date(r.updated_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+              {r.created_at && r.updated_at.slice(0, 10) !== r.created_at.slice(0, 10) && (
+                <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.6, marginLeft: 2 }}>수정</span>
+              )}
             </span>
             <div style={{
               width: 32, height: 32, borderRadius: 6, flexShrink: 0,

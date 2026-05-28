@@ -1445,7 +1445,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{myReview.length}/100</span>
+                <span style={{ color: myReview.length >= 80 ? "var(--error)" : "var(--text-muted)", fontSize: 11, visibility: myReview.length > 0 ? "visible" : "hidden" }}>{myReview.length}/100</span>
                 <div style={{ display: "flex", gap: 6 }}>
                   {ratings.find((r) => r.user_id === profile?.id) && (
                     <button
@@ -1516,6 +1516,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                           style={{ padding: 0, background: "none", border: "none", cursor: "pointer", position: "relative" }}
                           className="active:scale-[0.92] transition-transform"
                         >
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                           <div style={{
                             width: 56, height: 56, borderRadius: 6, overflow: "hidden",
                             backgroundColor: "var(--bg-elevated)",
@@ -1539,6 +1540,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                               <span style={{ fontSize: 18, color: "var(--error)" }}>✕</span>
                             </div>
                           )}
+                          </div>
+                          <span style={{
+                            fontSize: 9, color: isSelected ? "var(--error)" : "var(--text-muted)",
+                            maxWidth: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            opacity: evictAlbumId && !isSelected ? 0.45 : 1,
+                            textAlign: "center", display: "block",
+                          }}>{a.title}</span>
                         </button>
                       );
                     })}
