@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
   revalidatePath("/best");
   revalidateTag("profile-ratings", "max");
   revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("controversial", "max");
   return NextResponse.json({ ok: true, rating: data });
 }
 
@@ -262,5 +263,6 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/best");
   revalidateTag("profile-ratings", "max");
   revalidateTag("all-albums-with-ratings", "max");
+  revalidateTag("controversial", "max");
   return NextResponse.json({ ok: true });
 }

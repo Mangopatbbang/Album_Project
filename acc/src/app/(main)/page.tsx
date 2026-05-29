@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
@@ -153,7 +154,7 @@ async function getRecentFeed(): Promise<FeedItem[]> {
   }));
 }
 
-async function getControversialAlbums(): Promise<ControversialItem[]> {
+const getControversialAlbums = unstable_cache(async (): Promise<ControversialItem[]> => {
   const { data } = await supabaseServer
     .from("ratings")
     .select("album_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)");
@@ -223,7 +224,7 @@ async function getControversialAlbums(): Promise<ControversialItem[]> {
     ...r,
     album_artist_display: displayMap.get(r.album_id) ?? r.album_artist,
   }));
-}
+}, ["controversial-albums"], { tags: ["controversial"], revalidate: 3600 });
 
 const containerStyle = {
   width: "100%",
