@@ -14,11 +14,12 @@ export function UsersProvider({ children, initialUsers = [] }: { children: React
   const [users, setUsers] = useState<User[]>(initialUsers);
 
   useEffect(() => {
+    if (initialUsers.length > 0) return;
     fetch("/api/users")
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => { if (Array.isArray(data.users)) setUsers(data.users); })
       .catch(() => {});
-  }, []);
+  }, [initialUsers.length]);
 
   const contextValue = useMemo(() => ({
     users,

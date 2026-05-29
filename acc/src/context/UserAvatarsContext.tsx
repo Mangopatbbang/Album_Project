@@ -10,11 +10,12 @@ export function UserAvatarsProvider({ children, initialAvatarMap = {} }: { child
   const [avatarMap, setAvatarMap] = useState<AvatarMap>(initialAvatarMap);
 
   useEffect(() => {
+    if (Object.keys(initialAvatarMap).length > 0) return;
     fetch("/api/user-avatars")
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setAvatarMap)
       .catch(() => {});
-  }, []);
+  }, [initialAvatarMap]);
 
   return (
     <UserAvatarsContext.Provider value={avatarMap}>

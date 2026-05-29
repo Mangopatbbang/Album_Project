@@ -52,10 +52,13 @@ export default function AlbumList({
   const urlScore = searchParams.get("score") ? Number(searchParams.get("score")) : null;
   const urlScoreUserId = searchParams.get("scoreUserId") ?? null;
 
-  const [albums, setAlbums] = useState<AlbumWithRatings[]>(initialAlbums);
+  // URL 필터 있으면 서버 초기값(무필터) 대신 빈 상태로 시작 — 깜빡임 방지
+  const hasUrlFilters = !!(urlSearch || urlGenre || (urlScore && urlScoreUserId));
+
+  const [albums, setAlbums] = useState<AlbumWithRatings[]>(hasUrlFilters ? [] : initialAlbums);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [nextOffset, setNextOffset] = useState<number | null>(initialNextOffset);
+  const [hasMore, setHasMore] = useState(hasUrlFilters ? false : initialHasMore);
+  const [nextOffset, setNextOffset] = useState<number | null>(hasUrlFilters ? null : initialNextOffset);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
@@ -67,7 +70,7 @@ export default function AlbumList({
   const [unrated, setUnrated] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(urlScore);
   const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
-const [filterLoading, setFilterLoading] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(hasUrlFilters);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   // 필터 변경 시 진행 중인 loadMore 응답을 폐기하기 위한 세대 카운터
