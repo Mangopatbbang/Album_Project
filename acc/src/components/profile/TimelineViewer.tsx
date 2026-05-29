@@ -25,6 +25,7 @@ const AXIS_MIN    = 90;
 
 // Max possible infoH (score + diary + date + gaps + margin) for axisY calculation
 const INFO_H_MAX  = 40;
+const MAX_BAR_H   = 32;  // max density bar height (px)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,26 +112,70 @@ function computeYearBands(z: number, minMs: number, maxMs: number): YearBand[] {
 
 // ─── Marker layout ────────────────────────────────────────────────────────────
 
-interface MarkerDatum { ev: TimelineEvent; x: number; level: number }
+interface MarkerDatum    { ev: TimelineEvent; x: number; level: number }
+interface OverflowBadge { x: number; count: number }
 
-function buildMarkers(events: TimelineEvent[], z: number, minMs: number, innerW: number): MarkerDatum[] {
-  if (!events.length || !z || !innerW) return [];
+function buildMarkers(
+  events: TimelineEvent[], z: number, minMs: number, innerW: number
+): { markers: MarkerDatum[]; overflows: OverflowBadge[] } {
+  if (!events.length || !z || !innerW) return { markers: [], overflows: [] };
   const cs   = coverSize(z);
   const slot = Math.max(cs + 8, 8);
   const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
   const placed: MarkerDatum[] = [];
+  const overflowMap = new Map<number, { x: number; count: number }>();
+
   for (const ev of sorted) {
     const x = (new Date(ev.date).getTime() - minMs) * z;
-    let level = 0;
+    let placedLevel = -1;
     for (let att = 0; att < MAX_LVLS; att++) {
       if (!placed.slice(-30).some(p => p.level === att && Math.abs(p.x - x) < slot)) {
-        level = att; break;
+        placedLevel = att; break;
       }
-      level = att + 1;
     }
-    placed.push({ ev, x, level });
+    if (placedLevel >= 0) {
+      placed.push({ ev, x, level: placedLevel });
+    } else {
+      // Attach overflow to the nearest visible marker in this slot
+      const anchor = placed.slice().reverse().find(p => Math.abs(p.x - x) < slot);
+      const key    = Math.round((anchor?.x ?? x) * 10);
+      const entry  = overflowMap.get(key);
+      if (entry) entry.count++;
+      else overflowMap.set(key, { x: anchor?.x ?? x, count: 1 });
+    }
   }
-  return placed;
+
+  return { markers: placed, overflows: Array.from(overflowMap.values()) };
+}
+
+// ─── Density bars ─────────────────────────────────────────────────────────────
+
+interface DensityBar { x: number; w: number; h: number; opacity: number }
+
+function computeDensity(events: TimelineEvent[], z: number, minMs: number): DensityBar[] {
+  if (!z || !events.length) return [];
+  const d          = pxPerDay(z);
+  const bucketDays = d < 2.5 ? 30 : d < 9 ? 7 : 1;
+  const bucketMs   = bucketDays * MS_DAY;
+  const bucketW    = bucketMs * z;
+
+  const counts = new Map<number, number>();
+  for (const ev of events) {
+    const key = Math.floor((new Date(ev.date).getTime() - minMs) / bucketMs);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (!counts.size) return [];
+
+  const maxCount = Math.max(...counts.values());
+  return Array.from(counts.entries()).map(([key, count]) => {
+    const ratio = count / maxCount;
+    return {
+      x:       Math.max(key * bucketMs * z, 0),
+      w:       Math.max(bucketW - 1, 1),
+      h:       Math.max(Math.round(ratio * MAX_BAR_H), 2),
+      opacity: 0.05 + ratio * 0.11,
+    };
+  });
 }
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
@@ -491,13 +536,14 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
   const innerW    = zoom > 0 && totalMs > 0 ? Math.max(600, totalMs * zoom) : 600;
   const ticks     = useMemo(() => computeTicks(zoom, minMs, maxMs), [zoom, minMs, maxMs]);
   const yearBands = useMemo(() => computeYearBands(zoom, minMs, maxMs), [zoom, minMs, maxMs]);
-  const markers   = useMemo(() => buildMarkers(events ?? [], zoom, minMs, innerW), [events, zoom, minMs, innerW]);
+  const { markers, overflows } = useMemo(() => buildMarkers(events ?? [], zoom, minMs, innerW), [events, zoom, minMs, innerW]);
+  const densityBars = useMemo(() => computeDensity(events ?? [], zoom, minMs), [events, zoom, minMs]);
   const maxLvl    = markers.length ? Math.max(...markers.map(m => m.level)) : 0;
   const needInfo  = showInfo(zoom);
   // Use worst-case infoH for axisY so no marker ever overflows the top
   const infoH     = needInfo && cs > 0 ? INFO_H_MAX : 0;
   const axisY     = Math.max(STEM_MIN + maxLvl * LEVEL_H + cs + infoH + 22, AXIS_MIN);
-  const contentH  = axisY + 56;
+  const contentH  = axisY + MAX_BAR_H + 24;  // axis + bars + badge + margin
   const totalH    = Math.max(contentH, wrapH - 2);
   const isZoomed  = fitRef.current > 0 && zoom > fitRef.current * 1.1;
   const todayX    = zoom > 0 && minMs ? (Date.now() - minMs) * zoom : -1;
@@ -668,6 +714,36 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
                     </div>
                   </>
                 )}
+
+                {/* ── Density bars (below axis) ── */}
+                {densityBars.map((bar, i) => (
+                  <div key={`db-${i}`} style={{
+                    position: "absolute",
+                    left: bar.x, top: axisY + 2,
+                    width: bar.w, height: bar.h,
+                    background: `linear-gradient(to top,
+                      rgba(255,255,255,${(bar.opacity * 0.45).toFixed(3)}),
+                      rgba(255,255,255,${bar.opacity.toFixed(3)}))`,
+                    borderRadius: "2px 2px 0 0",
+                    pointerEvents: "none",
+                  }} />
+                ))}
+
+                {/* ── Overflow badges (below axis) ── */}
+                {overflows.map((b, i) => (
+                  <div key={`ovf-${i}`} style={{
+                    position: "absolute",
+                    left: b.x, top: axisY + MAX_BAR_H + 6,
+                    transform: "translateX(-50%)",
+                    fontSize: 8, fontWeight: 700, lineHeight: 1,
+                    color: "var(--text-muted)", opacity: 0.5,
+                    whiteSpace: "nowrap", pointerEvents: "none",
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: 3, padding: "2px 4px",
+                  }}>
+                    +{b.count}
+                  </div>
+                ))}
 
                 {/* ── Axis line ── */}
                 <div style={{
