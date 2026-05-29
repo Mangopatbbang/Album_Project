@@ -414,7 +414,14 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     const fn = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", fn);
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", fn); document.body.style.overflow = ""; };
+    // Block browser-level pinch zoom for the lifetime of this component
+    const blockPinch = (e: WheelEvent) => { if (e.ctrlKey || e.metaKey) e.preventDefault(); };
+    document.addEventListener("wheel", blockPinch, { passive: false });
+    return () => {
+      document.removeEventListener("keydown", fn);
+      document.removeEventListener("wheel", blockPinch);
+      document.body.style.overflow = "";
+    };
   }, [onClose]);
 
   const { minMs, maxMs, totalMs } = useMemo(() => computeRange(events ?? [], mode), [events, mode]);
@@ -476,7 +483,9 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     };
     el.addEventListener("wheel", fn, { passive: false });
     return () => el.removeEventListener("wheel", fn);
-  }, []);
+  // events가 로드되면 vpRef.current가 생성되므로 그때 다시 붙여야 함
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
 
   // Drag pan with inertia
   const onDragStart = useCallback((e: React.MouseEvent) => {
