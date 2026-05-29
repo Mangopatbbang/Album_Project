@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import TimelineViewer from "@/components/profile/TimelineViewer";
+import ChronicleViewer from "@/components/profile/ChronicleViewer";
 
 export default function TimelineSection({ userId }: { userId: string }) {
   const { profile } = useAuth();
@@ -48,7 +48,7 @@ export default function TimelineSection({ userId }: { userId: string }) {
       </div>
 
       {open && (
-        <TimelineViewer userId={userId} onClose={() => setOpen(false)} />
+        <ChronicleViewer userId={userId} onClose={() => setOpen(false)} />
       )}
     </>
   );
