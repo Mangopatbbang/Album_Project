@@ -75,9 +75,10 @@ export default function TimelineSection({ userId }: { userId: string }) {
     return () => observer.disconnect();
   }, [userId]);
 
+  const PREVIEW_LIMIT = 10;
   const grouped = events ? groupEvents(events) : [];
-  const previewGroups = grouped.slice(0, 1); // 최근 1년만 인라인 표시
-  const hasMore = grouped.length > 1;
+  const previewGroups = groupEvents((events ?? []).slice(0, PREVIEW_LIMIT));
+  const hasMore = (events?.length ?? 0) > PREVIEW_LIMIT;
 
   return (
     <div ref={sectionRef}>
