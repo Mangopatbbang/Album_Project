@@ -9,46 +9,246 @@ import Spinner from "@/components/ui/Spinner";
 import type { TimelineEvent } from "@/app/api/profile/[userId]/timeline/route";
 import type { AlbumWithRatings } from "@/types";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-type Zoom = "sm" | "md" | "lg";
-type Filter =
-  | { type: "score"; min: number }
-  | { type: "genre"; value: string };
-
-const COVER: Record<Zoom, number> = { sm: 32, md: 48, lg: 64 };
-const GAP:   Record<Zoom, number> = { sm: 4,  md: 10, lg: 18 };
-const MM_W = 46; // minimap width
+const MS_DAY    = 86_400_000;
+const AXIS_Y    = 90;   // Y of axis line from top of scroll content (leaves room for labels + tooltip)
+const STEM_MIN  = 12;   // minimum stem height
+const LEVEL_GAP = 72;   // Y step per stagger level
+const MAX_LVLS  = 5;
+const MAX_ZOOM  = 2.5e-6;  // ~216px/day
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function matches(ev: TimelineEvent, f: Filter | null): boolean {
-  if (!f) return true;
-  if (f.type === "score")  return (ev.score ?? 0) >= f.min;
-  if (f.type === "genre")  return ev.album.genre === f.value;
-  return true;
+function ppd(pxPerMs: number) { return pxPerMs * MS_DAY; }
+
+function getCoverSize(pxPerMs: number): number {
+  const d = ppd(pxPerMs);
+  if (d < 1.2)  return 0;   // dot only
+  if (d < 5)    return 18;
+  if (d < 16)   return 32;
+  if (d < 50)   return 46;
+  return 58;
 }
 
-// ─── TimelineViewer ───────────────────────────────────────────────────────────
+function showLabelBelow(pxPerMs: number) { return ppd(pxPerMs) >= 22; }
+
+// Dual-level tick computation (major + minor)
+interface Tick { x: number; label: string; isMajor: boolean }
+
+function computeTicks(pxPerMs: number, minMs: number, maxMs: number): Tick[] {
+  const d = ppd(pxPerMs);
+  type Cfg = { stepFn: (dt: Date) => void; fmtMinor: (dt: Date) => string; fmtMajor: (dt: Date) => string; isMajor: (dt: Date) => boolean };
+
+  const cfg: Cfg = d < 2
+    ? { stepFn: dt => dt.setFullYear(dt.getFullYear() + 1), fmtMinor: dt => `${dt.getFullYear()}`, fmtMajor: dt => `${dt.getFullYear()}`, isMajor: () => false }
+    : d < 8
+    ? { stepFn: dt => dt.setMonth(dt.getMonth() + 1), fmtMinor: dt => `${dt.getMonth() + 1}월`, fmtMajor: dt => `${dt.getFullYear()}`, isMajor: dt => dt.getMonth() === 0 }
+    : d < 30
+    ? { stepFn: dt => dt.setDate(dt.getDate() + 7), fmtMinor: dt => `${dt.getMonth() + 1}/${dt.getDate()}`, fmtMajor: dt => `${dt.getFullYear()}.${dt.getMonth() + 1}`, isMajor: dt => dt.getDate() <= 7 }
+    : { stepFn: dt => dt.setDate(dt.getDate() + 1), fmtMinor: dt => `${dt.getDate()}`, fmtMajor: dt => `${dt.getFullYear()}.${dt.getMonth() + 1}`, isMajor: dt => dt.getDate() === 1 };
+
+  // Snap start to clean boundary
+  const start = new Date(minMs);
+  if (d < 2) { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
+  else if (d < 8) { start.setDate(1); start.setHours(0, 0, 0, 0); }
+  else if (d < 30) { start.setDate(start.getDate() - start.getDay()); start.setHours(0, 0, 0, 0); }
+  else start.setHours(0, 0, 0, 0);
+
+  const ticks: Tick[] = [];
+  const cur = new Date(start);
+  while (cur.getTime() <= maxMs) {
+    const x = (cur.getTime() - minMs) * pxPerMs;
+    if (x >= -120) {
+      ticks.push({ x, label: cfg.isMajor(cur) ? cfg.fmtMajor(cur) : cfg.fmtMinor(cur), isMajor: cfg.isMajor(cur) });
+    }
+    cfg.stepFn(cur);
+    if (ticks.length > 800) break; // safety
+  }
+  return ticks;
+}
+
+type MarkerDatum = { ev: TimelineEvent; x: number; level: number };
+
+function buildMarkers(events: TimelineEvent[], pxPerMs: number, minMs: number): MarkerDatum[] {
+  if (!events.length || !pxPerMs) return [];
+  const sorted = [...events].sort((a, b) => a.date.localeCompare(b.date));
+  const cs = getCoverSize(pxPerMs);
+  const slotW = Math.max(cs + 10, 8);
+  const placed: MarkerDatum[] = [];
+
+  for (const ev of sorted) {
+    const x = (new Date(ev.date).getTime() - minMs) * pxPerMs;
+    let level = 0;
+    for (let attempt = 0; attempt < MAX_LVLS; attempt++) {
+      const ok = !placed.slice(-40).some(p => p.level === attempt && Math.abs(p.x - x) < slotW);
+      if (ok) { level = attempt; break; }
+      level = attempt + 1;
+    }
+    placed.push({ ev, x, level });
+  }
+  return placed;
+}
+
+// ─── Tooltip ──────────────────────────────────────────────────────────────────
+
+function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) {
+  const dot = ev.score != null ? scoreColor(ev.score) : "var(--text-muted)";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 4, scale: 0.96 }}
+      transition={{ duration: 0.12 }}
+      style={{
+        position: "fixed", left: mx, top: my - 78,
+        transform: "translateX(-50%)",
+        zIndex: 600, pointerEvents: "none",
+        backgroundColor: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        borderRadius: 9, padding: "8px 10px",
+        display: "flex", alignItems: "center", gap: 8,
+        maxWidth: 210,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+      }}
+    >
+      {ev.album.cover_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={ev.album.cover_url} alt="" style={{ width: 30, height: 30, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+      )}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
+          {ev.album.title}
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {ev.album.artist_display ?? ev.album.artist}
+        </p>
+      </div>
+      {ev.score != null && (
+        <span style={{ fontSize: 14, fontWeight: 800, color: dot, flexShrink: 0, lineHeight: 1 }}>{ev.score}</span>
+      )}
+      {/* arrow */}
+      <div style={{ position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: "5px solid var(--border)" }} />
+    </motion.div>
+  );
+}
+
+// ─── AlbumMarker ──────────────────────────────────────────────────────────────
+
+function AlbumMarker({ m, coverSize, stemBase, showLabel, isAnimated,
+  onSelect, onEnter, onLeave }:
+  { m: MarkerDatum; coverSize: number; stemBase: number; showLabel: boolean; isAnimated: boolean;
+    onSelect: (ev: TimelineEvent) => void; onEnter: (ev: TimelineEvent, mx: number, my: number) => void; onLeave: () => void; }) {
+  const { ev, x, level } = m;
+  const dot = ev.score != null ? scoreColor(ev.score) : "var(--border-light)";
+  const isDot = coverSize === 0;
+  const stemH = STEM_MIN + level * LEVEL_GAP;
+  const delay = isAnimated ? 0 : 0.45 + Math.min((x / 3000) * 0.55, 0.55); // wave L→R, max 1s
+
+  const handleEnter = (e: React.MouseEvent) => onEnter(ev, e.clientX, e.clientY);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay, duration: 0.22 }}
+      style={{
+        position: "absolute", left: x, top: stemBase,
+        transform: "translateX(-50%)",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        willChange: "transform",
+        zIndex: 1,
+      }}
+    >
+      {/* Stem — score-color gradient */}
+      <div style={{
+        width: 1.5,
+        height: stemH + (isDot ? 3 : 0),
+        background: `linear-gradient(to bottom, ${dot}cc 0%, ${dot}33 100%)`,
+        flexShrink: 0,
+      }} />
+
+      {isDot ? (
+        /* Dot mode */
+        <button
+          onClick={() => onSelect(ev)}
+          onMouseEnter={handleEnter}
+          onMouseLeave={onLeave}
+          style={{
+            width: 6, height: 6, borderRadius: "50%",
+            backgroundColor: dot, border: "1.5px solid var(--bg)",
+            padding: 0, cursor: "pointer",
+            boxShadow: `0 0 0 2px ${dot}22`,
+          }}
+          className="tv-dot"
+        />
+      ) : (
+        /* Cover mode */
+        <>
+          <button
+            onClick={() => onSelect(ev)}
+            onMouseEnter={handleEnter}
+            onMouseLeave={onLeave}
+            style={{
+              width: coverSize, height: coverSize, padding: 0,
+              borderRadius: coverSize > 42 ? 8 : 5,
+              overflow: "hidden", border: "none", cursor: "pointer",
+              backgroundColor: "var(--bg-elevated)",
+              outline: `2px solid ${dot}50`, outlineOffset: 1,
+              boxShadow: "0 2px 10px rgba(0,0,0,0.35)",
+            }}
+            className="tv-cover"
+          >
+            {ev.album.cover_url
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={ev.album.cover_url} alt={ev.album.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
+                  justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(coverSize * 0.38) }}>♪</div>
+            }
+          </button>
+          {showLabel && (
+            <div style={{ marginTop: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1, pointerEvents: "none" }}>
+              {ev.score != null && (
+                <span style={{ fontSize: 11, fontWeight: 800, color: dot, lineHeight: 1 }}>{ev.score}</span>
+              )}
+              {ev.type === "diary" && (
+                <span style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1 }}>✎</span>
+              )}
+              <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.55, lineHeight: 1, whiteSpace: "nowrap",
+                fontFamily: "var(--font-mono, ui-monospace, monospace)" }}>
+                {ev.date.slice(5).replace("-", "/")}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function TimelineViewer({ userId, onClose }: { userId: string; onClose: () => void }) {
-  const [events, setEvents]       = useState<TimelineEvent[] | null>(null);
-  const [err, setErr]             = useState(false);
-  const [zoom, setZoom]           = useState<Zoom>("md");
-  const [filter, setFilter]       = useState<Filter | null>(null);
-  const [period, setPeriod]       = useState("");          // ① sticky label
-  const [vp, setVp]               = useState({ top: 0, size: 1 }); // minimap viewport
-  const [selected, setSelected]   = useState<AlbumWithRatings | null>(null);
+  const [events, setEvents]     = useState<TimelineEvent[] | null>(null);
+  const [fetchErr, setFetchErr] = useState(false);
+  const [zoom, setZoom]         = useState(0);
+  const [selected, setSelected] = useState<AlbumWithRatings | null>(null);
+  const [tooltip, setTooltip]   = useState<{ ev: TimelineEvent; mx: number; my: number } | null>(null);
+  const [axisReady, setAxisReady] = useState(false);  // triggers axis animation
+  const isAnimatedRef = useRef(false);                // after initial animation, skip delays
 
-  const scrollRef  = useRef<HTMLDivElement>(null);
-  const yearRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef   = useRef<HTMLDivElement>(null);
+  const zoomRef      = useRef(0);
+  const fitZoomRef   = useRef(0);
 
   /* fetch */
   useEffect(() => {
     fetch(`/api/profile/${userId}/timeline`)
       .then(r => r.json())
       .then(d => setEvents(d.events ?? []))
-      .catch(() => setErr(true));
+      .catch(() => setFetchErr(true));
   }, [userId]);
 
   /* ESC + body lock */
@@ -59,363 +259,244 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
     return () => { document.removeEventListener("keydown", fn); document.body.style.overflow = ""; };
   }, [onClose]);
 
-  /* scroll → ① sticky period + minimap vp */
+  /* date range */
+  const { minMs, maxMs, totalMs } = useMemo(() => {
+    if (!events?.length) return { minMs: 0, maxMs: 0, totalMs: 0 };
+    const ts = events.map(e => new Date(e.date).getTime());
+    const lo = Math.min(...ts), hi = Math.max(...ts);
+    const pad = Math.max((hi - lo) * 0.04, MS_DAY * 20);
+    return { minMs: lo - pad, maxMs: hi + pad, totalMs: hi + pad - (lo - pad) };
+  }, [events]);
+
+  /* calc fit zoom once wrapper is rendered */
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || !events?.length) return;
+    if (!events?.length || !wrapperRef.current || !totalMs) return;
+    const w = wrapperRef.current.clientWidth - 40;
+    const fit = w / totalMs;
+    fitZoomRef.current = fit;
+    zoomRef.current    = fit;
+    setZoom(fit);
+    // stagger: axis animation fires, then mark as animated after 1.2s
+    setTimeout(() => setAxisReady(true), 80);
+    setTimeout(() => { isAnimatedRef.current = true; }, 1400);
+  }, [events, totalMs]);
+
+  /* window resize → re-fit */
+  useEffect(() => {
     const fn = () => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const ratio = scrollTop / (scrollHeight - clientHeight || 1);
-      const idx   = Math.min(Math.floor(ratio * events.length), events.length - 1);
-      const ev    = events[idx];
-      setPeriod(`${ev.date.slice(0, 4)} · ${parseInt(ev.date.slice(5, 7))}월`);
-      setVp({ top: scrollTop / scrollHeight, size: clientHeight / scrollHeight });
+      if (!wrapperRef.current || !totalMs) return;
+      const w = wrapperRef.current.clientWidth - 40;
+      const fit = w / totalMs;
+      fitZoomRef.current = fit;
+      if (zoomRef.current <= fit * 1.05) { zoomRef.current = fit; setZoom(fit); }
     };
-    el.addEventListener("scroll", fn, { passive: true });
-    fn();
-    return () => el.removeEventListener("scroll", fn);
-  }, [events]);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, [totalMs]);
 
-  /* computed */
-  const topGenres = useMemo(() => {
-    if (!events) return [];
-    const gc = new Map<string, number>();
-    for (const e of events) if (e.album.genre) gc.set(e.album.genre, (gc.get(e.album.genre) ?? 0) + 1);
-    return [...gc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([g]) => g);
-  }, [events]);
+  /* wheel → zoom to cursor */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !minMs) return;
+    const fn = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect  = el.getBoundingClientRect();
+      const cx    = e.clientX - rect.left + el.scrollLeft;
+      const cMs   = cx / zoomRef.current + minMs;
+      const factor = e.deltaY > 0 ? 0.84 : 1.19;
+      const nz    = Math.max(fitZoomRef.current * 0.9, Math.min(MAX_ZOOM, zoomRef.current * factor));
+      zoomRef.current = nz;
+      setZoom(nz);
+      const ox = e.clientX - rect.left;
+      requestAnimationFrame(() => { if (containerRef.current) containerRef.current.scrollLeft = (cMs - minMs) * nz - ox; });
+    };
+    el.addEventListener("wheel", fn, { passive: false });
+    return () => el.removeEventListener("wheel", fn);
+  }, [minMs]);
 
-  const yearPositions = useMemo(() => {
-    if (!events?.length) return [] as { year: string; index: number }[];
-    const result: { year: string; index: number }[] = [];
-    let last = "";
-    events.forEach((ev, i) => { const y = ev.date.slice(0, 4); if (y !== last) { result.push({ year: y, index: i }); last = y; } });
-    return result;
-  }, [events]);
-
-  /* actions */
-  const zoomIn  = useCallback(() => setZoom(z => z === "sm" ? "md" : "lg"), []);
-  const zoomOut = useCallback(() => setZoom(z => z === "lg" ? "md" : "sm"), []);
-
-  /* ③ jump to year */
-  const jumpYear = useCallback((year: string) => {
-    const el = yearRefMap.current.get(year);
-    if (el && scrollRef.current) scrollRef.current.scrollTo({ top: el.offsetTop - 52, behavior: "smooth" });
-  }, []);
-
-  /* ④ minimap click */
-  const jumpRatio = useCallback((r: number) => {
-    if (scrollRef.current) scrollRef.current.scrollTop = r * scrollRef.current.scrollHeight;
-  }, []);
-
-  /* pinch → zoom level */
+  /* pinch → zoom to pinch center */
   const bind = usePinch(
-    ({ offset: [s], last }) => {
-      if (!last) return;
-      if (s > 1.35) setZoom("lg");
-      else if (s < 0.65) setZoom("sm");
-      else setZoom("md");
+    ({ offset: [scale], origin: [ox], first, memo }) => {
+      const el = containerRef.current; if (!el) return;
+      if (first) {
+        const rect = el.getBoundingClientRect();
+        const cx   = ox - rect.left + el.scrollLeft;
+        return { initZ: zoomRef.current, cMs: cx / zoomRef.current + minMs, ox: ox - rect.left };
+      }
+      if (!memo) return;
+      const nz = Math.max(fitZoomRef.current * 0.9, Math.min(MAX_ZOOM, memo.initZ * scale));
+      zoomRef.current = nz; setZoom(nz);
+      requestAnimationFrame(() => { if (containerRef.current) containerRef.current.scrollLeft = (memo.cMs - minMs) * nz - memo.ox; });
+      return memo;
     },
     { from: [1, 0], eventOptions: { passive: false } },
   );
 
-  const handleSelect = useCallback((ev: TimelineEvent) => {
-    setSelected({
-      id: ev.album.id, title: ev.album.title,
-      artist: ev.album.artist_display ?? ev.album.artist,
-      cover_url: ev.album.cover_url ?? undefined,
-      genre: ev.album.genre ?? undefined, ratings: [],
-    } as AlbumWithRatings);
+  /* reset to fit */
+  const resetZoom = useCallback(() => {
+    const fit = fitZoomRef.current;
+    zoomRef.current = fit; setZoom(fit);
+    if (containerRef.current) containerRef.current.scrollLeft = 0;
   }, []);
 
+  const handleSelect = useCallback((ev: TimelineEvent) => {
+    setTooltip(null);
+    setSelected({ id: ev.album.id, title: ev.album.title,
+      artist: ev.album.artist_display ?? ev.album.artist,
+      cover_url: ev.album.cover_url ?? undefined,
+      genre: ev.album.genre ?? undefined, ratings: [] } as AlbumWithRatings);
+  }, []);
+
+  const handleHover = useCallback((ev: TimelineEvent, mx: number, my: number) => {
+    if (getCoverSize(zoomRef.current) >= 34) return; // enough info visible, skip tooltip
+    setTooltip({ ev, mx, my });
+  }, []);
+
+  /* computed */
+  const coverSize = getCoverSize(zoom);
+  const innerWidth = totalMs > 0 && zoom > 0 ? Math.max(800, totalMs * zoom) : 800;
+  const markers    = useMemo(() => buildMarkers(events ?? [], zoom, minMs), [events, zoom, minMs]);
+  const ticks      = useMemo(() => computeTicks(zoom, minMs, maxMs), [zoom, minMs, maxMs]);
+  const maxLevel   = markers.length ? Math.max(...markers.map(m => m.level)) : 0;
+  const timelineH  = AXIS_Y + STEM_MIN + (maxLevel + 1) * LEVEL_GAP + coverSize + 60;
+  const showLabel  = showLabelBelow(zoom);
+  const isZoomed   = zoom > fitZoomRef.current * 1.08;
+  const todayX     = minMs && zoom ? (Date.now() - minMs) * zoom : -1;
+
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:400, backgroundColor:"var(--bg)", display:"flex", flexDirection:"column",
-      animation:"tvIn 0.24s cubic-bezier(0.25,0.46,0.45,0.94)" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:400, backgroundColor:"var(--bg)",
+      display:"flex", flexDirection:"column", animation:"tvIn .22s ease-out" }}>
       <style>{`
-        @keyframes tvIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        .tvc{transition:transform .12s ease,box-shadow .12s ease}
-        .tvc:hover{transform:scale(1.08);box-shadow:0 4px 18px rgba(0,0,0,.45)}
-        .tvc:active{transform:scale(0.96)}
-        .tvfb{transition:background-color .14s,color .14s,border-color .14s}
-        .tvfb:hover{border-color:var(--border-light)!important;color:var(--text)!important}
+        @keyframes tvIn  { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes tvAxis{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
+        .tv-dot:hover  { transform:scale(2)!important; box-shadow:0 0 0 4px currentColor; }
+        .tv-cover      { transition:transform .13s ease,box-shadow .13s ease,outline .13s ease; }
+        .tv-cover:hover{ transform:scale(1.11) translateY(-3px)!important; box-shadow:0 6px 20px rgba(0,0,0,.55)!important; }
+        .tv-cover:active{ transform:scale(.97)!important; }
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:14, padding:"13px 20px",
-        borderBottom:"1px solid var(--border)", flexShrink:0, paddingRight: MM_W + 20 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:14, padding:"13px 20px 13px",
+        borderBottom:"1px solid var(--border)", flexShrink:0 }}>
         <div style={{ flex:1 }}>
           <p style={{ color:"var(--text-muted)", fontSize:10, fontWeight:600, letterSpacing:"0.08em" }}>청음 연대기</p>
           <p style={{ color:"var(--text-sub)", fontSize:12 }}>
-            {events ? `총 ${events.length}개의 기록` : "불러오는 중…"}
+            {events ? `${events.length}개의 기록 · 휠 또는 핀치로 확대` : "불러오는 중…"}
           </p>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          {(["−","·","·","·","+"] as const).map((_, i) => i === 0 ? (
-            <button key="zm" onClick={zoomOut} disabled={zoom==="sm"}
-              style={{ width:28, height:28, borderRadius:6, backgroundColor:"var(--bg-elevated)", border:"1px solid var(--border)",
-                color:zoom==="sm"?"var(--border-light)":"var(--text-muted)", cursor:zoom==="sm"?"default":"pointer",
-                fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit" }}>−</button>
-          ) : i === 4 ? (
-            <button key="zp" onClick={zoomIn} disabled={zoom==="lg"}
-              style={{ width:28, height:28, borderRadius:6, backgroundColor:"var(--bg-elevated)", border:"1px solid var(--border)",
-                color:zoom==="lg"?"var(--border-light)":"var(--text-muted)", cursor:zoom==="lg"?"default":"pointer",
-                fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit" }}>+</button>
-          ) : (
-            <div key={i} style={{ width:i===2?8:5, height:i===2?8:5, borderRadius:"50%",
-              backgroundColor:(i===1&&zoom==="sm")||(i===2&&zoom==="md")||(i===3&&zoom==="lg")?"var(--accent)":"var(--border-light)",
-              transition:"all 0.2s" }} />
-          ))}
-        </div>
-        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:22, lineHeight:1, padding:"0 2px" }}>×</button>
+
+        {/* Zoom indicator + reset */}
+        {zoom > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", gap:3, alignItems:"center" }}>
+              {[0.9, 1, 1.08, 1.5, 3].map((thr, i) => (
+                <div key={i} style={{ width:4, height:4, borderRadius:"50%",
+                  backgroundColor: zoom >= fitZoomRef.current * thr ? "var(--accent)" : "var(--border-light)",
+                  transition:"background-color .2s" }} />
+              ))}
+            </div>
+            {isZoomed && (
+              <button onClick={resetZoom}
+                style={{ fontSize:10, color:"var(--text-muted)", background:"none",
+                  border:"1px solid var(--border)", borderRadius:5, padding:"3px 8px",
+                  cursor:"pointer", fontFamily:"inherit" }}
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] transition-all">
+                전체보기
+              </button>
+            )}
+          </div>
+        )}
+
+        <button onClick={onClose}
+          style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:22, lineHeight:1, padding:"0 2px" }}>×</button>
       </div>
 
-      {/* ── ⑤ Filter bar ── */}
-      {events && <FilterBar filter={filter} topGenres={topGenres} onChange={setFilter} />}
+      {/* ── Timeline area ── */}
+      <div ref={wrapperRef} style={{ flex:1, overflow:"hidden" }}>
 
-      {/* ── Content ── */}
-      <div style={{ flex:1, display:"flex", overflow:"hidden", position:"relative" }}>
+        {(!events && !fetchErr) && <div style={{ display:"flex", justifyContent:"center", paddingTop:80 }}><Spinner /></div>}
+        {fetchErr && <div style={{ display:"flex", justifyContent:"center", paddingTop:80 }}><p style={{ color:"var(--text-muted)", fontSize:13 }}>불러오지 못했어요</p></div>}
+        {events?.length === 0 && <div style={{ display:"flex", justifyContent:"center", paddingTop:80 }}><p style={{ color:"var(--text-muted)", fontSize:13 }}>아직 기록이 없어요</p></div>}
 
-        {/* Scroll area */}
-        <div ref={scrollRef} {...bind()}
-          style={{ flex:1, overflowY:"auto", touchAction:"pan-y", overscrollBehavior:"contain", paddingRight: MM_W }}>
+        {events && events.length > 0 && zoom > 0 && (
+          <div ref={containerRef} {...bind()}
+            style={{ width:"100%", height:"100%", overflowX:"auto", overflowY:"auto",
+              touchAction:"pan-x", cursor:"grab" }}
+            onMouseDown={e => { if (e.currentTarget === e.target) e.currentTarget.style.cursor = "grabbing"; }}
+            onMouseUp={e => { e.currentTarget.style.cursor = "grab"; }}>
 
-          {!events && !err && <div style={{ display:"flex", justifyContent:"center", paddingTop:80 }}><Spinner /></div>}
-          {err && <div style={{ display:"flex", justifyContent:"center", paddingTop:80 }}><p style={{ color:"var(--text-muted)", fontSize:13 }}>불러오지 못했어요</p></div>}
+            <div style={{ width:innerWidth, height:Math.max(timelineH, 260),
+              position:"relative", paddingLeft:20, paddingRight:20 }}>
 
-          {events && (
-            <>
-              {/* ① sticky period pill */}
-              <div style={{ position:"sticky", top:0, zIndex:20, height:0, textAlign:"center", pointerEvents:"none" }}>
-                <AnimatePresence mode="wait">
-                  {period && (
-                    <motion.span key={period}
-                      initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-4 }}
-                      transition={{ duration:0.18 }}
-                      style={{ display:"inline-block", marginTop:10,
-                        backgroundColor:"var(--bg-elevated)", border:"1px solid var(--border)",
-                        borderRadius:20, padding:"4px 12px",
-                        fontSize:11, fontWeight:700, color:"var(--text-sub)", letterSpacing:"0.03em" }}>
-                      {period}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* ── Tick marks (below label) ── */}
+              {ticks.map((tk, i) => (
+                <div key={i} style={{ position:"absolute", left:tk.x, top: tk.isMajor ? 54 : 60,
+                  width:1, height: tk.isMajor ? 18 : 10,
+                  backgroundColor: tk.isMajor ? "var(--border-light)" : "var(--border)",
+                  opacity: tk.isMajor ? 0.8 : 0.45, pointerEvents:"none" }} />
+              ))}
 
-              {/* Timeline list */}
-              <div style={{ padding:"20px 20px 60px", position:"relative" }}>
-                {/* spine */}
-                <div style={{ position:"absolute", left:43, top:20, bottom:60, width:1,
-                  background:"linear-gradient(to bottom,transparent,var(--border) 30px,var(--border) calc(100% - 30px),transparent)" }} />
-
-                <div style={{ display:"flex", flexDirection:"column", gap: GAP[zoom] }}>
-                  {events.map((ev, i) => {
-                    const yr = ev.date.slice(0, 4);
-                    const isYearStart = i === 0 || yr !== events[i-1].date.slice(0, 4);
-                    const dimmed = !matches(ev, filter);
-                    return (
-                      <div key={`${ev.type}-${ev.album.id}-${ev.date}-${i}`}>
-                        {/* ② year tick */}
-                        {isYearStart && (
-                          <YearTick year={yr}
-                            refCb={el => { if (el) yearRefMap.current.set(yr, el); }} />
-                        )}
-                        <Item ev={ev} zoom={zoom} dimmed={dimmed} onSelect={handleSelect} />
-                      </div>
-                    );
-                  })}
+              {/* ── Time labels (minor) ── */}
+              {ticks.filter(t => !t.isMajor).map((tk, i) => (
+                <div key={i} style={{ position:"absolute", left:tk.x, top:40,
+                  transform:"translateX(-50%)", color:"var(--text-muted)", fontSize:9,
+                  fontWeight:500, whiteSpace:"nowrap", pointerEvents:"none", opacity:0.6 }}>
+                  {tk.label}
                 </div>
-              </div>
-            </>
-          )}
-        </div>
+              ))}
 
-        {/* ③④ Minimap */}
-        {events && events.length > 0 && (
-          <Minimap events={events} yearPositions={yearPositions} vp={vp}
-            filter={filter} onJump={jumpRatio} onYearClick={jumpYear} />
+              {/* ── Major labels (year / month) ── */}
+              {ticks.filter(t => t.isMajor).map((tk, i) => (
+                <div key={i} style={{ position:"absolute", left:tk.x, top:18,
+                  transform:"translateX(-50%)", color:"var(--text-sub)", fontSize:11,
+                  fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none", letterSpacing:"0.02em" }}>
+                  {tk.label}
+                </div>
+              ))}
+
+              {/* ── Axis line ── */}
+              <div style={{
+                position:"absolute", left:0, top:AXIS_Y, width:"100%", height:1.5,
+                background:"linear-gradient(to right, transparent, var(--border-light) 3%, var(--border-light) 97%, transparent)",
+                transformOrigin:"left center",
+                animation: axisReady ? "tvAxis .65s cubic-bezier(0.22,1,0.36,1) forwards" : "none",
+                transform: axisReady ? undefined : "scaleX(0)",
+                pointerEvents:"none",
+              }} />
+
+              {/* ── Today line ── */}
+              {todayX >= 0 && todayX <= innerWidth && (
+                <div style={{ position:"absolute", left:todayX, top:0, width:1,
+                  height:AXIS_Y + 20, pointerEvents:"none",
+                  background:`linear-gradient(to bottom, transparent, var(--accent) 40%, var(--accent) 60%, transparent)`,
+                  opacity:0.4 }} />
+              )}
+
+              {/* ── Album markers ── */}
+              {markers.map((m, i) => (
+                <AlbumMarker
+                  key={`${m.ev.album.id}-${m.ev.date}`}
+                  m={m}
+                  coverSize={coverSize}
+                  stemBase={AXIS_Y}
+                  showLabel={showLabel}
+                  isAnimated={isAnimatedRef.current}
+                  onSelect={handleSelect}
+                  onEnter={handleHover}
+                  onLeave={() => setTooltip(null)}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
+
+      {/* ── Tooltip (fixed, desktop only) ── */}
+      <AnimatePresence>
+        {tooltip && <Tooltip key={`${tooltip.ev.album.id}-${tooltip.ev.date}`} ev={tooltip.ev} mx={tooltip.mx} my={tooltip.my} />}
+      </AnimatePresence>
 
       {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="timeline" />}
-    </div>
-  );
-}
-
-// ─── ② YearTick ───────────────────────────────────────────────────────────────
-
-function YearTick({ year, refCb }: { year: string; refCb: (el: HTMLDivElement | null) => void }) {
-  return (
-    <div ref={refCb} style={{ display:"flex", alignItems:"center", margin:"10px 0 4px", position:"relative" }}>
-      <div style={{ width:48, flexShrink:0, display:"flex", justifyContent:"flex-end", paddingRight:1 }}>
-        <div style={{ width:13, height:13, borderRadius:"50%", backgroundColor:"var(--bg-card)",
-          border:"1px solid var(--border-light)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ width:5, height:5, borderRadius:"50%", backgroundColor:"var(--text-muted)" }} />
-        </div>
-      </div>
-      <span style={{ fontSize:14, fontWeight:800, color:"var(--text-sub)",
-        fontFamily:"var(--font-playfair, Georgia, serif)", letterSpacing:"-0.02em", marginLeft:14 }}>
-        {year}
-      </span>
-    </div>
-  );
-}
-
-// ─── Item ─────────────────────────────────────────────────────────────────────
-
-function Item({ ev, zoom, dimmed, onSelect }:
-  { ev: TimelineEvent; zoom: Zoom; dimmed: boolean; onSelect: (e: TimelineEvent) => void }) {
-  const size = COVER[zoom];
-  const dot  = ev.score != null ? scoreColor(ev.score) : "var(--border)";
-
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:12, position:"relative",
-      opacity: dimmed ? 0.15 : 1, filter: dimmed ? "saturate(0)" : "none", transition:"opacity .2s,filter .2s" }}>
-
-      {/* spine dot */}
-      <div style={{ width:48, flexShrink:0, display:"flex", justifyContent:"flex-end", alignItems:"center", paddingRight:3 }}>
-        <div style={{ width:9, height:9, borderRadius:"50%", backgroundColor:dot,
-          border:"2px solid var(--bg)", boxShadow:`0 0 0 1px ${dot}55`, flexShrink:0 }} />
-      </div>
-
-      {/* cover */}
-      <button onClick={() => onSelect(ev)} className="tvc"
-        style={{ flexShrink:0, width:size, height:size, borderRadius:zoom==="lg"?8:5,
-          overflow:"hidden", backgroundColor:"var(--bg-elevated)", border:"1px solid var(--border)", padding:0, cursor:"pointer" }}>
-        {ev.album.cover_url
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={ev.album.cover_url} alt={ev.album.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center",
-              color:"var(--text-muted)", fontSize:Math.floor(size*.38) }}>♪</div>
-        }
-      </button>
-
-      {/* info (md/lg) */}
-      {zoom !== "sm" && (
-        <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ color:"var(--text)", fontSize:zoom==="lg"?14:12, fontWeight:600,
-            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", lineHeight:1.3 }}>{ev.album.title}</p>
-          <p style={{ color:"var(--text-muted)", fontSize:11, marginTop:2,
-            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-            {ev.album.artist_display ?? ev.album.artist}
-          </p>
-          {zoom === "lg" && ev.review && (
-            <p style={{ color:"var(--text-sub)", fontSize:11, marginTop:5, fontStyle:"italic", lineHeight:1.5,
-              overflow:"hidden", textOverflow:"ellipsis",
-              display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
-              "{ev.review}"
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* score + date */}
-      <div style={{ flexShrink:0, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, minWidth:zoom==="sm"?28:40 }}>
-        {ev.score != null && (
-          <span style={{ fontSize:zoom==="sm"?11:15, fontWeight:800, color:scoreColor(ev.score), lineHeight:1 }}>{ev.score}</span>
-        )}
-        {ev.type === "diary" && <span style={{ fontSize:11, color:"var(--text-muted)", lineHeight:1 }}>✎</span>}
-        <span style={{ fontSize:zoom==="sm"?9:10, color:"var(--text-muted)", opacity:.55,
-          fontFamily:"var(--font-mono, ui-monospace, monospace)", lineHeight:1 }}>
-          {ev.date.slice(5).replace("-","/")}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── ③④ Minimap ───────────────────────────────────────────────────────────────
-
-function Minimap({ events, yearPositions, vp, filter, onJump, onYearClick }:
-  { events: TimelineEvent[]; yearPositions: { year:string; index:number }[];
-    vp: { top:number; size:number }; filter: Filter | null;
-    onJump: (r:number)=>void; onYearClick: (y:string)=>void }) {
-
-  const mmRef = useRef<HTMLDivElement>(null);
-  const n = events.length;
-
-  const handleClick = (e: React.MouseEvent) => {
-    const r = mmRef.current!;
-    onJump((e.clientY - r.getBoundingClientRect().top) / r.clientHeight);
-  };
-
-  return (
-    <div ref={mmRef} onClick={handleClick}
-      style={{ width:MM_W, flexShrink:0, borderLeft:"1px solid var(--border)",
-        backgroundColor:"var(--bg)", position:"relative", cursor:"pointer", overflow:"hidden" }}>
-
-      {/* event dots */}
-      {events.map((ev, i) => {
-        const top = (i / n) * 100;
-        const ok  = matches(ev, filter);
-        const c   = ev.score != null ? scoreColor(ev.score) : "var(--border-light)";
-        return (
-          <div key={i} style={{ position:"absolute", top:`${top}%`, left:"50%",
-            transform:"translate(-50%,-50%)", width:3, height:3, borderRadius:"50%",
-            backgroundColor: ok ? c : "var(--border)", opacity: ok ? 0.75 : 0.1 }} />
-        );
-      })}
-
-      {/* year labels */}
-      {yearPositions.map(({ year, index }) => (
-        <div key={year}
-          onClick={e => { e.stopPropagation(); onYearClick(year); }}
-          style={{ position:"absolute", top:`${(index/n)*100}%`, left:0, right:0,
-            display:"flex", justifyContent:"center", pointerEvents:"auto", zIndex:2 }}>
-          <span style={{ fontSize:8, fontWeight:800, color:"var(--text-muted)",
-            backgroundColor:"var(--bg)", padding:"1px 2px", lineHeight:1.4, letterSpacing:"0.01em" }}>
-            {year}
-          </span>
-        </div>
-      ))}
-
-      {/* viewport indicator */}
-      <div style={{ position:"absolute", top:`${vp.top*100}%`, left:0, right:0,
-        height:`${Math.max(vp.size*100, 2)}%`,
-        backgroundColor:"rgba(255,255,255,0.07)",
-        borderTop:"1px solid var(--border-light)", borderBottom:"1px solid var(--border-light)",
-        pointerEvents:"none", transition:"top .08s linear,height .08s linear" }} />
-    </div>
-  );
-}
-
-// ─── ⑤ FilterBar ──────────────────────────────────────────────────────────────
-
-const SCORE_FILTERS = [
-  { label:"8점",   f: { type:"score", min:8 } as Filter },
-  { label:"7점+",  f: { type:"score", min:7 } as Filter },
-  { label:"6점+",  f: { type:"score", min:6 } as Filter },
-];
-
-function FilterBar({ filter, topGenres, onChange }:
-  { filter:Filter|null; topGenres:string[]; onChange:(f:Filter|null)=>void }) {
-
-  const isActive = (f: Filter): boolean => {
-    if (!filter) return false;
-    if (filter.type === "score" && f.type === "score") return filter.min === f.min;
-    if (filter.type === "genre" && f.type === "genre") return filter.value === f.value;
-    return false;
-  };
-
-  const toggle = (f: Filter) => onChange(isActive(f) ? null : f);
-
-  const btn = (label: string, f: Filter | null, active: boolean) => (
-    <button key={label} className="tvfb" onClick={() => f ? toggle(f) : onChange(null)}
-      style={{ background: active?"var(--accent)":"none",
-        color: active?"var(--bg)":"var(--text-muted)",
-        border:`1px solid ${active?"var(--accent)":"var(--border)"}`,
-        borderRadius:20, padding:"4px 10px", fontSize:11, fontWeight:600,
-        cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", flexShrink:0 }}>
-      {label}
-    </button>
-  );
-
-  return (
-    <div style={{ display:"flex", gap:6, alignItems:"center", padding:"8px 20px",
-      paddingRight: MM_W + 20, borderBottom:"1px solid var(--border)",
-      overflowX:"auto", scrollbarWidth:"none", flexShrink:0 }}>
-      {btn("전체", null, !filter)}
-      {SCORE_FILTERS.map(({ label, f }) => btn(label, f, isActive(f)))}
-      {topGenres.length > 0 && <div style={{ width:1, height:14, backgroundColor:"var(--border)", flexShrink:0 }} />}
-      {topGenres.map(g => btn(g, { type:"genre", value:g }, isActive({ type:"genre", value:g })))}
     </div>
   );
 }
