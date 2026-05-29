@@ -343,11 +343,14 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
   const [axisDrawn, setAxisDrawn] = useState(false);
   const [animated, setAnimated]   = useState(false);
   const [wrapH, setWrapH]         = useState(400);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const wrapRef   = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const zoomRef   = useRef(0);
-  const fitRef    = useRef(0);
+  const wrapRef    = useRef<HTMLDivElement>(null);
+  const scrollRef  = useRef<HTMLDivElement>(null);
+  const zoomRef    = useRef(0);
+  const fitRef     = useRef(0);
+  const dragRef    = useRef<{ startX: number; scrollLeft: number } | null>(null);
+  const dragMovedRef = useRef(false);
 
   useEffect(() => {
     fetch(`/api/profile/${userId}/timeline`)
@@ -405,16 +408,22 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
     const el = scrollRef.current;
     if (!el || !minMs) return;
     const fn = (e: WheelEvent) => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.8) return;
       e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const cx   = e.clientX - rect.left + el.scrollLeft;
-      const cMs  = cx / zoomRef.current + minMs;
-      const fac  = e.deltaY > 0 ? 0.83 : 1.20;
-      const nz   = Math.max(fitRef.current * 0.85, Math.min(MAX_ZOOM, zoomRef.current * fac));
-      zoomRef.current = nz; setZoom(nz);
-      const ox = e.clientX - rect.left;
-      requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollLeft = (cMs - minMs) * nz - ox; });
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+wheel → zoom (anchored at cursor)
+        const rect = el.getBoundingClientRect();
+        const cx   = e.clientX - rect.left + el.scrollLeft;
+        const cMs  = cx / zoomRef.current + minMs;
+        const fac  = e.deltaY > 0 ? 0.83 : 1.20;
+        const nz   = Math.max(fitRef.current * 0.85, Math.min(MAX_ZOOM, zoomRef.current * fac));
+        zoomRef.current = nz; setZoom(nz);
+        const ox = e.clientX - rect.left;
+        requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollLeft = (cMs - minMs) * nz - ox; });
+      } else {
+        // Regular scroll → horizontal pan
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        el.scrollLeft += delta;
+      }
     };
     el.addEventListener("wheel", fn, { passive: false });
     return () => el.removeEventListener("wheel", fn);
@@ -436,6 +445,33 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
     },
     { from: [1, 0], eventOptions: { passive: false } },
   );
+
+  /* drag-to-pan */
+  const onDragStart = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    dragMovedRef.current = false;
+    dragRef.current = { startX: e.clientX, scrollLeft: scrollRef.current?.scrollLeft ?? 0 };
+    setIsDragging(true);
+  }, []);
+
+  const onDragMove = useCallback((e: React.MouseEvent) => {
+    if (!dragRef.current || !scrollRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    if (Math.abs(dx) > 4) dragMovedRef.current = true;
+    scrollRef.current.scrollLeft = dragRef.current.scrollLeft - dx;
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    dragRef.current = null;
+    setIsDragging(false);
+  }, []);
+
+  // Release drag if mouse leaves the window
+  useEffect(() => {
+    const fn = () => { dragRef.current = null; setIsDragging(false); };
+    window.addEventListener("mouseup", fn);
+    return () => window.removeEventListener("mouseup", fn);
+  }, []);
 
   const zoomStep = useCallback((fac: number) => {
     const el = scrollRef.current; if (!el) return;
@@ -540,11 +576,19 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
 
         {events && events.length > 0 && zoom > 0 && (
           <>
-            <div ref={scrollRef} {...bind()} style={{
-              width: "100%", height: "100%",
-              overflowX: "auto", overflowY: "auto",
-              touchAction: "pan-x",
-            }}>
+            <div ref={scrollRef} {...bind()}
+              onMouseDown={onDragStart}
+              onMouseMove={onDragMove}
+              onMouseUp={onDragEnd}
+              onMouseLeave={onDragEnd}
+              onClickCapture={e => { if (dragMovedRef.current) e.stopPropagation(); }}
+              style={{
+                width: "100%", height: "100%",
+                overflowX: "auto", overflowY: "auto",
+                touchAction: "pan-x",
+                cursor: isDragging ? "grabbing" : "grab",
+                userSelect: "none",
+              }}>
               <div style={{ width: innerW, height: totalH, position: "relative" }}>
 
                 {/* ── Year bands ── */}
@@ -664,7 +708,7 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
                 fontSize: 10, color: "var(--text-muted)", opacity: 0.3,
                 pointerEvents: "none", zIndex: 5, whiteSpace: "nowrap",
               }}>
-                스크롤로 이동 · 휠 또는 핀치로 확대
+                드래그 또는 스크롤로 이동 · Ctrl+휠 또는 핀치로 확대
               </p>
             )}
           </>
