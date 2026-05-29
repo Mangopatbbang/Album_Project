@@ -62,7 +62,11 @@ export default function WrappedClient({ userId, year }: { userId: string; year: 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-  if (profile?.role !== "admin") return null;
+  if (profile?.role !== "admin") return (
+    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg)" }}>
+      <Spinner />
+    </div>
+  );
 
   if (fetchError) {
     return (

@@ -10,6 +10,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
 import PlaylistTitleEditor from "@/components/playlist/PlaylistTitleEditor";
 import PlaylistVisibilityToggle from "@/components/playlist/PlaylistVisibilityToggle";
+import PlaylistReorderButton from "@/components/playlist/PlaylistReorderButton";
 
 export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -59,6 +60,14 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
   const ratingMap = new Map((ratings ?? []).map((r: { album_id: string; score: number }) => [r.album_id, r.score]));
   const likedTracksMap = new Map((ratings ?? []).map((r: { album_id: string; liked_tracks: string | null }) => [r.album_id, r.liked_tracks]));
 
+  // PlaylistReorderButton용 엔트리 목록
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reorderEntries = (entriesRaw as any[]).map((e) => {
+    const a = Array.isArray(e.albums) ? e.albums[0] : e.albums;
+    if (!a) return null;
+    return { id: e.id as string, title: a.title as string, artist: (artistDisplayMap.get(a.id) ?? a.artist) as string, coverUrl: (a.cover_url ?? null) as string | null };
+  }).filter(Boolean) as { id: string; title: string; artist: string; coverUrl: string | null }[];
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
@@ -96,11 +105,16 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{entries.length}장</span>
             <ProfileCaptureButton targetId="playlist-card" />
           </div>
-          <div style={{ marginTop: 10 }}>
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <PlaylistVisibilityToggle
               playlistId={data.id}
               ownerId={data.user_id}
               initialIsPublic={data.is_public ?? true}
+            />
+            <PlaylistReorderButton
+              playlistId={data.id}
+              ownerId={data.user_id}
+              initialEntries={reorderEntries}
             />
           </div>
         </div>

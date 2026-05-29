@@ -7,6 +7,7 @@ import AlbumCard from "./AlbumCard";
 import AlbumAddModal from "./AlbumAddModal";
 import { AlbumWithRatings } from "@/types";
 import { useAuth } from "@/context/AuthContext";
+import { useUsers } from "@/context/UsersContext";
 import Spinner from "@/components/ui/Spinner";
 import { trackSearch, trackFeatureClick } from "@/lib/track";
 import FilterSelect from "@/components/ui/FilterSelect";
@@ -40,6 +41,7 @@ export default function AlbumList({
   genres,
 }: Props) {
   const { profile } = useAuth();
+  const { getUserById } = useUsers();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -433,6 +435,36 @@ return (
         </div>
 
       </div>
+
+      {/* scoreUserId 일회용 필터 배지 */}
+      {scoreUserId && myScore !== null && (() => {
+        const scoreUser = getUserById(scoreUserId);
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              backgroundColor: "rgba(var(--accent-rgb), 0.1)",
+              border: "1px solid rgba(var(--accent-rgb), 0.35)",
+              borderRadius: 20, padding: "4px 12px",
+              fontSize: 12, color: "var(--accent)", fontWeight: 600,
+            }}>
+              {scoreUser?.display_name ?? scoreUserId}님의 {myScore}점 앨범
+              <button
+                onClick={() => {
+                  setMyScore(null);
+                  setScoreUserId(null);
+                  handleFilter(search, genre, region, sort, unrated, null, null);
+                  router.replace(pathname, { scroll: false });
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontSize: 14, lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}
+              >
+                ✕
+              </button>
+            </span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>— 일회용 필터</span>
+          </div>
+        );
+      })()}
 
       {/* 앨범 그리드 */}
       {filterLoading ? (

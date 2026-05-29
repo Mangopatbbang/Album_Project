@@ -27,6 +27,20 @@ export async function PATCH(
     return NextResponse.json({ error: "권한 없음" }, { status: 403 });
   }
 
+  // 순서 변경: orderedIds 배열이 오면 sort_order 일괄 업데이트
+  const { orderedIds } = body as { orderedIds?: string[] };
+  if (orderedIds && Array.isArray(orderedIds)) {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await supabaseServer
+        .from("playlist_entries")
+        .update({ sort_order: i })
+        .eq("id", orderedIds[i])
+        .eq("playlist_id", id);
+    }
+    revalidatePath(`/playlist/${id}`);
+    return NextResponse.json({ ok: true });
+  }
+
   const updates: Record<string, string | boolean> = {};
   if (title !== undefined) updates.title = title.trim();
   if (is_public !== undefined) updates.is_public = is_public;
