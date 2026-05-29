@@ -16,52 +16,44 @@ const MS_YEAR  = 365.25 * MS_DAY;
 const SCORE_MIN = 1;
 const SCORE_MAX = 8;
 const HEATMAP_H = 108;
-const AXIS_W    = 64;    // wider — fits score label + mini histogram bar
+const AXIS_W    = 64;
 
-// Band-based spatial layout
-const BAND_H      = 120;  // each score band height
-const BAND_GAP    =  36;  // gap between bands — no dots here
-const GAL_PAD_T   =  60;  // top padding above score-8 band
-const UNRATED_GAP =  30;  // gap below score-1 before unrated
-const UNRATED_H   =  80;  // unrated band height
-const GAL_PAD_B   =  40;  // bottom padding
+// Band-based spatial layout — reference dimensions at yMul=1
+const BAND_H      = 120;
+const BAND_GAP    =  36;
+const GAL_PAD_T   =  60;
+const UNRATED_GAP =  30;
+const UNRATED_H   =  80;
+const GAL_PAD_B   =  40;
 
-// GALAXY_H = 60 + 8×120 + 7×36 + 30 + 80 + 40 = 1422px (fixed, vertical scroll allowed)
-const GALAXY_H = GAL_PAD_T
+// BASE_GALAXY_H: reference height at yMul=1, scaled to viewport at trufit zoom
+const BASE_GALAXY_H = GAL_PAD_T
   + SCORE_MAX * BAND_H + (SCORE_MAX - SCORE_MIN) * BAND_GAP
-  + UNRATED_GAP + UNRATED_H + GAL_PAD_B;
-
-// Fit zoom shows a "comfortable window", not all albums forced on screen
-const FIT_YEARS_VISIBLE = 35;   // release mode: 35 years visible at fit zoom
-const FIT_DAYS_VISIBLE  = 540;  // listened mode: ~18 months
+  + UNRATED_GAP + UNRATED_H + GAL_PAD_B;  // = 1422
 
 const MAX_ZOOM = 2e-5;
 
 type ViewMode = "release" | "listened";
 
-// ─── Y coordinate helpers ─────────────────────────────────────────────────────
+// ─── Y coordinate helpers (all scale with yMul) ───────────────────────────────
 
-// Center Y of a score band (score 8 is at the top)
-function bandCenterY(score: number): number {
-  const idx = SCORE_MAX - score; // 0 for score-8, 7 for score-1
-  return GAL_PAD_T + idx * (BAND_H + BAND_GAP) + BAND_H / 2;
+function bandCenterY(score: number, yMul = 1): number {
+  const idx = SCORE_MAX - score;
+  return (GAL_PAD_T + idx * (BAND_H + BAND_GAP) + BAND_H / 2) * yMul;
 }
 
-// Top edge of a score band
-function bandTopY(score: number): number {
-  return bandCenterY(score) - BAND_H / 2;
+function bandTopY(score: number, yMul = 1): number {
+  return bandCenterY(score, yMul) - (BAND_H * yMul) / 2;
 }
 
-// Center Y of the unrated band
-function unratedCenterY(): number {
-  return GAL_PAD_T
+function unratedCenterY(yMul = 1): number {
+  return (GAL_PAD_T
     + SCORE_MAX * BAND_H + (SCORE_MAX - SCORE_MIN) * BAND_GAP
-    + UNRATED_GAP + UNRATED_H / 2;
+    + UNRATED_GAP + UNRATED_H / 2) * yMul;
 }
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
-// Deterministic per-album jitter — consistent across renders, no flickering
 function jitter(id: string, range: number): number {
   const h = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
   return ((Math.abs(h) % 1000) / 1000 - 0.5) * range;
@@ -107,7 +99,6 @@ function coverSize(z: number, mode: ViewMode): number {
   return 60;
 }
 
-// 7-level dot radius — high-score albums are noticeably larger
 function dotRadius(score: number | undefined): number {
   if (score == null) return 2;
   if (score >= 8)    return 7;
@@ -198,26 +189,23 @@ function computeHeatmap(events: TimelineEvent[], mode: ViewMode): HeatCell[] {
 interface DotPos { ev: TimelineEvent; x: number; y: number; isUnrated: boolean; baseOpacity: number }
 
 function buildDotPositions(
-  events: TimelineEvent[], zoom: number, minMs: number, maxMs: number, mode: ViewMode,
+  events: TimelineEvent[], zoom: number, minMs: number, maxMs: number, mode: ViewMode, yMul: number,
 ): DotPos[] {
   const range = maxMs - minMs;
   return events.map(ev => {
     const ms = eventMs(ev, mode);
 
-    // X jitter — spreads same-year/same-date albums horizontally
     const xJitterMs = mode === "release"
-      ? jitter(ev.album.id + "x", 0.5) * MS_YEAR   // ±0.25 years
-      : jitter(ev.album.id + "x", 4)   * MS_DAY;   // ±2 days
+      ? jitter(ev.album.id + "x", 0.5) * MS_YEAR
+      : jitter(ev.album.id + "x", 4)   * MS_DAY;
     const x = ms != null ? (ms + xJitterMs - minMs) * zoom : -9999;
 
-    // Y: band center ± jitter within band (±50px)
     const isUnrated = ev.score == null;
+    // Y jitter scales with yMul — dots spread apart as you zoom in
     const y = isUnrated
-      ? unratedCenterY() + jitter(ev.album.id, UNRATED_H * 0.55)
-      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42);
+      ? unratedCenterY(yMul) + jitter(ev.album.id, UNRATED_H * yMul * 0.55)
+      : bandCenterY(ev.score!, yMul) + jitter(ev.album.id, BAND_H * yMul * 0.42);
 
-    // Base opacity: older = slightly dimmer (depth/parallax feel)
-    // Range: 0.55 (oldest) → 0.88 (newest)
     const t = ms != null && range > 0 ? (ms - minMs) / range : 0.5;
     const baseOpacity = 0.55 + t * 0.33;
 
@@ -333,7 +321,6 @@ function GalaxyDot({ pos, cs, dimmed, animated, innerW, onSelect, onTipEnter, on
   const isDot = cs === 0;
   const r     = dotRadius(score);
 
-  // Layered glow — intensity scales with score
   const glowShadow = score == null ? "none"
     : score >= 8
       ? hov ? `0 0 0 2px var(--bg),0 0 14px ${dot}ee,0 0 28px ${dot}77,0 0 50px ${dot}33`
@@ -346,7 +333,6 @@ function GalaxyDot({ pos, cs, dimmed, animated, innerW, onSelect, onTipEnter, on
             : `0 0 0 1px var(--bg),0 0 5px ${dot}88`
     : hov ? `0 0 7px ${dot}66` : "none";
 
-  // Staggered opening animation — left to right
   const delay = animated ? 0 : 0.08 + (x / Math.max(innerW, 1)) * 0.85;
 
   const enter = (e: React.MouseEvent) => { setHov(true);  onTipEnter(pos, e.clientX, e.clientY); };
@@ -417,7 +403,6 @@ function HeatmapStrip({
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
 
-  // Release mode: year-level counts for mini bars inside each decade card
   const yearCounts = useMemo(() => {
     if (mode !== "release") return new Map<number, number>();
     const map = new Map<number, number>();
@@ -463,7 +448,6 @@ function HeatmapStrip({
               }}
             >
               <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{cell.label}</span>
-              {/* Mini year bars — 10 bars = 10 years in decade */}
               {(() => {
                 const decade = parseInt(cell.key);
                 const counts = Array.from({ length: 10 }, (_, i) => yearCounts.get(decade + i) ?? 0);
@@ -495,7 +479,6 @@ function HeatmapStrip({
     );
   }
 
-  // Listened mode — year × month grid
   const years = Array.from(new Set(events.map(ev => ev.date.substring(0, 4)))).sort();
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const cellMap = new Map(cells.map(c => [c.key, c]));
@@ -536,10 +519,12 @@ function HeatmapStrip({
 
 // ─── ScoreAxis ────────────────────────────────────────────────────────────────
 
-function ScoreAxis({ scoreCounts, maxCount }: { scoreCounts: Map<number, number>; maxCount: number }) {
+function ScoreAxis({ scoreCounts, maxCount, yMul, scrollY }: {
+  scoreCounts: Map<number, number>; maxCount: number; yMul: number; scrollY: number;
+}) {
   const scores = Array.from({ length: SCORE_MAX - SCORE_MIN + 1 }, (_, i) => SCORE_MAX - i);
   return (
-    <div style={{ width: AXIS_W, flexShrink: 0, position: "relative", borderRight: "1px solid var(--border)" }}>
+    <div style={{ width: AXIS_W, flexShrink: 0, position: "relative", overflow: "hidden", borderRight: "1px solid var(--border)" }}>
       {scores.map(s => {
         const c     = scoreColor(s);
         const count = scoreCounts.get(s) ?? 0;
@@ -547,7 +532,7 @@ function ScoreAxis({ scoreCounts, maxCount }: { scoreCounts: Map<number, number>
         return (
           <div key={s} style={{
             position: "absolute",
-            top: bandCenterY(s),
+            top: bandCenterY(s, yMul) - scrollY,
             right: 0, left: 0,
             transform: "translateY(-50%)",
             display: "flex", alignItems: "center", justifyContent: "flex-end",
@@ -561,7 +546,8 @@ function ScoreAxis({ scoreCounts, maxCount }: { scoreCounts: Map<number, number>
         );
       })}
       <div style={{
-        position: "absolute", top: unratedCenterY(),
+        position: "absolute",
+        top: unratedCenterY(yMul) - scrollY,
         right: 4, transform: "translateY(-50%)",
         fontSize: 7, color: "var(--text-muted)", opacity: 0.3, textAlign: "right", lineHeight: 1.3,
       }}>
@@ -578,6 +564,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   const [fetchErr, setFetchErr]     = useState(false);
   const [mode, setMode]             = useState<ViewMode>("release");
   const [zoom, setZoom]             = useState(0);
+  const [wrapH, setWrapH]           = useState(0);
   const [selected, setSelected]     = useState<AlbumWithRatings | null>(null);
   const [tooltip, setTooltip]       = useState<{ ev: TimelineEvent; mx: number; my: number } | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -585,16 +572,17 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   const [axisDrawn, setAxisDrawn]   = useState(false);
   const [animated, setAnimated]     = useState(false);
   const [scrollX, setScrollX]       = useState(0);
+  const [scrollY, setScrollY]       = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const wrapRef      = useRef<HTMLDivElement>(null);
   const scrollRef    = useRef<HTMLDivElement>(null);
   const zoomRef      = useRef(0);
-  const fitRef       = useRef(0);
-  const trufitRef    = useRef(0); // fit-all (minimum zoom)
-  const dragRef      = useRef<{ startX: number; scrollLeft: number } | null>(null);
+  const trufitRef    = useRef(0);
+  const dragRef      = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null);
   const dragMovedRef = useRef(false);
   const velRef       = useRef(0);
+  const velYRef      = useRef(0);
   const rafRef       = useRef<number>(0);
 
   useEffect(() => {
@@ -611,48 +599,52 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     return () => { document.removeEventListener("keydown", fn); document.body.style.overflow = ""; };
   }, [onClose]);
 
+  // Measure wrapH on mount
+  useEffect(() => {
+    if (wrapRef.current) setWrapH(wrapRef.current.clientHeight);
+  }, []);
+
   const { minMs, maxMs, totalMs } = useMemo(
     () => computeRange(events ?? [], mode),
     [events, mode]
   );
 
-  /* fit zoom — target years/days visible, not full range */
+  // Fit zoom: start at trufit (all content visible, no scroll)
   useEffect(() => {
     if (!events?.length || !wrapRef.current || !totalMs) return;
     const w = wrapRef.current.clientWidth - AXIS_W - 24;
-    const targetMs = mode === "release"
-      ? FIT_YEARS_VISIBLE * MS_YEAR
-      : FIT_DAYS_VISIBLE  * MS_DAY;
-    const fit   = w / targetMs;
-    const trufit = w / totalMs;   // fit-all (allows zooming out to see everything)
-    fitRef.current   = fit;
+    const h = wrapRef.current.clientHeight;
+    setWrapH(h);
+    const trufit = w / totalMs;
     trufitRef.current = trufit;
-    zoomRef.current  = fit;
-    setZoom(fit);
+    zoomRef.current   = trufit;
+    setZoom(trufit);
     setAxisDrawn(false);
     setAnimated(false);
     setTimeout(() => setAxisDrawn(true), 80);
-    setTimeout(() => setAnimated(true), 1600);  // dots animate in for 0~1.6s
-    if (scrollRef.current) scrollRef.current.scrollLeft = 0;
+    setTimeout(() => setAnimated(true), 1600);
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+      scrollRef.current.scrollTop  = 0;
+    }
   }, [events, mode, totalMs]);
 
-  /* resize */
+  // Resize handler
   useEffect(() => {
     const fn = () => {
       if (!wrapRef.current || !totalMs) return;
       const w = wrapRef.current.clientWidth - AXIS_W - 24;
-      const targetMs = mode === "release" ? FIT_YEARS_VISIBLE * MS_YEAR : FIT_DAYS_VISIBLE * MS_DAY;
-      const fit    = w / targetMs;
+      const h = wrapRef.current.clientHeight;
+      setWrapH(h);
       const trufit = w / totalMs;
-      fitRef.current    = fit;
       trufitRef.current = trufit;
-      if (zoomRef.current <= fit * 1.05) { zoomRef.current = fit; setZoom(fit); }
+      if (zoomRef.current <= trufit * 1.05) { zoomRef.current = trufit; setZoom(trufit); }
     };
     window.addEventListener("resize", fn);
     return () => window.removeEventListener("resize", fn);
-  }, [totalMs, mode]);
+  }, [totalMs]);
 
-  /* wheel: vertical = zoom, horizontal = pan */
+  // Wheel: vertical = zoom (anchor to cursor), horizontal = pan X
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !minMs) return;
@@ -664,14 +656,18 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
         const fac = e.deltaMode === 0
           ? Math.pow(1.003, -e.deltaY)
           : e.deltaY > 0 ? 0.83 : 1.20;
-        const rect = el.getBoundingClientRect();
-        const cx   = e.clientX - rect.left + el.scrollLeft;
-        const cMs  = cx / zoomRef.current + minMs;
-        // Can zoom out to trufit (see all) or in to MAX_ZOOM
-        const nz = Math.max(trufitRef.current * 0.9, Math.min(MAX_ZOOM, zoomRef.current * fac));
+        const rect  = el.getBoundingClientRect();
+        const cx    = e.clientX - rect.left + el.scrollLeft;
+        const cy    = e.clientY - rect.top  + el.scrollTop;
+        const cMs   = cx / zoomRef.current + minMs;
+        const prevZ = zoomRef.current;
+        const nz    = Math.max(trufitRef.current * 0.85, Math.min(MAX_ZOOM, zoomRef.current * fac));
         zoomRef.current = nz; setZoom(nz);
         requestAnimationFrame(() => {
-          if (scrollRef.current) scrollRef.current.scrollLeft = (cMs - minMs) * nz - (e.clientX - rect.left);
+          if (scrollRef.current) {
+            scrollRef.current.scrollLeft = (cMs - minMs) * nz - (e.clientX - rect.left);
+            scrollRef.current.scrollTop  = cy * (nz / prevZ) - (e.clientY - rect.top);
+          }
         });
       }
     };
@@ -679,54 +675,72 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     return () => el.removeEventListener("wheel", fn);
   }, [minMs]);
 
-  /* pinch zoom */
+  // Pinch zoom — anchor both X and Y to pinch origin
   const bind = usePinch(
-    ({ offset: [scale], origin: [ox], first, memo }) => {
+    ({ offset: [scale], origin: [ox, oy], first, memo }) => {
       const el = scrollRef.current; if (!el) return;
       if (first) {
         const rect = el.getBoundingClientRect();
-        return { initZ: zoomRef.current, cMs: (ox - rect.left + el.scrollLeft) / zoomRef.current + minMs, ox: ox - rect.left };
+        return {
+          initZ: zoomRef.current,
+          cMs:   (ox - rect.left + el.scrollLeft) / zoomRef.current + minMs,
+          ox:    ox - rect.left,
+          cY:    oy - rect.top + el.scrollTop,
+          oy:    oy - rect.top,
+        };
       }
       if (!memo) return;
-      const nz = Math.max(trufitRef.current * 0.9, Math.min(MAX_ZOOM, memo.initZ * scale));
+      const nz = Math.max(trufitRef.current * 0.85, Math.min(MAX_ZOOM, memo.initZ * scale));
       zoomRef.current = nz; setZoom(nz);
-      requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollLeft = (memo.cMs - minMs) * nz - memo.ox; });
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollLeft = (memo.cMs - minMs) * nz - memo.ox;
+          scrollRef.current.scrollTop  = memo.cY * (nz / memo.initZ) - memo.oy;
+        }
+      });
       return memo;
     },
     { from: [1, 0], eventOptions: { passive: false } },
   );
 
-  /* drag-to-pan with inertia */
+  // Drag-to-pan (X + Y) with inertia
   const onDragStart = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
     cancelAnimationFrame(rafRef.current);
     dragMovedRef.current = false;
-    dragRef.current = { startX: e.clientX, scrollLeft: scrollRef.current?.scrollLeft ?? 0 };
-    velRef.current = 0;
+    dragRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      scrollLeft: scrollRef.current?.scrollLeft ?? 0,
+      scrollTop:  scrollRef.current?.scrollTop  ?? 0,
+    };
+    velRef.current = 0; velYRef.current = 0;
     setIsDragging(true);
   }, []);
 
   useEffect(() => {
-    let lastX = 0, lastT = 0;
+    let lastX = 0, lastY = 0, lastT = 0;
     const onMove = (e: MouseEvent) => {
       if (!dragRef.current || !scrollRef.current) return;
       const dx = e.clientX - dragRef.current.startX;
-      if (Math.abs(dx) > 4) dragMovedRef.current = true;
+      const dy = e.clientY - dragRef.current.startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragMovedRef.current = true;
       scrollRef.current.scrollLeft = dragRef.current.scrollLeft - dx;
+      scrollRef.current.scrollTop  = dragRef.current.scrollTop  - dy;
       const now = performance.now();
-      velRef.current = (lastX - e.clientX) / Math.max(now - lastT, 1) * 16;
-      lastX = e.clientX; lastT = now;
+      velRef.current  = (lastX - e.clientX) / Math.max(now - lastT, 1) * 16;
+      velYRef.current = (lastY - e.clientY) / Math.max(now - lastT, 1) * 16;
+      lastX = e.clientX; lastY = e.clientY; lastT = now;
     };
     const onUp = () => {
       if (!dragRef.current) return;
       dragRef.current = null;
       setIsDragging(false);
-      // Inertia coast
-      let v = velRef.current;
+      let v = velRef.current, vy = velYRef.current;
       const coast = () => {
-        if (!scrollRef.current || Math.abs(v) < 0.4) return;
+        if (!scrollRef.current || (Math.abs(v) < 0.4 && Math.abs(vy) < 0.4)) return;
         scrollRef.current.scrollLeft += v;
-        v *= 0.93;
+        scrollRef.current.scrollTop  += vy;
+        v *= 0.93; vy *= 0.93;
         rafRef.current = requestAnimationFrame(coast);
       };
       coast();
@@ -738,16 +752,26 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
 
   const zoomStep = useCallback((fac: number) => {
     const el = scrollRef.current; if (!el) return;
-    const cx  = el.scrollLeft + el.clientWidth / 2;
-    const cMs = cx / zoomRef.current + minMs;
-    const nz  = Math.max(trufitRef.current * 0.9, Math.min(MAX_ZOOM, zoomRef.current * fac));
+    const cx    = el.scrollLeft + el.clientWidth  / 2;
+    const cy    = el.scrollTop  + el.clientHeight / 2;
+    const cMs   = cx / zoomRef.current + minMs;
+    const prevZ = zoomRef.current;
+    const nz    = Math.max(trufitRef.current * 0.85, Math.min(MAX_ZOOM, zoomRef.current * fac));
     zoomRef.current = nz; setZoom(nz);
-    requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollLeft = (cMs - minMs) * nz - scrollRef.current.clientWidth / 2; });
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = (cMs - minMs) * nz - scrollRef.current.clientWidth  / 2;
+        scrollRef.current.scrollTop  = cy * (nz / prevZ)  - scrollRef.current.clientHeight / 2;
+      }
+    });
   }, [minMs]);
 
   const resetZoom = useCallback(() => {
-    zoomRef.current = fitRef.current; setZoom(fitRef.current);
-    if (scrollRef.current) scrollRef.current.scrollLeft = 0;
+    zoomRef.current = trufitRef.current; setZoom(trufitRef.current);
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+      scrollRef.current.scrollTop  = 0;
+    }
   }, []);
 
   useEffect(() => {
@@ -761,23 +785,33 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   }, [zoomStep, resetZoom]);
 
   const handleScroll = useCallback(() => {
-    if (scrollRef.current) setScrollX(scrollRef.current.scrollLeft);
+    if (scrollRef.current) {
+      setScrollX(scrollRef.current.scrollLeft);
+      setScrollY(scrollRef.current.scrollTop);
+    }
   }, []);
 
-  /* derived */
-  const cs        = coverSize(zoom, mode);
-  const innerW    = zoom > 0 && totalMs > 0 ? Math.max(1000, totalMs * zoom) : 1000;
-  const ticks     = useMemo(
+  // yMul: at trufit zoom = wrapH/BASE_GALAXY_H (no scroll), scales linearly with zoom
+  const yMul = trufitRef.current > 0 && wrapH > 0 && zoom > 0
+    ? (wrapH / BASE_GALAXY_H) * (zoom / trufitRef.current)
+    : wrapH > 0 ? wrapH / BASE_GALAXY_H : 1;
+
+  const dynamicGalaxyH = BASE_GALAXY_H * yMul;
+
+  const cs     = coverSize(zoom, mode);
+  const containerW = (wrapRef.current?.clientWidth ?? 900) - AXIS_W;
+  const innerW = zoom > 0 && totalMs > 0 ? Math.max(containerW, totalMs * zoom) : containerW;
+
+  const ticks = useMemo(
     () => mode === "release" ? computeReleaseTicks(zoom, minMs, maxMs) : computeListenedTicks(zoom, minMs, maxMs),
     [zoom, minMs, maxMs, mode]
   );
   const heatCells = useMemo(() => computeHeatmap(events ?? [], mode), [events, mode]);
   const allDots   = useMemo(
-    () => buildDotPositions(events ?? [], zoom, minMs, maxMs, mode),
-    [events, zoom, minMs, maxMs, mode]
+    () => buildDotPositions(events ?? [], zoom, minMs, maxMs, mode, yMul),
+    [events, zoom, minMs, maxMs, mode, yMul]
   );
 
-  // Score counts for axis histogram
   const { scoreCounts, maxScoreCount } = useMemo(() => {
     const counts = new Map<number, number>();
     for (const ev of events ?? []) {
@@ -786,27 +820,23 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     return { scoreCounts: counts, maxScoreCount: Math.max(...counts.values(), 1) };
   }, [events]);
 
-  // X virtualization — only render dots/nebula in view + 500px buffer
-  const containerW  = (wrapRef.current?.clientWidth ?? 900) - AXIS_W;
+  // X virtualization — only render dots/nebula in view + buffer
   const visibleDots = useMemo(
     () => allDots.filter(d => d.x >= scrollX - 500 && d.x <= scrollX + containerW + 500),
     [allDots, scrollX, containerW]
   );
 
-  // Nebula density blobs
   const nebulaBlobs = useMemo(() => computeNebula(allDots), [allDots]);
   const visibleNebula = useMemo(
     () => nebulaBlobs.filter(b => b.x >= scrollX - 400 && b.x <= scrollX + containerW + 400),
     [nebulaBlobs, scrollX, containerW]
   );
 
-  // Gap markers (release mode only)
   const gapMarkers = useMemo(
     () => mode === "release" ? computeGaps(events ?? [], zoom, minMs) : [],
     [events, mode, zoom, minMs]
   );
 
-  // Constellation: other albums by hovered artist
   const artistDots = useMemo(
     () => hoveredDotPos
       ? allDots.filter(d =>
@@ -817,9 +847,12 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     [hoveredDotPos, allDots]
   );
 
-  const isZoomed = fitRef.current > 0 && zoom > fitRef.current * 1.1;
+  const isZoomed = trufitRef.current > 0 && zoom > trufitRef.current * 1.1;
   const hasMajor = ticks.some(t => t.isMajor);
   const TICK_Y   = 20;
+
+  const baselineY   = bandCenterY(SCORE_MIN, yMul) + (BAND_H * yMul) / 2;
+  const unratedSepY = unratedCenterY(yMul) - (UNRATED_H * yMul) / 2 - (UNRATED_GAP * yMul) / 2;
 
   function isPeriodMatch(ev: TimelineEvent, period: string): boolean {
     if (mode === "release") {
@@ -856,11 +889,6 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     const x = (targetMs - minMs) * zoom;
     scrollRef.current.scrollTo({ left: Math.max(0, x - scrollRef.current.clientWidth / 2), behavior: "smooth" });
   }, [selectedPeriod, mode, zoom, minMs]);
-
-  // Baseline Y = bottom of score-1 band
-  const baselineY = bandCenterY(SCORE_MIN) + BAND_H / 2;
-  // Unrated separator Y
-  const unratedSepY = unratedCenterY() - UNRATED_H / 2 - UNRATED_GAP / 2;
 
   return (
     <div style={{
@@ -946,10 +974,10 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
 
         {events && events.length > 0 && zoom > 0 && (
           <>
-            {/* Score axis */}
-            <ScoreAxis scoreCounts={scoreCounts} maxCount={maxScoreCount} />
+            {/* Score axis — labels track scrollY so they stay aligned with bands */}
+            <ScoreAxis scoreCounts={scoreCounts} maxCount={maxScoreCount} yMul={yMul} scrollY={scrollY} />
 
-            {/* Scroll container — both X and Y scroll allowed */}
+            {/* Scroll container — both X and Y */}
             <div
               ref={scrollRef}
               {...bind()}
@@ -959,17 +987,17 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
               style={{
                 flex: 1, overflowX: "auto", overflowY: "auto",
                 cursor: isDragging ? "grabbing" : "grab",
-                userSelect: "none", touchAction: "pan-x",
+                userSelect: "none", touchAction: "none",
               }}
             >
-              {/* Inner div — fixed height = GALAXY_H, allows vertical exploration */}
-              <div style={{ width: innerW, height: GALAXY_H, position: "relative" }}>
+              {/* Inner canvas — scales in both X and Y with zoom */}
+              <div style={{ width: innerW, height: dynamicGalaxyH, position: "relative" }}>
 
                 {/* ── Score band backgrounds ── */}
                 {Array.from({ length: SCORE_MAX - SCORE_MIN + 1 }, (_, i) => SCORE_MAX - i).map(s => (
                   <div key={`band-bg-${s}`} style={{
                     position: "absolute", left: 0,
-                    top: bandTopY(s), height: BAND_H, width: "100%",
+                    top: bandTopY(s, yMul), height: BAND_H * yMul, width: "100%",
                     backgroundColor: `${scoreColor(s)}${s % 2 === 0 ? "07" : "04"}`,
                     pointerEvents: "none",
                   }} />
@@ -979,7 +1007,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                 {Array.from({ length: SCORE_MAX - SCORE_MIN + 1 }, (_, i) => SCORE_MAX - i).map(s => (
                   <div key={`band-line-${s}`} style={{
                     position: "absolute", left: 0,
-                    top: bandTopY(s), height: 1, width: "100%",
+                    top: bandTopY(s, yMul), height: 1, width: "100%",
                     backgroundColor: "var(--border)",
                     opacity: s === SCORE_MAX ? 0.3 : 0.1,
                     pointerEvents: "none",
@@ -1020,7 +1048,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   </div>
                 ))}
 
-                {/* ── Baseline (bottom of score-1 band) ── */}
+                {/* ── Baseline ── */}
                 <div style={{
                   position: "absolute", left: 0, top: baselineY,
                   width: "100%", height: 1,
@@ -1031,7 +1059,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   pointerEvents: "none",
                 }} />
 
-                {/* ── Nebula — density glow in busy clusters ── */}
+                {/* ── Nebula ── */}
                 {visibleNebula.map((blob, i) => (
                   <div key={`neb-${i}`} style={{
                     position: "absolute",
@@ -1045,11 +1073,11 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   }} />
                 ))}
 
-                {/* ── Gap labels (release mode) ── */}
+                {/* ── Gap labels ── */}
                 {gapMarkers.map((g, i) => (
                   <div key={`gap-${i}`} style={{
                     position: "absolute",
-                    left: g.x, top: bandCenterY(4),
+                    left: g.x, top: bandCenterY(4, yMul),
                     transform: "translateX(-50%)",
                     fontSize: 8, color: "var(--text-muted)", opacity: 0.16,
                     pointerEvents: "none", whiteSpace: "nowrap",
@@ -1059,11 +1087,11 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   </div>
                 ))}
 
-                {/* ── Constellation lines — same artist connections on hover ── */}
+                {/* ── Constellation lines ── */}
                 {hoveredDotPos && artistDots.length > 0 && (
                   <svg style={{
                     position: "absolute", inset: 0,
-                    width: "100%", height: GALAXY_H,
+                    width: "100%", height: dynamicGalaxyH,
                     pointerEvents: "none", zIndex: 14, overflow: "visible",
                   }}>
                     {artistDots.map((d, i) => (
@@ -1075,7 +1103,6 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                           strokeWidth={0.7}
                           strokeDasharray="4 5"
                         />
-                        {/* Small pulse circle on connected dot */}
                         <circle
                           cx={d.x} cy={d.y} r={dotRadius(d.ev.score) + 3}
                           fill="none"
@@ -1088,13 +1115,13 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   </svg>
                 )}
 
-                {/* ── Band watermark numbers — large faint score label per band ── */}
+                {/* ── Band watermark numbers ── */}
                 {Array.from({ length: SCORE_MAX - SCORE_MIN + 1 }, (_, i) => SCORE_MAX - i).map(s => (
                   <div key={`wm-${s}`} style={{
                     position: "absolute",
-                    right: 28, top: bandCenterY(s),
+                    right: 28, top: bandCenterY(s, yMul),
                     transform: "translateY(-50%)",
-                    fontSize: 80, fontWeight: 900, lineHeight: 1,
+                    fontSize: Math.max(24, 80 * yMul), fontWeight: 900, lineHeight: 1,
                     color: scoreColor(s), opacity: 0.028,
                     pointerEvents: "none", userSelect: "none",
                   }}>
@@ -1131,7 +1158,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                 fontSize:9, color:"var(--text-muted)", opacity:0.28,
                 pointerEvents:"none", zIndex:5, whiteSpace:"nowrap",
               }}>
-                드래그·스크롤 이동 · 세로스크롤 확대 · +/- 키
+                드래그·핀치 이동 · 휠 확대 · +/- 키
               </p>
             )}
           </>
