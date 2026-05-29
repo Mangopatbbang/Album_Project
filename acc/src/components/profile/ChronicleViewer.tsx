@@ -153,18 +153,28 @@ function computeHeatmap(events: TimelineEvent[], mode: ViewMode): HeatCell[] {
 
 interface DotPos { ev: TimelineEvent; x: number; y: number; isUnrated: boolean; baseOpacity: number }
 
-function buildDotPositions(events: TimelineEvent[], minMs: number, maxMs: number, totalMs: number, mode: ViewMode): DotPos[] {
+// spreadK = cssZoom / fitZoom (1 at initial view, grows as user zooms in)
+// As spreadK grows, dots spread apart — galaxy → cluster → individual albums
+function buildDotPositions(
+  events: TimelineEvent[], minMs: number, maxMs: number, totalMs: number,
+  mode: ViewMode, spreadK = 1,
+): DotPos[] {
   const range = maxMs - minMs;
+  // X spreads with pow(spreadK, 0.75) — significant but not runaway
+  const xK = Math.pow(Math.max(1, spreadK), 0.75);
+  // Y spreads more gently, capped so albums mostly stay within their band
+  const yK = Math.min(Math.pow(Math.max(1, spreadK), 0.5), 2.2);
+
   return events.map(ev => {
     const ms = eventMs(ev, mode);
     const xJitterFrac = mode === "release"
-      ? jitter(ev.album.id + "x", 0.5) * MS_YEAR / totalMs
-      : jitter(ev.album.id + "x", 4)   * MS_DAY  / totalMs;
+      ? jitter(ev.album.id + "x", 0.5 * xK) * MS_YEAR / totalMs
+      : jitter(ev.album.id + "x", 4   * xK) * MS_DAY  / totalMs;
     const x = ms != null ? ((ms - minMs) / totalMs + xJitterFrac) * CANVAS_W : -9999;
     const isUnrated = ev.score == null;
     const y = isUnrated
-      ? unratedCenterY() + jitter(ev.album.id, UNRATED_H * 0.55)
-      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42);
+      ? unratedCenterY() + jitter(ev.album.id, UNRATED_H * 0.55 * yK)
+      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42 * yK);
     const t = ms != null && range > 0 ? (ms - minMs) / range : 0.5;
     return { ev, x, y, isUnrated, baseOpacity: 0.55 + t * 0.33 };
   });
@@ -571,9 +581,15 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   const effectiveZoom = totalMs > 0 ? cssZoom * CANVAS_W / totalMs : 0;
   const cs = coverSize(effectiveZoom, mode);
   const isZoomed = cssZoom > fitZoomRef.current * 1.1;
+  // spreadK: how far zoomed in relative to fit-all view
+  const spreadK = fitZoomRef.current > 0 ? cssZoom / fitZoomRef.current : 1;
 
   const heatCells = useMemo(() => computeHeatmap(events ?? [], mode), [events, mode]);
-  const allDots   = useMemo(() => buildDotPositions(events ?? [], minMs, maxMs, totalMs, mode), [events, minMs, maxMs, totalMs, mode]);
+  const allDots   = useMemo(
+    () => buildDotPositions(events ?? [], minMs, maxMs, totalMs, mode, spreadK),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [events, minMs, maxMs, totalMs, mode, spreadK],
+  );
 
   const { scoreCounts, maxScoreCount } = useMemo(() => {
     const counts = new Map<number, number>();
