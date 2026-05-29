@@ -195,28 +195,77 @@ function computeHeatmap(events: TimelineEvent[], mode: ViewMode): HeatCell[] {
 
 // ─── Dot positions ────────────────────────────────────────────────────────────
 
-interface DotPos { ev: TimelineEvent; x: number; y: number; isUnrated: boolean }
+interface DotPos { ev: TimelineEvent; x: number; y: number; isUnrated: boolean; baseOpacity: number }
 
 function buildDotPositions(
-  events: TimelineEvent[], zoom: number, minMs: number, mode: ViewMode,
+  events: TimelineEvent[], zoom: number, minMs: number, maxMs: number, mode: ViewMode,
 ): DotPos[] {
+  const range = maxMs - minMs;
   return events.map(ev => {
     const ms = eventMs(ev, mode);
 
-    // X jitter — spreads same-year albums horizontally
+    // X jitter — spreads same-year/same-date albums horizontally
     const xJitterMs = mode === "release"
       ? jitter(ev.album.id + "x", 0.5) * MS_YEAR   // ±0.25 years
       : jitter(ev.album.id + "x", 4)   * MS_DAY;   // ±2 days
     const x = ms != null ? (ms + xJitterMs - minMs) * zoom : -9999;
 
-    // Y: band center ± jitter within band
+    // Y: band center ± jitter within band (±50px)
     const isUnrated = ev.score == null;
     const y = isUnrated
       ? unratedCenterY() + jitter(ev.album.id, UNRATED_H * 0.55)
-      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42); // ±50px
+      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42);
 
-    return { ev, x, y, isUnrated };
+    // Base opacity: older = slightly dimmer (depth/parallax feel)
+    // Range: 0.55 (oldest) → 0.88 (newest)
+    const t = ms != null && range > 0 ? (ms - minMs) / range : 0.5;
+    const baseOpacity = 0.55 + t * 0.33;
+
+    return { ev, x, y, isUnrated, baseOpacity };
   });
+}
+
+// ─── Nebula density ──────────────────────────────────────────────────────────
+
+interface NebulaBlob { x: number; y: number; intensity: number }
+
+function computeNebula(dots: DotPos[], cellSize = 110): NebulaBlob[] {
+  const map = new Map<string, number>();
+  for (const d of dots) {
+    if (d.x < 0 || d.isUnrated) continue;
+    const gx = Math.round(d.x / cellSize);
+    const gy = Math.round(d.y / cellSize);
+    map.set(`${gx},${gy}`, (map.get(`${gx},${gy}`) ?? 0) + 1);
+  }
+  const max = Math.max(...map.values(), 1);
+  return Array.from(map.entries())
+    .filter(([, c]) => c >= 2)
+    .map(([key, count]) => {
+      const [gx, gy] = key.split(",").map(Number);
+      return { x: gx * cellSize, y: gy * cellSize, intensity: count / max };
+    });
+}
+
+// ─── Gap detection (release mode) ────────────────────────────────────────────
+
+interface GapMarker { x: number; label: string }
+
+function computeGaps(events: TimelineEvent[], zoom: number, minMs: number): GapMarker[] {
+  const years = [...new Set(
+    events.map(ev => parseYear(ev.album.release_date)).filter((y): y is number => y != null)
+  )].sort((a, b) => a - b);
+  if (years.length < 2) return [];
+  const gaps: GapMarker[] = [];
+  for (let i = 1; i < years.length; i++) {
+    const span = years[i] - years[i - 1];
+    if (span < 5) continue;
+    const midY = (years[i] + years[i - 1]) / 2;
+    gaps.push({
+      x: (midY * MS_YEAR - minMs) * zoom,
+      label: `── ${span}년 공백 ──`,
+    });
+  }
+  return gaps;
 }
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
@@ -270,29 +319,47 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
 
 interface DotProps {
   pos: DotPos; cs: number; dimmed: boolean;
+  animated: boolean; innerW: number;
   onSelect: (ev: TimelineEvent) => void;
-  onTipEnter: (ev: TimelineEvent, mx: number, my: number) => void;
+  onTipEnter: (pos: DotPos, mx: number, my: number) => void;
   onTipLeave: () => void;
 }
 
-function GalaxyDot({ pos, cs, dimmed, onSelect, onTipEnter, onTipLeave }: DotProps) {
+function GalaxyDot({ pos, cs, dimmed, animated, innerW, onSelect, onTipEnter, onTipLeave }: DotProps) {
   const [hov, setHov] = useState(false);
-  const { ev, x, y } = pos;
-  const score  = ev.score;
-  const dot    = score != null ? scoreColor(score) : "rgba(255,255,255,0.22)";
-  const isDot  = cs === 0;
-  const r      = dotRadius(score);
+  const { ev, x, y, baseOpacity } = pos;
+  const score = ev.score;
+  const dot   = score != null ? scoreColor(score) : "rgba(255,255,255,0.22)";
+  const isDot = cs === 0;
+  const r     = dotRadius(score);
 
-  const enter = (e: React.MouseEvent) => { setHov(true);  onTipEnter(ev, e.clientX, e.clientY); };
+  // Layered glow — intensity scales with score
+  const glowShadow = score == null ? "none"
+    : score >= 8
+      ? hov ? `0 0 0 2px var(--bg),0 0 14px ${dot}ee,0 0 28px ${dot}77,0 0 50px ${dot}33`
+            : `0 0 0 2px var(--bg),0 0 8px ${dot}cc,0 0 20px ${dot}55,0 0 38px ${dot}22`
+    : score >= 7
+      ? hov ? `0 0 0 2px var(--bg),0 0 12px ${dot}cc,0 0 24px ${dot}55`
+            : `0 0 0 2px var(--bg),0 0 6px ${dot}aa,0 0 14px ${dot}33`
+    : score >= 6
+      ? hov ? `0 0 0 1px var(--bg),0 0 10px ${dot}aa,0 0 20px ${dot}33`
+            : `0 0 0 1px var(--bg),0 0 5px ${dot}88`
+    : hov ? `0 0 7px ${dot}66` : "none";
+
+  // Staggered opening animation — left to right
+  const delay = animated ? 0 : 0.08 + (x / Math.max(innerW, 1)) * 0.85;
+
+  const enter = (e: React.MouseEvent) => { setHov(true);  onTipEnter(pos, e.clientX, e.clientY); };
   const leave = ()                      => { setHov(false); onTipLeave(); };
 
   return (
     <div style={{
       position: "absolute", left: x, top: y,
       transform: "translate(-50%, -50%)",
-      opacity: dimmed ? 0.08 : (hov ? 1 : 0.88),
+      opacity: dimmed ? 0.07 : (hov ? 1 : baseOpacity),
       transition: "opacity 0.22s ease",
       zIndex: hov ? 20 : 1,
+      animation: animated ? "none" : `starAppear .38s ${delay.toFixed(3)}s ease-out both`,
     }}>
       {isDot ? (
         <button
@@ -303,8 +370,9 @@ function GalaxyDot({ pos, cs, dimmed, onSelect, onTipEnter, onTipLeave }: DotPro
             backgroundColor: dot,
             border: score != null ? "1.5px solid var(--bg)" : "none",
             padding: 0, cursor: "pointer",
+            boxShadow: glowShadow,
             transform: hov ? "scale(1.55)" : "scale(1)",
-            transition: "transform .14s ease, box-shadow .14s ease",
+            transition: "transform .14s ease, box-shadow .18s ease",
           }}
         />
       ) : (
@@ -316,11 +384,13 @@ function GalaxyDot({ pos, cs, dimmed, onSelect, onTipEnter, onTipLeave }: DotPro
             borderRadius: cs > 40 ? 8 : 5,
             overflow: "hidden", border: "none", cursor: "pointer",
             backgroundColor: "var(--bg-elevated)",
-            outline: hov ? `2px solid ${dot}` : `1px solid ${dot}15`,
+            outline: hov ? `2px solid ${dot}` : `1px solid ${dot}18`,
             outlineOffset: 2,
-            boxShadow: hov ? `0 6px 20px rgba(0,0,0,.6), 0 0 0 3px ${dot}30` : "0 2px 8px rgba(0,0,0,.3)",
+            boxShadow: hov
+              ? `0 6px 22px rgba(0,0,0,.65),0 0 0 3px ${dot}30,0 0 12px ${dot}55`
+              : "0 2px 8px rgba(0,0,0,.3)",
             transform: hov ? "scale(1.12)" : "scale(1)",
-            transition: "transform .13s ease, box-shadow .13s ease, outline .13s ease",
+            transition: "transform .13s ease, box-shadow .16s ease, outline .13s ease",
           }}
         >
           {ev.album.cover_url
@@ -346,6 +416,18 @@ function HeatmapStrip({
   onSelect: (key: string | null) => void;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
+
+  // Release mode: year-level counts for mini bars inside each decade card
+  const yearCounts = useMemo(() => {
+    if (mode !== "release") return new Map<number, number>();
+    const map = new Map<number, number>();
+    for (const ev of events) {
+      const y = parseYear(ev.album.release_date);
+      if (y == null) continue;
+      map.set(y, (map.get(y) ?? 0) + 1);
+    }
+    return map;
+  }, [events, mode]);
 
   if (mode === "release") {
     return (
@@ -381,7 +463,26 @@ function HeatmapStrip({
               }}
             >
               <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{cell.label}</span>
-              <span style={{ fontSize: 8, color: "var(--text-muted)", opacity: 0.6, lineHeight: 1 }}>{cell.count}개</span>
+              {/* Mini year bars — 10 bars = 10 years in decade */}
+              {(() => {
+                const decade = parseInt(cell.key);
+                const counts = Array.from({ length: 10 }, (_, i) => yearCounts.get(decade + i) ?? 0);
+                const maxC   = Math.max(...counts, 1);
+                return (
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: 14 }}>
+                    {counts.map((c, i) => (
+                      <div key={i} style={{
+                        width: 4, flexShrink: 0, alignSelf: "flex-end",
+                        height: c > 0 ? Math.max(Math.round((c / maxC) * 11), 2) : 0,
+                        backgroundColor: bg,
+                        opacity: c > 0 ? 0.35 + (c / maxC) * 0.5 : 0,
+                        borderRadius: "1px 1px 0 0",
+                      }} />
+                    ))}
+                  </div>
+                );
+              })()}
+              <span style={{ fontSize: 8, color: "var(--text-muted)", opacity: 0.55, lineHeight: 1 }}>{cell.count}개</span>
               {cell.avgScore != null && (
                 <span style={{ fontSize: 9, fontWeight: 700, color: bg, lineHeight: 1, filter: "brightness(1.3)" }}>
                   avg {cell.avgScore.toFixed(1)}
@@ -480,7 +581,9 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   const [selected, setSelected]     = useState<AlbumWithRatings | null>(null);
   const [tooltip, setTooltip]       = useState<{ ev: TimelineEvent; mx: number; my: number } | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+  const [hoveredDotPos, setHoveredDotPos]   = useState<DotPos | null>(null);
   const [axisDrawn, setAxisDrawn]   = useState(false);
+  const [animated, setAnimated]     = useState(false);
   const [scrollX, setScrollX]       = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -527,7 +630,9 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     zoomRef.current  = fit;
     setZoom(fit);
     setAxisDrawn(false);
+    setAnimated(false);
     setTimeout(() => setAxisDrawn(true), 80);
+    setTimeout(() => setAnimated(true), 1600);  // dots animate in for 0~1.6s
     if (scrollRef.current) scrollRef.current.scrollLeft = 0;
   }, [events, mode, totalMs]);
 
@@ -668,8 +773,8 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   );
   const heatCells = useMemo(() => computeHeatmap(events ?? [], mode), [events, mode]);
   const allDots   = useMemo(
-    () => buildDotPositions(events ?? [], zoom, minMs, mode),
-    [events, zoom, minMs, mode]
+    () => buildDotPositions(events ?? [], zoom, minMs, maxMs, mode),
+    [events, zoom, minMs, maxMs, mode]
   );
 
   // Score counts for axis histogram
@@ -681,11 +786,35 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     return { scoreCounts: counts, maxScoreCount: Math.max(...counts.values(), 1) };
   }, [events]);
 
-  // X virtualization — only render dots in view + 500px buffer
-  const containerW = (wrapRef.current?.clientWidth ?? 900) - AXIS_W;
+  // X virtualization — only render dots/nebula in view + 500px buffer
+  const containerW  = (wrapRef.current?.clientWidth ?? 900) - AXIS_W;
   const visibleDots = useMemo(
     () => allDots.filter(d => d.x >= scrollX - 500 && d.x <= scrollX + containerW + 500),
     [allDots, scrollX, containerW]
+  );
+
+  // Nebula density blobs
+  const nebulaBlobs = useMemo(() => computeNebula(allDots), [allDots]);
+  const visibleNebula = useMemo(
+    () => nebulaBlobs.filter(b => b.x >= scrollX - 400 && b.x <= scrollX + containerW + 400),
+    [nebulaBlobs, scrollX, containerW]
+  );
+
+  // Gap markers (release mode only)
+  const gapMarkers = useMemo(
+    () => mode === "release" ? computeGaps(events ?? [], zoom, minMs) : [],
+    [events, mode, zoom, minMs]
+  );
+
+  // Constellation: other albums by hovered artist
+  const artistDots = useMemo(
+    () => hoveredDotPos
+      ? allDots.filter(d =>
+          d.ev.album.artist === hoveredDotPos.ev.album.artist &&
+          `${d.ev.album.id}-${d.ev.date}` !== `${hoveredDotPos.ev.album.id}-${hoveredDotPos.ev.date}`
+        )
+      : [],
+    [hoveredDotPos, allDots]
   );
 
   const isZoomed = fitRef.current > 0 && zoom > fitRef.current * 1.1;
@@ -740,8 +869,9 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
       animation: "cvIn .2s ease-out",
     }}>
       <style>{`
-        @keyframes cvIn   { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes cvAxis { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+        @keyframes cvIn       { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes cvAxis     { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+        @keyframes starAppear { from { opacity:0; transform:translate(-50%,-50%) scale(0.25); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
       `}</style>
 
       {/* ── Header ── */}
@@ -901,15 +1031,87 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   pointerEvents: "none",
                 }} />
 
+                {/* ── Nebula — density glow in busy clusters ── */}
+                {visibleNebula.map((blob, i) => (
+                  <div key={`neb-${i}`} style={{
+                    position: "absolute",
+                    left: blob.x - 110, top: blob.y - 110,
+                    width: 220, height: 220,
+                    borderRadius: "50%",
+                    background: `radial-gradient(circle, rgba(255,255,255,${(blob.intensity * 0.052).toFixed(4)}) 0%, transparent 68%)`,
+                    filter: "blur(18px)",
+                    pointerEvents: "none", zIndex: 0,
+                    willChange: "transform",
+                  }} />
+                ))}
+
+                {/* ── Gap labels (release mode) ── */}
+                {gapMarkers.map((g, i) => (
+                  <div key={`gap-${i}`} style={{
+                    position: "absolute",
+                    left: g.x, top: bandCenterY(4),
+                    transform: "translateX(-50%)",
+                    fontSize: 8, color: "var(--text-muted)", opacity: 0.16,
+                    pointerEvents: "none", whiteSpace: "nowrap",
+                    letterSpacing: "0.1em", fontStyle: "italic",
+                  }}>
+                    {g.label}
+                  </div>
+                ))}
+
+                {/* ── Constellation lines — same artist connections on hover ── */}
+                {hoveredDotPos && artistDots.length > 0 && (
+                  <svg style={{
+                    position: "absolute", inset: 0,
+                    width: "100%", height: GALAXY_H,
+                    pointerEvents: "none", zIndex: 14, overflow: "visible",
+                  }}>
+                    {artistDots.map((d, i) => (
+                      <g key={i}>
+                        <line
+                          x1={hoveredDotPos.x} y1={hoveredDotPos.y}
+                          x2={d.x} y2={d.y}
+                          stroke="rgba(255,255,255,0.14)"
+                          strokeWidth={0.7}
+                          strokeDasharray="4 5"
+                        />
+                        {/* Small pulse circle on connected dot */}
+                        <circle
+                          cx={d.x} cy={d.y} r={dotRadius(d.ev.score) + 3}
+                          fill="none"
+                          stroke={d.ev.score != null ? scoreColor(d.ev.score) : "rgba(255,255,255,0.3)"}
+                          strokeWidth={1}
+                          opacity={0.4}
+                        />
+                      </g>
+                    ))}
+                  </svg>
+                )}
+
+                {/* ── Band watermark numbers — large faint score label per band ── */}
+                {Array.from({ length: SCORE_MAX - SCORE_MIN + 1 }, (_, i) => SCORE_MAX - i).map(s => (
+                  <div key={`wm-${s}`} style={{
+                    position: "absolute",
+                    right: 28, top: bandCenterY(s),
+                    transform: "translateY(-50%)",
+                    fontSize: 80, fontWeight: 900, lineHeight: 1,
+                    color: scoreColor(s), opacity: 0.028,
+                    pointerEvents: "none", userSelect: "none",
+                  }}>
+                    {s}
+                  </div>
+                ))}
+
                 {/* ── Galaxy dots ── */}
                 {visibleDots.map(pos => (
                   <GalaxyDot
                     key={`${pos.ev.album.id}-${pos.ev.date}`}
                     pos={pos} cs={cs}
                     dimmed={selectedPeriod != null && !isPeriodMatch(pos.ev, selectedPeriod)}
+                    animated={animated} innerW={innerW}
                     onSelect={handleSelect}
-                    onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
-                    onTipLeave={() => setTooltip(null)}
+                    onTipEnter={(p, mx, my) => { setTooltip({ ev: p.ev, mx, my }); setHoveredDotPos(p); }}
+                    onTipLeave={() => { setTooltip(null); setHoveredDotPos(null); }}
                   />
                 ))}
               </div>
