@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePinch } from "@use-gesture/react";
+
 import { scoreColor } from "@/lib/score";
 import AlbumModal from "@/components/album/AlbumModal";
 import Spinner from "@/components/ui/Spinner";
@@ -447,15 +447,18 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     return () => window.removeEventListener("resize", fn);
   }, [events, totalMs, initView]);
 
-  // Wheel: zoom toward cursor, horizontal pan
+  // Wheel — Figma style:
+  //   ctrlKey/metaKey → ZOOM toward cursor (trackpad pinch or Ctrl+scroll)
+  //   otherwise       → PAN (two-finger scroll or mouse wheel)
   useEffect(() => {
     const el = vpRef.current; if (!el) return;
     const fn = (e: WheelEvent) => {
       e.preventDefault();
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 0.6) {
-        panXRef.current -= e.deltaX; setPanX(panXRef.current);
-      } else {
-        const fac = e.deltaMode === 0 ? Math.pow(1.003, -e.deltaY) : e.deltaY > 0 ? 0.83 : 1.20;
+      if (e.ctrlKey || e.metaKey) {
+        // Zoom toward cursor
+        const fac = e.deltaMode === 0
+          ? Math.exp(-e.deltaY * 0.008)   // trackpad pinch: smooth exponential
+          : e.deltaY > 0 ? 1 / 1.25 : 1.25; // mouse Ctrl+wheel: discrete steps
         const rect = el.getBoundingClientRect();
         const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
         const prevZ = cssZoomRef.current;
@@ -464,27 +467,16 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
         const npy = cy - (cy - panYRef.current) * nz / prevZ;
         cssZoomRef.current = nz; panXRef.current = npx; panYRef.current = npy;
         setCssZoom(nz); setPanX(npx); setPanY(npy);
+      } else {
+        // Pan (two-finger scroll or mouse wheel)
+        panXRef.current -= e.deltaX;
+        panYRef.current -= e.deltaY;
+        setPanX(panXRef.current); setPanY(panYRef.current);
       }
     };
     el.addEventListener("wheel", fn, { passive: false });
     return () => el.removeEventListener("wheel", fn);
   }, []);
-
-  // Pinch zoom — anchor to pinch origin
-  const bind = usePinch(({ offset: [scale], origin: [ox, oy], first, memo }) => {
-    const el = vpRef.current; if (!el) return;
-    if (first) {
-      const rect = el.getBoundingClientRect();
-      return { initZ: cssZoomRef.current, initPx: panXRef.current, initPy: panYRef.current, ox: ox - rect.left, oy: oy - rect.top };
-    }
-    if (!memo) return;
-    const nz = Math.max(fitZoomRef.current * 0.75, Math.min(MAX_CSS_ZOOM, memo.initZ * scale));
-    const npx = memo.ox - (memo.ox - memo.initPx) * nz / memo.initZ;
-    const npy = memo.oy - (memo.oy - memo.initPy) * nz / memo.initZ;
-    cssZoomRef.current = nz; panXRef.current = npx; panYRef.current = npy;
-    setCssZoom(nz); setPanX(npx); setPanY(npy);
-    return memo;
-  }, { from: [1, 0], eventOptions: { passive: false } });
 
   // Drag pan with inertia
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -660,7 +652,6 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
             {/* Canvas viewport — overflow hidden, no scroll */}
             <div
               ref={vpRef}
-              {...bind()}
               onMouseDown={onDragStart}
               onClickCapture={e => { if (dragMoved.current) e.stopPropagation(); }}
               style={{ flex:1, overflow:"hidden", position:"relative", cursor: isDragging ? "grabbing" : "grab", userSelect:"none", touchAction:"none" }}
