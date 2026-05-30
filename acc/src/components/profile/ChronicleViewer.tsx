@@ -154,24 +154,25 @@ function buildDotPositions(
   mode: ViewMode, spreadK = 1,
 ): DotPos[] {
   if (!totalMs) return [];
-  const range = maxMs - minMs;
   // X jitter grows mildly with zoom so same-year albums spread apart as user zooms in
   const xK = Math.pow(Math.max(1, spreadK), 0.4);
 
   return events.map(ev => {
     const ms = eventMs(ev, mode);
     const xJitterFrac = mode === "release"
-      ? jitter(ev.album.id + "x", 0.25 * xK) * MS_YEAR / totalMs
+      ? jitter(ev.album.id + "x", 0.42 * xK) * MS_YEAR / totalMs
       : jitter(ev.album.id + "x", 2    * xK) * MS_DAY  / totalMs;
     const x = ms != null ? ((ms - minMs) / totalMs + xJitterFrac) * CANVAS_W : -9999;
 
     const isUnrated = ev.score == null;
     const y = isUnrated
       ? unratedCenterY() + jitter(ev.album.id, UNRATED_H * 0.5)
-      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.42);
+      : bandCenterY(ev.score!) + jitter(ev.album.id, BAND_H * 0.47);
 
-    const t = ms != null && range > 0 ? (ms - minMs) / range : 0.5;
-    return { ev, x, y, isUnrated, baseOpacity: 0.55 + t * 0.33 };
+    const scoreOpacity = ev.score == null ? 0.45
+      : ev.score >= 8 ? 1.0 : ev.score >= 7 ? 0.93 : ev.score >= 6 ? 0.83
+      : ev.score >= 5 ? 0.72 : ev.score >= 4 ? 0.60 : 0.50;
+    return { ev, x, y, isUnrated, baseOpacity: scoreOpacity };
   });
 }
 
@@ -234,49 +235,59 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
 // ─── GalaxyDot ────────────────────────────────────────────────────────────────
 
 interface DotProps {
-  pos: DotPos; cs: number; dimmed: boolean; animated: boolean;
+  pos: DotPos; cs: number; cssZoom: number; dimmed: boolean; animated: boolean;
   onSelect: (ev: TimelineEvent) => void;
   onTipEnter: (pos: DotPos, mx: number, my: number) => void;
   onTipLeave: () => void;
 }
-function GalaxyDot({ pos, cs, dimmed, animated, onSelect, onTipEnter, onTipLeave }: DotProps) {
+function GalaxyDot({ pos, cs, cssZoom, dimmed, animated, onSelect, onTipEnter, onTipLeave }: DotProps) {
   const [hov, setHov] = useState(false);
   const { ev, x, y, baseOpacity } = pos;
   const score = ev.score;
   const dot  = score != null ? scoreColor(score) : "rgba(255,255,255,0.22)";
   const isDot = cs === 0;
   const r    = dotRadius(score);
+  const iz   = 1 / cssZoom; // normalize canvas-space pixels → screen pixels
+  const scoreScale = score != null
+    ? score >= 8 ? 1.55 : score >= 7 ? 1.28 : score >= 6 ? 1.1 : 1.0
+    : 0.82;
+  const ecs = cs * scoreScale; // effective cover size
   const glowShadow = score == null ? "none"
-    : score >= 8 ? (hov ? `0 0 0 2px var(--bg),0 0 14px ${dot}ee,0 0 28px ${dot}77,0 0 50px ${dot}33` : `0 0 0 2px var(--bg),0 0 8px ${dot}cc,0 0 20px ${dot}55,0 0 38px ${dot}22`)
-    : score >= 7 ? (hov ? `0 0 0 2px var(--bg),0 0 12px ${dot}cc,0 0 24px ${dot}55` : `0 0 0 2px var(--bg),0 0 6px ${dot}aa,0 0 14px ${dot}33`)
-    : score >= 6 ? (hov ? `0 0 0 1px var(--bg),0 0 10px ${dot}aa,0 0 20px ${dot}33` : `0 0 0 1px var(--bg),0 0 5px ${dot}88`)
-    : hov ? `0 0 7px ${dot}66` : "none";
+    : score >= 8 ? (hov ? `0 0 0 ${2*iz}px var(--bg),0 0 ${14*iz}px ${dot}ee,0 0 ${28*iz}px ${dot}77,0 0 ${50*iz}px ${dot}33` : `0 0 0 ${2*iz}px var(--bg),0 0 ${8*iz}px ${dot}cc,0 0 ${20*iz}px ${dot}55,0 0 ${38*iz}px ${dot}22`)
+    : score >= 7 ? (hov ? `0 0 0 ${2*iz}px var(--bg),0 0 ${12*iz}px ${dot}cc,0 0 ${24*iz}px ${dot}55` : `0 0 0 ${2*iz}px var(--bg),0 0 ${6*iz}px ${dot}aa,0 0 ${14*iz}px ${dot}33`)
+    : score >= 6 ? (hov ? `0 0 0 ${iz}px var(--bg),0 0 ${10*iz}px ${dot}aa,0 0 ${20*iz}px ${dot}33` : `0 0 0 ${iz}px var(--bg),0 0 ${5*iz}px ${dot}88`)
+    : hov ? `0 0 ${7*iz}px ${dot}66` : "none";
   const delay = animated ? 0 : 0.08 + (x / CANVAS_W) * 0.85;
   const enter = (e: React.MouseEvent) => { setHov(true);  onTipEnter(pos, e.clientX, e.clientY); };
   const leave = ()                     => { setHov(false); onTipLeave(); };
   return (
     <div style={{ position:"absolute", left:x, top:y, transform:"translate(-50%,-50%)",
       opacity: dimmed ? 0.07 : (hov ? 1 : baseOpacity), transition:"opacity 0.22s ease",
-      zIndex: hov ? 20 : (isDot ? 1 : 2),
+      zIndex: hov ? 20 : (isDot ? 1 : score != null ? score : 2),
       animation: animated ? "none" : `starAppear .38s ${delay.toFixed(3)}s ease-out both` }}>
       {isDot ? (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave}
           style={{ width:r*2, height:r*2, borderRadius:"50%", backgroundColor:dot,
-            border: score != null ? "1.5px solid var(--bg)" : "none", padding:0, cursor:"pointer",
+            border: score != null ? `${1.5*iz}px solid var(--bg)` : "none", padding:0, cursor:"pointer",
             boxShadow:glowShadow, transform: hov ? "scale(1.55)" : "scale(1)",
             transition:"transform .14s ease, box-shadow .18s ease" }} />
       ) : (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave}
-          style={{ width:cs, height:cs, padding:0,
+          style={{ width:ecs, height:ecs, padding:0,
             overflow:"hidden", border:"none", cursor:"pointer", backgroundColor:"var(--bg-elevated)",
-            borderRadius: Math.round(cs * 0.14),
-            outline: hov ? `2px solid ${dot}` : `1px solid ${dot}18`, outlineOffset:2,
-            boxShadow: hov ? `0 6px 22px rgba(0,0,0,.65),0 0 0 3px ${dot}30,0 0 12px ${dot}55` : "0 2px 8px rgba(0,0,0,.3)",
+            borderRadius: Math.round(ecs * 0.14),
+            outline: hov ? `${2.5*iz}px solid ${dot}` : score != null && score >= 8 ? `${2*iz}px solid ${dot}77` : score != null && score >= 7 ? `${1.5*iz}px solid ${dot}55` : score != null && score >= 5 ? `${iz}px solid ${dot}22` : "none", outlineOffset: 2*iz,
+            boxShadow: hov
+              ? `0 ${8*iz}px ${30*iz}px rgba(0,0,0,.75),0 0 0 ${3*iz}px ${dot}70,0 0 ${20*iz}px ${dot}cc,0 0 ${40*iz}px ${dot}55`
+              : score != null && score >= 8 ? `0 ${4*iz}px ${18*iz}px rgba(0,0,0,.55),0 0 0 ${1.5*iz}px ${dot}66,0 0 ${16*iz}px ${dot}bb,0 0 ${32*iz}px ${dot}55`
+              : score != null && score >= 7 ? `0 ${3*iz}px ${14*iz}px rgba(0,0,0,.5),0 0 0 ${iz}px ${dot}55,0 0 ${12*iz}px ${dot}88,0 0 ${22*iz}px ${dot}33`
+              : score != null && score >= 6 ? `0 ${2*iz}px ${10*iz}px rgba(0,0,0,.4),0 0 ${8*iz}px ${dot}44`
+              : `0 ${2*iz}px ${8*iz}px rgba(0,0,0,.35)`,
             transform: hov ? "scale(1.12)" : "scale(1)", transition:"transform .13s ease, box-shadow .16s ease, outline .13s ease" }}>
           {ev.album.cover_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={ev.album.cover_url} alt={ev.album.title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-            : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-muted)", fontSize:Math.floor(cs*0.36) }}>♪</div>}
+            : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-muted)", fontSize:Math.floor(ecs*0.36) }}>♪</div>}
         </button>
       )}
     </div>
@@ -408,6 +419,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
   const vpWRef     = useRef(836);
   const vpHRef     = useRef(600);
   const dragRef    = useRef<{ sx: number; sy: number; px: number; py: number } | null>(null);
+  const touchRef   = useRef<{ prevTouches: { id: number; x: number; y: number }[] } | null>(null);
   const dragMoved  = useRef(false);
   const velX       = useRef(0);
   const velY       = useRef(0);
@@ -525,6 +537,76 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, []);
+
+  useEffect(() => {
+    const el = vpRef.current; if (!el) return;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault(); // pinch만 막음 — 단일 탭 클릭 이벤트 보존
+      cancelAnimationFrame(rafRef.current);
+      dragMoved.current = false; velX.current = 0; velY.current = 0;
+      touchRef.current = { prevTouches: Array.from(e.touches).map(t => ({ id: t.identifier, x: t.clientX, y: t.clientY })) };
+      setIsDragging(true);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (!touchRef.current) return;
+      const curr = Array.from(e.touches).map(t => ({ id: t.identifier, x: t.clientX, y: t.clientY }));
+      const prev = touchRef.current.prevTouches;
+      if (curr.length === 1) {
+        const p = prev.find(p => p.id === curr[0].id) ?? prev[0];
+        if (!p) { touchRef.current.prevTouches = curr; return; }
+        const dx = curr[0].x - p.x, dy = curr[0].y - p.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved.current = true;
+        panXRef.current += dx; panYRef.current += dy;
+        setPanX(panXRef.current); setPanY(panYRef.current);
+        velX.current = -dx; velY.current = -dy;
+      } else if (curr.length === 2 && prev.length >= 2) {
+        const p0 = prev.find(p => p.id === curr[0].id) ?? prev[0];
+        const p1 = prev.find(p => p.id === curr[1].id) ?? prev[1];
+        const prevDist = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        const currDist = Math.hypot(curr[1].x - curr[0].x, curr[1].y - curr[0].y);
+        if (prevDist > 10) {
+          const fac = currDist / prevDist;
+          const cx = (curr[0].x + curr[1].x) / 2, cy = (curr[0].y + curr[1].y) / 2;
+          const px0 = (p0.x + p1.x) / 2, py0 = (p0.y + p1.y) / 2;
+          const rect = el.getBoundingClientRect();
+          const lcx = cx - rect.left, lcy = cy - rect.top;
+          const prevZ = cssZoomRef.current;
+          const nz = Math.max(fitZoomRef.current * 0.75, Math.min(MAX_CSS_ZOOM, prevZ * fac));
+          const npx = lcx - (lcx - panXRef.current) * nz / prevZ + (cx - px0);
+          const npy = lcy - (lcy - panYRef.current) * nz / prevZ + (cy - py0);
+          cssZoomRef.current = nz; panXRef.current = npx; panYRef.current = npy;
+          setCssZoom(nz); setPanX(npx); setPanY(npy);
+        }
+      }
+      touchRef.current.prevTouches = curr;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        touchRef.current = null; setIsDragging(false);
+        let vx = velX.current, vy = velY.current;
+        const coast = () => {
+          if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) return;
+          panXRef.current -= vx; panYRef.current -= vy;
+          setPanX(panXRef.current); setPanY(panYRef.current);
+          vx *= 0.93; vy *= 0.93;
+          rafRef.current = requestAnimationFrame(coast);
+        };
+        coast();
+      } else if (touchRef.current) {
+        touchRef.current.prevTouches = Array.from(e.touches).map(t => ({ id: t.identifier, x: t.clientX, y: t.clientY }));
+      }
+    };
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove",  onTouchMove,  { passive: false });
+    el.addEventListener("touchend",   onTouchEnd,   { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove",  onTouchMove);
+      el.removeEventListener("touchend",   onTouchEnd);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
 
   const zoomStep = useCallback((fac: number) => {
     const cx = vpWRef.current / 2, cy = vpHRef.current / 2;
@@ -677,13 +759,13 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                 ))}
                 {/* Band lines */}
                 {Array.from({ length: SCORE_MAX-SCORE_MIN+1 }, (_,i) => SCORE_MAX-i).map(s => (
-                  <div key={`bl-${s}`} style={{ position:"absolute", left:0, top:bandTopY(s), height:1, width:"100%", backgroundColor:"var(--border)", opacity: s===SCORE_MAX ? 0.3 : 0.1, pointerEvents:"none" }} />
+                  <div key={`bl-${s}`} style={{ position:"absolute", left:0, top:bandTopY(s), height: 1/cssZoom, width:"100%", backgroundColor:"var(--border)", opacity: s===SCORE_MAX ? 0.3 : 0.1, pointerEvents:"none" }} />
                 ))}
                 {/* Unrated separator */}
-                <div style={{ position:"absolute", left:0, top:unratedSepY, width:"100%", height:1, borderTop:"1px dashed var(--border)", opacity:.18, pointerEvents:"none" }} />
+                <div style={{ position:"absolute", left:0, top:unratedSepY, width:"100%", height: 1/cssZoom, borderTop:`${1/cssZoom}px dashed var(--border)`, opacity:.18, pointerEvents:"none" }} />
 
                 {/* Baseline */}
-                <div style={{ position:"absolute", left:0, top:baselineY, width:"100%", height:1,
+                <div style={{ position:"absolute", left:0, top:baselineY, width:"100%", height: 1/cssZoom,
                               background:"linear-gradient(to right, transparent, var(--border-light) 2%, var(--border-light) 98%, transparent)",
                               transformOrigin:"left center", transform:"scaleX(0)",
                               animation: axisDrawn ? "cvAxis .65s cubic-bezier(0.22,1,0.36,1) forwards" : "none", pointerEvents:"none" }} />
@@ -691,14 +773,14 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                 {/* X ticks */}
                 {ticks.map((tk, i) => (
                   <div key={i}>
-                    <div style={{ position:"absolute", left:tk.x, top: 20+(tk.isMajor ? 0 : 12), transform:"translateX(-50%)", fontSize: tk.isMajor ? 10 : 8, fontWeight: tk.isMajor ? 700 : 400, color: tk.isMajor ? "var(--text-sub)" : "var(--text-muted)", opacity: tk.isMajor ? 0.7 : 0.38, whiteSpace:"nowrap", pointerEvents:"none" }}>{tk.label}</div>
-                    <div style={{ position:"absolute", left:tk.x, top: 20+(hasMajor ? 28 : 16), width:1, height: tk.isMajor ? 14 : 7, backgroundColor:"var(--border)", opacity: tk.isMajor ? 0.45 : 0.18, pointerEvents:"none" }} />
+                    <div style={{ position:"absolute", left:tk.x, top: 20+(tk.isMajor ? 0 : 12), transform:"translateX(-50%)", fontSize: (tk.isMajor ? 11 : 9) / cssZoom, fontWeight: tk.isMajor ? 800 : 500, color: tk.isMajor ? "var(--text-sub)" : "var(--text-muted)", opacity: tk.isMajor ? 0.9 : 0.52, whiteSpace:"nowrap", pointerEvents:"none" }}>{tk.label}</div>
+                    <div style={{ position:"absolute", left:tk.x, top: 20+(hasMajor ? 28 : 16), width: 1/cssZoom, height: tk.isMajor ? 14 : 7, backgroundColor:"var(--border)", opacity: tk.isMajor ? 0.55 : 0.22, pointerEvents:"none" }} />
                   </div>
                 ))}
 
                 {/* Nebula */}
                 {visibleNebula.map((blob,i) => (
-                  <div key={`neb-${i}`} style={{ position:"absolute", left:blob.x-55, top:blob.y-55, width:110, height:110, borderRadius:"50%", background:`radial-gradient(circle, rgba(255,255,255,${(blob.intensity*0.065).toFixed(4)}) 0%, transparent 68%)`, filter:"blur(10px)", pointerEvents:"none", zIndex:0 }} />
+                  <div key={`neb-${i}`} style={{ position:"absolute", left:blob.x-55, top:blob.y-55, width:110, height:110, borderRadius:"50%", background:`radial-gradient(circle, rgba(255,255,255,${(blob.intensity*0.065).toFixed(4)}) 0%, transparent 68%)`, filter:`blur(${10/cssZoom}px)`, pointerEvents:"none", zIndex:0 }} />
                 ))}
 
                 {/* Gaps */}
@@ -711,8 +793,8 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   <svg style={{ position:"absolute", inset:0, width:"100%", height:CANVAS_H, pointerEvents:"none", zIndex:14, overflow:"visible" }}>
                     {artistDots.map((d,i) => (
                       <g key={i}>
-                        <line x1={hoveredDotPos.x} y1={hoveredDotPos.y} x2={d.x} y2={d.y} stroke="rgba(255,255,255,0.14)" strokeWidth={0.7} strokeDasharray="4 5" />
-                        <circle cx={d.x} cy={d.y} r={dotRadius(d.ev.score)+3} fill="none" stroke={d.ev.score != null ? scoreColor(d.ev.score) : "rgba(255,255,255,0.3)"} strokeWidth={1} opacity={0.4} />
+                        <line x1={hoveredDotPos.x} y1={hoveredDotPos.y} x2={d.x} y2={d.y} stroke="rgba(255,255,255,0.14)" strokeWidth={0.7/cssZoom} strokeDasharray={`${4/cssZoom} ${5/cssZoom}`} />
+                        <circle cx={d.x} cy={d.y} r={dotRadius(d.ev.score)+3} fill="none" stroke={d.ev.score != null ? scoreColor(d.ev.score) : "rgba(255,255,255,0.3)"} strokeWidth={1/cssZoom} opacity={0.4} />
                       </g>
                     ))}
                   </svg>
@@ -725,7 +807,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
 
                 {/* Covers — always covers, never dots */}
                 {visibleDots.map(pos => (
-                  <GalaxyDot key={`${pos.ev.album.id}-${pos.ev.date}`} pos={pos} cs={cs}
+                  <GalaxyDot key={`${pos.ev.album.id}-${pos.ev.date}`} pos={pos} cs={cs} cssZoom={cssZoom}
                     dimmed={selectedPeriod != null && !isPeriodMatch(pos.ev, selectedPeriod)}
                     animated={animated}
                     onSelect={handleSelect}
