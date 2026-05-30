@@ -66,15 +66,12 @@ function computeRange(events: TimelineEvent[], mode: ViewMode) {
   return { minMs: lo - pad, maxMs: hi + pad, totalMs: hi + pad - (lo - pad) };
 }
 
-// Cover size by zoom level — always returns > 0 (no dots)
-function coverSize(ez: number, mode: ViewMode): number {
-  const d = mode === "release" ? ez * MS_YEAR : ez * MS_DAY;
-  if (mode === "release") {
-    if (d < 4)  return 16; if (d < 10) return 24; if (d < 25) return 36;
-    if (d < 70) return 48; return 60;
-  }
-  if (d < 1.2) return 16; if (d < 4)  return 24; if (d < 12) return 36;
-  if (d < 40)  return 50; return 64;
+// Target screen pixel size for covers — "map marker" feel, grows only slightly with zoom
+function coverTargetPx(spreadK: number): number {
+  if (spreadK < 1.5) return 32;
+  if (spreadK < 3)   return 40;
+  if (spreadK < 6)   return 48;
+  return 54;
 }
 function dotRadius(score: number | undefined): number {
   if (score == null) return 2;
@@ -270,8 +267,9 @@ function GalaxyDot({ pos, cs, dimmed, animated, onSelect, onTipEnter, onTipLeave
             transition:"transform .14s ease, box-shadow .18s ease" }} />
       ) : (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave}
-          style={{ width:cs, height:cs, padding:0, borderRadius: cs > 40 ? 8 : 5,
+          style={{ width:cs, height:cs, padding:0,
             overflow:"hidden", border:"none", cursor:"pointer", backgroundColor:"var(--bg-elevated)",
+            borderRadius: Math.round(cs * 0.14),
             outline: hov ? `2px solid ${dot}` : `1px solid ${dot}18`, outlineOffset:2,
             boxShadow: hov ? `0 6px 22px rgba(0,0,0,.65),0 0 0 3px ${dot}30,0 0 12px ${dot}55` : "0 2px 8px rgba(0,0,0,.3)",
             transform: hov ? "scale(1.12)" : "scale(1)", transition:"transform .13s ease, box-shadow .16s ease, outline .13s ease" }}>
@@ -599,7 +597,8 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
       : computeListenedTicks(effectiveZoom, minMs, maxMs, totalMs);
   }, [effectiveZoom, minMs, maxMs, totalMs, mode]);
 
-  const cs = coverSize(effectiveZoom, mode);
+  // Canvas units for cover — screen size stays roughly fixed regardless of zoom
+  const cs = coverTargetPx(spreadK) / cssZoom;
 
   const artistDots = useMemo(() => hoveredDotPos
     ? allDots.filter(d => d.ev.album.artist === hoveredDotPos.ev.album.artist && `${d.ev.album.id}-${d.ev.date}` !== `${hoveredDotPos.ev.album.id}-${hoveredDotPos.ev.date}`)
