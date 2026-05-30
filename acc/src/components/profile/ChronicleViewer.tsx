@@ -66,17 +66,15 @@ function computeRange(events: TimelineEvent[], mode: ViewMode) {
   return { minMs: lo - pad, maxMs: hi + pad, totalMs: hi + pad - (lo - pad) };
 }
 
-// Score-aware cover size: higher-scored albums emerge earlier as zoom increases
-function coverSize(ez: number, mode: ViewMode, score: number | null = null): number {
+// Cover size by zoom level — always returns > 0 (no dots)
+function coverSize(ez: number, mode: ViewMode): number {
   const d = mode === "release" ? ez * MS_YEAR : ez * MS_DAY;
-  const boost = score != null ? (score / SCORE_MAX) * 2.5 : 0;
-  const ed = d * (1 + boost);
   if (mode === "release") {
-    if (ed < 5)  return 0; if (ed < 14) return 20; if (ed < 35) return 32;
-    if (ed < 90) return 44; return 56;
+    if (d < 4)  return 16; if (d < 10) return 24; if (d < 25) return 36;
+    if (d < 70) return 48; return 60;
   }
-  if (ed < 1.5) return 0; if (ed < 6)  return 20; if (ed < 18) return 34;
-  if (ed < 55)  return 48; return 60;
+  if (d < 1.2) return 16; if (d < 4)  return 24; if (d < 12) return 36;
+  if (d < 40)  return 50; return 64;
 }
 function dotRadius(score: number | undefined): number {
   if (score == null) return 2;
@@ -178,39 +176,6 @@ function buildDotPositions(
     const t = ms != null && range > 0 ? (ms - minMs) / range : 0.5;
     return { ev, x, y, isUnrated, baseOpacity: 0.55 + t * 0.33 };
   });
-}
-
-// ─── Greedy cover placement ───────────────────────────────────────────────────
-// Albums sorted by score get first pick of canvas space.
-// At low zoom: few covers (tight space). At high zoom: all visible albums get covers.
-
-function computeGreedyCovers(
-  visibleDots: DotPos[],
-  effectiveZoom: number,
-  mode: ViewMode,
-): Set<string> {
-  const sorted = [...visibleDots].sort((a, b) => (b.ev.score ?? 0) - (a.ev.score ?? 0));
-  const placed: Array<{ x: number; y: number; half: number }> = [];
-  const coverIds = new Set<string>();
-
-  for (const dot of sorted) {
-    const cs = coverSize(effectiveZoom, mode, dot.ev.score ?? null);
-    if (cs === 0) continue;
-
-    const half = cs / 2;
-    const gap  = 4; // minimum gap between covers in canvas units
-
-    const overlaps = placed.some(p =>
-      Math.abs(dot.x - p.x) < half + p.half + gap &&
-      Math.abs(dot.y - p.y) < half + p.half + gap
-    );
-
-    if (!overlaps) {
-      placed.push({ x: dot.x, y: dot.y, half });
-      coverIds.add(`${dot.ev.album.id}-${dot.ev.date}`);
-    }
-  }
-  return coverIds;
 }
 
 // ─── Nebula ───────────────────────────────────────────────────────────────────
@@ -634,11 +599,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
       : computeListenedTicks(effectiveZoom, minMs, maxMs, totalMs);
   }, [effectiveZoom, minMs, maxMs, totalMs, mode]);
 
-  // Greedy: which visible albums get covers vs remain as dots
-  const greedyCoverIds = useMemo(
-    () => computeGreedyCovers(visibleDots, effectiveZoom, mode),
-    [visibleDots, effectiveZoom, mode],
-  );
+  const cs = coverSize(effectiveZoom, mode);
 
   const artistDots = useMemo(() => hoveredDotPos
     ? allDots.filter(d => d.ev.album.artist === hoveredDotPos.ev.album.artist && `${d.ev.album.id}-${d.ev.date}` !== `${hoveredDotPos.ev.album.id}-${hoveredDotPos.ev.date}`)
@@ -763,21 +724,15 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
                   <div key={`wm-${s}`} style={{ position:"absolute", right:14, top:bandCenterY(s), transform:"translateY(-50%)", fontSize:80, fontWeight:900, lineHeight:1, color:scoreColor(s), opacity:.028, pointerEvents:"none", userSelect:"none" }}>{s}</div>
                 ))}
 
-                {/* Dots — greedy determines cover vs dot per album */}
-                {visibleDots.map(pos => {
-                  const key = `${pos.ev.album.id}-${pos.ev.date}`;
-                  const cs = greedyCoverIds.has(key)
-                    ? coverSize(effectiveZoom, mode, pos.ev.score ?? null)
-                    : 0;
-                  return (
-                    <GalaxyDot key={key} pos={pos} cs={cs}
-                      dimmed={selectedPeriod != null && !isPeriodMatch(pos.ev, selectedPeriod)}
-                      animated={animated}
-                      onSelect={handleSelect}
-                      onTipEnter={(p,mx,my) => { setTooltip({ ev:p.ev, mx, my }); setHoveredDotPos(p); }}
-                      onTipLeave={() => { setTooltip(null); setHoveredDotPos(null); }} />
-                  );
-                })}
+                {/* Covers — always covers, never dots */}
+                {visibleDots.map(pos => (
+                  <GalaxyDot key={`${pos.ev.album.id}-${pos.ev.date}`} pos={pos} cs={cs}
+                    dimmed={selectedPeriod != null && !isPeriodMatch(pos.ev, selectedPeriod)}
+                    animated={animated}
+                    onSelect={handleSelect}
+                    onTipEnter={(p,mx,my) => { setTooltip({ ev:p.ev, mx, my }); setHoveredDotPos(p); }}
+                    onTipLeave={() => { setTooltip(null); setHoveredDotPos(null); }} />
+                ))}
               </div>
             </div>
 
