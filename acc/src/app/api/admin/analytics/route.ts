@@ -45,8 +45,8 @@ export async function GET(req: NextRequest) {
   ]);
 
   const [ratings, events, albumVisits] = await Promise.all([
-    fetchAll<{ user_id: string; album_id: string; score: number; updated_at: string }>((from, to) =>
-      supabaseServer.from("ratings").select("user_id, album_id, score, updated_at").range(from, to)
+    fetchAll<{ user_id: string; album_id: string; score: number; updated_at: string; one_line_review: string | null }>((from, to) =>
+      supabaseServer.from("ratings").select("user_id, album_id, score, updated_at, one_line_review").range(from, to)
     ),
     fetchAll<{ type: string; path: string | null; data: Record<string, unknown>; device: string | null; created_at: string; user_id: string | null }>((from, to) =>
       supabaseServer.from("events").select("type, path, data, device, created_at, user_id").gte("created_at", since).range(from, to)
@@ -147,6 +147,10 @@ export async function GET(req: NextRequest) {
 
   // ── KPI
   const weekRatings = activityLogs.filter((l) => l.action === "rating_set").length;
+  const weekDeepRatings = ratings.filter((r) =>
+    r.one_line_review && r.one_line_review.trim().length > 0 &&
+    new Date(r.updated_at) >= new Date(weekAgo)
+  ).length;
   const todayVisits = pageViews.filter((e) => new Date(e.created_at) >= new Date(todayISO)).length;
 
   // ── 전환율 퍼널 (period 내 방문 → 올타임 평가)
@@ -213,7 +217,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     period,
-    kpis: { total_ratings: totalRatingsCount, week_ratings: weekRatings, today_visits: todayVisits, total_members: users.length },
+    kpis: { total_ratings: totalRatingsCount, week_ratings: weekRatings, week_deep_ratings: weekDeepRatings, today_visits: todayVisits, total_members: users.length },
     member_activity: memberActivity,
     top_pages: topPages,
     top_features: topFeatures,

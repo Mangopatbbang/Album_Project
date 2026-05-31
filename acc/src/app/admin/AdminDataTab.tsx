@@ -7,7 +7,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 
 type Analytics = {
   period: number;
-  kpis: { total_ratings: number; week_ratings: number; today_visits: number; total_members: number };
+  kpis: { total_ratings: number; week_ratings: number; week_deep_ratings: number; today_visits: number; total_members: number };
   member_activity: {
     id: string; display_name: string; avatar_url: string | null; role: string;
     total_ratings: number; recent_ratings: number; avg_score: number | null;
@@ -214,6 +214,7 @@ export default function AdminDataTab() {
       <div style={{ display: "flex", gap: 10 }}>
         <KpiCard label="총 평점" value={data.kpis.total_ratings.toLocaleString()} />
         <KpiCard label="이번 주 새 평점" value={data.kpis.week_ratings} />
+        <KpiCard label="이번 주 깊이있는 평가" value={data.kpis.week_deep_ratings} sub="한줄 소감 포함" />
         <KpiCard label="오늘 방문" value={data.kpis.today_visits} />
         <KpiCard label="총 멤버" value={data.kpis.total_members} />
         <KpiCard
