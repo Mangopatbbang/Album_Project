@@ -45,14 +45,14 @@ export async function GET(req: NextRequest) {
   ]);
 
   const [ratings, events, albumVisits] = await Promise.all([
-    fetchAll<{ user_id: string; score: number; updated_at: string }>((from, to) =>
-      supabaseServer.from("ratings").select("user_id, score, updated_at").range(from, to)
+    fetchAll<{ user_id: string; album_id: string; score: number; updated_at: string }>((from, to) =>
+      supabaseServer.from("ratings").select("user_id, album_id, score, updated_at").range(from, to)
     ),
     fetchAll<{ type: string; path: string | null; data: Record<string, unknown>; device: string | null; created_at: string; user_id: string | null }>((from, to) =>
       supabaseServer.from("events").select("type, path, data, device, created_at, user_id").gte("created_at", since).range(from, to)
     ),
-    fetchAll<{ album_id: string; created_at: string }>((from, to) =>
-      supabaseServer.from("album_visits").select("album_id, created_at").gte("created_at", since).range(from, to)
+    fetchAll<{ album_id: string; user_id: string | null; source: string | null; created_at: string }>((from, to) =>
+      supabaseServer.from("album_visits").select("album_id, user_id, source, created_at").gte("created_at", since).range(from, to)
     ),
   ]);
 
@@ -146,10 +146,70 @@ export async function GET(req: NextRequest) {
   const desktop = pageViews.length - mobile;
 
   // ── KPI
-  // 이번 주 새 평점: activity_logs 기반 (rating_set, 7일 이내)
   const weekRatings = activityLogs.filter((l) => l.action === "rating_set").length;
-  // 오늘 방문: KST 자정 이후
   const todayVisits = pageViews.filter((e) => new Date(e.created_at) >= new Date(todayISO)).length;
+
+  // ── 전환율 퍼널 (period 내 방문 → 올타임 평가)
+  // 유저별: 이 기간에 몇 개 앨범 봤고, 그 중 몇 개를 결국 평가했나
+  const ratedByUser = new Map<string, Set<string>>();
+  for (const r of ratings) {
+    if (!ratedByUser.has(r.user_id)) ratedByUser.set(r.user_id, new Set());
+    ratedByUser.get(r.user_id)!.add(r.album_id);
+  }
+  const visitedByUser = new Map<string, Set<string>>();
+  for (const v of albumVisits) {
+    if (!v.user_id) continue;
+    if (!visitedByUser.has(v.user_id)) visitedByUser.set(v.user_id, new Set());
+    visitedByUser.get(v.user_id)!.add(v.album_id);
+  }
+  const userFunnel = users.map((u) => {
+    const visited = visitedByUser.get(u.id) ?? new Set<string>();
+    const rated = ratedByUser.get(u.id) ?? new Set<string>();
+    const converted = [...visited].filter((id) => rated.has(id)).length;
+    return {
+      id: u.id, display_name: u.display_name, avatar_url: u.avatar_url,
+      visits: visited.size, total_ratings: rated.size,
+      converted, conversion_pct: visited.size > 0 ? Math.round(converted / visited.size * 100) : 0,
+    };
+  }).filter((u) => u.visits > 0).sort((a, b) => b.visits - a.visits);
+
+  // source별 전환율
+  const sourceVisitPairs = new Map<string, Set<string>>();
+  for (const v of albumVisits) {
+    if (!v.user_id) continue;
+    const src = v.source ?? "unknown";
+    if (!sourceVisitPairs.has(src)) sourceVisitPairs.set(src, new Set());
+    sourceVisitPairs.get(src)!.add(`${v.user_id}:${v.album_id}`);
+  }
+  const sourceFunnel = [...sourceVisitPairs.entries()]
+    .map(([source, pairs]) => {
+      const converted = [...pairs].filter((pair) => {
+        const [uid, aid] = pair.split(":");
+        return ratedByUser.get(uid)?.has(aid) ?? false;
+      }).length;
+      return { source, visits: pairs.size, converted, conversion_pct: Math.round(converted / pairs.size * 100) };
+    })
+    .sort((a, b) => b.visits - a.visits);
+
+  // ── 미전환 앨범 (period 내 2명 이상 방문했지만 아무도 평가 안 한 앨범)
+  const visitUsersByAlbum = new Map<string, Set<string>>();
+  for (const v of albumVisits) {
+    if (!v.user_id) continue;
+    if (!visitUsersByAlbum.has(v.album_id)) visitUsersByAlbum.set(v.album_id, new Set());
+    visitUsersByAlbum.get(v.album_id)!.add(v.user_id);
+  }
+  const ratedAlbumIds = new Set(ratings.map((r) => r.album_id));
+  const topUnconverted = [...visitUsersByAlbum.entries()]
+    .filter(([aid, visitors]) => !ratedAlbumIds.has(aid) && visitors.size >= 2)
+    .sort((a, b) => b[1].size - a[1].size)
+    .slice(0, 8)
+    .map(([aid, visitors]) => {
+      const a = albumMap.get(aid);
+      const visitorNames = [...visitors]
+        .map((uid) => users.find((u) => u.id === uid)?.display_name ?? uid)
+        .join(", ");
+      return { album_id: aid, title: a?.title ?? aid, artist: a?.artist ?? "", cover_url: a?.cover_url ?? null, visit_count: visitors.size, visitors: visitorNames };
+    });
 
   return NextResponse.json({
     period,
@@ -161,5 +221,8 @@ export async function GET(req: NextRequest) {
     top_albums: topAlbums,
     top_watchlist: topWatchlist,
     device: { mobile, desktop },
+    user_funnel: userFunnel,
+    source_funnel: sourceFunnel,
+    top_unconverted: topUnconverted,
   });
 }

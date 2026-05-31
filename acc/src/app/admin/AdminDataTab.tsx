@@ -19,6 +19,9 @@ type Analytics = {
   top_albums: { album_id: string; count: number; title: string; artist: string; cover_url: string | null }[];
   top_watchlist: { album_id: string; count: number; title: string; artist: string; cover_url: string | null }[];
   device: { mobile: number; desktop: number };
+  user_funnel: { id: string; display_name: string; avatar_url: string | null; visits: number; total_ratings: number; converted: number; conversion_pct: number }[];
+  source_funnel: { source: string; visits: number; converted: number; conversion_pct: number }[];
+  top_unconverted: { album_id: string; title: string; artist: string; cover_url: string | null; visit_count: number; visitors: string }[];
   truncated_warning?: string;
 };
 
@@ -287,6 +290,96 @@ export default function AdminDataTab() {
           ))}
         </div>
       </div>
+
+      {/* 전환율 퍼널 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        {/* 유저별 */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+            <SectionTitle>유저별 전환율 ({period}일)</SectionTitle>
+            <p style={{ fontSize: 10, color: "var(--text-muted)", opacity: 0.6, marginTop: -8 }}>기간 내 방문 앨범 중 평가로 이어진 비율</p>
+          </div>
+          {data.user_funnel.length === 0
+            ? <p style={{ padding: 16, fontSize: 12, color: "var(--text-muted)" }}>데이터 없음</p>
+            : (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 48px 48px 56px", padding: "6px 16px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", borderBottom: "1px solid var(--border)" }}>
+                  <span>멤버</span>
+                  <span style={{ textAlign: "right" }}>방문</span>
+                  <span style={{ textAlign: "right" }}>평가</span>
+                  <span style={{ textAlign: "right" }}>전환율</span>
+                </div>
+                {data.user_funnel.map((u) => (
+                  <div key={u.id} style={{ display: "grid", gridTemplateColumns: "1fr 48px 48px 56px", padding: "8px 16px", borderBottom: "1px solid var(--border)", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <UserAvatar avatarUrl={u.avatar_url} size={22} />
+                      <span style={{ fontSize: 12, color: "var(--text)" }}>{u.display_name}</span>
+                    </div>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>{u.visits}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>{u.converted}</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+                      <div style={{ width: 32, height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${u.conversion_pct}%`, backgroundColor: u.conversion_pct >= 50 ? "#4caf7d" : u.conversion_pct >= 25 ? "var(--accent)" : "var(--text-muted)", borderRadius: 2 }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: u.conversion_pct >= 50 ? "#4caf7d" : "var(--text-sub)", minWidth: 28, textAlign: "right" }}>{u.conversion_pct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )
+          }
+        </div>
+
+        {/* source별 */}
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
+          <SectionTitle>유입경로별 전환율 ({period}일)</SectionTitle>
+          {data.source_funnel.length === 0
+            ? <p style={{ fontSize: 12, color: "var(--text-muted)" }}>데이터 없음</p>
+            : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {data.source_funnel.map((s) => (
+                  <div key={s.source} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 110, flexShrink: 0, fontSize: 11, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.source}</div>
+                    <div style={{ flex: 1, backgroundColor: "var(--bg-elevated)", borderRadius: 3, height: 6, overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 3, width: `${s.conversion_pct}%`, backgroundColor: "var(--accent)", opacity: 0.75, transition: "width 0.4s ease" }} />
+                    </div>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", width: 20, textAlign: "right", flexShrink: 0 }}>{s.converted}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-sub)", width: 36, textAlign: "right", flexShrink: 0 }}>{s.conversion_pct}%</span>
+                  </div>
+                ))}
+              </div>
+            )
+          }
+        </div>
+      </div>
+
+      {/* 미전환 앨범 */}
+      {data.top_unconverted.length > 0 && (
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
+          <SectionTitle>많이 봤는데 아무도 평가 안 한 앨범 ({period}일)</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {data.top_unconverted.map((a) => (
+              <div key={a.album_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 5, overflow: "hidden", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                  {a.cover_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)" }}>♪</div>
+                  }
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</p>
+                  <p style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist}</p>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-sub)" }}>👁 {a.visit_count}명</p>
+                  <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{a.visitors}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 페이지 인기도 + 기능 사용 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
