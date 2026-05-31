@@ -30,7 +30,7 @@ export default function AvatarWithLightbox({ avatarUrl, emoji, displayName }: Pr
       >
         {avatarUrl
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={avatarUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img loading="lazy" src={avatarUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <span style={{ lineHeight: 1 }}>{emoji}</span>
         }
       </div>

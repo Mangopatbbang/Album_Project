@@ -315,7 +315,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 >
                   {avatarPreview
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <img loading="lazy" src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ lineHeight: 1 }}>{initialEmoji}</span>
                   }
                   <div

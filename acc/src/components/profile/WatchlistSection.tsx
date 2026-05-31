@@ -139,7 +139,7 @@ export default function WatchlistSection({ userId }: Props) {
                 >
                   {album.cover_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <span style={{ color: "var(--text-muted)", fontSize: 16 }}>♪</span>
                   )}
@@ -245,7 +245,7 @@ export default function WatchlistSection({ userId }: Props) {
                     >
                       {album.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ color: "var(--text-muted)", fontSize: 16 }}>♪</span>
                       }
                     </button>

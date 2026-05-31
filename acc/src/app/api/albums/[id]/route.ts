@@ -130,7 +130,7 @@ export async function GET(
     : null;
 
   return NextResponse.json({ ...resolved, extra_artists_display, ratings, avg }, {
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "public, s-maxage=30" },
   });
 }
 

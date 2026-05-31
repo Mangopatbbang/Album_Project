@@ -257,7 +257,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
                 <div style={{ width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
                   {editEntry!.album.cover_url
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={editEntry!.album.cover_url} alt={editEntry!.album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <img loading="lazy" src={editEntry!.album.cover_url} alt={editEntry!.album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>♪</span>
                   }
                 </div>
@@ -328,7 +328,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
                 {imagePreview ? (
                   <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid var(--border)" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={imagePreview} alt="첨부 사진" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
+                    <img loading="lazy" src={imagePreview} alt="첨부 사진" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
                     <button
                       onClick={handleRemoveImage}
                       style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -414,7 +414,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
                         }}>
                           {album.cover_url
                             // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>♪</span>
                           }
                         </div>
@@ -467,7 +467,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
                   <div style={{ width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
                     {selectedAlbum.cover_url
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={selectedAlbum.cover_url} alt={selectedAlbum.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ? <img loading="lazy" src={selectedAlbum.cover_url} alt={selectedAlbum.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>♪</span>
                     }
                   </div>
@@ -662,7 +662,7 @@ function SelectedAlbumCard({ album, onClear }: { album: DiaryAlbum; onClear: () 
       <div style={{ width: 44, height: 44, borderRadius: 6, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
         {album.cover_url
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>♪</span>
         }
       </div>

@@ -46,7 +46,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
               >
                 {album.cover_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
+                  <img loading="lazy" src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
                 ) : (
                   <span style={{ color: "var(--text-muted)" }} className="text-xs">커버 없음</span>
                 )}

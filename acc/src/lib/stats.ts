@@ -116,7 +116,7 @@ const _fetchProfileRatings = unstable_cache(
     return all;
   },
   ["profile-ratings"],
-  { tags: ["profile-ratings"], revalidate: 3600 }
+  { tags: ["profile-ratings"], revalidate: false }
 );
 
 export function fetchProfileRatings(userId: string) {
@@ -134,7 +134,7 @@ export const fetchAllUserAvatarUrls = unstable_cache(
     return result;
   },
   ["user-avatar-urls"],
-  { tags: ["user-avatars"], revalidate: 3600 }
+  { tags: ["user-avatars"], revalidate: false }
 );
 
 // 모든 유저의 top2 장르명 — userId → [genre1, genre2]
@@ -167,7 +167,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
     return result;
   },
   ["user-genre-emojis"],
-  { tags: ["profile-ratings"], revalidate: 3600 }
+  { tags: ["profile-ratings"], revalidate: false }
 );
 
 export type AlbumStat = {
@@ -220,7 +220,7 @@ async function _fetchAllAlbumsWithRatings(): Promise<RawAlbum[]> {
 export const fetchAllAlbumsWithRatings = unstable_cache(
   _fetchAllAlbumsWithRatings,
   ["all-albums-with-ratings"],
-  { tags: ["all-albums-with-ratings"], revalidate: 3600 }
+  { tags: ["all-albums-with-ratings"], revalidate: false }
 );
 
 function toStat(album: RawAlbum): AlbumStat & { variance: number } {
@@ -390,7 +390,7 @@ export const fetchAllMemberRatings = unstable_cache(
     return all;
   },
   ["all-member-ratings"],
-  { tags: ["profile-ratings"], revalidate: 3600 }
+  { tags: ["profile-ratings"], revalidate: false }
 );
 
 // 서버사이드: DB에서 전체 유저 목록 조회

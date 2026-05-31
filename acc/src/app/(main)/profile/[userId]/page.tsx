@@ -42,7 +42,7 @@ const getCommunityRatings = unstable_cache(
     return (data ?? []) as { album_id: string; score: number }[];
   },
   ["community-ratings"],
-  { tags: ["profile-ratings"], revalidate: 3600 }
+  { tags: ["profile-ratings"], revalidate: false }
 );
 
 const getUserListeningLogs = unstable_cache(
@@ -56,7 +56,7 @@ const getUserListeningLogs = unstable_cache(
     return data ?? [];
   },
   ["user-listening-logs"],
-  { tags: ["user-logs"], revalidate: 3600 }
+  { tags: ["user-logs"], revalidate: false }
 );
 
 const getUserPlaylists = unstable_cache(
@@ -70,7 +70,7 @@ const getUserPlaylists = unstable_cache(
     return data ?? [];
   },
   ["user-playlists"],
-  { tags: ["user-playlists"], revalidate: 3600 }
+  { tags: ["user-playlists"], revalidate: false }
 );
 
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {

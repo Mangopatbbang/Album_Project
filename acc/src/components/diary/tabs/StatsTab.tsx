@@ -253,7 +253,7 @@ export default function StatsTab({ entries }: Props) {
                 <div style={{ width: 38, height: 38, borderRadius: 5, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
                   {a.cover_url
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={a.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <img loading="lazy" src={a.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
                   }
                 </div>

@@ -236,7 +236,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
   useEffect(() => {
     if (source) trackAlbumVisit(album.id, source);
-    fetch(`/api/albums/${album.id}`, { cache: "no-store" })
+    fetch(`/api/albums/${album.id}`)
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
@@ -1507,7 +1507,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                           }}>
                             {a.cover_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              ? <img loading="lazy" src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "var(--text-muted)", fontSize: 18 }}>♪</span></div>
                             }
                           </div>

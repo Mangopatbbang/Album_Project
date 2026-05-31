@@ -94,7 +94,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
               }}>
                 {artistImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={artistImage} alt={displayName ?? artistName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img loading="lazy" src={artistImage} alt={displayName ?? artistName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   <span style={{ color: "var(--border-light)", fontSize: 22 }}>♪</span>
                 )}
@@ -228,7 +228,7 @@ function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatin
       <div style={{ backgroundColor: "var(--bg-card)", aspectRatio: "1/1" }} className="w-full flex items-center justify-center overflow-hidden">
         {album.cover_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
+          <img loading="lazy" src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
         ) : (
           <span style={{ color: "var(--text-muted)", fontSize: 20 }}>♪</span>
         )}

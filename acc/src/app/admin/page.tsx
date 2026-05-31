@@ -1149,7 +1149,7 @@ export default function AdminPage() {
                   >
                     {a.cover_url
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3, border: "1px solid var(--border)", flexShrink: 0 }} />
+                      ? <img loading="lazy" src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3, border: "1px solid var(--border)", flexShrink: 0 }} />
                       : <div style={{ width: 32, height: 32, backgroundColor: "var(--bg-elevated)", borderRadius: 3, border: "1px solid var(--border)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12 }}>♪</span></div>
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1281,7 +1281,7 @@ export default function AdminPage() {
                   <div key={a.id} onClick={() => selectAlbum(a)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid var(--border)", backgroundColor: albumId === a.id ? "var(--bg-elevated)" : "transparent" }}>
                     {a.cover_url
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3 }} />
+                      ? <img loading="lazy" src={a.cover_url} alt="" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 3 }} />
                       : <div style={{ width: 32, height: 32, backgroundColor: "var(--bg-elevated)", borderRadius: 3, border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 12 }}>♪</span></div>
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1310,7 +1310,7 @@ export default function AdminPage() {
                   <div key={c.spotify_id} onClick={() => selectCandidate(c)} style={{ border: `1px solid ${preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)"}`, borderRadius: 8, overflow: "hidden", cursor: "pointer", backgroundColor: "var(--bg-elevated)", transition: "border-color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")} onMouseLeave={(e) => (e.currentTarget.style.borderColor = preview?.candidate.spotify_id === c.spotify_id ? "var(--accent)" : "var(--border)")}>
                     {c.cover_url
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={c.cover_url} alt={c.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover" }} />
+                      ? <img loading="lazy" src={c.cover_url} alt={c.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover" }} />
                       : <div style={{ width: "100%", aspectRatio: "1", backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}><span>♪</span></div>
                     }
                     <div style={{ padding: 8 }}>
@@ -1327,7 +1327,7 @@ export default function AdminPage() {
               <div style={{ border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, borderRadius: 10, backgroundColor: "var(--bg-elevated)", padding: 16, marginBottom: 12, display: "flex", gap: 16 }}>
                 {preview.candidate.cover_url
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={preview.candidate.cover_url} alt={preview.candidate.name} style={{ width: 100, height: 100, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)", flexShrink: 0 }} />
+                  ? <img loading="lazy" src={preview.candidate.cover_url} alt={preview.candidate.name} style={{ width: 100, height: 100, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)", flexShrink: 0 }} />
                   : <div style={{ width: 100, height: 100, borderRadius: 6, backgroundColor: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)", flexShrink: 0 }}><span style={{ color: "var(--text-muted)", fontSize: 24 }}>♪</span></div>
                 }
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1350,7 +1350,7 @@ export default function AdminPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {matchedAlbum.cover_url
                           // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={matchedAlbum.cover_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", border: "1px solid var(--border)" }} />
+                          ? <img loading="lazy" src={matchedAlbum.cover_url} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", border: "1px solid var(--border)" }} />
                           : <div style={{ width: 36, height: 36, borderRadius: 4, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14 }}>♪</span></div>
                         }
                         <div>
@@ -1663,7 +1663,7 @@ export default function AdminPage() {
                     {artistPhotoOverrides[editingArtistPhoto] && (
                       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={artistPhotoOverrides[editingArtistPhoto]} alt="" style={{ width: 56, height: 56, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
+                        <img loading="lazy" src={artistPhotoOverrides[editingArtistPhoto]} alt="" style={{ width: 56, height: 56, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
                         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>현재 오버라이드</span>
                       </div>
                     )}
@@ -1993,7 +1993,7 @@ function ArtistPhotoCard({
       <div style={{ width: "100%", aspectRatio: "1", backgroundColor: "var(--bg-elevated)", position: "relative", overflow: "hidden" }}>
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img loading="lazy" src={photo} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ color: "var(--border-light)", fontSize: 18 }}>♪</span>

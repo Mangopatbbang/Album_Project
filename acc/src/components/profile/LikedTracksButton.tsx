@@ -221,7 +221,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                     >
                       {group.coverUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={group.coverUrl} alt={group.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+                        <img loading="lazy" src={group.coverUrl} alt={group.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
                       ) : (
                         <div style={{ width: 36, height: 36, borderRadius: 5, flexShrink: 0, backgroundColor: "var(--bg-card)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)" }}>♪</div>
                       )}

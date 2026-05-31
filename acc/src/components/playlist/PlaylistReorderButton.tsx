@@ -47,7 +47,7 @@ function SortableItem({ entry, idx }: { entry: Entry; idx: number }) {
       <div style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-elevated)" }}>
         {entry.coverUrl
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={entry.coverUrl} alt={entry.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img loading="lazy" src={entry.coverUrl} alt={entry.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 16 }}>♪</div>
         }
       </div>

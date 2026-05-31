@@ -224,7 +224,7 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
     ...r,
     album_artist_display: displayMap.get(r.album_id) ?? r.album_artist,
   }));
-}, ["controversial-albums"], { tags: ["controversial"], revalidate: 3600 });
+}, ["controversial-albums"], { tags: ["controversial"], revalidate: false });
 
 const containerStyle = {
   width: "100%",

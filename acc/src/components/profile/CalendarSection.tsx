@@ -170,7 +170,7 @@ function DayAlbumPanel({ dateKey, albums, onClose, onAlbumClick }: { dateKey: st
             }}>
               {a.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 12, color: "var(--text-muted)" }}>♪</span>
                   </div>

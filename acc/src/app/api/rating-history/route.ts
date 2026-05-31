@@ -36,5 +36,7 @@ export async function GET(req: NextRequest) {
     createdAt: r.created_at,
   }));
 
-  return NextResponse.json(items);
+  return NextResponse.json(items, {
+    headers: { "Cache-Control": "private, max-age=300" },
+  });
 }

@@ -103,13 +103,13 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
                 }}>
                   {covers.length === 1 ? (
                     covers[0]
-                      ? <img src={covers[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", gridColumn: "span 2", gridRow: "span 2" }} /> // eslint-disable-line @next/next/no-img-element
+                      ? <img loading="lazy" src={covers[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", gridColumn: "span 2", gridRow: "span 2" }} /> // eslint-disable-line @next/next/no-img-element
                       : <div style={{ gridColumn: "span 2", gridRow: "span 2", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 24 }}>♪</span></div>
                   ) : (
                     [0, 1, 2, 3].map((i) => (
                       <div key={i} style={{ overflow: "hidden", backgroundColor: "var(--bg-elevated)" }}>
                         {covers[i]
-                          ? <img src={covers[i]!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
+                          ? <img loading="lazy" src={covers[i]!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
                           : <div style={{ width: "100%", height: "100%", backgroundColor: "var(--bg-elevated)" }} />
                         }
                       </div>

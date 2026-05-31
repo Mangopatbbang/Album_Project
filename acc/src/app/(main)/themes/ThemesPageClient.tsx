@@ -48,14 +48,14 @@ function PlaylistCard({ pl }: { pl: Playlist }) {
         {covers.length === 1 ? (
           covers[0]
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={covers[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", gridColumn: "span 2", gridRow: "span 2" }} />
+            ? <img loading="lazy" src={covers[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", gridColumn: "span 2", gridRow: "span 2" }} />
             : <div style={{ gridColumn: "span 2", gridRow: "span 2", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 20 }}>♪</span></div>
         ) : (
           [0, 1, 2, 3].map((i) => (
             <div key={i} style={{ overflow: "hidden", backgroundColor: "var(--bg-elevated)" }}>
               {covers[i]
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={covers[i]!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={covers[i]!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", backgroundColor: "var(--bg-elevated)" }} />
               }
             </div>

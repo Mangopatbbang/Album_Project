@@ -158,7 +158,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                     }} className="w-[60px] h-[60px] sm:w-[80px] sm:h-[80px]">
                       {album.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 28, color: "var(--text-muted)" }}>♪</span></div>
                       }
                     </div>

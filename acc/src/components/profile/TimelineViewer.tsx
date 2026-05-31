@@ -203,7 +203,7 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
     >
       {ev.album.cover_url && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={ev.album.cover_url} alt="" style={{ width: 32, height: 32, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
+        <img loading="lazy" src={ev.album.cover_url} alt="" style={{ width: 32, height: 32, borderRadius: 5, objectFit: "cover", flexShrink: 0 }} />
       )}
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -346,7 +346,7 @@ function AlbumMarker({ m, cs, innerW, axisY, showInfoFlag, animated, onSelect, o
         }}>
           {ev.album.cover_url
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={ev.album.cover_url} alt={ev.album.title}
+            ? <img loading="lazy" src={ev.album.cover_url} alt={ev.album.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center",
                 justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(cs * 0.38) }}>♪</div>

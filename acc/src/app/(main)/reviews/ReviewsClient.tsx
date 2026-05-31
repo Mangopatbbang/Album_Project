@@ -346,7 +346,7 @@ export default function ReviewsClient() {
                 >
                   {rep.coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={rep.coverUrl} alt={rep.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} />
+                    <img loading="lazy" src={rep.coverUrl} alt={rep.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} />
                   ) : (
                     <div style={{ width: 36, height: 36, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
                   )}
@@ -464,7 +464,7 @@ function ReviewRow({
           >
             {item.coverUrl && !imgError
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
+              ? <img loading="lazy" src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
               : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
             }
           </button>

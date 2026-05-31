@@ -182,6 +182,7 @@ export async function PATCH(req: NextRequest) {
       .eq("album_id", albumId)
       .eq("user_id", actorId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidateTag("profile-ratings", "max");
     return NextResponse.json({ ok: true });
   }
 
@@ -230,6 +231,7 @@ export async function PATCH(req: NextRequest) {
         .insert({ user_id: reviewerId, type: "like", from_user_id: likerId, album_id: albumId, reviewer_id: reviewerId });
     }
 
+    revalidateTag("profile-ratings", "max");
     return NextResponse.json({ ok: true, liked_by: newVal });
   }
 

@@ -270,7 +270,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                         backgroundColor: "var(--bg-card)",
                       }}>
                         {album.cover_url
-                          ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
+                          ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
                           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 14 }}>♪</span></div>
                         }
                       </div>
@@ -324,7 +324,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
                   {/* 커버 */}
                   <div style={{ width: 44, height: 44, borderRadius: 6, overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-card)" }}>
                     {entry.album.cover_url
-                      ? <img src={entry.album.cover_url} alt={entry.album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
+                      ? <img loading="lazy" src={entry.album.cover_url} alt={entry.album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> // eslint-disable-line @next/next/no-img-element
                       : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 18 }}>♪</span></div>
                     }
                   </div>

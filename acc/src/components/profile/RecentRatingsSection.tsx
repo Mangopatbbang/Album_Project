@@ -52,7 +52,7 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
             }}>
               {r.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={r.cover_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={r.cover_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 14 }}>♪</span>
                   </div>

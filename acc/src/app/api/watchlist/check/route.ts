@@ -13,5 +13,7 @@ export async function GET(req: NextRequest) {
     .eq("album_id", albumId)
     .maybeSingle();
 
-  return NextResponse.json({ isWatchlisted: !!data });
+  return NextResponse.json({ isWatchlisted: !!data }, {
+    headers: { "Cache-Control": "private, max-age=30" },
+  });
 }

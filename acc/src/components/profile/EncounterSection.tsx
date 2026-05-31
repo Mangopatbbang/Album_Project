@@ -64,7 +64,7 @@ export default function EncounterSection({ albums }: { albums: EncounterAlbum[] 
               }}>
                 {a.cover_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img loading="lazy" src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 ) : (
                   <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ color: "var(--text-muted)", fontSize: 22 }}>♪</span>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
-import ChronicleViewer from "@/components/profile/ChronicleViewer";
+const ChronicleViewer = dynamic(() => import("@/components/profile/ChronicleViewer"), { ssr: false });
 
 export default function TimelineSection({ userId }: { userId: string }) {
   const { profile } = useAuth();

@@ -62,7 +62,7 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
       }}>
         {c.cover_url
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={c.cover_url} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img loading="lazy" src={c.cover_url} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 20 }}>♪</span></div>
         }
       </div>
@@ -629,7 +629,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                     >
                       {h.image && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={h.image} alt={h.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                        <img loading="lazy" src={h.image} alt={h.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                       )}
                       <div>
                         <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}>{h.name}</p>
@@ -712,7 +712,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             {coverUrl
-              ? <img src={coverUrl} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />  // eslint-disable-line @next/next/no-img-element
+              ? <img loading="lazy" src={coverUrl} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />  // eslint-disable-line @next/next/no-img-element
               : <span style={{ color: "var(--text-muted)", fontSize: 28 }}>♪</span>
             }
           </div>

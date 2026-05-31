@@ -109,7 +109,7 @@ function HiddenGemsBar({
                   <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)", marginBottom: 6 }}>
                     {album.cover_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <span style={{ fontSize: 22, color: "var(--text-muted)" }}>♪</span>
@@ -233,7 +233,7 @@ function SectionPopup({
               }}>
                 {album.cover_url
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span>
                     </div>
@@ -320,7 +320,7 @@ function SectionGrid({
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 24, color: "var(--text-muted)" }}>♪</span>
                   </div>
@@ -392,7 +392,7 @@ function ArtistSection({
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 18, color: "var(--text-muted)" }}>♪</span>
                   </div>
@@ -454,7 +454,7 @@ function RankedTile({
       >
         {album.cover_url
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
             </div>

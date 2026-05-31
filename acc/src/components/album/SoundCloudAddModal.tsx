@@ -237,7 +237,7 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
           }}>
             {coverUrl
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={coverUrl} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ? <img loading="lazy" src={coverUrl} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               : <span style={{ color: "var(--text-muted)", fontSize: 24 }}>♪</span>
             }
           </div>
