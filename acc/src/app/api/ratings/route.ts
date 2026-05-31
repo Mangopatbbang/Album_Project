@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [{ data: existing }, { data: albumData }] = await Promise.all([
-    supabaseServer.from("ratings").select("score").eq("album_id", albumId).eq("user_id", userId).single(),
+    supabaseServer.from("ratings").select("score, one_line_review").eq("album_id", albumId).eq("user_id", userId).single(),
     supabaseServer.from("albums").select("title, artist").eq("id", albumId).single(),
   ]);
   const prevScore = existing?.score ?? null;
@@ -132,10 +132,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (prevScore !== score) {
-    await supabaseServer
-      .from("rating_history")
-      .insert({ user_id: userId, album_id: albumId, score });
+  // 점수 or 한줄소감 변경 시 이전 값 기록
+  const prevReview = existing ? (existing as { score: number; one_line_review?: string | null }).one_line_review ?? null : null;
+  const reviewChanged = (one_line_review ?? null) !== prevReview;
+  if (prevScore !== null && (prevScore !== score || reviewChanged)) {
+    await supabaseServer.from("rating_history").insert({
+      user_id: userId, album_id: albumId,
+      old_score: prevScore, new_score: score,
+      old_review: prevReview, new_review: one_line_review ?? null,
+    });
   }
 
   await logActivity({
@@ -245,13 +250,24 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "albumId 필수" }, { status: 400 });
   }
 
-  const [{ error }, { data: albumData }] = await Promise.all([
-    supabaseServer.from("ratings").delete().eq("album_id", albumId).eq("user_id", userId),
+  const [{ data: deletedRating }, { data: albumData }] = await Promise.all([
+    supabaseServer.from("ratings").select("score, one_line_review").eq("album_id", albumId).eq("user_id", userId).single(),
     supabaseServer.from("albums").select("title, artist").eq("id", albumId).single(),
   ]);
 
+  const { error } = await supabaseServer.from("ratings").delete().eq("album_id", albumId).eq("user_id", userId);
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (deletedRating) {
+    await supabaseServer.from("rating_history").insert({
+      user_id: userId, album_id: albumId,
+      old_score: deletedRating.score, new_score: null,
+      old_review: (deletedRating as { score: number; one_line_review?: string | null }).one_line_review ?? null,
+      new_review: null,
+    });
   }
 
   await logActivity({
