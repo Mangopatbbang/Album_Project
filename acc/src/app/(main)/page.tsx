@@ -401,8 +401,13 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {/* 나중에 들을 앨범 — 모바일 전용 */}
+          <div className="sm:hidden" style={{ marginTop: 28, display: "flex", flexDirection: "column" }}>
+            <HomeWatchlistSection />
+          </div>
+
           {/* 빠른 접근 — 모바일에서 탭 제거된 페이지들 */}
-          <div className="sm:hidden" style={{ marginTop: 28 }}>
+          <div className="sm:hidden" style={{ marginTop: 20 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[
                 { href: "/best", label: "청음감", desc: "명반 순위" },
