@@ -405,7 +405,7 @@ export default async function HomePage() {
           <div className="sm:hidden" style={{ marginTop: 28 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[
-                { href: "/best", label: "청음감", desc: "명반 순위" },
+                { href: "/diary", label: "청음일기", desc: "나의 청음 일기" },
                 { href: "/themes", label: "청음집", desc: "테마 컬렉션" },
                 { href: "/members", label: "청음인", desc: "멤버 목록" },
               ].map(({ href, label, desc }) => (

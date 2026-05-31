@@ -112,7 +112,7 @@ export default function BottomNav() {
     { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
     { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums" },
     { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
-    ...(profile ? [{ href: "/diary", label: "일기", Icon: DiaryIcon, tour: undefined }] : []),
+    ...(profile ? [{ href: "/reviews", label: "청음평", Icon: ReviewsIcon, tour: undefined }] : []),
     {
       href: profile ? `/profile/${profile.id}` : "/login",
       label: !loading && !profile ? "입장" : "청음록",
