@@ -349,20 +349,9 @@ export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
   return [...artistMap.values()].sort((a, b) => b.avg - a.avg);
 }
 
-// 통합 랭킹: 베이즈 평균 내림차순 상위 50개 (평점 2명 이상)
-// B = (C * globalAvg + sum_scores) / (C + count) — 1명만 8점인 앨범이 5명 전원 7.5점 앨범을 앞서는 문제 해결
+// 통합 랭킹: 평균 점수 내림차순 상위 50개 (평점 2명 이상)
 export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
-  const valid = validAlbums(albums);
-  if (!valid.length) return [];
-  const globalAvg = valid.reduce((s, a) => s + a.avg, 0) / valid.length;
-  const C = 2;
-  return valid
-    .sort((a, b) => {
-      const bA = (C * globalAvg + a.avg * a.count) / (C + a.count);
-      const bB = (C * globalAvg + b.avg * b.count) / (C + b.count);
-      return bB - bA;
-    })
-    .slice(0, 50);
+  return validAlbums(albums).sort((a, b) => b.avg - a.avg).slice(0, 50);
 }
 
 // 미발견 명반: 평점 1~2명이지만 최고 점수 >= 7인 앨범 (발굴 대기 중)
