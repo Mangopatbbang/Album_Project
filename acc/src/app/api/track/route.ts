@@ -10,9 +10,13 @@ export async function POST(req: NextRequest) {
   const { type, ...data } = body;
 
   if (type === "album_visit") {
-    const { album_id, source } = data;
+    const { album_id, source, session_id, from_search_query } = data as { album_id: string; source: string; session_id?: string; from_search_query?: string | null };
     if (!album_id || !source) return NextResponse.json({ ok: false });
-    await supabaseServer.from("album_visits").insert({ user_id: userId, album_id, source });
+    await supabaseServer.from("album_visits").insert({
+      user_id: userId, album_id, source,
+      session_id: session_id ?? null,
+      from_search_query: from_search_query ?? null,
+    });
   } else if (type === "artist_visit") {
     const { artist_name, source } = data;
     if (!artist_name) return NextResponse.json({ ok: false });
