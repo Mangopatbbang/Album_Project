@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import { AlbumWithRatings } from "@/types";
@@ -46,13 +47,12 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
             }}
           >
             <div style={{
-              width: 40, height: 40, flexShrink: 0, borderRadius: 4, overflow: "hidden",
+              position: "relative", width: 40, height: 40, flexShrink: 0, borderRadius: 4, overflow: "hidden",
               backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(r.score)}`,
               boxShadow: glowShadow(r.score),
             }}>
               {r.cover_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" src={r.cover_url} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <Image fill sizes="40px" src={r.cover_url} alt={r.title} style={{ objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 14 }}>♪</span>
                   </div>

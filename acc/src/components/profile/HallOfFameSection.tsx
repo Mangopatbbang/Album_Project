@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
 import { glowShadow, glowBorder } from "@/lib/score";
@@ -50,15 +51,14 @@ export default function HallOfFameSection({ albums, count, inline }: { albums: H
           >
             <div
               style={{
-                width: coverSize, height: coverSize, borderRadius: 6, overflow: "hidden",
+                position: "relative", width: coverSize, height: coverSize, borderRadius: 6, overflow: "hidden",
                 backgroundColor: "var(--bg-elevated)", border: `1px solid ${glowBorder(8)}`,
                 boxShadow: glowShadow(8),
               }}
               className="transition-opacity hover:opacity-70"
             >
               {a.cover_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img loading="lazy" src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <Image fill sizes="(max-width: 640px) 80px, 96px" src={a.cover_url} alt={a.title} style={{ objectFit: "cover" }} />
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ color: "var(--text-muted)", fontSize: 20 }}>♪</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/context/AuthContext";
@@ -130,7 +131,7 @@ export default function WatchlistSection({ userId }: Props) {
                 <button
                   onClick={() => setSelectedAlbum(album)}
                   style={{
-                    width: 40, height: 40, flexShrink: 0,
+                    position: "relative", width: 40, height: 40, flexShrink: 0,
                     borderRadius: 6, overflow: "hidden",
                     border: "1px solid var(--border)",
                     background: "var(--bg-elevated)",
@@ -138,8 +139,7 @@ export default function WatchlistSection({ userId }: Props) {
                   }}
                 >
                   {album.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image fill sizes="40px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
                   ) : (
                     <span style={{ color: "var(--text-muted)", fontSize: 16 }}>♪</span>
                   )}
@@ -241,11 +241,10 @@ export default function WatchlistSection({ userId }: Props) {
                   <div key={album_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <button
                       onClick={() => { setPopupOpen(false); setSelectedAlbum(album); }}
-                      style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer", padding: 0 }}
+                      style={{ position: "relative", width: 40, height: 40, flexShrink: 0, borderRadius: 6, overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-elevated)", cursor: "pointer", padding: 0 }}
                     >
                       {album.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <Image fill sizes="40px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
                         : <span style={{ color: "var(--text-muted)", fontSize: 16 }}>♪</span>
                       }
                     </button>

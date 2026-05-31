@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import AlbumModal from "@/components/album/AlbumModal";
@@ -29,12 +30,13 @@ function CoverThumb({ src, alt }: { src: string; alt: string }) {
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {!loaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0, borderRadius: 4 }} />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={src}
         alt={alt}
+        fill
+        sizes="40px"
         onLoad={() => setLoaded(true)}
-        style={{ width: "100%", height: "100%", objectFit: "cover", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
+        style={{ objectFit: "cover", opacity: loaded ? 1 : 0, transition: "opacity 0.2s" }}
       />
     </div>
   );

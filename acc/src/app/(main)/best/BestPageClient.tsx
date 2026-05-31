@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
 import type { AlbumStat } from "@/lib/stats";
@@ -56,7 +57,7 @@ function HiddenGemsBar({
                 onClick={() => onAlbumClick(album)}
                 className="w-10 h-10 sm:w-[34px] sm:h-[34px]"
                 style={{
-                  borderRadius: 4, overflow: "hidden",
+                  position: "relative", borderRadius: 4, overflow: "hidden",
                   cursor: "pointer", backgroundColor: "var(--bg-elevated)",
                   border: `1px solid ${isHovered ? "rgba(232,213,163,0.6)" : "var(--border)"}`,
                   transition: "border-color 0.12s",
@@ -64,12 +65,13 @@ function HiddenGemsBar({
                 }}
               >
                 {album.cover_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={album.cover_url}
                     alt={album.title}
+                    fill
+                    sizes="40px"
                     style={{
-                      width: "100%", height: "100%", objectFit: "cover",
+                      objectFit: "cover",
                       transition: "transform 0.2s ease",
                       transform: isHovered ? "scale(1.18)" : "scale(1)",
                     }}
@@ -106,10 +108,9 @@ function HiddenGemsBar({
                   pointerEvents: "none",
                   animation: "fadeIn 0.1s ease-out",
                 }}>
-                  <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)", marginBottom: 6 }}>
+                  <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)", marginBottom: 6 }}>
                     {album.cover_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <Image fill sizes="120px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <span style={{ fontSize: 22, color: "var(--text-muted)" }}>♪</span>
@@ -228,12 +229,11 @@ function SectionPopup({
                 {idx + 1}
               </span>
               <div style={{
-                width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0,
+                position: "relative", width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0,
                 backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
               }}>
                 {album.cover_url
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ? <Image fill sizes="40px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: 14, color: "var(--text-muted)" }}>♪</span>
                     </div>
@@ -309,6 +309,7 @@ function SectionGrid({
             onClick={() => onAlbumClick(album)}
           >
             <div style={{
+              position: "relative",
               borderRadius: 6,
               overflow: "hidden",
               backgroundColor: "var(--bg-elevated)",
@@ -319,8 +320,7 @@ function SectionGrid({
             className="w-full aspect-square sm:aspect-auto sm:w-[90px] sm:h-[90px]"
             >
               {album.cover_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <Image fill sizes="(max-width: 640px) 25vw, 90px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 24, color: "var(--text-muted)" }}>♪</span>
                   </div>

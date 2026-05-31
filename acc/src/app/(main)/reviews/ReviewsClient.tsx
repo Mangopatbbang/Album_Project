@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
@@ -345,8 +346,9 @@ export default function ReviewsClient() {
                   onClick={() => handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
                 >
                   {rep.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" src={rep.coverUrl} alt={rep.albumTitle} style={{ width: 36, height: 36, borderRadius: 5, objectFit: "cover", flexShrink: 0, border: "1px solid var(--border)" }} />
+                    <div style={{ position: "relative", width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
+                      <Image fill sizes="36px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
+                    </div>
                   ) : (
                     <div style={{ width: 36, height: 36, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
                   )}
@@ -459,12 +461,11 @@ function ReviewRow({
         {!hideAlbumInfo && (
           <button
             onClick={onAlbumClick}
-            style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
+            style={{ position: "relative", flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
             className="hover:opacity-75 transition-opacity"
           >
             {item.coverUrl && !imgError
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img loading="lazy" src={item.coverUrl} alt={item.albumTitle} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setImgError(true)} />
+              ? <Image fill sizes="44px" src={item.coverUrl} alt={item.albumTitle} style={{ objectFit: "cover" }} onError={() => setImgError(true)} />
               : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
             }
           </button>
