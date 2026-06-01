@@ -37,7 +37,7 @@ function PlaylistCard({ pl }: { pl: Playlist }) {
         borderRadius: 10, padding: "16px 18px", display: "flex",
         alignItems: "center", gap: 16, textDecoration: "none",
       }}
-      className="transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
+      className="transition-[border-color,transform] hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
     >
       {/* 커버 콜라주 */}
       <div style={{
@@ -106,7 +106,7 @@ export default function ThemesPageClient({
             style={{
               backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border-light)",
               color: "var(--text-sub)", borderRadius: 6, padding: "5px 12px",
-              fontSize: 12, cursor: "pointer", transition: "all 0.15s",
+              fontSize: 12, cursor: "pointer", transition: "border-color 0.15s, color 0.15s",
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-light)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)"; }}

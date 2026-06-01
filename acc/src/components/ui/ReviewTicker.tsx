@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
-import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
 import UserAvatar from "@/components/ui/UserAvatar";
+
+const AlbumModal = dynamic(() => import("@/components/album/AlbumModal"), {
+  ssr: false,
+  loading: () => <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }} />,
+});
 
 export type TickerItem = {
   user_id: string;

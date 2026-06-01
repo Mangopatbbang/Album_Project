@@ -63,7 +63,7 @@ const getGenres = unstable_cache(
     return unique as string[];
   },
   ["albums-page-genres"],
-  { tags: ["albums-page-meta"], revalidate: 3600 }
+  { tags: ["albums-page-meta"], revalidate: false }
 );
 
 const getTotalCount = unstable_cache(
@@ -74,7 +74,7 @@ const getTotalCount = unstable_cache(
     return count ?? 0;
   },
   ["albums-page-count"],
-  { tags: ["albums-page-meta"], revalidate: 3600 }
+  { tags: ["albums-page-meta"], revalidate: false }
 );
 
 export default async function AlbumsPage() {

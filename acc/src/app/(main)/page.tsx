@@ -17,51 +17,52 @@ import HomeControversialSection, { ControversialItem } from "@/components/home/H
 import HomeDiaryBanner from "@/components/home/HomeDiaryBanner";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 
-async function getTotalCount() {
-  const { count } = await supabaseServer
-    .from("albums")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
-}
+const getTotalCount = unstable_cache(
+  async () => {
+    const { count } = await supabaseServer.from("albums").select("id", { count: "exact", head: true });
+    return count ?? 0;
+  },
+  ["home-total-count"],
+  { tags: ["albums-page-meta"], revalidate: false }
+);
 
-async function getRatingsCount() {
-  const { count } = await supabaseServer
-    .from("ratings")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
-}
+const getRatingsCount = unstable_cache(
+  async () => {
+    const { count } = await supabaseServer.from("ratings").select("id", { count: "exact", head: true });
+    return count ?? 0;
+  },
+  ["home-ratings-count"],
+  { tags: ["profile-ratings"], revalidate: false }
+);
 
-async function getMembersCount() {
-  const { count } = await supabaseServer
-    .from("users")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
-}
+// dateStr을 파라미터로 받아 하루 단위로 캐시 — 앨범 추가/삭제 시 tag로 즉시 무효화
+const _getTodayAlbumCached = unstable_cache(
+  async (dateStr: string): Promise<AlbumWithRatings | null> => {
+    const { count } = await supabaseServer
+      .from("albums")
+      .select("id", { count: "exact", head: true });
+    if (!count || count === 0) return null;
+    let h = 2166136261;
+    for (const c of dateStr) { h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; }
+    const offset = h % count;
+    const { data, error } = await supabaseServer
+      .from("albums")
+      .select("id, title, artist, use_artist_variant, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
+      .order("id")
+      .range(offset, offset)
+      .single();
+    if (error || !data) return null;
+    const resolved = await resolveArtistDisplay([data]);
+    return resolved[0] as unknown as AlbumWithRatings;
+  },
+  ["today-album"],
+  { tags: ["albums-page-meta"], revalidate: 86400 }
+);
 
 async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
-  const { count } = await supabaseServer
-    .from("albums")
-    .select("id", { count: "exact", head: true });
-  if (!count || count === 0) return null;
-
-  // KST 기준 날짜 (UTC+9)
   const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const dateStr = nowKst.toISOString().slice(0, 10);
-  // FNV-1a 해시: 인접한 날짜도 완전히 다른 위치로 분산
-  let h = 2166136261;
-  for (const c of dateStr) { h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; }
-  const offset = h % count;
-
-  const { data, error } = await supabaseServer
-    .from("albums")
-    .select("id, title, artist, use_artist_variant, release_date, genre, tracklist, cover_url, spotify_id, ratings(id, user_id, score, one_line_review, created_at, updated_at)")
-    .order("id")
-    .range(offset, offset)
-    .single();
-
-  if (error || !data) return null;
-  const resolved = await resolveArtistDisplay([data]);
-  return resolved[0] as unknown as AlbumWithRatings;
+  return _getTodayAlbumCached(dateStr);
 }
 
 function serverShuffle<T>(arr: T[]): T[] {
@@ -73,37 +74,41 @@ function serverShuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-async function getTickerReviews(): Promise<TickerItem[]> {
-  const { data } = await supabaseServer
-    .from("ratings")
-    .select("user_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)")
-    .not("one_line_review", "is", null)
-    .neq("one_line_review", "")
-    .limit(80);
-  if (!data) return [];
-  const rows = (data as unknown as {
-    user_id: string;
-    score: number;
-    one_line_review: string;
-    albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
-  }[]).filter((r) => r.albums);
+const getTickerReviews = unstable_cache(
+  async (): Promise<TickerItem[]> => {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("user_id, score, one_line_review, albums(id, title, artist, use_artist_variant, cover_url)")
+      .not("one_line_review", "is", null)
+      .neq("one_line_review", "")
+      .limit(80);
+    if (!data) return [];
+    const rows = (data as unknown as {
+      user_id: string;
+      score: number;
+      one_line_review: string;
+      albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
+    }[]).filter((r) => r.albums);
 
-  const shuffled = serverShuffle(rows).slice(0, 40);
-  const albumObjs = shuffled.map((r) => r.albums!);
-  const resolved = await resolveArtistDisplay(albumObjs);
-  const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+    const shuffled = serverShuffle(rows).slice(0, 40);
+    const albumObjs = shuffled.map((r) => r.albums!);
+    const resolved = await resolveArtistDisplay(albumObjs);
+    const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
 
-  return shuffled.map((r) => ({
-    user_id: r.user_id,
-    score: r.score,
-    one_line_review: r.one_line_review,
-    album_id: r.albums!.id,
-    album_title: r.albums!.title,
-    album_artist: r.albums!.artist,
-    album_artist_display: displayMap.get(r.albums!.id) ?? r.albums!.artist,
-    album_cover_url: r.albums!.cover_url,
-  }));
-}
+    return shuffled.map((r) => ({
+      user_id: r.user_id,
+      score: r.score,
+      one_line_review: r.one_line_review,
+      album_id: r.albums!.id,
+      album_title: r.albums!.title,
+      album_artist: r.albums!.artist,
+      album_artist_display: displayMap.get(r.albums!.id) ?? r.albums!.artist,
+      album_cover_url: r.albums!.cover_url,
+    }));
+  },
+  ["home-ticker"],
+  { tags: ["profile-ratings", "artist-aliases"], revalidate: false }
+);
 
 type RecentFeedRow = {
   user_id: string;
@@ -121,38 +126,42 @@ type RecentFeedRow = {
   } | null;
 };
 
-async function getRecentFeed(): Promise<FeedItem[]> {
-  const { data } = await supabaseServer
-    .from("ratings")
-    .select("user_id, score, one_line_review, liked_tracks, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
-    .not("score", "is", null)
-    .order("updated_at", { ascending: false })
-    .limit(6);
-  if (!data) return [];
+const getRecentFeed = unstable_cache(
+  async (): Promise<FeedItem[]> => {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("user_id, score, one_line_review, liked_tracks, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
+      .not("score", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(6);
+    if (!data) return [];
 
-  const rows = (data as unknown as RecentFeedRow[]).filter((r) => r.albums);
-  const albumObjs = rows.map((r) => r.albums!);
-  if (albumObjs.length > 0) {
-    const resolved = await resolveArtistDisplay(albumObjs);
-    const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
-    for (const row of rows) {
-      if (row.albums) row.albums.artist_display = displayMap.get(row.albums.id);
+    const rows = (data as unknown as RecentFeedRow[]).filter((r) => r.albums);
+    const albumObjs = rows.map((r) => r.albums!);
+    if (albumObjs.length > 0) {
+      const resolved = await resolveArtistDisplay(albumObjs);
+      const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
+      for (const row of rows) {
+        if (row.albums) row.albums.artist_display = displayMap.get(row.albums.id);
+      }
     }
-  }
 
-  return rows.map((r) => ({
-    user_id: r.user_id,
-    score: r.score,
-    one_line_review: r.one_line_review,
-    updated_at: r.updated_at,
-    album_id: r.albums!.id,
-    album_title: r.albums!.title,
-    album_artist: r.albums!.artist,
-    album_artist_display: r.albums!.artist_display ?? r.albums!.artist,
-    album_cover_url: r.albums!.cover_url,
-    liked_tracks: r.liked_tracks,
-  }));
-}
+    return rows.map((r) => ({
+      user_id: r.user_id,
+      score: r.score,
+      one_line_review: r.one_line_review,
+      updated_at: r.updated_at,
+      album_id: r.albums!.id,
+      album_title: r.albums!.title,
+      album_artist: r.albums!.artist,
+      album_artist_display: r.albums!.artist_display ?? r.albums!.artist,
+      album_cover_url: r.albums!.cover_url,
+      liked_tracks: r.liked_tracks,
+    }));
+  },
+  ["home-recent-feed"],
+  { tags: ["profile-ratings", "artist-aliases"], revalidate: false }
+);
 
 const getControversialAlbums = unstable_cache(async (): Promise<ControversialItem[]> => {
   const { data } = await supabaseServer

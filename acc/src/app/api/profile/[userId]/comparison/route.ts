@@ -79,7 +79,7 @@ const computeComparison = unstable_cache(
     return { comparisons, bestMatch };
   },
   ["profile-comparison"],
-  { tags: ["profile-ratings"], revalidate: 3600 }
+  { tags: ["profile-ratings"], revalidate: false }
 );
 
 export async function GET(

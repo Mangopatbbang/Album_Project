@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { AlbumWithRatings } from "@/types";
-import AlbumModal from "@/components/album/AlbumModal";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
+
+const AlbumModal = dynamic(() => import("@/components/album/AlbumModal"), {
+  ssr: false,
+  loading: () => <div style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }} />,
+});
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
 import { useAuth } from "@/context/AuthContext";
 
@@ -343,7 +348,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               <button
                 onClick={() => setModalOpen(true)}
                 style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
-                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-[border-color,color,opacity]"
               >
                 평가하기
               </button>
@@ -358,7 +363,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   cursor: loading ? "default" : "pointer",
                   opacity: loading ? 0.4 : 1,
                   fontSize: 12, whiteSpace: "nowrap",
-                  transition: "all 0.15s",
+                  transition: "border-color 0.15s, color 0.15s, opacity 0.15s",
                 }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60"
               >
@@ -402,7 +407,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               <button
                 onClick={() => setStreamingOpen(false)}
                 style={{ background: "none", border: "1px solid var(--border)", borderRadius: 7, padding: "0 11px", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
-                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-all"
+                className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-[border-color,color,opacity]"
               >
                 취소
               </button>

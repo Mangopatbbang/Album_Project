@@ -54,7 +54,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         width: "100%",
         boxShadow: glowShadow(album.avg),
       }}
-      className="group rounded-lg overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
+      className="group rounded-lg overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
     >
       {/* 커버 이미지 */}
       <div

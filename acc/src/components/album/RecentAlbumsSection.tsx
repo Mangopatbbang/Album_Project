@@ -38,7 +38,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
               key={album.id}
               onClick={() => setSelectedAlbum(album)}
               style={{ backgroundColor: "var(--bg-card)", border: `1px solid ${glowBorder(avg)}`, textAlign: "left", boxShadow: glowShadow(avg) }}
-              className="flex-shrink-0 w-[148px] snap-start sm:w-full rounded-lg overflow-hidden transition-all hover:border-[var(--border-light)] hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
+              className="flex-shrink-0 w-[148px] snap-start sm:w-full rounded-lg overflow-hidden transition-[border-color,transform] hover:border-[var(--border-light)] hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
             >
               <div
                 style={{ backgroundColor: "var(--bg-elevated)", aspectRatio: "1/1" }}

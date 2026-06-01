@@ -395,7 +395,7 @@ return (
                   color: region === r ? "var(--accent)" : "var(--text-muted)",
                   borderRadius: 6, padding: "4px 9px", fontSize: 11,
                   cursor: "pointer", fontWeight: region === r ? 700 : 400,
-                  whiteSpace: "nowrap", transition: "all 0.12s",
+                  whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
                 }}
               >{r}</button>
             ))}
@@ -409,7 +409,7 @@ return (
                   color: unrated ? "var(--accent)" : "var(--text-muted)",
                   borderRadius: 6, padding: "4px 9px", fontSize: 11,
                   cursor: "pointer", fontWeight: unrated ? 700 : 400,
-                  whiteSpace: "nowrap", transition: "all 0.12s",
+                  whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
                 }}
               >미청음만</button>
             )}

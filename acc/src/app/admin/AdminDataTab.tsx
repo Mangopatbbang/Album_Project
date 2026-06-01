@@ -29,7 +29,7 @@ function KpiCard({ label, value, sub }: { label: string; value: number | string;
   return (
     <div style={{
       backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-      borderRadius: 10, padding: "16px 20px", flex: 1, minWidth: 0,
+      borderRadius: 10, padding: "14px 16px", flex: 1, minWidth: "140px",
     }}>
       <p style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 6 }}>{label}</p>
       <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</p>
@@ -48,7 +48,7 @@ function BarChart({ items, maxCount, colorFn }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
       {items.map(({ label, count }) => (
         <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 130, flexShrink: 0, fontSize: 11, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {label}
           </div>
           <div style={{ flex: 1, backgroundColor: "var(--bg-elevated)", borderRadius: 3, height: 6, overflow: "hidden" }}>
@@ -211,7 +211,7 @@ export default function AdminDataTab() {
       )}
 
       {/* KPI 카드 */}
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <KpiCard label="총 평점" value={data.kpis.total_ratings.toLocaleString()} />
         <KpiCard label="이번 주 새 평점" value={data.kpis.week_ratings} />
         <KpiCard label="이번 주 깊이있는 평가" value={data.kpis.week_deep_ratings} sub="한줄 소감 포함" />
@@ -231,11 +231,13 @@ export default function AdminDataTab() {
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 10, overflow: "hidden",
         }}>
+          <div style={{ overflowX: "auto" }}>
           {/* 헤더 */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 80px 70px 60px 80px",
             padding: "8px 16px", borderBottom: "1px solid var(--border)",
             fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em",
+            minWidth: 380,
           }}>
             <span>멤버</span>
             <span style={{ textAlign: "right" }}>마지막 평가</span>
@@ -249,7 +251,7 @@ export default function AdminDataTab() {
               style={{
                 display: "grid", gridTemplateColumns: "1fr 80px 70px 60px 80px",
                 padding: "10px 16px", borderBottom: "1px solid var(--border)",
-                alignItems: "center",
+                alignItems: "center", minWidth: 380,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -289,11 +291,12 @@ export default function AdminDataTab() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
 
       {/* 전환율 퍼널 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* 유저별 */}
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
@@ -383,7 +386,7 @@ export default function AdminDataTab() {
       )}
 
       {/* 페이지 인기도 + 기능 사용 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
           <SectionTitle>페이지 인기도 ({period}일)</SectionTitle>
           <BarChart
@@ -425,7 +428,7 @@ export default function AdminDataTab() {
       </div>
 
       {/* 인기 앨범 + 위시리스트 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
           <SectionTitle>많이 본 앨범 ({period}일)</SectionTitle>
           <AlbumCoverRow items={data.top_albums} badge="👁 " />

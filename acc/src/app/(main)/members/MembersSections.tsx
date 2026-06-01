@@ -62,7 +62,7 @@ function MoreButton({ count, onClick }: { count: number; onClick: () => void }) 
         marginTop: 8, width: "100%", padding: "8px 0",
         backgroundColor: "transparent", border: "1px solid var(--border)",
         borderRadius: 8, color: "var(--text-muted)", fontSize: 12,
-        cursor: "pointer", transition: "all 0.15s",
+        cursor: "pointer", transition: "border-color 0.15s, color 0.15s",
       }}
       onMouseEnter={(e) => { (e.currentTarget).style.borderColor = "var(--border-light)"; (e.currentTarget).style.color = "var(--text)"; }}
       onMouseLeave={(e) => { (e.currentTarget).style.borderColor = "var(--border)"; (e.currentTarget).style.color = "var(--text-muted)"; }}

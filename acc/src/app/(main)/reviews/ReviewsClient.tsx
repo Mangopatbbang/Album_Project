@@ -533,7 +533,7 @@ function ReviewRow({
                 color: iLiked ? "var(--accent)" : "var(--text-muted)",
                 fontSize: 10, padding: "2px 6px", borderRadius: 20,
                 backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
-                transition: "all 0.15s",
+                transition: "background-color 0.15s, color 0.15s",
               }}
             >
               <span style={{ fontSize: 11 }}>{iLiked ? "♥" : "♡"}</span>

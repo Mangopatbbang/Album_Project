@@ -149,7 +149,7 @@ export default async function MembersPage() {
                   backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
                   borderRadius: 12, padding: "24px 28px", cursor: "pointer",
                 }}
-                  className="transition-all hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
+                  className="transition-[border-color,transform] hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>

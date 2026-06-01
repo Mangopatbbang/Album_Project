@@ -1003,7 +1003,7 @@ export default function AdminPage() {
 
   return (
     <>
-    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", padding: "40px 24px" }}>
+    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }} className="px-4 sm:px-6 pt-6 sm:pt-10 pb-10">
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
 
         {/* ── 헤더 ── */}
@@ -1043,7 +1043,14 @@ export default function AdminPage() {
         </div>
 
         {/* ── 탭 바 ── */}
-        <div style={{ display: "flex", gap: 2, marginBottom: 28, backgroundColor: "var(--bg-elevated)", borderRadius: 10, padding: 4 }}>
+        <style>{`
+          @media (max-width: 639px) {
+            .admin-tab-bar { overflow-x: auto; }
+            .admin-tab-btn { flex: 0 0 auto !important; padding: 8px 12px !important; white-space: nowrap; }
+            .admin-card { padding: 16px !important; margin-bottom: 12px !important; }
+          }
+        `}</style>
+        <div className="admin-tab-bar no-scrollbar" style={{ display: "flex", gap: 2, marginBottom: 28, backgroundColor: "var(--bg-elevated)", borderRadius: 10, padding: 4 }}>
           {([
             { key: "overview", label: "현황" },
             { key: "albums", label: "앨범 교정" },
@@ -1055,6 +1062,7 @@ export default function AdminPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              className="admin-tab-btn"
               style={{
                 flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer",
                 fontWeight: activeTab === tab.key ? 700 : 500, fontSize: 13,
@@ -1072,7 +1080,7 @@ export default function AdminPage() {
         {activeTab === "overview" && (<>
 
           {/* DB 통계 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>DB 현황</p>
             <p style={secDesc}>앨범 데이터 완성도를 확인합니다. 미완료 항목 클릭 시 해당 앨범 목록이 표시됩니다.</p>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
@@ -1090,7 +1098,7 @@ export default function AdminPage() {
             </div>
           {stats ? (
             <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { label: "전체 앨범", value: stats.total, sub: null, filterKey: null },
                 { label: "Spotify 매칭", value: stats.hasSpotify, sub: stats.total - stats.hasSpotify, filterKey: "no_spotify" as const },
@@ -1168,7 +1176,7 @@ export default function AdminPage() {
         </div>
 
           {/* 활동 로그 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>활동 로그</p>
             <p style={secDesc}>앨범 등록·수정·삭제와 평점 이력을 확인합니다. 15일 이전 로그는 주기적으로 정리하세요.</p>
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
@@ -1254,7 +1262,7 @@ export default function AdminPage() {
         {activeTab === "albums" && (<>
 
           {/* 커버 · Spotify 정보 교정 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>커버 · Spotify 정보 교정</p>
             <p style={secDesc}>Spotify에서 앨범을 검색해 커버·트랙리스트·Spotify ID를 직접 연결합니다. 신규 앨범 입고 후 자동 매칭이 안 된 경우 사용하세요.</p>
 
@@ -1374,7 +1382,7 @@ export default function AdminPage() {
           </div>
 
           {/* 발매일 자동 채우기 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>발매일 자동 채우기</p>
             <p style={secDesc}>Spotify에서 발매일을 가져옵니다. 빈 항목만 채우기를 권장하며, 강제 갱신은 수동 수정값을 덮어씁니다.</p>
             {dateRemaining !== null && <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{dateRemaining}</span>개</p>}
@@ -1394,7 +1402,7 @@ export default function AdminPage() {
           </div>
 
           {/* iTunes 발매일 검증 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>iTunes 발매일 검증</p>
             <p style={secDesc}>DB 발매연도와 iTunes를 비교해 불일치 항목을 확인하고 교정합니다. 2026년 앨범부터 확인하는 걸 권장합니다.</p>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
@@ -1447,7 +1455,7 @@ export default function AdminPage() {
         {activeTab === "artists" && (<>
 
           {/* 표시 이름 (별칭) */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>표시 이름 (별칭)</p>
             <p style={secDesc}>Spotify 정식명을 한글명 등으로 표시하려면 여기서 매핑하세요. "별칭" 버튼을 켜면 앨범 카드와 검색에 한글명이 표시됩니다. 검색 alias는 추가 검색어입니다.</p>
 
@@ -1624,7 +1632,7 @@ export default function AdminPage() {
           </div>
 
           {/* 아티스트 사진 관리 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>아티스트 사진</p>
             <p style={secDesc}>Spotify 자동 매칭이 잘못된 아티스트의 사진을 직접 지정합니다. 오버라이드된 항목은 파란 테두리로 표시됩니다.</p>
 
@@ -1721,7 +1729,7 @@ export default function AdminPage() {
           </div>
 
           {/* 아티스트 정규명 직접 변경 */}
-          <div style={{ ...card, borderColor: "rgba(192,57,43,0.35)" }}>
+          <div style={{ ...card, borderColor: "rgba(192,57,43,0.35)" }} className="admin-card">
             <p style={secTitle}>아티스트 정규명 직접 변경</p>
             <p style={secDesc}>특정 앨범의 artist 원본값을 DB에서 직접 수정합니다. 별칭이 아닌 원본을 바꾸므로 신중하게 사용하세요.</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -1747,7 +1755,7 @@ export default function AdminPage() {
           </div>
 
           {/* Spotify 일괄 매칭 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>Spotify 일괄 매칭</p>
             <p style={secDesc}>Spotify ID가 없는 앨범 전체에 커버·발매일을 자동으로 채웁니다. 신규 앨범을 대량 입고한 뒤 1회 실행하세요.</p>
             {remaining !== null && (
@@ -1765,7 +1773,7 @@ export default function AdminPage() {
           </div>
 
           {/* 트랙리스트 일괄 채우기 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>트랙리스트 일괄 채우기</p>
             <p style={secDesc}>Spotify ID는 있지만 트랙리스트가 없는 앨범에 트랙 목록을 채웁니다. Spotify 일괄 매칭 후 실행하세요.</p>
             {trackRemaining !== null && <p style={{ color: "var(--text-sub)", fontSize: 13, marginBottom: 12 }}>남은 앨범: <span style={{ color: "var(--accent)", fontWeight: 600 }}>{trackRemaining}</span>개</p>}
@@ -1779,7 +1787,7 @@ export default function AdminPage() {
           </div>
 
           {/* 재생시간 백필 */}
-          <div style={card}>
+          <div style={card} className="admin-card">
             <p style={secTitle}>재생시간 백필</p>
             <p style={secDesc}>Spotify ID는 있지만 재생시간 데이터가 없는 앨범에 트랙별 재생시간을 채웁니다. 트랙리스트 채우기 후 실행하세요.</p>
             {durTotal !== null && (
