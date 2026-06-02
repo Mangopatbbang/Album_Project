@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import LogoMark from "@/components/ui/LogoMark";
 
 const containerStyle = {
   width: "100%",
@@ -52,7 +53,8 @@ export default function LoginPage() {
       <div style={containerStyle}>
         {/* 로고 */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Link href="/">
+          <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <LogoMark height={72} />
             <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 28, letterSpacing: "-0.04em" }}>
               아차청음사
             </p>

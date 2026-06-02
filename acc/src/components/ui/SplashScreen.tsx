@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import LogoMark from "@/components/ui/LogoMark";
 
 const G = (a: number) => `rgba(185,152,72,${a})`;
 
@@ -21,9 +22,9 @@ function LogoInDoor({ side }: { side: "left" | "right" }) {
         userSelect: "none",
       }}
     >
-      <span style={{ color: "var(--accent)", fontSize: 34, animation: "splashIn 0.9s ease-out forwards", opacity: 0 }}>
-        ♪
-      </span>
+      <div style={{ animation: "splashIn 0.9s ease-out forwards", opacity: 0 }}>
+        <LogoMark height={64} />
+      </div>
       <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 26, letterSpacing: "-0.04em", margin: 0, whiteSpace: "nowrap", animation: "splashIn 0.9s ease-out 0.3s forwards", opacity: 0 }}>
         아차청음사
       </p>

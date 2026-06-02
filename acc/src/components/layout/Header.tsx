@@ -10,6 +10,7 @@ import { useNotifications } from "@/context/NotificationsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import SettingsModal from "@/components/ui/SettingsModal";
 import DeleteAccountModal from "@/components/ui/DeleteAccountModal";
+import LogoMark from "@/components/ui/LogoMark";
 
 
 export default function Header() {
@@ -76,9 +77,9 @@ export default function Header() {
       <div style={{ padding: "0 16px", display: "grid", gridTemplateColumns: "auto 1fr minmax(max-content, auto)", alignItems: "center", height: 52, gap: 8 }}>
 
         {/* 로고 */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8 }} className="group">
-          <span style={{ color: "var(--accent)", fontSize: 16, lineHeight: 1, transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)", display: "inline-block" }} className="group-hover:scale-[1.2]">♪</span>
-          <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em", transition: "letter-spacing 0.2s ease, color 0.15s" }} className="group-hover:text-[var(--accent)]">
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9 }} className="group">
+          <LogoMark height={32} className="transition-transform duration-200 group-hover:scale-[1.08]" />
+          <span style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, letterSpacing: "-0.03em", transition: "color 0.15s" }} className="group-hover:text-[var(--accent)]">
             아차청음사
           </span>
         </Link>

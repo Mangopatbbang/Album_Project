@@ -76,6 +76,41 @@ export default async function RootLayout({
       className={`${pretendard.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-dvh flex flex-col pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
+        {/* LogoMark 전역 그라디언트·필터 — 모든 LogoMark 인스턴스가 참조 */}
+        <svg width="0" height="0" style={{ position: "absolute", overflow: "hidden" }} aria-hidden="true">
+          <defs>
+            <radialGradient id="lm-body" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stopColor="#131109" />
+              <stop offset="100%" stopColor="#070605" />
+            </radialGradient>
+            <radialGradient id="lm-spec" cx="28%" cy="22%" r="52%">
+              <stop offset="0%"   stopColor="#ede8d8" stopOpacity=".24" />
+              <stop offset="38%"  stopColor="#d8ceb0" stopOpacity=".07" />
+              <stop offset="100%" stopColor="#000"    stopOpacity="0"   />
+            </radialGradient>
+            <radialGradient id="lm-vign" cx="50%" cy="50%" r="50%">
+              <stop offset="52%"  stopColor="#000" stopOpacity="0"   />
+              <stop offset="100%" stopColor="#000" stopOpacity=".88" />
+            </radialGradient>
+            <radialGradient id="lm-lbl" cx="46%" cy="40%" r="58%">
+              <stop offset="0%"   stopColor="#2e2a1f" />
+              <stop offset="100%" stopColor="#1a1812" />
+            </radialGradient>
+            <radialGradient id="lm-spd" cx="32%" cy="26%" r="68%">
+              <stop offset="0%"   stopColor="#eedfb0" />
+              <stop offset="50%"  stopColor="#b89040" />
+              <stop offset="100%" stopColor="#6e4e18" />
+            </radialGradient>
+            <filter id="lm-grain" x="-5%" y="-5%" width="110%" height="110%"
+              colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency=".80" numOctaves={3}
+                seed={4} stitchTiles="stitch" result="noise" />
+              <feColorMatrix type="saturate" values="0" in="noise" result="gray" />
+              <feBlend in="SourceGraphic" in2="gray" mode="overlay" result="blended" />
+              <feComposite in="blended" in2="SourceGraphic" operator="in" />
+            </filter>
+          </defs>
+        </svg>
         <AuthProvider>
           <UsersProvider initialUsers={initialUsers}>
           <UserAvatarsProvider initialAvatarMap={initialAvatarMap}>
