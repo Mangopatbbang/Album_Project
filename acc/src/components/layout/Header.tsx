@@ -159,6 +159,22 @@ export default function Header() {
 
         {/* 유저 + 알림 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: 0.4 }}>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: 4, height: 4, borderRadius: "50%",
+                    backgroundColor: "var(--text-muted)",
+                    display: "inline-block",
+                    animation: "popupBlink 1.4s ease-in-out infinite",
+                    animationDelay: `${i * 0.22}s`,
+                  }}
+                />
+              ))}
+            </div>
+          )}
           {!loading && profile && (
             <>
               {/* 알림 벨 */}

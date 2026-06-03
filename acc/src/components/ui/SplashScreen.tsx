@@ -36,48 +36,6 @@ function LogoInDoor({ side }: { side: "left" | "right" }) {
 }
 
 
-function DoorHandle({ side }: { side: "left" | "right" }) {
-  const isLeft = side === "left";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        ...(isLeft ? { right: 16 } : { left: 16 }),
-        top: "50%",
-        transform: "translateY(-50%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {/* 마운팅 플레이트 */}
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          backgroundColor: G(0.07),
-          border: `1px solid ${G(0.38)}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: `0 0 12px ${G(0.1)}`,
-        }}
-      >
-        {/* 고리 */}
-        <div
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: "50%",
-            border: `2px solid ${G(0.82)}`,
-            boxShadow: `0 0 6px ${G(0.3)}`,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolean }) {
   const isLeft = side === "left";
@@ -100,7 +58,6 @@ function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolea
           : `inset 1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`,
       }}
     >
-      <DoorHandle side={side} />
       <LogoInDoor side={isLeft ? "left" : "right"} />
     </div>
   );
@@ -159,7 +116,7 @@ export default function SplashScreen() {
         />
       )}
 
-      {/* 중앙 금색 세로선 */}
+      {/* 중앙 금색 세로선 — both: from 키프레임을 렌더 직후부터 적용해 플래시 방지 */}
       {lineVisible && (
         <div
           style={{
@@ -170,7 +127,8 @@ export default function SplashScreen() {
             height: "100%",
             backgroundColor: G(0.65),
             transformOrigin: "top center",
-            animation: "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) forwards",
+            transform: "scaleY(0)",
+            animation: "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) both",
             opacity: opening ? 0 : 1,
             transition: opening ? "opacity 0.15s ease-out" : "none",
             pointerEvents: "none",

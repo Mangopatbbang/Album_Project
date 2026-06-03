@@ -91,7 +91,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               backgroundColor: "var(--bg-elevated)",
               border: "1px solid var(--border-light)",
               borderRadius: 10,
-              padding: "10px 16px",
+              padding: "10px 12px 10px 16px",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -99,7 +99,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               animation: toast.exiting ? "toastOut 0.2s ease-in forwards" : "toastIn 0.2s ease-out",
               maxWidth: 320,
               width: "100%",
-              pointerEvents: toast.action ? "auto" : "none",
+              pointerEvents: "none",
             }}
           >
             <span style={{ color: colorMap[toast.type], fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
@@ -110,17 +110,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => { toast.action!.onClick(); removeToast(toast.id); }}
                 style={{
-                  background: "none",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: 4,
-                  padding: "3px 8px",
+                  background: "rgba(var(--accent-rgb), 0.1)",
+                  border: "1px solid rgba(var(--accent-rgb), 0.25)",
+                  borderRadius: 6,
+                  padding: "0 12px",
+                  height: 32,
                   fontSize: 11,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: "var(--accent)",
                   cursor: "pointer",
                   flexShrink: 0,
                   whiteSpace: "nowrap",
+                  pointerEvents: "auto",
+                  transition: "background-color 0.15s, opacity 0.15s",
+                  WebkitTapHighlightColor: "transparent",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.1)")}
+                onMouseDown={(e) => (e.currentTarget.style.opacity = "0.7")}
+                onMouseUp={(e) => (e.currentTarget.style.opacity = "1")}
               >
                 {toast.action.label}
               </button>
