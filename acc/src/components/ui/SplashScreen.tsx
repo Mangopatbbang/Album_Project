@@ -4,13 +4,44 @@ import { useState, useEffect } from "react";
 import LogoMark from "@/components/ui/LogoMark";
 
 const G = (a: number) => `rgba(185,152,72,${a})`;
+const PLANK_Y = [14, 27, 52, 65, 78, 90] as const;
+
+function DoorSVG({ isLeft }: { isLeft: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        transform: isLeft ? undefined : "scaleX(-1)",
+      }}
+    >
+      <rect width="100" height="100" fill="#130e08" filter="url(#door-grain)" />
+      <rect width="100" height="100" fill="url(#door-depth)" />
+      <rect width="100" height="100" fill="url(#door-seam)" />
+      {PLANK_Y.map((y) => (
+        <g key={y}>
+          <rect x={0} y={y}        width={100} height={0.35} fill="#000"    opacity={0.30} />
+          <rect x={0} y={y + 0.35} width={100} height={0.20} fill="#c8b090" opacity={0.08} />
+        </g>
+      ))}
+      <rect x={0}    y={0} width={0.8} height={100} fill="#000" opacity={0.20} />
+      <rect x={99.2} y={0} width={0.8} height={100} fill="#000" opacity={0.12} />
+    </svg>
+  );
+}
 
 function LogoInDoor({ side }: { side: "left" | "right" }) {
   return (
     <div
       style={{
         position: "absolute",
-        top: "50%",
+        top: "40%",
         left: side === "left" ? 0 : "-50vw",
         width: "100vw",
         transform: "translateY(-50%)",
@@ -35,8 +66,6 @@ function LogoInDoor({ side }: { side: "left" | "right" }) {
   );
 }
 
-
-
 function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolean }) {
   const isLeft = side === "left";
   return (
@@ -52,12 +81,10 @@ function TempleDoor({ side, opening }: { side: "left" | "right"; opening: boolea
         animation: opening
           ? `${isLeft ? "doorLeftOpen" : "doorRightOpen"} 2.0s cubic-bezier(0.3,0,0.6,1) forwards`
           : undefined,
-        backgroundColor: "#0c0906",
-        boxShadow: isLeft
-          ? `inset -1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`
-          : `inset 1px 0 0 ${G(0.55)}, inset 0 1px 0 ${G(0.25)}, inset 0 -1px 0 ${G(0.25)}`,
+        backgroundColor: "#130e08",
       }}
     >
+      <DoorSVG isLeft={isLeft} />
       <LogoInDoor side={isLeft ? "left" : "right"} />
     </div>
   );
@@ -85,7 +112,7 @@ export default function SplashScreen() {
 
   // useEffect 실행 전(loading): 문짝 색과 동일한 배경으로 홈화면 노출 차단
   if (phase === "loading") {
-    return <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#0c0906" }} />;
+    return <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#130e08" }} />;
   }
 
   return (
@@ -116,7 +143,7 @@ export default function SplashScreen() {
         />
       )}
 
-      {/* 중앙 금색 세로선 — both: from 키프레임을 렌더 직후부터 적용해 플래시 방지 */}
+      {/* 중앙 금색 세로선 */}
       {lineVisible && (
         <div
           style={{
@@ -127,10 +154,11 @@ export default function SplashScreen() {
             height: "100%",
             backgroundColor: G(0.65),
             transformOrigin: "top center",
+            opacity: 0,
             transform: "scaleY(0)",
-            animation: "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) both",
-            opacity: opening ? 0 : 1,
-            transition: opening ? "opacity 0.15s ease-out" : "none",
+            animation: opening
+              ? "lineFade 0.15s ease-out forwards"
+              : "lineGrow 0.7s cubic-bezier(0.4,0,0.6,1) forwards",
             pointerEvents: "none",
             zIndex: 10,
           }}

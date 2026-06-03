@@ -109,6 +109,27 @@ export default async function RootLayout({
               <feBlend in="SourceGraphic" in2="gray" mode="overlay" result="blended" />
               <feComposite in="blended" in2="SourceGraphic" operator="in" />
             </filter>
+            {/* 스플래시 문짝 나무결 필터 */}
+            <filter id="door-grain" x="-2%" y="-2%" width="104%" height="104%"
+              colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency=".75 .052" numOctaves={6}
+                seed={3} result="t" />
+              <feColorMatrix in="t" type="matrix"
+                values=".22 0 0 0 .07  .14 0 0 0 .04  .07 0 0 0 .015  0 0 0 9 -4.2"
+                result="w" />
+              <feBlend in="SourceGraphic" in2="w" mode="soft-light" />
+            </filter>
+            {/* 문짝 외곽(경첩) 어둠 / 이음새 따뜻한 빛 */}
+            <linearGradient id="door-depth" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"  stopColor="#000" stopOpacity={0.40} />
+              <stop offset="28%" stopColor="#000" stopOpacity={0.04} />
+              <stop offset="86%" stopColor="#000" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="door-seam" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%"   stopColor="#c8a050" stopOpacity={0.18} />
+              <stop offset="14%"  stopColor="#c8a050" stopOpacity={0.04} />
+              <stop offset="100%" stopColor="transparent" stopOpacity={0} />
+            </linearGradient>
           </defs>
         </svg>
         <AuthProvider>
