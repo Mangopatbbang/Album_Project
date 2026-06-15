@@ -244,7 +244,7 @@
 | SpotifyAttribution | `ui/SpotifyAttribution.tsx` | Spotify 로고 + 링크 (ADR-002 준수) |
 | SpotlightTour | `ui/SpotlightTour.tsx` | 신규 유저 기능 안내 투어 |
 | TutorialModal | `ui/TutorialModal.tsx` | 온보딩 튜토리얼 모달 |
-| SplashScreen | `ui/SplashScreen.tsx` | 앱 초기 로딩 스플래시 |
+| SplashScreen | `ui/SplashScreen.tsx` | 앱 초기 로딩 스플래시 — 두 짝 문이 열리는 판장문 애니메이션. `DoorSVG`가 SVG 나무결 + 판자 이음매를 담당하고, 로고·서비스명은 양쪽 문에 걸쳐 중앙 정렬. 세션당 1회 표시 (`sessionStorage` 기반). |
 | SwipeNav | `ui/SwipeNav.tsx` | 모바일 스와이프 네비게이션 |
 | ReportModal | `ui/ReportModal.tsx` | 신고 모달 (사유 선택) |
 | CountUp | `ui/CountUp.tsx` | 숫자 카운트업 애니메이션 |

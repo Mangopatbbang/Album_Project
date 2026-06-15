@@ -137,6 +137,12 @@ score >= 7: 0 0 8px rgba(48,160,184,0.45), 0 0 16px rgba(48,160,184,0.2)
 | `navBounce` | 하단 네비 바운스 | 0.3s |
 | `navDropIn` | 헤더 네비 드롭다운 (Header.tsx 인라인 정의) | 0.14s |
 | `rotationSpin` | 랜덤 버튼 회전 | 0.5s |
+| `splashIn` | 스플래시 로고·텍스트 페이드업 | 0.9s |
+| `lineGrow` | 스플래시 중앙 금색 세로선 grow | 0.7s |
+| `lineFade` | 스플래시 세로선 페이드아웃 (문 열릴 때) | 0.15s |
+| `doorLeftOpen` | 스플래시 왼쪽 문 rotateY(-90deg) | 2s |
+| `doorRightOpen` | 스플래시 오른쪽 문 rotateY(90deg) | 2s |
+| `lightBloom` | 스플래시 문 열릴 때 중앙 빛 번짐 | 1.4s |
 
 ### 모달 애니메이션 분기
 

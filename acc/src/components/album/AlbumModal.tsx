@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
@@ -127,6 +127,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const isDirtyRef = useRef(false);
   const touchStartY = useRef(0);
   const isDraggingRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const handleDeleteAlbum = () => {
     cardRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -167,12 +168,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     if (!profile || savingLike) return;
     const hasRating = ratings.find((r) => r.user_id === profile.id);
     if (!hasRating) return;
+    const prev = new Set(myLikedTracks);
     const next = new Set(myLikedTracks);
-    const liked = !next.has(idx);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
     setMyLikedTracks(next);
     setSavingLike(true);
-    await apiFetch("/api/ratings", {
+    const res = await apiFetch("/api/ratings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -180,12 +181,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         liked_tracks: next.size > 0 ? [...next].sort((a, b) => a - b).join(",") : null,
       }),
     });
+    if (!res.ok) setMyLikedTracks(prev);
     setSavingLike(false);
   };
 
   const handleToggleLikeReview = async (reviewerId: string) => {
     if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
     if (savingLike) return;
+    const prev = new Set(myLikedReviews);
     const next = new Set(myLikedReviews);
     if (next.has(reviewerId)) next.delete(reviewerId); else next.add(reviewerId);
     setMyLikedReviews(next);
@@ -197,16 +200,18 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     });
     if (res.ok) {
       const data = await res.json();
-      setFull((prev) => prev ? {
-        ...prev,
-        ratings: prev.ratings.map((r) =>
+      setFull((p) => p ? {
+        ...p,
+        ratings: p.ratings.map((r) =>
           r.user_id === reviewerId ? { ...r, liked_by: data.liked_by } : r
         ),
-      } : prev);
+      } : p);
+      const reviewLiked = next.has(reviewerId);
+      showToast(reviewLiked ? "소감을 좋아요했어요 ♥" : "소감 좋아요를 취소했어요", "info");
+    } else {
+      setMyLikedReviews(prev);
     }
     setSavingLike(false);
-    const reviewLiked = next.has(reviewerId);
-    showToast(reviewLiked ? "소감을 좋아요했어요 ♥" : "소감 좋아요를 취소했어요", "info");
   };
 
   const toggleReview = (userId: string) => {
@@ -218,8 +223,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     });
   };
 
-  // 캐시된 이미지는 onLoad가 React 핸들러 부착 전에 이미 발화 — mount 후 complete 확인으로 보정
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // 캐시된 이미지는 onLoad가 React 핸들러 부착 전에 이미 발화 — 페인트 전 동기 확인으로 opacity-0 프레임 제거
+  useLayoutEffect(() => {
     if (coverImgRef.current?.complete && coverImgRef.current.naturalWidth > 0) {
       setCoverLoaded("loaded");
     }
@@ -233,10 +243,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 상세 데이터 fetch (캐시 무효화 후 항상 fresh fetch)
+  // 상세 데이터 fetch
   useEffect(() => {
+    const controller = new AbortController();
     if (source) trackAlbumVisit(album.id, source);
-    fetch(`/api/albums/${album.id}`)
+    fetch(`/api/albums/${album.id}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
         if (!data || !Array.isArray(data.ratings)) return;
@@ -265,28 +276,36 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         }
       })
       .catch(() => {});
+    return () => controller.abort();
   }, [album.id, profile]);
 
-  // private_note 별도 fetch (인증 헤더 포함, 본인만 반환됨)
+  // private_note · 평점이력 · 찜 여부 병렬 fetch
   useEffect(() => {
     if (!profile) return;
-    apiFetch(`/api/ratings?albumId=${album.id}&userId=${profile.id}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (!data?.ratings?.length) return;
-        const myR = data.ratings[0] as { private_note?: string | null };
-        setMyPrivateNote(myR.private_note ?? "");
+    const controller = new AbortController();
+    const { signal } = controller;
+    Promise.all([
+      apiFetch(`/api/ratings?albumId=${album.id}&userId=${profile.id}`, { signal }),
+      fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`, { signal }),
+      fetch(`/api/watchlist/check?userId=${profile.id}&albumId=${album.id}`, { signal }),
+    ])
+      .then(([noteRes, histRes, watchRes]) =>
+        Promise.all([
+          noteRes.ok ? noteRes.json() : Promise.resolve(null),
+          histRes.ok ? histRes.json() : Promise.resolve([] as { score: number; createdAt: string }[]),
+          watchRes.json(),
+        ])
+      )
+      .then(([noteData, histData, watchData]) => {
+        const note = noteData as { ratings?: { private_note?: string | null }[] } | null;
+        const hist = histData as { score: number; createdAt: string }[];
+        const watch = watchData as { isWatchlisted?: boolean };
+        if (note?.ratings?.length) setMyPrivateNote(note.ratings[0].private_note ?? "");
+        if (Array.isArray(hist)) setMyHistory(hist);
+        setIsWatchlisted(watch?.isWatchlisted ?? false);
       })
       .catch(() => {});
-  }, [album.id, profile]);
-
-  // 평점 이력 fetch
-  useEffect(() => {
-    if (!profile) return;
-    fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((data: { score: number; createdAt: string }[]) => setMyHistory(data))
-      .catch(() => {});
+    return () => controller.abort();
   }, [album.id, profile]);
 
   // 소감/별점 dirty 추적
@@ -295,15 +314,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       myReview !== initialReviewRef.current ||
       (myScore !== null && myScore !== initialScoreRef.current);
   }, [myReview, myScore]);
-
-  // 찜 여부 fetch
-  useEffect(() => {
-    if (!profile) return;
-    fetch(`/api/watchlist/check?userId=${profile.id}&albumId=${album.id}`)
-      .then((r) => r.json())
-      .then((data) => { setIsWatchlisted(data.isWatchlisted ?? false); })
-      .catch(() => {});
-  }, [album.id, profile]);
 
   const handleToggleWatchlist = async () => {
     if (!profile) return;
@@ -373,12 +383,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     // 5초 후 실제 삭제
     pendingDeleteRef.current = setTimeout(async () => {
       pendingDeleteRef.current = null;
+      if (!isMountedRef.current) return;
       setDeleting(true);
       await apiFetch("/api/ratings", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: album.id }),
       });
+      if (!isMountedRef.current) return;
       const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
       if (refreshed.ok) {
         const data = await refreshed.json();
@@ -392,7 +404,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const afterSaveSuccess = async () => {
-    const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
+    const refreshed = await fetch(`/api/albums/${album.id}?_=${Date.now()}`, { cache: "no-store" });
     if (refreshed.ok) {
       const data = await refreshed.json();
       if (data && Array.isArray(data.ratings)) setFull(data);
@@ -443,6 +455,33 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       }
     }
     if (!res.ok) return;
+
+    // 낙관적 업데이트: 서버 refetch 전에 바로 멤버 평점 목록에 반영
+    const savedScore = myScore;
+    const savedReview = myReview;
+    const savedLikedTracks = myLikedTracks;
+    const savedProfileId = profile.id;
+    setFull((prev) => {
+      if (!prev) return prev;
+      const existingLikedBy = prev.ratings.find((r) => r.user_id === savedProfileId)?.liked_by ?? null;
+      const newRating: RatingWithLikes = {
+        user_id: savedProfileId,
+        score: savedScore,
+        one_line_review: savedReview || null,
+        liked_tracks: savedLikedTracks.size > 0 ? [...savedLikedTracks].sort((a, b) => a - b).join(",") : null,
+        liked_by: existingLikedBy,
+      };
+      const alreadyRated = prev.ratings.some((r) => r.user_id === savedProfileId);
+      const newRatings = alreadyRated
+        ? prev.ratings.map((r) => (r.user_id === savedProfileId ? newRating : r))
+        : [...prev.ratings, newRating];
+      const scores = newRatings.map((r) => r.score);
+      const avg = scores.length > 0
+        ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+        : undefined;
+      return { ...prev, ratings: newRatings, avg };
+    });
+
     trackFeatureClick("평점_저장", String(myScore));
     const wasFirstRating = initialScoreRef.current === null;
     if (wasFirstRating && typeof window !== "undefined" && !localStorage.getItem("acs_hint_first_rating_v1")) {
@@ -499,7 +538,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const ratings = (data as FullAlbum).ratings ?? album.ratings ?? [];
 
   const VISIBLE_COUNT = 4;
-  const sortedUsers = [...users].sort((a, b) => {
+  const sortedUsers = useMemo(() => [...users].sort((a, b) => {
     if (profile) {
       if (a.id === profile.id) return -1;
       if (b.id === profile.id) return 1;
@@ -512,7 +551,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     if (ra && !rb) return -1;
     if (!ra && rb) return 1;
     return 0;
-  });
+  }), [users, ratings, profile]);
   const visibleUsers = sortedUsers.slice(0, VISIBLE_COUNT);
   const hiddenCount = Math.max(0, sortedUsers.length - VISIBLE_COUNT);
 
@@ -541,29 +580,32 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     return `${m}분 ${s}초`;
   };
 
-  const ratingScores = ratings.map((r) => r.score).filter(Boolean);
-  const controversyIndex = (() => {
+  const ratingScores = useMemo(() => ratings.map((r) => r.score).filter(Boolean), [ratings]);
+  const controversyIndex = useMemo(() => {
     if (ratingScores.length < 3) return null;
     const mean = ratingScores.reduce((a, b) => a + b, 0) / ratingScores.length;
     const variance = ratingScores.reduce((a, b) => a + (b - mean) ** 2, 0) / ratingScores.length;
     return Math.sqrt(variance);
-  })();
+  }, [ratingScores]);
 
-  const trackPopularity = new Map<number, number>();
-  for (const r of ratings) {
-    if (r.liked_tracks) {
-      r.liked_tracks.split(",").map(Number).forEach((idx) => {
-        trackPopularity.set(idx, (trackPopularity.get(idx) ?? 0) + 1);
-      });
+  const { trackPopularity, top3TrackIndices } = useMemo(() => {
+    const popularity = new Map<number, number>();
+    for (const r of ratings) {
+      if (r.liked_tracks) {
+        r.liked_tracks.split(",").map(Number).forEach((idx) => {
+          popularity.set(idx, (popularity.get(idx) ?? 0) + 1);
+        });
+      }
     }
-  }
-  const top3TrackIndices = new Set(
-    [...trackPopularity.entries()]
-      .filter(([, count]) => count >= 2)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([idx]) => idx)
-  );
+    const top3 = new Set(
+      [...popularity.entries()]
+        .filter(([, count]) => count >= 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([idx]) => idx)
+    );
+    return { trackPopularity: popularity, top3TrackIndices: top3 };
+  }, [ratings]);
 
   return (
     <>

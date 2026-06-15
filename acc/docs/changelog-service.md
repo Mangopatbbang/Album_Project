@@ -330,6 +330,23 @@
 
 ---
 
+### 2026-06-03 — 스플래시 문짝 판장문 리디자인
+
+**스플래시 버그 수정 (76dea53)**
+- 중앙 금색 세로선 플래시 제거: `animation-fill-mode` 정리 + `lineFade` 키프레임 분리로 완전 해소
+- `DoorHandle` 컴포넌트 삭제 — 로고 마크 도입 이후 불필요해진 손잡이 제거
+- 자동 로그인 대기 중 헤더 우측에 점 3개 `···` 순차 깜빡임 표시 추가
+- Toast 반응보기 버튼 — wrapper `pointerEvents: none`, 버튼만 `auto`로 분리; 터치 타깃 32px 확대; 호버·눌림 시각 피드백 추가
+
+**판장문 디자인 적용 (14f07b6)**
+- `DoorSVG` 컴포넌트 신설 — `viewBox="0 0 100 100"` + `preserveAspectRatio="none"` 으로 모든 화면 비율에 크롭 없이 대응
+- `feTurbulence fractalNoise` 기반 수평 나무결 필터 (`door-grain`) + 외곽 어둠/이음새 따뜻한 빛 그라디언트 (`door-depth`, `door-seam`) → `layout.tsx` 전역 SVG defs에 등록
+- 판자 이음매 6개 (y=14, 27, 52, 65, 78, 90) — 로고 위치(top 40%)와 겹치지 않는 배치
+- 로고 `top: 40%` + 오른쪽 문에도 `.lw` 요소 삽입 — 양쪽 문에 걸쳐 세로 중앙선 기준 정중앙 표시
+- 문짝 배경색 `#0c0906` → `#130e08` (따뜻한 다크 브라운), `boxShadow` 제거 (SVG 그라디언트 대체)
+
+---
+
 ## 기술 부채 / 보류 중인 것들
 
 > 자세한 목록 → `memory/project_backlog.md`

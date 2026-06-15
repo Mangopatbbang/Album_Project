@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import type { NotificationItem } from "@/app/api/notifications/route";
 import { apiFetch } from "@/lib/apiFetch";
@@ -27,7 +27,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       .then((r) => r.json())
       .then((d) => setNotifications(d.notifications ?? []))
       .catch(() => {});
-  }, [profile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const markAllRead = useCallback(async () => {
     await apiFetch("/api/notifications", {
@@ -43,8 +44,9 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     setNotifications([]);
   }, []);
 
+  const contextValue = useMemo(() => ({ notifications, markAllRead, clearAll }), [notifications, markAllRead, clearAll]);
   return (
-    <NotificationsContext.Provider value={{ notifications, markAllRead, clearAll }}>
+    <NotificationsContext.Provider value={contextValue}>
       {children}
     </NotificationsContext.Provider>
   );
