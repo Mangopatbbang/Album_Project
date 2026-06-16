@@ -405,6 +405,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
   const afterSaveSuccess = async () => {
     const refreshed = await fetch(`/api/albums/${album.id}?_=${Date.now()}`, { cache: "no-store" });
+    if (!isMountedRef.current) return;
     if (refreshed.ok) {
       const data = await refreshed.json();
       if (data && Array.isArray(data.ratings)) setFull(data);
@@ -904,7 +905,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     );
                   })()}
                   {(full as FullAlbum)?.release_date && (
-                    <span style={{ color: "var(--text-muted)" }}>
+                    <span style={{ color: "var(--text-muted)", animation: "fadeIn 0.2s ease-out" }}>
                       {" · "}
                       {formatReleaseDate((full as FullAlbum).release_date!)}
                     </span>
@@ -940,6 +941,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     padding: "3px 8px",
                     borderRadius: 4,
                     border: "1px solid rgba(var(--accent-rgb), 0.25)",
+                    animation: "fadeIn 0.2s ease-out",
                   }}>
                     {(full as FullAlbum).region}
                   </span>
@@ -1701,11 +1703,24 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           </div>
         )}
 
+        {/* 트랙리스트 skeleton — full 로드 전 자리 확보해서 레이아웃 점프 방지 */}
+        {full === null && (
+          <>
+            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
+            <div className="px-5 sm:px-8">
+              <div className="skeleton-shimmer" style={{ height: 11, width: 72, borderRadius: 4, marginBottom: 12 }} />
+              {[0,1,2,3,4].map((i) => (
+                <div key={i} className="skeleton-shimmer" style={{ height: 13, borderRadius: 4, marginBottom: 7 }} />
+              ))}
+            </div>
+          </>
+        )}
+
         {/* 트랙리스트 */}
         {full !== null && tracklist.length === 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
+            <div className="px-5 sm:px-8" style={{ paddingBottom: 0, animation: "fadeIn 0.2s ease-out" }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 8 }}>수록곡</p>
               <p style={{ color: "var(--text-muted)", fontSize: 12 }}>트랙리스트 정보가 없어요</p>
             </div>
@@ -1714,7 +1729,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         {tracklist.length > 0 && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <div className="px-5 sm:px-8" style={{ paddingBottom: 0 }}>
+            <div className="px-5 sm:px-8" style={{ paddingBottom: 0, animation: "fadeIn 0.2s ease-out" }}>
               {/* 섹션 헤더 */}
               <div style={{ marginBottom: 12 }}>
                 <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
