@@ -347,6 +347,46 @@
 
 ---
 
+### 2026-06-18 — AlbumModal 안정성·성능 전면 개선
+
+**레이스 컨디션 수정 (da0e9dd)**
+- AbortController 추가 — 앨범 상세 fetch, private_note·평점이력·찜 여부 fetch 모두 언마운트 시 취소
+- 기존 3개 분리 effect(private_note / 평점이력 / 찜 여부) → `Promise.all` 단일 병렬 fetch로 통합
+- `isMountedRef` 도입 — handleDelete 5초 딜레이 타이머 중 언마운트 시 setState 차단
+- `afterSaveSuccess`: 저장 중 언마운트 시 `setFull` 차단 (`isMountedRef` 체크)
+
+**낙관적 업데이트 롤백 추가**
+- `handleToggleLike`: API 실패 시 이전 상태 복원 (기존에는 UI만 바뀌고 서버 상태 불일치 방치)
+- `handleToggleLikeReview`: API 실패 시 롤백 + 토스트를 성공 시에만 표시
+
+**평점 저장 즉시 반영**
+- `handleSave` 성공 직후 낙관적 `setFull` — 서버 refetch 완료 전에 멤버 평점 목록·평균 즉시 업데이트
+- `afterSaveSuccess` 캐시 버스터 `?_=Date.now()` — CDN 30초 캐시 우회
+
+**성능 최적화**
+- `sortedUsers` / `ratingScores` / `controversyIndex` / `trackPopularity` + `top3TrackIndices` → `useMemo` 처리 (매 렌더 재계산 제거)
+- `useEffect`의 커버 이미지 cached 감지 → `useLayoutEffect`로 전환 (첫 프레임 opacity-0 플래시 제거)
+
+**NotificationsContext 최적화**
+- context value 객체 → `useMemo` 처리 (알림 변경 시에만 소비자 리렌더)
+- deps `[profile]` → `[profile?.id]` (프로필 필드 변경마다 불필요한 알림 재fetch 제거)
+
+---
+
+### 2026-06-18 — AlbumModal 모바일 깜빡임 개선 (1a6ee7c)
+
+**원인 분석**
+- AlbumModal 호출부 15개 이상이 `ratings: []`로 열기 — fetch 완료 전 avg "–", 멤버 평점 빈칸
+- `full` 로드 시 트랙리스트·발매일·지역 섹션이 동시에 등장 → 레이아웃 급격히 확장 → 하단 시트 특성상 시각적 충격
+
+**수정 내용**
+- 트랙리스트 영역에 skeleton placeholder 5줄 추가 — `full === null`일 때 자리 선확보, fetch 완료 시 높이 변화 없이 내용 교체
+- 트랙리스트 실제 등장 시 `fadeIn 0.2s ease-out` 적용
+- "트랙리스트 정보가 없어요" 메시지 등장 시 `fadeIn 0.2s` 적용
+- 발매일 span, 지역 배지 span 등장 시 `fadeIn 0.2s` 적용
+
+---
+
 ## 기술 부채 / 보류 중인 것들
 
 > 자세한 목록 → `memory/project_backlog.md`
