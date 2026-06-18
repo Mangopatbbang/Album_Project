@@ -1,6 +1,7 @@
 # 디자인 시스템
 
-> 아차청음사의 시각적 기준. 새 UI를 만들 때 이 파일을 먼저 읽을 것.
+> 아차청음사의 시각적 기준. 새 UI를 만들 때 이 파일을 먼저 읽을 것.  
+> 색상·타이포·간격·애니메이션·컴포넌트 패턴 전체를 다룬다.
 
 ---
 
@@ -23,6 +24,8 @@
 ---
 
 ## 색상 변수 (CSS Custom Properties)
+
+`globals.css`에 선언된 CSS 변수 전체 목록. 컴포넌트 인라인 스타일에서 `"var(--accent)"` 형태로 직접 참조한다.
 
 ```css
 /* 배경 계층 */
@@ -238,12 +241,12 @@ const labelStyle = {
 모바일 작업을 할 때는 `sm:` 접두사만 사용하고, 데스크탑 기본값은 절대 건드리지 않는다.  
 Tailwind의 기본 브레이크포인트: `sm: = 640px`
 
-| 클래스 패턴 | 의미 | 예시 |
+| 클래스 패턴 | 의미 |
 |-------------|------|
-| `sm:hidden` | 모바일에서만 표시 |
-| `hidden sm:block` | 데스크탑에서만 표시 |
-| `sm:flex` | 데스크탑 flex |
-| `text-[12px] sm:text-[11px]` | 모바일 크게 / 데스크탑 작게 |
+| `sm:hidden` | 모바일에서만 표시 (≥640px 이상이면 hidden) |
+| `hidden sm:block` | 데스크탑에서만 표시 (640px 미만이면 hidden) |
+| `sm:flex` | 데스크탑에서 flex, 모바일에서는 기본값 그대로 |
+| `text-[12px] sm:text-[11px]` | 모바일 12px / 데스크탑 11px |
 
 > **규칙:** 모바일 작업 시 `sm:` 클래스만 사용. 데스크탑 기본값은 절대 변경 금지.
 
@@ -251,7 +254,8 @@ Tailwind의 기본 브레이크포인트: `sm: = 640px`
 
 ## 장르 색상
 
-`src/lib/bio.ts`의 `GENRE_COLOR` 맵:
+각 장르에 고정된 강조색. `src/lib/bio.ts`의 `GENRE_COLOR` 맵을 참조한다.  
+장르 뱃지·바 차트·프로필 분포 차트 등에서 일관된 색상으로 표시된다.
 
 ```typescript
 {
@@ -302,7 +306,9 @@ Tailwind의 기본 브레이크포인트: `sm: = 640px`
 
 ## 스켈레톤 UI
 
-로딩 중 콘텐츠 자리 표시자:
+데이터 로드 전 콘텐츠 자리를 미리 잡아두는 플레이스홀더.  
+레이아웃이 갑자기 팽창하는 "레이아웃 점프"를 방지하기 위해 사용한다.  
+실제 콘텐츠와 동일한 높이·너비로 만들고, 로드 완료 시 콘텐츠로 교체한다.
 
 ```css
 .skeleton-shimmer {
@@ -336,7 +342,12 @@ Tailwind의 기본 브레이크포인트: `sm: = 640px`
 
 ## iOS / 모바일 특이사항
 
-1. **input/textarea font-size:** 반드시 16px 이상 — 미만 시 iOS 자동 줌인 (BUG-005)
-2. **하단 패딩:** `env(safe-area-inset-bottom)` 포함 필수
-3. **overscroll:** `overscroll-behavior: none` — iOS bounce 배경색 노출 방지
-4. **터치 타겟:** 최소 44×44px 권장 (`.touch-target` 클래스 활용)
+iOS와 Android 기기에서 발생하는 고질적 문제들과 그 대응 방법이다.  
+여기서 놓치면 실제 기기에서만 재현되는 버그가 생기므로 주의한다.
+
+| 항목 | 규칙 | 이유 |
+|------|------|------|
+| `input` / `textarea` font-size | 반드시 **16px 이상** | 미만이면 iOS가 포커스 시 자동 줌인 (BUG-005) |
+| 하단 패딩 | `env(safe-area-inset-bottom)` 포함 | iPhone 홈 인디케이터 밑으로 콘텐츠가 숨음 |
+| overscroll | `overscroll-behavior: none` | iOS 바운스 스크롤 시 배경색 노출 방지 |
+| 터치 타겟 | 최소 **44×44px** | `.touch-target` 클래스 활용 |
