@@ -267,6 +267,15 @@ body {
   100% { box-shadow: 0 0 0px transparent; }
 }
 
+/* 블럭된 액션 시 흔들림 */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(4px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(2px); }
+}
+
 .hof-pop         { animation: hofPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .rotate-spin-once{ animation: rotateSpin 0.48s cubic-bezier(0.22, 0.61, 0.36, 1); }
 .feed-item-in    { animation: feedItemIn 0.22s ease-out both; }

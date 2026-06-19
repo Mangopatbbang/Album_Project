@@ -15,6 +15,7 @@ import UserAvatar from "@/components/ui/UserAvatar";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
 import { useToast } from "@/components/ui/Toast";
+import { useBlockedAction } from "@/hooks/useBlockedAction";
 
 type AlbumModalData = {
   id: string; title: string; artist: string; artist_display?: string;
@@ -452,6 +453,7 @@ function ReviewRow({
   const [expanded, setExpanded] = useState(false);
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
+  const { triggerBlock, shakeStyle } = useBlockedAction();
   const user = getUserById(item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
   const isMyReview = myId === item.userId;
@@ -546,23 +548,40 @@ function ReviewRow({
           <span style={{ fontSize: 10, color: "var(--text-muted)" }} className="hidden sm:inline">{dateStr}</span>
 
           {/* 공감 */}
-          {!isMyReview && myId ? (
-            <button
-              onClick={onLike}
-              disabled={liking}
-              className="min-h-[36px] sm:min-h-0"
-              style={{
-                display: "flex", alignItems: "center", gap: 3,
-                background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",
-                color: iLiked ? "var(--accent)" : "var(--text-muted)",
-                fontSize: 10, padding: "2px 6px", borderRadius: 20,
-                backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
-                transition: "background-color 0.15s, color 0.15s",
-              }}
-            >
-              <span style={{ fontSize: 11 }}>{iLiked ? "♥" : "♡"}</span>
-              {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
-            </button>
+          {!isMyReview ? (
+            myId ? (
+              <button
+                onClick={onLike}
+                disabled={liking}
+                className="min-h-[36px] sm:min-h-0"
+                style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",
+                  color: iLiked ? "var(--accent)" : "var(--text-muted)",
+                  fontSize: 10, padding: "2px 6px", borderRadius: 20,
+                  backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
+                  transition: "background-color 0.15s, color 0.15s",
+                }}
+              >
+                <span style={{ fontSize: 11 }}>{iLiked ? "♥" : "♡"}</span>
+                {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
+              </button>
+            ) : (
+              <button
+                onClick={triggerBlock}
+                className="min-h-[36px] sm:min-h-0 opacity-30 hover:opacity-60 transition-opacity"
+                style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--text-muted)",
+                  fontSize: 10, padding: "2px 6px", borderRadius: 20,
+                  ...shakeStyle,
+                }}
+              >
+                <span style={{ fontSize: 11 }}>♡</span>
+                {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
+              </button>
+            )
           ) : item.likedBy.length > 0 ? (
             <span style={{ fontSize: 10, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}>
               <span>♥</span><span>{item.likedBy.length}</span>

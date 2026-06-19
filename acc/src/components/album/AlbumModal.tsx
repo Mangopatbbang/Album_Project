@@ -99,6 +99,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [hoveredTrack, setHoveredTrack] = useState<number | null>(null);
   const [hoveredReview, setHoveredReview] = useState<string | null>(null);
   const [savingLike, setSavingLike] = useState(false);
+  const [shakingTrackIdx, setShakingTrackIdx] = useState<number | null>(null);
+  const [shakingReviewId, setShakingReviewId] = useState<string | null>(null);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
@@ -165,7 +167,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const handleToggleLike = async (idx: number) => {
-    if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
+    if (!profile) {
+      setShakingTrackIdx(idx);
+      showToastWithAction("로그인 후 이용할 수 있어요", "입문하기 →", () => router.push("/login"));
+      setTimeout(() => setShakingTrackIdx(null), 420);
+      return;
+    }
     if (savingLike) return;
     const hasRating = ratings.find((r) => r.user_id === profile.id);
     if (!hasRating) return;
@@ -187,7 +194,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const handleToggleLikeReview = async (reviewerId: string) => {
-    if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
+    if (!profile) {
+      setShakingReviewId(reviewerId);
+      showToastWithAction("로그인 후 이용할 수 있어요", "입문하기 →", () => router.push("/login"));
+      setTimeout(() => setShakingReviewId(null), 420);
+      return;
+    }
     if (savingLike) return;
     const prev = new Set(myLikedReviews);
     const next = new Set(myLikedReviews);
@@ -1125,6 +1137,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               const iLikedReview = myLikedReviews.has(user.id);
               const likedByUsers = users.filter((u) => r?.liked_by?.split(",").includes(u.id));
               const canLikeReview = !!profile && user.id !== profile.id && !!review;
+              const showBlockedHeart = !profile && !!review;
               const showReviewHeart = canLikeReview && (hoveredReview === user.id || iLikedReview);
               return (
                 <div
@@ -1173,22 +1186,25 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
 
                       {/* 리뷰 하트 */}
-                      {canLikeReview && (
+                      {(canLikeReview || showBlockedHeart) && (
                         <button
                           onClick={() => handleToggleLikeReview(user.id)}
-                          disabled={savingLike}
+                          disabled={savingLike && !!profile}
                           style={{
                             background: "none", border: "none", cursor: "pointer",
                             color: iLikedReview ? "var(--error)" : "var(--text-muted)",
                             fontSize: 13, flexShrink: 0,
                             transition: "opacity 0.15s, color 0.15s",
+                            ...(shakingReviewId === user.id ? { animation: "shake 0.42s ease-in-out" } : {}),
                           }}
                           className={[
                             "p-2 -m-2 transition-colors",
                             iLikedReview ? "heart-pop" : "active:scale-90",
-                            iLikedReview || showReviewHeart
-                              ? "opacity-100"
-                              : "opacity-0 sm:opacity-0 max-sm:opacity-30",
+                            showBlockedHeart
+                              ? (shakingReviewId === user.id ? "opacity-100" : "opacity-20 hover:opacity-40")
+                              : (iLikedReview || showReviewHeart
+                                  ? "opacity-100"
+                                  : "opacity-0 sm:opacity-0 max-sm:opacity-30"),
                           ].join(" ")}
                         >
                           ♥
@@ -1762,13 +1778,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     <li
                       key={i}
                       className={i >= 9 && !tracklistExpanded ? "hidden sm:flex" : "flex"}
-                      onClick={() => canLike && handleToggleLike(i)}
+                      onClick={() => { if (!profile || canLike) handleToggleLike(i); }}
                       style={{
                         alignItems: "center", padding: "8px 6px",
                         borderRadius: 6,
                         backgroundColor: isRowHovered ? "var(--bg-elevated)" : "transparent",
                         transition: "background-color 0.12s",
-                        cursor: canLike ? "pointer" : "default",
+                        cursor: !profile || canLike ? "pointer" : "default",
                       }}
                       onMouseEnter={() => setHoveredTrack(i)}
                       onMouseLeave={() => setHoveredTrack(null)}
@@ -1813,14 +1829,19 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                             {likeTotal}
                           </span>
                         )}
-                        {profile && hasMyRating && (
+                        {(profile ? hasMyRating : true) && (
                           <span
                             className={iLiked ? "heart-pop" : ""}
                             style={{
                               fontSize: 14, lineHeight: 1,
                               color: iLiked ? "var(--error)" : "var(--text-muted)",
-                              opacity: iLiked ? 1 : isRowHovered ? 0.6 : 0.4,
+                              opacity: shakingTrackIdx === i
+                                ? 1
+                                : !profile
+                                  ? (isRowHovered ? 0.4 : 0.15)
+                                  : (iLiked ? 1 : isRowHovered ? 0.6 : 0.4),
                               transition: "opacity 0.15s, color 0.15s",
+                              ...(shakingTrackIdx === i ? { animation: "shake 0.42s ease-in-out" } : {}),
                             }}
                           >
                             ♥
