@@ -46,6 +46,13 @@ export default function WatchlistSection({ userId }: Props) {
   const INITIAL_LIMIT = 5;
 
   useEffect(() => {
+    if (!popupOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [popupOpen]);
+
+  useEffect(() => {
     if (!isOwner) return;
     fetch(`/api/watchlist?userId=${userId}`)
       .then((r) => r.json())
