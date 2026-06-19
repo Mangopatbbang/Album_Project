@@ -12,6 +12,8 @@ type ToastItem = {
   type: ToastType;
   action?: ToastAction;
   exiting?: boolean;
+  hasProgress?: boolean;
+  duration?: number;
 };
 
 type ToastContextType = {
@@ -42,9 +44,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 220);
   }, []);
 
-  const addToast = useCallback((message: string, type: ToastType, action?: ToastAction, duration = 2500) => {
+  const addToast = useCallback((message: string, type: ToastType, action?: ToastAction, duration = 2500, hasProgress = false) => {
     const id = ++counter.current;
-    setToasts((prev) => [...prev, { id, message, type, action }]);
+    setToasts((prev) => [...prev, { id, message, type, action, hasProgress, duration }]);
     const t = setTimeout(() => removeToast(id), duration);
     timeouts.current.set(id, t);
   }, [removeToast]);
@@ -54,7 +56,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [addToast]);
 
   const showToastWithUndo = useCallback((message: string, onUndo: () => void) => {
-    addToast(message, "info", { label: "실행취소", onClick: onUndo }, 5000);
+    addToast(message, "info", { label: "실행취소", onClick: onUndo }, 5000, true);
   }, [addToast]);
 
   const showToastWithAction = useCallback((message: string, actionLabel: string, onAction: () => void) => {
@@ -91,10 +93,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               backgroundColor: "var(--bg-elevated)",
               border: "1px solid var(--border-light)",
               borderRadius: 10,
-              padding: "10px 12px 10px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
+              overflow: "hidden",
               boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
               animation: toast.exiting ? "toastOut 0.2s ease-in forwards" : "toastIn 0.2s ease-out",
               maxWidth: 320,
@@ -102,36 +101,48 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               pointerEvents: "none",
             }}
           >
-            <span style={{ color: colorMap[toast.type], fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
-              {iconMap[toast.type]}
-            </span>
-            <span style={{ color: "var(--text)", fontSize: 13, flex: 1 }}>{toast.message}</span>
-            {toast.action && (
-              <button
-                onClick={() => { toast.action!.onClick(); removeToast(toast.id); }}
-                style={{
-                  background: "rgba(var(--accent-rgb), 0.1)",
-                  border: "1px solid rgba(var(--accent-rgb), 0.25)",
-                  borderRadius: 6,
-                  padding: "0 12px",
-                  height: 32,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "var(--accent)",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  whiteSpace: "nowrap",
-                  pointerEvents: "auto",
-                  transition: "background-color 0.15s, opacity 0.15s",
-                  WebkitTapHighlightColor: "transparent",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.2)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.1)")}
-                onMouseDown={(e) => (e.currentTarget.style.opacity = "0.7")}
-                onMouseUp={(e) => (e.currentTarget.style.opacity = "1")}
-              >
-                {toast.action.label}
-              </button>
+            <div style={{ padding: "10px 12px 10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: colorMap[toast.type], fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                {iconMap[toast.type]}
+              </span>
+              <span style={{ color: "var(--text)", fontSize: 13, flex: 1 }}>{toast.message}</span>
+              {toast.action && (
+                <button
+                  onClick={() => { toast.action!.onClick(); removeToast(toast.id); }}
+                  style={{
+                    background: "rgba(var(--accent-rgb), 0.1)",
+                    border: "1px solid rgba(var(--accent-rgb), 0.25)",
+                    borderRadius: 6,
+                    padding: "0 12px",
+                    height: 32,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--accent)",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "auto",
+                    transition: "background-color 0.15s, opacity 0.15s",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(var(--accent-rgb), 0.1)")}
+                  onMouseDown={(e) => (e.currentTarget.style.opacity = "0.7")}
+                  onMouseUp={(e) => (e.currentTarget.style.opacity = "1")}
+                >
+                  {toast.action.label}
+                </button>
+              )}
+            </div>
+            {toast.hasProgress && !toast.exiting && (
+              <div style={{ height: 2, backgroundColor: "var(--border)" }}>
+                <div style={{
+                  height: "100%",
+                  backgroundColor: "var(--accent)",
+                  transformOrigin: "left",
+                  animation: `toastProgress ${toast.duration ?? 5000}ms linear forwards`,
+                }} />
+              </div>
             )}
           </div>
         ))}

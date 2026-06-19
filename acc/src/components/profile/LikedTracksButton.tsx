@@ -5,6 +5,7 @@ import type { LikedTrackItem } from "@/app/api/liked-tracks/route";
 import Spinner from "@/components/ui/Spinner";
 import AlbumModal from "@/components/album/AlbumModal";
 import type { AlbumWithRatings } from "@/types";
+import { apiFetch } from "@/lib/apiFetch";
 
 type SortKey = "album" | "artist";
 
@@ -28,6 +29,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
   const [sort, setSort] = useState<SortKey>("album");
   const [query, setQuery] = useState("");
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
+  const [removingTrack, setRemovingTrack] = useState<string | null>(null); // "albumId-trackIndex"
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
 
@@ -57,6 +59,27 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemoveTrack = async (albumId: string, trackIndex: number) => {
+    const key = `${albumId}-${trackIndex}`;
+    if (removingTrack === key) return;
+    setRemovingTrack(key);
+    // 현재 앨범의 나머지 liked track 인덱스 계산
+    const remaining = (items ?? [])
+      .filter((it) => it.albumId === albumId && it.trackIndex !== trackIndex)
+      .map((it) => it.trackIndex)
+      .sort((a, b) => a - b);
+    const liked_tracks = remaining.length > 0 ? remaining.join(",") : null;
+    const res = await apiFetch("/api/ratings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId, liked_tracks }),
+    });
+    if (res.ok) {
+      setItems((prev) => (prev ?? []).filter((it) => !(it.albumId === albumId && it.trackIndex === trackIndex)));
+    }
+    setRemovingTrack(null);
   };
 
   // 앨범별 그룹핑
@@ -237,13 +260,30 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                     </button>
 
                     {/* 트랙 목록 */}
-                    {group.tracks.map((t) => (
-                      <div key={t.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 20px 7px 32px", borderBottom: "1px solid var(--border)" }}>
-                        <span style={{ fontSize: 10, color: "var(--text-muted)", width: 16, textAlign: "right", flexShrink: 0 }}>{t.index}</span>
-                        <span style={{ fontSize: 13, color: "var(--text)", flex: 1 }}>{t.name}</span>
-                        <span style={{ fontSize: 13, color: "var(--error)", flexShrink: 0 }}>♥</span>
-                      </div>
-                    ))}
+                    {group.tracks.map((t) => {
+                      const rkey = `${group.albumId}-${t.index}`;
+                      const isRemoving = removingTrack === rkey;
+                      return (
+                        <div key={t.index} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 20px 7px 32px", borderBottom: "1px solid var(--border)" }}>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", width: 16, textAlign: "right", flexShrink: 0 }}>{t.index}</span>
+                          <span style={{ fontSize: 13, color: "var(--text)", flex: 1 }}>{t.name}</span>
+                          <button
+                            onClick={() => handleRemoveTrack(group.albumId, t.index)}
+                            disabled={isRemoving}
+                            title="좋아요 취소"
+                            style={{
+                              background: "none", border: "none", cursor: isRemoving ? "default" : "pointer",
+                              color: "var(--error)", fontSize: 13, padding: "2px 4px", flexShrink: 0,
+                              opacity: isRemoving ? 0.4 : 1,
+                              transition: "opacity 0.15s",
+                            }}
+                            className="hover:opacity-60"
+                          >
+                            ♥
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))
               )}

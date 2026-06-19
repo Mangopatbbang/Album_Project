@@ -109,6 +109,11 @@ body {
   to   { opacity: 0; transform: translateY(8px) scale(0.97); }
 }
 
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
 @keyframes heartPop {
   0%   { transform: scale(1); }
   35%  { transform: scale(1.5); }

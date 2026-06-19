@@ -165,7 +165,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const handleToggleLike = async (idx: number) => {
-    if (!profile || savingLike) return;
+    if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
+    if (savingLike) return;
     const hasRating = ratings.find((r) => r.user_id === profile.id);
     if (!hasRating) return;
     const prev = new Set(myLikedTracks);

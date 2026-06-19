@@ -30,7 +30,7 @@ export default function Header() {
     navHoverTimeout.current = setTimeout(() => setHoveredNav(null), 120);
   };
 
-  const { notifications, markAllRead, clearAll } = useNotifications();
+  const { notifications, markAllRead, clearAll, removeNotification } = useNotifications();
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -312,7 +312,16 @@ export default function Header() {
                                   </>
                                 )}
                               </div>
-                              <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>{ndStr}</span>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{ndStr}</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
+                                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, padding: "2px 2px", lineHeight: 1, opacity: 0.6 }}
+                                  className="hover:opacity-100 hover:text-[var(--error)] transition-all"
+                                >
+                                  ✕
+                                </button>
+                              </div>
                             </div>
                           );
                         })

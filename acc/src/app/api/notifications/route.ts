@@ -76,10 +76,23 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE /api/notifications — 전체 삭제
+// DELETE /api/notifications?id=xxx — 단건 삭제
+// DELETE /api/notifications       — 전체 삭제
 export async function DELETE(req: NextRequest) {
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
+  const id = new URL(req.url).searchParams.get("id");
+
+  if (id) {
+    const { error } = await supabaseServer
+      .from("notifications")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", authed.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
 
   const { error } = await supabaseServer
     .from("notifications")

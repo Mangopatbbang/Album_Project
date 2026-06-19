@@ -9,12 +9,14 @@ type NotificationsContextType = {
   notifications: NotificationItem[];
   markAllRead: () => Promise<void>;
   clearAll: () => Promise<void>;
+  removeNotification: (id: string) => Promise<void>;
 };
 
 const NotificationsContext = createContext<NotificationsContextType>({
   notifications: [],
   markAllRead: async () => {},
   clearAll: async () => {},
+  removeNotification: async () => {},
 });
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
@@ -44,7 +46,12 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     setNotifications([]);
   }, []);
 
-  const contextValue = useMemo(() => ({ notifications, markAllRead, clearAll }), [notifications, markAllRead, clearAll]);
+  const removeNotification = useCallback(async (id: string) => {
+    await apiFetch(`/api/notifications?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
+  const contextValue = useMemo(() => ({ notifications, markAllRead, clearAll, removeNotification }), [notifications, markAllRead, clearAll, removeNotification]);
   return (
     <NotificationsContext.Provider value={contextValue}>
       {children}

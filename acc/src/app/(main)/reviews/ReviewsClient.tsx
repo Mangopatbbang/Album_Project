@@ -8,6 +8,7 @@ import { useUsers } from "@/context/UsersContext";
 import { scoreColor } from "@/lib/score";
 import type { ReviewItem } from "@/app/api/reviews/route";
 import AlbumModal from "@/components/album/AlbumModal";
+import ReportModal from "@/components/ui/ReportModal";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -37,7 +38,8 @@ export default function ReviewsClient() {
   const [offset, setOffset] = useState(0);
 
   const initAlbumId = searchParams.get("albumId") ?? "";
-  const [filterUser, setFilterUser] = useState("");
+  const initUserId = searchParams.get("userId") ?? "";
+  const [filterUser, setFilterUser] = useState(initUserId);
   const [filterAlbumId, setFilterAlbumId] = useState(initAlbumId);
   const [filterAlbumTitle, setFilterAlbumTitle] = useState("");
   const [filterReview, setFilterReview] = useState("");
@@ -48,6 +50,7 @@ export default function ReviewsClient() {
 
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumModalData | null>(null);
   const [liking, setLiking] = useState<string | null>(null);
+  const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -370,6 +373,7 @@ export default function ReviewsClient() {
                       onLike={() => handleLike(item)}
                       onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                       onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
+                      onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                       isLast={idx === reviews.length - 1}
                       hideAlbumInfo
                     />
@@ -395,6 +399,7 @@ export default function ReviewsClient() {
                 onLike={() => handleLike(item)}
                 onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
                 onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
+                onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                 isLast={idx === items.length - 1}
                 isNew={isNew}
                 newDelay={newDelay}
@@ -416,13 +421,20 @@ export default function ReviewsClient() {
       {selectedAlbum && (
         <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="reviews" />
       )}
+      {reportingReview && (
+        <ReportModal
+          onClose={() => setReportingReview(null)}
+          defaultUserId={reportingReview.userId}
+          defaultDetail={`[${reportingReview.albumTitle}] "${reportingReview.review}"`}
+        />
+      )}
     </div>
   );
 }
 
 function ReviewRow({
   item, myId, liking,
-  onLike, onAlbumClick, onFilterByAlbum, isLast, hideAlbumInfo, isNew, newDelay,
+  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, isNew, newDelay,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -430,6 +442,7 @@ function ReviewRow({
   onLike: () => void;
   onAlbumClick: () => void;
   onFilterByAlbum: () => void;
+  onReport?: () => void;
   isLast: boolean;
   hideAlbumInfo?: boolean;
   isNew?: boolean;
@@ -544,6 +557,22 @@ function ReviewRow({
               <span>♥</span><span>{item.likedBy.length}</span>
             </span>
           ) : null}
+
+          {/* 신고 — 타인 소감 + 로그인 상태 */}
+          {!isMyReview && myId && onReport && (
+            <button
+              onClick={onReport}
+              title="소감 신고"
+              className="min-h-[36px] sm:min-h-0 hover:text-[var(--error)] transition-colors"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", fontSize: 10, padding: "2px 4px",
+                opacity: 0.5,
+              }}
+            >
+              ⚑
+            </button>
+          )}
         </div>
       </div>
 

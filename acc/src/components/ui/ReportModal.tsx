@@ -19,16 +19,17 @@ const REASONS = [
 type Props = {
   onClose: () => void;
   defaultUserId?: string;
+  defaultDetail?: string;
 };
 
-export default function ReportModal({ onClose, defaultUserId }: Props) {
+export default function ReportModal({ onClose, defaultUserId, defaultDetail }: Props) {
   const { users } = useUsers();
   const { profile } = useAuth();
   const { showToast } = useToast();
 
   const [reportedUserId, setReportedUserId] = useState(defaultUserId ?? "");
   const [reason, setReason] = useState("");
-  const [detail, setDetail] = useState("");
+  const [detail, setDetail] = useState(defaultDetail ?? "");
   const [submitting, setSubmitting] = useState(false);
 
   const otherUsers = users.filter((u) => u.id !== profile?.id);
