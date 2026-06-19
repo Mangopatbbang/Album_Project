@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   if (score === 8 && prevScore !== 8) {
     const { data: hofRatings } = await supabaseServer
       .from("ratings")
-      .select("album_id, albums(id, title, artist, cover_url)")
+      .select("album_id, updated_at, albums(id, title, artist, cover_url)")
       .eq("user_id", userId)
       .eq("score", 8);
 
@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
           title: a?.title ?? "",
           artist: a?.artist ?? "",
           cover_url: a?.cover_url ?? null,
+          updatedAt: r.updated_at as string,
         };
       });
       return NextResponse.json({ code: "HOF_LIMIT_REACHED", error: "명반전이 가득 찼어요 (최대 12장)", albums }, { status: 409 });

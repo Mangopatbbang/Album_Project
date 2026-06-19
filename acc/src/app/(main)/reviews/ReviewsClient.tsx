@@ -449,6 +449,7 @@ function ReviewRow({
   newDelay?: number;
 }) {
   const [imgError, setImgError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const avatarMap = useUserAvatars();
   const { getUserById } = useUsers();
   const user = getUserById(item.userId);
@@ -498,7 +499,17 @@ function ReviewRow({
         {/* 소감 + 앨범정보 */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 소감 텍스트 — 메인 */}
-          <p style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.4 }}>
+          <p
+            onClick={() => setExpanded(v => !v)}
+            style={{
+              fontSize: 13, color: "var(--text)", fontWeight: 500,
+              marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.4,
+              cursor: "pointer",
+              ...(expanded
+                ? { whiteSpace: "normal" }
+                : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
+            }}
+          >
             {item.review}
           </p>
           {/* 앨범명(클릭→필터) · 아티스트 — 그룹 뷰에서는 숨김 */}
@@ -528,7 +539,7 @@ function ReviewRow({
             className="hover:opacity-70 transition-opacity"
           >
             <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={16} />
-            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="hidden sm:inline">
+            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="max-w-[48px] truncate">
               {user?.display_name ?? item.userId}
             </span>
           </a>

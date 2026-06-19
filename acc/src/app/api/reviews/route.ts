@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     .neq("one_line_review", "")
     .gte("score", minScore)
     .lte("score", maxScore)
-    .range(offset, offset + LIMIT);
+    .range(sort === "most_liked" ? 0 : offset, sort === "most_liked" ? 9999 : offset + LIMIT);
 
   if (userId) query = (query as typeof query).eq("user_id", userId);
   if (albumId) query = (query as typeof query).eq("album_id", albumId);
@@ -53,9 +53,9 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
   if (error || !data) return NextResponse.json({ items: [], hasMore: false }, { status: 500 });
 
-  // hasMore는 null 앨범 필터 전 raw 개수로 판단 (삭제된 앨범 참조 시 오판 방지)
-  const hasMore = data.length === LIMIT + 1;
-  const pageData = data.slice(0, LIMIT);
+  // most_liked는 전체 fetch 후 앱 정렬 → hasMore 없음
+  const hasMore = sort !== "most_liked" && data.length === LIMIT + 1;
+  const pageData = sort === "most_liked" ? data : data.slice(0, LIMIT);
 
   type AlbumRow = { id: string; title: string; artist: string; use_artist_variant: boolean | null; extra_artists: string | null; cover_url: string | null; genre: string | null };
   const albumObjects = pageData

@@ -109,7 +109,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [tracklistExpanded, setTracklistExpanded] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showDeleteAlbumConfirm, setShowDeleteAlbumConfirm] = useState(false);
-  const [hofLimitAlbums, setHofLimitAlbums] = useState<{ id: string; title: string; artist: string; cover_url: string | null }[] | null>(null);
+  const [hofLimitAlbums, setHofLimitAlbums] = useState<{ id: string; title: string; artist: string; cover_url: string | null; updatedAt: string }[] | null>(null);
   const [evictAlbumId, setEvictAlbumId] = useState<string | null>(null);
   const [evictScore, setEvictScore] = useState<number | null>(null);
   const [evicting, setEvicting] = useState(false);
@@ -1568,7 +1568,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                           )}
                           </div>
                           <span style={{
-                            fontSize: 9, color: isSelected ? "var(--error)" : "var(--text-muted)",
+                            fontSize: 11, color: isSelected ? "var(--error)" : "var(--text-muted)",
                             maxWidth: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                             opacity: evictAlbumId && !isSelected ? 0.45 : 1,
                             textAlign: "center", display: "block",
@@ -1581,13 +1581,17 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   {/* 선택된 앨범 이름 */}
                   {evictAlbumId && (() => {
                     const sel = hofLimitAlbums.find((a) => a.id === evictAlbumId);
-                    return sel ? (
+                    if (!sel) return null;
+                    const d = new Date(sel.updatedAt);
+                    const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}`;
+                    return (
                       <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
                         선택:{" "}
                         <span style={{ color: "var(--text)", fontWeight: 600 }}>{sel.title}</span>
                         <span style={{ color: "var(--text-muted)" }}> — {sel.artist}</span>
+                        <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{" "}· {dateStr} 평가</span>
                       </p>
-                    ) : null;
+                    );
                   })()}
 
                   {/* 밀어낸 앨범 새 점수 선택 */}
