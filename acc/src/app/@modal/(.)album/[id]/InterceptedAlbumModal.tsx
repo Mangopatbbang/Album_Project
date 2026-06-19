@@ -12,8 +12,12 @@ export default function InterceptedAlbumModal({ album }: { album: AlbumWithRatin
       album={album}
       onClose={() => router.back()}
       source="albums_grid"
-      onSaved={async (albumId) => {
-        const res = await fetch(`/api/albums/${albumId}`);
+      onSaved={async (albumId, updatedAlbum) => {
+        if (updatedAlbum) {
+          window.dispatchEvent(new CustomEvent("album-updated", { detail: { albumId, data: updatedAlbum } }));
+          return;
+        }
+        const res = await fetch(`/api/albums/${albumId}?_=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) {
           window.dispatchEvent(new CustomEvent("album-deleted", { detail: { albumId } }));
           return;

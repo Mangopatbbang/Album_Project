@@ -13,8 +13,12 @@ export default function StandaloneAlbumModal({ album }: { album: AlbumWithRating
         album={album}
         onClose={() => router.push("/albums")}
         source="direct_url"
-        onSaved={async (albumId) => {
-          const res = await fetch(`/api/albums/${albumId}`);
+        onSaved={async (albumId, updatedAlbum) => {
+          if (updatedAlbum) {
+            window.dispatchEvent(new CustomEvent("album-updated", { detail: { albumId, data: updatedAlbum } }));
+            return;
+          }
+          const res = await fetch(`/api/albums/${albumId}?_=${Date.now()}`, { cache: "no-store" });
           if (!res.ok) {
             router.push("/albums");
             return;

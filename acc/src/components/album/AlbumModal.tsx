@@ -62,7 +62,7 @@ type FullAlbum = Omit<AlbumWithRatings, "ratings"> & {
 type Props = {
   album: AlbumWithRatings;
   onClose: () => void;
-  onSaved?: (albumId: string) => void;
+  onSaved?: (albumId: string, updatedAlbum?: AlbumWithRatings) => void;
   zIndex?: number;
   source?: string;
   isEncounter?: boolean;
@@ -419,9 +419,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const afterSaveSuccess = async () => {
     const refreshed = await fetch(`/api/albums/${album.id}?_=${Date.now()}`, { cache: "no-store" });
     if (!isMountedRef.current) return;
+    let freshData: AlbumWithRatings | undefined;
     if (refreshed.ok) {
       const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) setFull(data);
+      if (data && Array.isArray(data.ratings)) { setFull(data); freshData = data; }
     }
     if (isWatchlisted) {
       apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
@@ -431,7 +432,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     initialScoreRef.current = myScore;
     isDirtyRef.current = false;
     setSaved(true);
-    onSaved?.(album.id);
+    onSaved?.(album.id, freshData);
     setTimeout(() => setSaved(false), 2000);
     if (profile) {
       fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
@@ -1770,7 +1771,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     return r?.liked_tracks?.split(",").map(Number).includes(i);
                   });
                   const iLiked = myLikedTracks.has(i);
-                  const hasMyRating = !!ratings.find((r) => r.user_id === profile?.id);
+                  const hasMyRating = myScore !== null || !!ratings.find((r) => r.user_id === profile?.id);
                   const likeTotal = othersWhoLiked.length + (iLiked ? 1 : 0);
                   const isRowHovered = hoveredTrack === i;
                   const canLike = !!(profile && hasMyRating && !savingLike);

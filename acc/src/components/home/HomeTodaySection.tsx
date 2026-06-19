@@ -213,7 +213,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                     cursor: "pointer", alignSelf: "flex-start", marginTop: 2,
                     transition: "border-color 0.15s",
                   }}
-                  className="touch-target"
                 >
                   트랙리스트 {tracks.length}곡 {tracklistOpen ? "↑" : "↓"}
                 </button>

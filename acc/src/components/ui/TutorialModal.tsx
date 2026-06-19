@@ -494,25 +494,32 @@ export default function TutorialModal() {
         </div>
 
         {/* 페이지 탭 */}
-        <div style={{ display: "flex", borderBottom: "1px solid var(--border)", flexShrink: 0, overflowX: "auto" }}>
-          {PAGES.map((label, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i)}
-              style={{
-                flexShrink: 0,
-                padding: "9px 14px",
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 12, fontWeight: page === i ? 700 : 400,
-                color: page === i ? "var(--accent)" : "var(--text-muted)",
-                borderBottom: page === i ? "2px solid var(--accent)" : "2px solid transparent",
-                transition: "color 0.15s",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {label}
-            </button>
-          ))}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div style={{ display: "flex", borderBottom: "1px solid var(--border)", overflowX: "auto", scrollbarWidth: "none" }} className="[&::-webkit-scrollbar]:hidden">
+            {PAGES.map((label, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                style={{
+                  flexShrink: 0,
+                  padding: "9px 11px",
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 11, fontWeight: page === i ? 700 : 400,
+                  color: page === i ? "var(--accent)" : "var(--text-muted)",
+                  borderBottom: page === i ? "2px solid var(--accent)" : "2px solid transparent",
+                  transition: "color 0.15s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* 우측 페이드 — 탭이 더 있음을 암시 */}
+          <div style={{
+            position: "absolute", right: 0, top: 0, bottom: 0, width: 32, pointerEvents: "none",
+            background: "linear-gradient(to right, transparent, var(--bg-card))",
+          }} />
         </div>
 
         {/* 본문 */}
