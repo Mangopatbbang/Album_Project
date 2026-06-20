@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     .neq("one_line_review", "")
     .gte("score", minScore)
     .lte("score", maxScore)
-    .range(sort === "most_liked" ? 0 : offset, sort === "most_liked" ? 9999 : offset + LIMIT);
+    .range(sort === "most_liked" ? 0 : offset, sort === "most_liked" ? 999 : offset + LIMIT);
 
   if (userId) query = (query as typeof query).eq("user_id", userId);
   if (albumId) query = (query as typeof query).eq("album_id", albumId);

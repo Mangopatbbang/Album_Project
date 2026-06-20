@@ -101,6 +101,16 @@ export default function HomeWatchlistSection() {
       .finally(() => setLoading(false));
   }, [profile?.id]);
 
+  // 다른 화면에서 찜 해제 시 실시간 반영
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { albumId } = (e as CustomEvent<{ albumId: string }>).detail;
+      setItems((prev) => prev.filter((i) => i.album_id !== albumId));
+    };
+    window.addEventListener("watchlist-removed", handler);
+    return () => window.removeEventListener("watchlist-removed", handler);
+  }, []);
+
   // 바텀시트 열릴 때 body scroll 잠금
   useEffect(() => {
     if (sheetOpen) document.body.style.overflow = "hidden";

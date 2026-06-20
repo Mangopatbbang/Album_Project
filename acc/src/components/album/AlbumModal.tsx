@@ -175,7 +175,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }
     if (savingLike) return;
     const hasRating = ratings.find((r) => r.user_id === profile.id);
-    if (!hasRating) return;
+    if (!hasRating && myScore === null) return;
     const prev = new Set(myLikedTracks);
     const next = new Set(myLikedTracks);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
@@ -347,6 +347,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         showToast("나중에 들을 목록에 추가했어요", "info");
       }
     } else {
+      window.dispatchEvent(new CustomEvent("watchlist-removed", { detail: { albumId: album.id } }));
       showToast("목록에서 제거했어요", "info");
     }
   };
@@ -393,17 +394,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       setMyReview(deletedReviewRef.current);
       initialReviewRef.current = deletedReviewRef.current;
     });
-    // 5초 후 실제 삭제
+    // 5초 후 실제 삭제 — 모달이 닫혀도 API 호출은 반드시 실행
     pendingDeleteRef.current = setTimeout(async () => {
       pendingDeleteRef.current = null;
-      if (!isMountedRef.current) return;
-      setDeleting(true);
       await apiFetch("/api/ratings", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: album.id }),
       });
       if (!isMountedRef.current) return;
+      setDeleting(true);
       const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
       if (refreshed.ok) {
         const data = await refreshed.json();
@@ -416,17 +416,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }, 5000);
   };
 
-  const afterSaveSuccess = async () => {
-    const refreshed = await fetch(`/api/albums/${album.id}?_=${Date.now()}`, { cache: "no-store" });
+  const afterSaveSuccess = async (freshData?: AlbumWithRatings) => {
     if (!isMountedRef.current) return;
-    let freshData: AlbumWithRatings | undefined;
-    if (refreshed.ok) {
-      const data = await refreshed.json();
-      if (data && Array.isArray(data.ratings)) { setFull(data); freshData = data; }
-    }
     if (isWatchlisted) {
       apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
       setIsWatchlisted(false);
+      window.dispatchEvent(new CustomEvent("watchlist-removed", { detail: { albumId: album.id } }));
     }
     initialReviewRef.current = myReview;
     initialScoreRef.current = myScore;
@@ -476,6 +471,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     const savedReview = myReview;
     const savedLikedTracks = myLikedTracks;
     const savedProfileId = profile.id;
+    let optimisticFull: FullAlbum | undefined;
     setFull((prev) => {
       if (!prev) return prev;
       const existingLikedBy = prev.ratings.find((r) => r.user_id === savedProfileId)?.liked_by ?? null;
@@ -494,7 +490,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       const avg = scores.length > 0
         ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
         : undefined;
-      return { ...prev, ratings: newRatings, avg };
+      optimisticFull = { ...prev, ratings: newRatings, avg };
+      return optimisticFull;
     });
 
     trackFeatureClick("평점_저장", String(myScore));
@@ -508,7 +505,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         router.push(`/reviews?albumId=${album.id}`);
       });
     }
-    await afterSaveSuccess();
+    await afterSaveSuccess(optimisticFull as unknown as AlbumWithRatings | undefined);
   };
 
   const handleEvict = async () => {

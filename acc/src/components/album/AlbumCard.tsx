@@ -36,7 +36,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
       [others[i], others[j]] = [others[j], others[i]];
     }
     return [...mine, ...others].slice(0, 5);
-  }, [album.id, profile?.id, users]);
+  }, [album.ratings, profile?.id, users]);
 
   const isNew = album.created_at
     ? Date.now() - new Date(album.created_at).getTime() < 24 * 60 * 60 * 1000

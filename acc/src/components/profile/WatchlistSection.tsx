@@ -62,6 +62,15 @@ export default function WatchlistSection({ userId }: Props) {
       .catch(() => {});
   }, [userId, isOwner]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { albumId } = (e as CustomEvent<{ albumId: string }>).detail;
+      setItems((prev) => prev.filter((i) => i.album_id !== albumId));
+    };
+    window.addEventListener("watchlist-removed", handler);
+    return () => window.removeEventListener("watchlist-removed", handler);
+  }, []);
+
   if (!isOwner) return null;
 
   const handleRemove = (albumId: string) => {

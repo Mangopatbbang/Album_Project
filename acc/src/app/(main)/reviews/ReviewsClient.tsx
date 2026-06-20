@@ -50,6 +50,7 @@ export default function ReviewsClient() {
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumModalData | null>(null);
+  const [loadingAlbumId, setLoadingAlbumId] = useState<string | null>(null);
   const [liking, setLiking] = useState<string | null>(null);
   const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
@@ -158,8 +159,9 @@ export default function ReviewsClient() {
   };
 
   const handleAlbumClick = async (albumId: string, albumTitle: string, artist: string, artistDisplay: string, coverUrl: string | null) => {
+    setLoadingAlbumId(albumId);
     const res = await fetch(`/api/albums/${albumId}`);
-    if (!res.ok) return;
+    if (!res.ok) { setLoadingAlbumId(null); return; }
     const d = await res.json();
     setSelectedAlbum({
       id: albumId, title: albumTitle, artist, artist_display: artistDisplay ?? undefined,
@@ -167,6 +169,7 @@ export default function ReviewsClient() {
       cover_url: coverUrl ?? undefined, spotify_id: d.spotify_id ?? undefined,
       ratings: d.ratings ?? [], avg: d.avg ?? undefined,
     });
+    setLoadingAlbumId(null);
   };
 
   const handleFilterByAlbum = (albumId: string, albumTitle: string) => {
@@ -345,9 +348,9 @@ export default function ReviewsClient() {
               <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
                 {/* 앨범 헤더 */}
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
                   className="hover:bg-[var(--bg-elevated)] transition-colors"
-                  onClick={() => handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
+                  onClick={() => !loadingAlbumId && handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
                 >
                   {rep.coverUrl ? (
                     <div style={{ position: "relative", width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
@@ -360,7 +363,10 @@ export default function ReviewsClient() {
                     <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rep.albumTitle}</p>
                     <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{rep.artistDisplay || rep.artist}</p>
                   </div>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{reviews.length}개의 소감</span>
+                  {loadingAlbumId === rep.albumId
+                    ? <Spinner size={14} />
+                    : <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{reviews.length}개의 소감</span>
+                  }
                 </div>
                 {/* 리뷰 목록 */}
                 {reviews.map((item, idx) => {
@@ -377,6 +383,7 @@ export default function ReviewsClient() {
                       onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                       isLast={idx === reviews.length - 1}
                       hideAlbumInfo
+                      loadingAlbum={loadingAlbumId === item.albumId}
                     />
                   );
                 })}
@@ -404,6 +411,7 @@ export default function ReviewsClient() {
                 isLast={idx === items.length - 1}
                 isNew={isNew}
                 newDelay={newDelay}
+                loadingAlbum={loadingAlbumId === item.albumId}
               />
             );
           })}
@@ -435,7 +443,7 @@ export default function ReviewsClient() {
 
 function ReviewRow({
   item, myId, liking,
-  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, isNew, newDelay,
+  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, isNew, newDelay, loadingAlbum,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -448,6 +456,7 @@ function ReviewRow({
   hideAlbumInfo?: boolean;
   isNew?: boolean;
   newDelay?: number;
+  loadingAlbum?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -479,11 +488,17 @@ function ReviewRow({
             onClick={onAlbumClick}
             style={{ position: "relative", flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
             className="hover:opacity-75 transition-opacity"
+            disabled={!!loadingAlbum}
           >
             {item.coverUrl && !imgError
               ? <Image fill sizes="44px" src={item.coverUrl} alt={item.albumTitle} style={{ objectFit: "cover" }} onError={() => setImgError(true)} />
               : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
             }
+            {loadingAlbum && (
+              <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Spinner size={14} />
+              </div>
+            )}
           </button>
         )}
 

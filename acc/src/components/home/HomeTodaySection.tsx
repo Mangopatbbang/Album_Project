@@ -18,7 +18,7 @@ type Props = {
 
 function parseTracklist(raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw.split("; ").map((t) => t.trim()).filter(Boolean);
+  return raw.split(";").map((t) => t.trim()).filter(Boolean);
 }
 
 function getSectionLabel(): string {
@@ -69,6 +69,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
 
   const shuffle = async () => {
     setLoading(true);
+    setCoverLoaded(false);
     setTracklistOpen(false);
     try {
       const url = profile?.id
@@ -440,8 +441,10 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           onClose={() => setModalOpen(false)}
           source="home_today"
           isEncounter={true}
-          onSaved={async (albumId) => {
-            const res = await fetch(`/api/albums/${albumId}`);
+          onSaved={async (albumId, updatedAlbum) => {
+            if (albumId !== album?.id) return;
+            if (updatedAlbum) { setAlbum(updatedAlbum as AlbumWithRatings); return; }
+            const res = await fetch(`/api/albums/${albumId}?_=${Date.now()}`, { cache: "no-store" });
             if (!res.ok) return;
             const updated = await res.json();
             setAlbum(updated);
