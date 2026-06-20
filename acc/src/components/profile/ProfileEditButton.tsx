@@ -22,9 +22,11 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
   const { profile, authUser, refreshProfile } = useAuth();
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen! : internalOpen;
   const setOpen = (v: boolean) => { if (isControlled) onOpenChange?.(v); else setInternalOpen(v); };
+  const doClose = () => { setClosing(true); setTimeout(() => { setClosing(false); setOpen(false); }, 160); };
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [bio, setBio] = useState(initialBio ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatarUrl);
@@ -46,7 +48,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (cropMode) setCropMode(false); else setOpen(false); }
+      if (e.key === "Escape") { if (cropMode) setCropMode(false); else doClose(); }
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -207,10 +209,11 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
       {open && (
         <div
           ref={backdropRef}
-          onClick={(e) => { if (!cropMode && e.target === backdropRef.current) setOpen(false); }}
+          onClick={(e) => { if (!cropMode && e.target === backdropRef.current) doClose(); }}
           style={{
             position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
             zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+            animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
           }}
         >
           {cropMode && rawSrc ? (
@@ -221,7 +224,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 borderRadius: 16, padding: "28px 28px 24px",
                 display: "flex", flexDirection: "column", gap: 18, alignItems: "center",
                 maxWidth: 320, width: "100%",
-                animation: "modalIn 0.18s ease-out",
+                animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
               }}
             >
               <div style={{ alignSelf: "flex-start" }}>
@@ -296,10 +299,11 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
               backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
               borderRadius: 14, width: "100%", maxWidth: 400,
               padding: 32, display: "flex", flexDirection: "column", gap: 20,
+              animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 16 }}>프로필 편집</p>
-                <button onClick={() => setOpen(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
+                <button onClick={doClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
               </div>
 
               {/* 아바타 */}

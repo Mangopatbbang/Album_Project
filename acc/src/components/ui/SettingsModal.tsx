@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/context/NotificationsContext";
 
 const MODERATION_TYPES = [
@@ -33,6 +33,8 @@ export default function SettingsModal({ onClose }: Props) {
   const { notifications } = useNotifications();
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownRef = useRef(false);
+  const [closing, setClosing] = useState(false);
+  const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
 
   const moderationHistory = notifications.filter((n) =>
     MODERATION_TYPES.includes(n.type as typeof MODERATION_TYPES[number])
@@ -46,17 +48,17 @@ export default function SettingsModal({ onClose }: Props) {
   return (
     <div
       ref={backdropRef}
-      style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.7)" }}
+      style={{ position: "fixed", inset: 0, zIndex: 300, backgroundColor: "rgba(0,0,0,0.7)", animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out" }}
       className="flex items-center justify-center p-4"
       onMouseDown={(e) => { mouseDownRef.current = e.target === backdropRef.current; }}
-      onMouseUp={(e) => { if (mouseDownRef.current && e.target === backdropRef.current) onClose(); mouseDownRef.current = false; }}
+      onMouseUp={(e) => { if (mouseDownRef.current && e.target === backdropRef.current) doClose(); mouseDownRef.current = false; }}
     >
       <div
         style={{
           backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: 14, width: "100%", maxWidth: 400,
           maxHeight: "70dvh", display: "flex", flexDirection: "column",
-          overflow: "hidden", animation: "modalIn 0.18s ease-out",
+          overflow: "hidden", animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -66,7 +68,7 @@ export default function SettingsModal({ onClose }: Props) {
         }}>
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>제재 이력</p>
           <button
-            onClick={onClose}
+            onClick={doClose}
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 2px" }}
           >
             ×

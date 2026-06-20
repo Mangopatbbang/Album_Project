@@ -114,7 +114,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     border: "1px solid rgba(var(--accent-rgb), 0.25)",
                     borderRadius: 6,
                     padding: "0 12px",
-                    height: 32,
+                    minHeight: 36,
                     fontSize: 11,
                     fontWeight: 700,
                     color: "var(--accent)",

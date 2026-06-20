@@ -57,6 +57,8 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [closing, setClosing] = useState(false);
+  const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
 
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +89,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
 
   // ESC 닫기
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -170,12 +172,13 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
   return (
     <div
       ref={backdropRef}
-      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      onClick={(e) => { if (e.target === backdropRef.current) doClose(); }}
       style={{
         position: "fixed", inset: 0, zIndex: 200,
         backgroundColor: "rgba(0,0,0,0.75)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "16px",
+        animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
     >
       <div
@@ -189,7 +192,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          animation: "modalIn 0.18s ease-out",
+          animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
         }}
       >
         {/* 헤더 */}
@@ -203,7 +206,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
               {isEdit ? "청음일기 수정" : "청음일기"}
             </p>
             <button
-              onClick={onClose}
+              onClick={doClose}
               style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 2 }}
             >
               ×
@@ -605,7 +608,7 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
             </button>
           ) : (
             <button
-              onClick={onClose}
+              onClick={doClose}
               style={{
                 backgroundColor: "transparent", border: "1px solid var(--border)",
                 color: "var(--text)", borderRadius: 8, padding: "9px 18px",

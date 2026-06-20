@@ -75,14 +75,16 @@ export default function BottomNav() {
   const [bouncingHref, setBouncingHref] = useState<string | null>(null);
   const { notifications, markAllRead } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [notifClosing, setNotifClosing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const doCloseNotif = () => { setNotifClosing(true); setTimeout(() => { setNotifClosing(false); setNotifOpen(false); }, 160); };
 
   // 패널 외부 터치 시 닫기
   useEffect(() => {
     if (!notifOpen) return;
     const handler = (e: MouseEvent | TouchEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setNotifOpen(false);
+        doCloseNotif();
       }
     };
     document.addEventListener("mousedown", handler);
@@ -96,11 +98,9 @@ export default function BottomNav() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleBellClick = async () => {
-    const opening = !notifOpen;
-    setNotifOpen(opening);
-    if (opening && unreadCount > 0) {
-      await markAllRead();
-    }
+    if (notifOpen) { doCloseNotif(); return; }
+    setNotifOpen(true);
+    if (unreadCount > 0) await markAllRead();
   };
 
   const handleTap = (href: string) => {
@@ -150,7 +150,7 @@ export default function BottomNav() {
               borderTop: "1px solid var(--border)",
               borderRadius: "16px 16px 0 0",
               overflowY: "auto",
-              animation: "slideUpPanel 0.22s ease-out",
+              animation: notifClosing ? "slideDownPanel 0.16s ease-in forwards" : "slideUpPanel 0.22s ease-out",
             }}
           >
             {/* 패널 핸들 */}
@@ -205,7 +205,7 @@ export default function BottomNav() {
                   <div
                     key={n.id}
                     onClick={() => {
-                      setNotifOpen(false);
+                      doCloseNotif();
                       if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
                     }}
                     style={{
@@ -270,7 +270,7 @@ export default function BottomNav() {
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
                 {...(tour ? { "data-tour": tour } : {})}
-                onClick={() => { handleTap(href); setNotifOpen(false); trackTabClick(label); }}
+                onClick={() => { handleTap(href); if (notifOpen) doCloseNotif(); trackTabClick(label); }}
                 style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
                 className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
               >
@@ -332,6 +332,10 @@ export default function BottomNav() {
         @keyframes slideUpPanel {
           from { transform: translateY(100%); opacity: 0; }
           to   { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideDownPanel {
+          from { transform: translateY(0); opacity: 1; }
+          to   { transform: translateY(100%); opacity: 0; }
         }
       `}</style>
     </>

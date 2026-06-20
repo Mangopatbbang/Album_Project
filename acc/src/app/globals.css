@@ -318,6 +318,11 @@ main {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 모바일 300ms 탭 딜레이 제거 */
+button, a {
+  touch-action: manipulation;
+}
+
 /* iOS Safari 입력창 자동 줌인 방지 (font-size < 16px 시 발생) */
 @media (max-width: 639px) {
   input, textarea, select {

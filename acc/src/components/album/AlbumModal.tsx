@@ -864,6 +864,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               width: 96,
               height: 96,
             }}
+            className={data.cover_url && coverLoaded !== "loaded" && coverLoaded !== "error" ? "skeleton-shimmer" : ""}
           >
             {data.cover_url && coverLoaded !== "error" ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -1489,7 +1490,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   {ratings.find((r) => r.user_id === profile?.id) && (
                     <button
                       onClick={handleDelete}
-                      disabled={deleting}
                       style={{
                         backgroundColor: "transparent",
                         color: "var(--text)",
@@ -1497,13 +1497,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         fontSize: 12,
                         padding: "6px 10px",
                         borderRadius: 6,
-                        cursor: deleting ? "default" : "pointer",
-                        opacity: deleting ? 0.4 : 1,
+                        cursor: "pointer",
                         border: "1px solid var(--border)",
                         transition: "all 0.15s",
                       }}
                     >
-                      {deleting ? "삭제 중…" : "삭제"}
+                      삭제
                     </button>
                   )}
                   <button

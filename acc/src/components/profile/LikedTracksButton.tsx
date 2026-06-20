@@ -23,6 +23,7 @@ function sortGroups(
 
 export default function LikedTracksButton({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [items, setItems] = useState<LikedTrackItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
@@ -32,10 +33,11 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
   const [removingTrack, setRemovingTrack] = useState<string | null>(null); // "albumId-trackIndex"
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
+  const doClose = () => { setClosing(true); setTimeout(() => { setClosing(false); setOpen(false); }, 160); };
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
@@ -139,17 +141,19 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
         <div
           ref={backdropRef}
           onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
-          onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) setOpen(false); mouseDownOnBackdrop.current = false; }}
+          onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) doClose(); mouseDownOnBackdrop.current = false; }}
           style={{
             position: "fixed", inset: 0, zIndex: 200,
             backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+            animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
           }}
         >
           <div style={{
             backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: 14, width: "min(720px, 100%)", maxHeight: "85dvh",
             display: "flex", flexDirection: "column", overflow: "hidden",
+            animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
           }}>
             {/* 헤더 */}
             <div style={{
@@ -186,7 +190,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                   </button>
                 ))}
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={doClose}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, padding: 10, margin: -6, lineHeight: 1 }}
                 >
                   ✕

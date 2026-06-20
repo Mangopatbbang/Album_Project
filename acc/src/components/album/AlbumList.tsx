@@ -555,6 +555,11 @@ return (
           </button>
         </div>
       )}
+      {!hasMore && albums.length > 0 && !loading && !loadMoreError && (
+        <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 12, padding: "16px 0", opacity: 0.5 }}>
+          전부 불러왔어요
+        </p>
+      )}
 
       {showAddModal && (
         <AlbumAddModal

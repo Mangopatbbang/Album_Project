@@ -131,12 +131,15 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [aliasSaving, setAliasSaving] = useState(false);
   const [aliasSaved, setAliasSaved] = useState(false);
 
+  const [closing, setClosing] = useState(false);
+  const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
+
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
@@ -486,22 +489,24 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     <div
       ref={backdropRef}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === backdropRef.current; }}
-      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) onClose(); mouseDownOnBackdrop.current = false; }}
+      onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === backdropRef.current) doClose(); mouseDownOnBackdrop.current = false; }}
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
         zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16,
+        animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
       }}
     >
       <div style={{
         backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, width: "100%", maxWidth: 720, maxHeight: "90vh",
         overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: 24,
+        animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
       }} className="p-5 sm:p-8">
         {/* 헤더 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 18 }}>음반 입고</p>
-          <button onClick={onClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
+          <button onClick={doClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
         </div>
 
         {/* 입고 워크플로 안내 — Spotify 연결 전에만 표시 */}
@@ -844,7 +849,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
             SoundCloud 앨범 입고하기
           </button>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onClose} style={{
+            <button onClick={doClose} style={{
               backgroundColor: "transparent", border: "1px solid var(--border)",
               color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",
             }}>취소</button>
