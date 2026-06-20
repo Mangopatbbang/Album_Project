@@ -139,6 +139,10 @@ score >= 7: 0 0 8px rgba(48,160,184,0.45), 0 0 16px rgba(48,160,184,0.2)
 | `staggerFadeUp` | 리스트 순차 등장 | — |
 | `navBounce` | 하단 네비 바운스 | 0.3s |
 | `navDropIn` | 헤더 네비 드롭다운 (Header.tsx 인라인 정의) | 0.14s |
+| `backdropIn` | 모달 배경 페이드인 | 0.18s |
+| `backdropOut` | 모달 배경 페이드아웃 (닫기 애니메이션) | 0.16s |
+| `slideUpPanel` | BottomNav 알림 패널 슬라이드업 | 0.22s |
+| `slideDownPanel` | BottomNav 알림 패널 슬라이드다운 (닫기) | 0.16s |
 | `rotationSpin` | 랜덤 버튼 회전 | 0.5s |
 | `splashIn` | 스플래시 로고·텍스트 페이드업 | 0.9s |
 | `lineGrow` | 스플래시 중앙 금색 세로선 grow | 0.7s |
@@ -160,6 +164,24 @@ score >= 7: 0 0 8px rgba(48,160,184,0.45), 0 0 16px rgba(48,160,184,0.2)
   modalIn: translateY(100%) → translateY(0)  /* 하단에서 올라옴 */
 }
 ```
+
+### 모달 닫기 애니메이션 패턴
+
+모든 모달/패널은 열기(In)와 동일하게 닫기(Out) 애니메이션을 갖는다.  
+`onClose`를 직접 호출하지 않고 `closing` state → 160ms 대기 → `onClose` 순서로 처리한다.
+
+```typescript
+const [closing, setClosing] = useState(false);
+const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
+
+// 배경 dimmer
+animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out"
+
+// 모달 본체
+animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out"
+```
+
+`onClose` 대신 항상 `doClose()`를 호출한다 — ESC, backdrop 클릭, ✕ 버튼, 취소 버튼 모두.
 
 ---
 

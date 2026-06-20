@@ -52,13 +52,13 @@
 | 기능 | 컴포넌트 / 파일 | 설명 |
 |------|----------------|------|
 | 앨범 그리드 | `AlbumList.tsx` | 커버 + 제목 + 아티스트 + 평균 점수 카드 |
-| 무한 스크롤 | `AlbumList.tsx` | Intersection Observer 기반, offset 30씩 추가 로드 |
+| 무한 스크롤 | `AlbumList.tsx` | Intersection Observer 기반, offset 30씩 추가 로드, 끝 도달 시 "전부 불러왔어요" 표시 |
 | 검색 | `AlbumList.tsx` | 제목 / 아티스트 / extra_artists 통합 검색 |
 | 장르 필터 | `AlbumList.tsx` + `FilterSelect.tsx` | 장르별 필터링 드롭다운 |
 | 지역 필터 | `AlbumList.tsx` + `FilterSelect.tsx` | 국내 / 해외 |
 | 정렬 | `AlbumList.tsx` + `FilterSelect.tsx` | 최신 입고·오래된 순·발매일·평균 점수 높은/낮은·제목·내 점수 등 9가지 |
 | 미평가 필터 | `AlbumList.tsx` | 아직 점수를 안 준 앨범만 표시 (로그인 필요) |
-| 앨범 카드 | `AlbumCard.tsx` | 커버 이미지, Glow 효과(7·8점), 점수 컬러 배지, 국내/해외 뱃지, 장르 뱃지 |
+| 앨범 카드 | `AlbumCard.tsx` | 커버 이미지, Glow 효과(7·8점), 점수 컬러 배지, 국내/해외 뱃지, 장르 뱃지 (더블클릭 중복 오픈 방지) |
 | 앨범 추가 | `AlbumAddModal.tsx` | Spotify 검색 → 후보 선택 → DB 저장 (로그인 필요) |
 | 랜덤 버튼 | `RandomButton.tsx` | 회전 애니메이션 + 미평가 앨범 랜덤 이동 |
 | FloatingActions | `FloatingActions.tsx` | 앨범 추가 + 랜덤 플로팅 버튼 |

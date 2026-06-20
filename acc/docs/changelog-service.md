@@ -382,6 +382,61 @@ CDN 30초 캐시로 인해 저장 후에도 구버전 데이터가 돌아오던 
 
 ---
 
+### 2026-06-19 — 페르소나 QA Round 2 고충 해소 + 버그 패치
+
+페르소나 시나리오 테스트에서 발굴한 고충을 해소한 작업. 4개 페르소나(A, B, C, H)의 고충을 전부 처리했다.
+
+**페르소나 고충 해소**
+- 인연 앨범 자동 셔플 (페르소나 B-1)
+- 위시리스트 팝업 내부 스크롤 잠금 (페르소나 B-5)
+- 청음평 3종 개선 — 비로그인 공감 shake 블럭, 댓글 UX 등 (페르소나 C)
+- 명반전 밀어내기 UI 개선 (페르소나 H)
+
+**버그 패치**
+- 앨범 모달 4종 버그 수정
+- 딜레이·반응성 관련 버그 패치 (D-1~D-4, Bug 6~7)
+- 비로그인 상태에서 공감 버튼 클릭 시 shake 애니메이션으로 로그인 유도
+
+---
+
+### 2026-06-20 — 서비스 전반 반응성 · UX 완성도 개선
+
+"버튼을 누르면 한 타이밍 늦게 반응한다"는 체감 지연을 근본적으로 해소한 작업.  
+낙관적 업데이트 패턴과 모달 닫기 애니메이션을 서비스 전역에 적용했다.
+
+**낙관적 업데이트 전면 적용**
+
+API 응답을 기다리지 않고 UI를 먼저 업데이트하고, 실패 시 롤백하는 패턴을 7개 컴포넌트에 적용.  
+`setUI() → await API → rollback on error` 순서로 통일.
+
+| 위치 | 변경 전 | 변경 후 |
+|------|--------|--------|
+| AlbumCard | 더블클릭 시 모달 중복 오픈 | `e.detail > 1` 가드로 차단 |
+| diary/page | 삭제 후 5초 대기 | 즉시 목록에서 제거, 실패 시 복원 |
+| DiaryEntryModal | 이미지 삭제 후 응답 대기 | fire-and-forget (UI 즉시 반영) |
+| ReviewsClient | 좋아요 응답 후 카운트 반영 | 토글 즉시, 서버 값으로 보정 |
+| LikedTracksButton | 좋아요 취소 후 목록 갱신 대기 | 즉시 목록에서 제거, 실패 시 복원 |
+| AlbumModal | 찜/소감좋아요 응답 후 반영 | 토스트 즉시, API는 백그라운드 |
+| AlbumModal | 점수 삭제 후 5초 대기 | 즉시 제거, 실패 시 복원 + undo 토스트 |
+
+**모달 닫기 애니메이션 6종 추가**
+
+닫기 버튼 클릭 시 즉시 사라지던 모달에 fade-out/slide-down 애니메이션 추가.  
+`closing` state + `doClose()` 패턴으로 통일 (160ms).
+
+- DiaryEntryModal, SettingsModal, AlbumAddModal
+- ProfileEditButton (크롭·편집 두 단계 모두)
+- BottomNav 알림 패널 (`slideDownPanel` 키프레임 추가)
+- LikedTracksButton
+
+**기타 UX 디테일**
+- `touch-action: manipulation` 전역 적용 — 모바일 300ms 탭 딜레이 완전 제거
+- AlbumList 목록 끝 "전부 불러왔어요" 표시
+- AlbumModal 커버 이미지 skeleton-shimmer 로딩 + rating 삭제 즉시 반응 (deleting state 제거)
+- Toast 액션 버튼 터치 타깃 minHeight 36px 확보
+
+---
+
 ## 방향성 변화 기록
 
 | 시점 | 변화 | 계기 |
