@@ -49,9 +49,10 @@ export default function DiaryPage() {
   const recentTags = useMemo(() => getRecentTags(entries), [entries]);
 
   const handleDelete = useCallback(async (id: string) => {
-    await apiFetch(`/api/listening-logs?id=${id}`, { method: "DELETE" });
     setEntries((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+    const res = await apiFetch(`/api/listening-logs?id=${id}`, { method: "DELETE" });
+    if (!res.ok) fetchEntries();
+  }, [fetchEntries]);
 
   const handleEdit = useCallback((entry: DiaryEntry) => {
     setEditEntry(entry);

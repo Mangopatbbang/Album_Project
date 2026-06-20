@@ -140,19 +140,38 @@ export default function ReviewsClient() {
     if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
     const key = `${item.albumId}-${item.userId}`;
     setLiking(key);
+    // 낙관적 토글
+    const iLiked = item.likedBy.includes(profile.id);
+    const optimisticLikedBy = iLiked
+      ? item.likedBy.filter((id) => id !== profile.id)
+      : [...item.likedBy, profile.id];
+    setItems((prev) => prev.map((r) =>
+      r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: optimisticLikedBy } : r
+    ));
     try {
       const res = await apiFetch("/api/ratings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: item.albumId, reviewerId: item.userId }),
       });
-      const data = await res.json();
       if (res.ok) {
+        // 서버 확정값으로 교정 (동시 공감 처리)
+        const data = await res.json();
         const newLikedBy = data.liked_by ? data.liked_by.split(",").filter(Boolean) : [];
         setItems((prev) => prev.map((r) =>
           r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: newLikedBy } : r
         ));
+      } else {
+        // rollback
+        setItems((prev) => prev.map((r) =>
+          r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: item.likedBy } : r
+        ));
       }
+    } catch {
+      // rollback
+      setItems((prev) => prev.map((r) =>
+        r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: item.likedBy } : r
+      ));
     } finally {
       setLiking(null);
     }

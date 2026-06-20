@@ -65,8 +65,10 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
     const key = `${albumId}-${trackIndex}`;
     if (removingTrack === key) return;
     setRemovingTrack(key);
-    // 현재 앨범의 나머지 liked track 인덱스 계산
-    const remaining = (items ?? [])
+    const snapshot = items;
+    // 낙관적 제거
+    setItems((prev) => (prev ?? []).filter((it) => !(it.albumId === albumId && it.trackIndex === trackIndex)));
+    const remaining = (snapshot ?? [])
       .filter((it) => it.albumId === albumId && it.trackIndex !== trackIndex)
       .map((it) => it.trackIndex)
       .sort((a, b) => a - b);
@@ -76,8 +78,8 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ albumId, liked_tracks }),
     });
-    if (res.ok) {
-      setItems((prev) => (prev ?? []).filter((it) => !(it.albumId === albumId && it.trackIndex === trackIndex)));
+    if (!res.ok) {
+      setItems(snapshot);
     }
     setRemovingTrack(null);
   };

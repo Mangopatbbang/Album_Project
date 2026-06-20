@@ -84,6 +84,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     setMyScore(n);
     setGlowingScore(n);
     setTimeout(() => setGlowingScore(null), 400);
+    isDirtyRef.current = n !== initialScoreRef.current || myReview !== initialReviewRef.current;
   };
   const [myReview, setMyReview] = useState("");
   const [myPrivateNote, setMyPrivateNote] = useState("");
@@ -205,6 +206,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     const next = new Set(myLikedReviews);
     if (next.has(reviewerId)) next.delete(reviewerId); else next.add(reviewerId);
     setMyLikedReviews(next);
+    const reviewLiked = next.has(reviewerId);
+    showToast(reviewLiked ? "소감을 좋아요했어요 ♥" : "소감 좋아요를 취소했어요", "info");
     setSavingLike(true);
     const res = await apiFetch("/api/ratings", {
       method: "PATCH",
@@ -219,8 +222,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           r.user_id === reviewerId ? { ...r, liked_by: data.liked_by } : r
         ),
       } : p);
-      const reviewLiked = next.has(reviewerId);
-      showToast(reviewLiked ? "소감을 좋아요했어요 ♥" : "소감 좋아요를 취소했어요", "info");
     } else {
       setMyLikedReviews(prev);
     }
@@ -321,23 +322,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     return () => controller.abort();
   }, [album.id, profile]);
 
-  // 소감/별점 dirty 추적
-  useEffect(() => {
-    isDirtyRef.current =
-      myReview !== initialReviewRef.current ||
-      (myScore !== null && myScore !== initialScoreRef.current);
-  }, [myReview, myScore]);
-
   const handleToggleWatchlist = async () => {
     if (!profile) return;
     const adding = !isWatchlisted;
     setIsWatchlisted(adding);
     trackFeatureClick(adding ? "위시리스트_추가" : "위시리스트_제거");
-    await apiFetch("/api/watchlist", {
-      method: adding ? "POST" : "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id }),
-    });
     if (adding) {
       const hintKey = "acs_hint_bookmark_v1";
       if (typeof window !== "undefined" && !localStorage.getItem(hintKey)) {
@@ -350,6 +339,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       window.dispatchEvent(new CustomEvent("watchlist-removed", { detail: { albumId: album.id } }));
       showToast("목록에서 제거했어요", "info");
     }
+    const res = await apiFetch("/api/watchlist", {
+      method: adding ? "POST" : "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: album.id }),
+    });
+    if (!res.ok) setIsWatchlisted(!adding);
   };
 
   // 배경 스크롤 잠금
@@ -381,18 +376,33 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     // 현재 상태 저장
     deletedScoreRef.current = myScore;
     deletedReviewRef.current = myReview;
+    const originalFull = full;
+    // 낙관적 full 계산
+    let optimisticFull: FullAlbum | undefined;
+    if (originalFull) {
+      const newRatings = originalFull.ratings.filter((r) => r.user_id !== profile.id);
+      const scores = newRatings.map((r) => r.score);
+      const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : undefined;
+      optimisticFull = { ...originalFull, ratings: newRatings, avg };
+    }
     // 낙관적 업데이트
     setMyScore(null);
     setMyReview("");
     initialReviewRef.current = "";
     setMyLikedTracks(new Set());
+    isDirtyRef.current = false;
+    if (optimisticFull) setFull(optimisticFull);
     trackFeatureClick("평점_삭제");
+    onSaved?.(album.id, optimisticFull as unknown as AlbumWithRatings | undefined);
     // undo 토스트 (5초)
     showToastWithUndo("이 인연을 지웠어요", () => {
       if (pendingDeleteRef.current) { clearTimeout(pendingDeleteRef.current); pendingDeleteRef.current = null; }
       setMyScore(deletedScoreRef.current);
       setMyReview(deletedReviewRef.current);
       initialReviewRef.current = deletedReviewRef.current;
+      isDirtyRef.current = false;
+      if (originalFull) setFull(originalFull);
+      onSaved?.(album.id, originalFull as unknown as AlbumWithRatings | undefined);
     });
     // 5초 후 실제 삭제 — 모달이 닫혀도 API 호출은 반드시 실행
     pendingDeleteRef.current = setTimeout(async () => {
@@ -402,17 +412,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: album.id }),
       });
-      if (!isMountedRef.current) return;
-      setDeleting(true);
-      const refreshed = await fetch(`/api/albums/${album.id}`, { cache: "no-store" });
-      if (refreshed.ok) {
-        const data = await refreshed.json();
-        if (data && Array.isArray(data.ratings)) setFull(data);
-      } else {
-        setFull(null);
-      }
-      setDeleting(false);
-      onSaved?.(album.id);
     }, 5000);
   };
 
@@ -1444,7 +1443,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               <textarea
                 placeholder="청음기 (100자 이내)"
                 value={myReview}
-                onChange={(e) => setMyReview(e.target.value.slice(0, 100))}
+                onChange={(e) => { const val = e.target.value.slice(0, 100); setMyReview(val); isDirtyRef.current = val !== initialReviewRef.current || (myScore !== null && myScore !== initialScoreRef.current); }}
                 rows={2}
                 style={{
                   width: "100%",

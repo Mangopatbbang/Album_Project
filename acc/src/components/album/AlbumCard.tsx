@@ -46,7 +46,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <>
     <button
       data-tour="album-card"
-      onClick={() => { onNavigate?.(); router.push(`/album/${album.id}`, { scroll: false }); }}
+      onClick={(e) => { if (e.detail > 1) return; onNavigate?.(); router.push(`/album/${album.id}`, { scroll: false }); }}
       style={{
         backgroundColor: "var(--bg-card)",
         border: `1px solid ${glowBorder(album.avg)}`,

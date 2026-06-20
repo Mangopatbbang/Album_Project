@@ -118,9 +118,9 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
     }
   };
 
-  const handleRemoveImage = async () => {
+  const handleRemoveImage = () => {
     if (imageUrl) {
-      await apiFetch(`/api/diary/image?url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" }).catch(() => {});
+      apiFetch(`/api/diary/image?url=${encodeURIComponent(imageUrl)}`, { method: "DELETE" }).catch(() => {});
     }
     setImageUrl(null);
     setImagePreview(null);
