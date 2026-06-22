@@ -303,7 +303,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 16 }}>프로필 편집</p>
-                <button onClick={doClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
+                <button onClick={doClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
               </div>
 
               {/* 아바타 */}
@@ -374,7 +374,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
 
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={doClose}
                   style={{
                     backgroundColor: "transparent", border: "1px solid var(--border)",
                     color: "var(--text)", borderRadius: 6, padding: "8px 20px", fontSize: 13, cursor: "pointer",

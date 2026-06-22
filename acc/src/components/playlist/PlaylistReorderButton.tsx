@@ -146,7 +146,7 @@ export default function PlaylistReorderButton({ playlistId, ownerId, initialEntr
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>앨범 순서 변경</p>
-              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
+              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }} className="touch-target">×</button>
             </div>
 
             <div style={{ overflowY: "auto", flex: 1, padding: "0 20px" }}>

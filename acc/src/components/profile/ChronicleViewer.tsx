@@ -728,7 +728,7 @@ export default function ChronicleViewer({ userId, onClose }: { userId: string; o
             <button onClick={() => zoomStep(1.6)} style={{ width:24, height:24, borderRadius:5, fontSize:16, backgroundColor:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-muted)", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
           </div>
         )}
-        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1, padding:"0 2px" }}>×</button>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:20, lineHeight:1 }} className="touch-target">×</button>
       </div>
 
       {/* Heatmap */}

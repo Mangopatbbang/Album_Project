@@ -358,7 +358,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     color: "var(--text)",
     borderRadius: 6,
     padding: "10px 14px",
-    fontSize: 13,
+    fontSize: 16,
     outline: "none",
     width: "100%",
   };
@@ -692,7 +692,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>검색 결과 전체 ({candidates.length}개)</p>
-                  <button onClick={() => setShowCandidatePopup(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }}>×</button>
+                  <button onClick={() => setShowCandidatePopup(false)} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20 }} className="touch-target">×</button>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 12 }}>
                   {candidates.map((c) => (

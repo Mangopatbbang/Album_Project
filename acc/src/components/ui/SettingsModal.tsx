@@ -69,7 +69,8 @@ export default function SettingsModal({ onClose }: Props) {
           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>제재 이력</p>
           <button
             onClick={doClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 2px" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
+            className="touch-target"
           >
             ×
           </button>

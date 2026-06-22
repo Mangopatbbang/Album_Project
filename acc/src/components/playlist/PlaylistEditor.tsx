@@ -200,7 +200,7 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
               }}
             />
           </div>
-          <button onClick={handleClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20, flexShrink: 0, marginTop: 18 }}>✕</button>
+          <button onClick={handleClose} style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontSize: 20, flexShrink: 0, marginTop: 18, padding: 10 }}>✕</button>
         </div>
 
         {/* 공개 설정 */}

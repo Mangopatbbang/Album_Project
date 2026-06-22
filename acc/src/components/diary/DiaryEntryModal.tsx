@@ -207,7 +207,8 @@ export default function DiaryEntryModal({ onClose, onSaved, recentTags = [], ini
             </p>
             <button
               onClick={doClose}
-              style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 2 }}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}
+              className="touch-target"
             >
               ×
             </button>

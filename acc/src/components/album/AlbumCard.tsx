@@ -113,7 +113,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         <div className="flex items-baseline justify-between gap-1">
           <p
             style={{ color: "var(--text)", fontWeight: 500, fontSize: 13 }}
-            className="truncate leading-snug"
+            className="truncate leading-snug min-w-0"
           >
             {album.title}
           </p>
@@ -123,7 +123,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         </div>
         <p
           style={{ color: "var(--text-sub)", fontSize: 12 }}
-          className="truncate mt-0.5"
+          className="truncate mt-0.5 min-w-0"
         >
           <span
             className="hover:underline cursor-pointer"

@@ -154,7 +154,7 @@ function DayAlbumPanel({ dateKey, albums, onClose, onAlbumClick }: { dateKey: st
         <span style={{ color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
           {m}월 {d}일 청음 {albums.length}장
         </span>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 14, lineHeight: 1, padding: "0 2px" }}>✕</button>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1 }} className="touch-target">✕</button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {albums.map((a, i) => (
@@ -239,14 +239,14 @@ function CalendarPopup({ dailyAlbums, onClose, onAlbumClick }: { dailyAlbums: Da
           width: "min(380px, 100%)",
           padding: "24px 24px 28px",
           animation: "modalIn 0.18s ease-out",
-          maxHeight: "90dvh",
+          maxHeight: "90vh",
           overflowY: "auto",
         }}
       >
         {/* 헤더 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button onClick={goPrev} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1, padding: "0 4px" }}>
+            <button onClick={goPrev} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1 }} className="touch-target">
               ‹
             </button>
             <div>
@@ -265,13 +265,14 @@ function CalendarPopup({ dailyAlbums, onClose, onAlbumClick }: { dailyAlbums: Da
                 background: "none", border: "none",
                 cursor: isCurrentMonth ? "default" : "pointer",
                 color: isCurrentMonth ? "var(--border)" : "var(--text-muted)",
-                fontSize: 18, lineHeight: 1, padding: "0 4px",
+                fontSize: 18, lineHeight: 1,
               }}
+              className="touch-target"
             >
               ›
             </button>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1 }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1 }} className="touch-target">
             ✕
           </button>
         </div>

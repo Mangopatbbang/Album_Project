@@ -179,9 +179,10 @@ export default function WatchlistSection({ userId }: Props) {
                   title="찜 해제"
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    color: "var(--text-muted)", fontSize: 16, padding: "2px 4px",
+                    color: "var(--text-muted)", fontSize: 16,
                     flexShrink: 0, lineHeight: 1,
                   }}
+                  className="touch-target"
                 >
                   ✕
                 </button>
@@ -222,7 +223,7 @@ export default function WatchlistSection({ userId }: Props) {
               border: "1px solid var(--border)",
               borderRadius: 14,
               width: "100%", maxWidth: 480,
-              maxHeight: "80dvh",
+              maxHeight: "80vh",
               display: "flex", flexDirection: "column",
               overflow: "hidden",
               animation: "modalIn 0.18s ease-out",
@@ -240,7 +241,8 @@ export default function WatchlistSection({ userId }: Props) {
               </div>
               <button
                 onClick={() => setPopupOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
+                className="touch-target"
               >✕</button>
             </div>
             <div style={{ overflowY: "auto", padding: "12px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -279,7 +281,8 @@ export default function WatchlistSection({ userId }: Props) {
                     <button
                       onClick={() => handleRemove(album_id)}
                       title="찜 해제"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16, padding: "2px 4px", flexShrink: 0, lineHeight: 1 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+                      className="touch-target"
                     >✕</button>
                   </div>
                 );

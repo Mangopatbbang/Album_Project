@@ -619,8 +619,8 @@ export default function TimelineViewer({ userId, onClose }: { userId: string; on
 
         <button onClick={onClose} style={{
           background: "none", border: "none", cursor: "pointer",
-          color: "var(--text-muted)", fontSize: 22, lineHeight: 1, padding: "0 2px",
-        }}>×</button>
+          color: "var(--text-muted)", fontSize: 22, lineHeight: 1,
+        }} className="touch-target">×</button>
       </div>
 
       {/* ── Timeline wrapper ── */}

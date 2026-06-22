@@ -145,7 +145,7 @@ export default function BottomNav() {
               position: "absolute",
               bottom: "calc(60px + env(safe-area-inset-bottom))",
               left: 0, right: 0,
-              maxHeight: "70dvh",
+              maxHeight: "70vh",
               backgroundColor: "var(--bg-card)",
               borderTop: "1px solid var(--border)",
               borderRadius: "16px 16px 0 0",

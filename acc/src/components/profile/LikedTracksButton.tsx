@@ -151,7 +151,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
         >
           <div style={{
             backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-            borderRadius: 14, width: "min(720px, 100%)", maxHeight: "85dvh",
+            borderRadius: 14, width: "min(720px, 100%)", maxHeight: "85vh",
             display: "flex", flexDirection: "column", overflow: "hidden",
             animation: closing ? "modalOut 0.16s ease-in forwards" : "modalIn 0.18s ease-out",
           }}>

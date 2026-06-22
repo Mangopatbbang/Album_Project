@@ -222,7 +222,8 @@ export default function HomeWatchlistSection() {
               <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{items.length}장</span>
               <button
                 onClick={() => setSheetOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1 }}
+                className="touch-target"
               >✕</button>
             </div>
             {/* 목록 */}
