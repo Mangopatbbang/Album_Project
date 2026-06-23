@@ -173,7 +173,7 @@ export default function StoryCard({
             backgroundImage: `url(${noiseBg})`,
             backgroundRepeat: "repeat",
             backgroundSize: "256px 256px",
-            opacity: 0.038,
+            opacity: 0.07,
           }}
         />
       )}
