@@ -105,7 +105,12 @@ export default function StoryCard({
   const isSpecial = score >= 8;
   const isDecimal = !Number.isInteger(score);
   const scoreLabel = isDecimal ? score.toFixed(1) : String(score);
-  const scoreFontSize = isDecimal ? 48 : 60;
+  const hasReview = !!review;
+  const scoreFontSize = hasReview
+    ? (isDecimal ? 48 : 60)
+    : (isDecimal ? 64 : 80);
+  const starSize = hasReview ? 24 : 34;
+  const slashSize = hasReview ? 14 : 19;
 
   const panelBg = `hsl(${panelHue}, 30%, 6%)`;
   const separatorColor = `hsla(${panelHue}, 50%, 60%, 0.18)`;
@@ -362,7 +367,7 @@ export default function StoryCard({
               {isSpecial ? (
                 <span
                   style={{
-                    fontSize: 24,
+                    fontSize: starSize,
                     color,
                     fontWeight: 700,
                     textShadow: `0 0 16px ${color}aa`,
@@ -374,7 +379,7 @@ export default function StoryCard({
               ) : (
                 <span
                   style={{
-                    fontSize: 14,
+                    fontSize: slashSize,
                     color: "rgba(255,255,255,0.22)",
                     fontWeight: 300,
                     lineHeight: 1,
