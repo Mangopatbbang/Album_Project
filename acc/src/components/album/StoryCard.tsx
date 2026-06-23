@@ -105,7 +105,7 @@ export default function StoryCard({
   const isSpecial = score >= 8;
   const isDecimal = !Number.isInteger(score);
   const scoreLabel = isDecimal ? score.toFixed(1) : String(score);
-  const scoreFontSize = isDecimal ? 52 : 64;
+  const scoreFontSize = isDecimal ? 48 : 60;
 
   const panelBg = `hsl(${panelHue}, 30%, 6%)`;
   const separatorColor = `hsla(${panelHue}, 50%, 60%, 0.18)`;
@@ -149,7 +149,7 @@ export default function StoryCard({
           bottom: 0,
           left: 0,
           right: 0,
-          height: 380,
+          height: 350,
           backgroundColor: panelBg,
           zIndex: 1,
         }}
@@ -184,7 +184,7 @@ export default function StoryCard({
         {/* 커버 히어로 — contain으로 잘림 없이, 옆 여백은 블러 배경이 채움 */}
         <div
           style={{
-            height: 260,
+            height: 290,
             flexShrink: 0,
             position: "relative",
             overflow: "hidden",
@@ -225,7 +225,7 @@ export default function StoryCard({
               bottom: 0,
               left: 0,
               right: 0,
-              height: 80,
+              height: 90,
               background: `linear-gradient(to bottom, transparent 0%, ${panelBg} 100%)`,
             }}
           />
@@ -305,7 +305,7 @@ export default function StoryCard({
           />
 
           {/* 점수 + 한줄평 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div
               style={{
                 flexShrink: 0,
@@ -364,6 +364,7 @@ export default function StoryCard({
               <p
                 style={{
                   flex: 1,
+                  paddingTop: 8,
                   fontSize: 11,
                   fontStyle: "italic",
                   color: "rgba(255,255,255,0.52)",
@@ -416,7 +417,7 @@ export default function StoryCard({
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    marginBottom: 5,
+                    marginBottom: 6,
                   }}
                 >
                   <span
