@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
-import ProfileCaptureButton from "@/components/profile/ProfileCaptureButton";
+import ElementCaptureButton from "@/components/ui/ElementCaptureButton";
 import AlbumCoverButton from "@/components/album/AlbumCoverButton";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { fetchAllUserAvatarUrls, fetchAllUsers } from "@/lib/stats";
@@ -103,7 +103,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
             </span>
             <span style={{ color: "var(--border-light)" }}>·</span>
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{entries.length}장</span>
-            <ProfileCaptureButton targetId="playlist-card" />
+            <ElementCaptureButton targetId="playlist-card" />
           </div>
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <PlaylistVisibilityToggle

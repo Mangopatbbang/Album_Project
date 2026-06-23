@@ -299,6 +299,13 @@ export default async function ProfilePage({
   // 최근 20개
   const recent = validRatings.slice(0, 20);
 
+  // 프로필 공유 카드용 커버 4장 (명반전 우선, 부족하면 최근으로 채움)
+  const hofIds = new Set(hallOfFame.map((r) => r.albums!.id));
+  const cardCoverUrls: (string | null)[] = [
+    ...hallOfFame.slice(0, 4).map((r) => r.albums?.cover_url ?? null),
+    ...recent.filter((r) => !hofIds.has(r.albums!.id)).slice(0, 4).map((r) => r.albums?.cover_url ?? null),
+  ].slice(0, 4);
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
@@ -414,7 +421,18 @@ export default async function ProfilePage({
           <div className="flex items-center gap-2 w-full justify-end sm:w-auto sm:justify-start sm:self-start">
             <ReportUserButton targetUserId={userId} />
             <MobileLogoutButton userId={userId} />
-            <ProfileCaptureButton targetId="profile-card" />
+            <ProfileCaptureButton data={{
+              displayName,
+              displayEmoji,
+              avatarUrl,
+              bio,
+              total,
+              avg,
+              topArtist: artistByCount[0]?.artist_display ?? artistByCount[0]?.artist ?? null,
+              topGenre: topGenres[0] ?? null,
+              coverUrls: cardCoverUrls,
+              scoreDist,
+            }} />
             <ProfileDiaryButton userId={userId} />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
           </div>
