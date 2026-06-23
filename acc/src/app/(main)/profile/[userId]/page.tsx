@@ -299,13 +299,6 @@ export default async function ProfilePage({
   // 최근 20개
   const recent = validRatings.slice(0, 20);
 
-  // 프로필 공유 카드용 커버 4장 (명반전 우선, 부족하면 최근으로 채움)
-  const hofIds = new Set(hallOfFame.map((r) => r.albums!.id));
-  const cardCoverUrls: (string | null)[] = [
-    ...hallOfFame.slice(0, 4).map((r) => r.albums?.cover_url ?? null),
-    ...recent.filter((r) => !hofIds.has(r.albums!.id)).slice(0, 4).map((r) => r.albums?.cover_url ?? null),
-  ].slice(0, 4);
-
   // 공유 카드용 장르 (상위 3개)
   const cardTopGenres = genreList.slice(0, 3).map(({ genre }) => genre);
 
@@ -316,18 +309,15 @@ export default async function ProfilePage({
     return { name: source.artist_display ?? source.artist, avg: source.avg };
   })();
 
-  // 공유 카드용 베스트 한줄 소감 (점수 높은 앨범 중 한줄평 있는 것)
-  const cardTopReview = (() => {
-    const withReview = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0);
-    if (withReview.length === 0) return null;
-    const best = withReview.reduce((a, b) => (b.score > a.score ? b : a));
-    return {
-      text: best.one_line_review!,
-      albumTitle: best.albums!.title,
-      coverUrl: best.albums!.cover_url ?? null,
-      score: best.score,
-    };
-  })();
+  // 공유 카드용 명반전 앨범 목록 (선택 피커용 — 모달에서 커버/소감 선택)
+  const hofAlbumsForCard = hallOfFame.map((r) => ({
+    id: r.albums!.id,
+    title: r.albums!.title,
+    artist: r.albums!.artist_display ?? r.albums!.artist,
+    coverUrl: r.albums!.cover_url ?? null,
+    oneLineReview: r.one_line_review && r.one_line_review.trim().length > 0 ? r.one_line_review.trim() : null,
+    score: r.score,
+  }));
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -453,8 +443,7 @@ export default async function ProfilePage({
               avg,
               topGenres: cardTopGenres,
               favoriteArtist: cardFavoriteArtist,
-              topReview: cardTopReview,
-              coverUrls: cardCoverUrls,
+              hofAlbums: hofAlbumsForCard,
             }} />
             <ProfileDiaryButton userId={userId} />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
