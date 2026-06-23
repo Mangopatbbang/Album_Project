@@ -149,7 +149,7 @@ export default function StoryCard({
           bottom: 0,
           left: 0,
           right: 0,
-          height: 432,
+          height: 380,
           backgroundColor: panelBg,
           zIndex: 1,
         }}
@@ -181,10 +181,10 @@ export default function StoryCard({
           flexDirection: "column",
         }}
       >
-        {/* 커버 히어로 — 상단 전체 너비 */}
+        {/* 커버 히어로 — contain으로 잘림 없이, 옆 여백은 블러 배경이 채움 */}
         <div
           style={{
-            height: 208,
+            height: 260,
             flexShrink: 0,
             position: "relative",
             overflow: "hidden",
@@ -199,7 +199,7 @@ export default function StoryCard({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: "contain",
                 display: "block",
               }}
             />
@@ -225,7 +225,7 @@ export default function StoryCard({
               bottom: 0,
               left: 0,
               right: 0,
-              height: 96,
+              height: 80,
               background: `linear-gradient(to bottom, transparent 0%, ${panelBg} 100%)`,
             }}
           />
