@@ -198,7 +198,7 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
     }
   }
 
-  const results: Omit<ControversialItem, "album_artist_display">[] = [];
+  const results: (Omit<ControversialItem, "album_artist_display"> & { album_use_artist_variant: boolean | null })[] = [];
   for (const [album_id, { scores, reviews, album }] of grouped) {
     if (scores.length < 2 || !album) continue;
     const min = Math.min(...scores);
@@ -212,6 +212,7 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
       album_title: album.title,
       album_artist: album.artist,
       album_cover_url: album.cover_url,
+      album_use_artist_variant: album.use_artist_variant ?? false,
       min_score: min,
       max_score: max,
       variance,
@@ -225,7 +226,7 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
   const top = results.slice(0, 3);
 
   if (top.length === 0) return [];
-  const albumObjs = top.map((r) => ({ id: r.album_id, artist: r.album_artist, use_artist_variant: false }));
+  const albumObjs = top.map((r) => ({ id: r.album_id, artist: r.album_artist, use_artist_variant: r.album_use_artist_variant ?? false }));
   const resolved = await resolveArtistDisplay(albumObjs);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
 

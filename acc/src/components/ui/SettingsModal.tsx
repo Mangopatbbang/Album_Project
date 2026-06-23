@@ -23,8 +23,8 @@ const MODERATION_COLORS: Record<string, string> = {
   moderation_warning: "#e0a030",
   moderation_ban_temp: "#e05050",
   moderation_ban_permanent: "#e05050",
-  report_reviewed: "var(--accent)",
-  report_ban: "var(--accent)",
+  report_reviewed: "#e8d5a3",
+  report_ban: "#e8d5a3",
 };
 
 type Props = { onClose: () => void };

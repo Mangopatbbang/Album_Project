@@ -291,7 +291,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [album.id, profile]);
+  }, [album.id, profile?.id]);
 
   // private_note · 평점이력 · 찜 여부 병렬 fetch
   useEffect(() => {
@@ -320,7 +320,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [album.id, profile]);
+  }, [album.id, profile?.id]);
 
   const handleToggleWatchlist = async () => {
     if (!profile) return;

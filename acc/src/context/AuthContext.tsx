@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       const { data: fallback } = await supabaseBrowser
         .from("users")
-        .select("id, display_name, emoji, role, auth_id")
+        .select("id, display_name, emoji, role, auth_id, avatar_url, onboarded")
         .eq("auth_id", userId)
         .single();
       setProfile(fallback as UserProfile | null);
