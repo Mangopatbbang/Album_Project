@@ -13,9 +13,8 @@ export type ProfileCardData = {
   total: number;
   avg: string | null;
   topGenres: string[];
-  topReview: { text: string; albumTitle: string } | null;
+  topReview: { text: string; albumTitle: string; coverUrl: string | null; score: number } | null;
   coverUrls: (string | null)[];
-  scoreDist: { score: number; count: number }[];
 };
 
 type Props = ProfileCardData & { onClose: () => void };

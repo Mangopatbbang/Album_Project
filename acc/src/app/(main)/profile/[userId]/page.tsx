@@ -314,7 +314,12 @@ export default async function ProfilePage({
     const withReview = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0);
     if (withReview.length === 0) return null;
     const best = withReview.reduce((a, b) => (b.score > a.score ? b : a));
-    return { text: best.one_line_review!, albumTitle: best.albums!.title };
+    return {
+      text: best.one_line_review!,
+      albumTitle: best.albums!.title,
+      coverUrl: best.albums!.cover_url ?? null,
+      score: best.score,
+    };
   })();
 
   return (
@@ -442,7 +447,6 @@ export default async function ProfilePage({
               topGenres: cardTopGenres,
               topReview: cardTopReview,
               coverUrls: cardCoverUrls,
-              scoreDist,
             }} />
             <ProfileDiaryButton userId={userId} />
             <ProfileEditButton userId={userId} initialDisplayName={displayName} initialEmoji={displayEmoji} initialAvatarUrl={avatarUrl} />
