@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Geist_Mono, Barlow_Condensed } from "next/font/google";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
@@ -27,6 +27,13 @@ const pretendard = localFont({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-condensed",
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  style: ["italic"],
 });
 
 export const viewport: Viewport = {
@@ -73,7 +80,7 @@ export default async function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${pretendard.variable} ${geistMono.variable} h-full`}
+      className={`${pretendard.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full`}
     >
       <body className="min-h-dvh flex flex-col pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
         {/* LogoMark 전역 그라디언트·필터 — 모든 LogoMark 인스턴스가 참조 */}
