@@ -44,7 +44,9 @@ function extractDominantHue(url: string): Promise<number> {
           else hue = ((r - g) / chroma + 4) * 60;
           buckets[Math.floor(hue / 10)] += chroma;
         }
-        const best = buckets.indexOf(Math.max(...buckets));
+        const maxVal = Math.max(...buckets);
+        if (maxVal === 0) { resolve(215); return; }
+        const best = buckets.indexOf(maxVal);
         resolve(best * 10 + 5);
       } catch {
         resolve(215);
@@ -218,7 +220,7 @@ export default function StoryCard({
                 justifyContent: "center",
               }}
             >
-              <span style={{ fontSize: 52, color: "rgba(255,255,255,0.12)" }}>
+              <span style={{ fontSize: 58, color: "rgba(255,255,255,0.18)" }}>
                 ♪
               </span>
             </div>
@@ -320,6 +322,7 @@ export default function StoryCard({
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
+              maxHeight: "48px",
             }}
           >
             {title}
@@ -401,7 +404,7 @@ export default function StoryCard({
                   letterSpacing: "-0.01em",
                   wordBreak: "break-word",
                   display: "-webkit-box",
-                  WebkitLineClamp: 4,
+                  WebkitLineClamp: 3,
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                 }}
