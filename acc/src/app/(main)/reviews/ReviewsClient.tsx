@@ -42,6 +42,7 @@ export default function ReviewsClient() {
   const initUserId = searchParams.get("userId") ?? "";
   const [filterUser, setFilterUser] = useState(initUserId);
   const [filterAlbumId, setFilterAlbumId] = useState(initAlbumId);
+  const [highlightActive, setHighlightActive] = useState(false);
   const [filterAlbumTitle, setFilterAlbumTitle] = useState("");
   const [filterReview, setFilterReview] = useState("");
   const [minScore, setMinScore] = useState(1);
@@ -91,10 +92,31 @@ export default function ReviewsClient() {
     }
   }, []);
 
+  // 초기 로드
   useEffect(() => {
     fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 알림 클릭 등으로 searchParams가 바뀔 때 필터 동기화 + 스크롤
+  const prevSearchRef = useRef({ albumId: initAlbumId, userId: initUserId });
+  useEffect(() => {
+    const prev = prevSearchRef.current;
+    if (initAlbumId !== prev.albumId || initUserId !== prev.userId) {
+      prevSearchRef.current = { albumId: initAlbumId, userId: initUserId };
+      setFilterAlbumId(initAlbumId);
+      setFilterUser(initUserId);
+      setFilterReview("");
+      setOffset(0);
+      fetchReviews({ userId: initUserId, albumId: initAlbumId, search: "", minScore: 1, maxScore: 8, sort: "latest", offset: 0 });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (initAlbumId) {
+        setHighlightActive(true);
+        setTimeout(() => setHighlightActive(false), 2000);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initAlbumId, initUserId]);
 
   // filterAlbumTitle 자동 세팅 (URL로 albumId가 온 경우)
   useEffect(() => {
@@ -344,6 +366,7 @@ export default function ReviewsClient() {
       </div>
 
       {/* 피드 */}
+      <style>{`@keyframes reviewHighlight { 0%{box-shadow:0 0 0 2px var(--accent)} 60%{box-shadow:0 0 0 2px var(--accent)} 100%{box-shadow:none} }`}</style>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}><Spinner size={22} /></div>
       ) : fetchError ? (
@@ -412,7 +435,10 @@ export default function ReviewsClient() {
         </div>
       ) : (
         /* 기본 평별 플랫 뷰 */
-        <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
+        <div style={{
+          border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)",
+          animation: highlightActive ? "reviewHighlight 2s ease-out forwards" : "none",
+        }}>
           {items.map((item, idx) => {
             const key = `${item.albumId}-${item.userId}`;
             const isNew = appendStartIdx !== null && idx >= appendStartIdx;

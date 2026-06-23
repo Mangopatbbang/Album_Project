@@ -188,7 +188,9 @@ export default async function ProfilePage({
   // 일별 청음 (캘린더용 — 전체 기간)
   const dailyData: Record<string, DayAlbum[]> = {};
   for (const r of validRatings) {
-    const key = r.updated_at.slice(0, 10); // "YYYY-MM-DD"
+    // 최초 평가일 기준 (created_at), 없으면 updated_at fallback
+    const key = (r.created_at ?? r.updated_at).slice(0, 10);
+    const updatedDay = r.updated_at.slice(0, 10);
     if (!dailyData[key]) dailyData[key] = [];
     dailyData[key].push({
       id: r.albums!.id,
@@ -198,6 +200,7 @@ export default async function ProfilePage({
       cover_url: r.albums!.cover_url ?? null,
       score: r.score,
       is_encounter: !!r.encounter_date,
+      updatedAt: updatedDay !== key ? updatedDay : undefined,
     });
   }
 

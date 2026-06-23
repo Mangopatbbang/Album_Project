@@ -6,7 +6,7 @@ import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
 
 type MonthItem = { key: string; label: string; count: number };
-export type DayAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean };
+export type DayAlbum = { id: string; title: string; artist: string; artist_display?: string; cover_url: string | null; score: number; is_encounter?: boolean; updatedAt?: string };
 type DailyAlbums = Record<string, DayAlbum[]>; // "YYYY-MM-DD" → albums
 
 // ── 월별 바차트 ──────────────────────────────────────────
@@ -181,6 +181,9 @@ function DayAlbumPanel({ dateKey, albums, onClose, onAlbumClick }: { dateKey: st
                 <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{a.title}</p>
                 {a.is_encounter && (
                   <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", backgroundColor: "rgba(232,213,163,0.12)", border: "1px solid rgba(232,213,163,0.35)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>인연</span>
+                )}
+                {a.updatedAt && a.updatedAt !== dateKey && (
+                  <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-muted)", backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }} title={`수정일: ${a.updatedAt}`}>수정</span>
                 )}
               </div>
               <p style={{ color: "var(--text-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.artist_display ?? a.artist}</p>
