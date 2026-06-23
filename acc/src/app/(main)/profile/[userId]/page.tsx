@@ -306,6 +306,17 @@ export default async function ProfilePage({
     ...recent.filter((r) => !hofIds.has(r.albums!.id)).slice(0, 4).map((r) => r.albums?.cover_url ?? null),
   ].slice(0, 4);
 
+  // 공유 카드용 장르 (상위 3개)
+  const cardTopGenres = genreList.slice(0, 3).map(({ genre }) => genre);
+
+  // 공유 카드용 베스트 한줄 소감 (점수 높은 앨범 중 한줄평 있는 것)
+  const cardTopReview = (() => {
+    const withReview = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0);
+    if (withReview.length === 0) return null;
+    const best = withReview.reduce((a, b) => (b.score > a.score ? b : a));
+    return { text: best.one_line_review!, albumTitle: best.albums!.title };
+  })();
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
 
@@ -428,8 +439,8 @@ export default async function ProfilePage({
               bio,
               total,
               avg,
-              topArtist: artistByCount[0]?.artist_display ?? artistByCount[0]?.artist ?? null,
-              topGenre: topGenres[0] ?? null,
+              topGenres: cardTopGenres,
+              topReview: cardTopReview,
               coverUrls: cardCoverUrls,
               scoreDist,
             }} />

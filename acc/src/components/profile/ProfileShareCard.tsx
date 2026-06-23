@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { scoreColor } from "@/lib/score";
+import { GENRE_COLOR } from "@/lib/bio";
 
 function extractDominantHue(url: string): Promise<number> {
   return new Promise((resolve) => {
@@ -62,8 +63,8 @@ type Props = {
   bio: string | null;
   total: number;
   avg: string | null;
-  topArtist: string | null;
-  topGenre: string | null;
+  topGenres: string[];
+  topReview: { text: string; albumTitle: string } | null;
   coverUrls: (string | null)[];
   scoreDist: { score: number; count: number }[];
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -75,7 +76,7 @@ const MOSAIC_H = 220;
 
 export default function ProfileShareCard({
   displayName, displayEmoji, avatarUrl, bio, total, avg,
-  topArtist, topGenre, coverUrls, scoreDist, containerRef,
+  topGenres, topReview, coverUrls, scoreDist, containerRef,
 }: Props) {
   const proxiedCovers = coverUrls.map(url =>
     url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : null
@@ -255,7 +256,7 @@ export default function ProfileShareCard({
           {/* 구분선 */}
           <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 14 }} />
 
-          {/* 주요 통계 — TOTAL + AVG 나란히 */}
+          {/* 주요 통계 — TOTAL + AVG */}
           <div style={{ display: "flex", gap: 28, alignItems: "flex-end", marginBottom: 14 }}>
             <div>
               <p style={{
@@ -293,81 +294,96 @@ export default function ProfileShareCard({
           </div>
 
           {/* 구분선 */}
-          {(topArtist || topGenre) && (
-            <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 14 }} />
+          {topGenres.length > 0 && (
+            <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 12 }} />
           )}
 
-          {/* Top Artist + Top Genre */}
-          {(topArtist || topGenre) && (
-            <div style={{ display: "flex", alignItems: "stretch", marginBottom: 14 }}>
-              {topArtist && (
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: 8.5, color: "rgba(255,255,255,0.24)",
-                    letterSpacing: "0.12em", fontWeight: 600, marginBottom: 4,
-                  }}>MOST LISTENED</p>
-                  <p style={{
-                    fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.82)",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>{topArtist}</p>
-                </div>
-              )}
-              {topArtist && topGenre && (
-                <div style={{ width: 1, backgroundColor: separatorColor, margin: "0 18px", flexShrink: 0 }} />
-              )}
-              {topGenre && (
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: 8.5, color: "rgba(255,255,255,0.24)",
-                    letterSpacing: "0.12em", fontWeight: 600, marginBottom: 4,
-                  }}>TOP GENRE</p>
-                  <p style={{
-                    fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.82)",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>{topGenre}</p>
-                </div>
-              )}
+          {/* 장르 뱃지 */}
+          {topGenres.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{
+                fontSize: 8.5, color: "rgba(255,255,255,0.24)",
+                letterSpacing: "0.12em", fontWeight: 600, marginBottom: 7,
+              }}>GENRE</p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {topGenres.slice(0, 3).map(g => {
+                  const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                  return (
+                    <span key={g} style={{
+                      fontSize: 11, fontWeight: 600,
+                      backgroundColor: `${gColor}22`,
+                      color: gColor,
+                      border: `1px solid ${gColor}44`,
+                      borderRadius: 4,
+                      padding: "3px 8px",
+                      letterSpacing: "0.01em",
+                    }}>{g}</span>
+                  );
+                })}
+              </div>
             </div>
           )}
 
           {/* 구분선 */}
-          {hasDistData && (
-            <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 14 }} />
+          {topReview && (
+            <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 12 }} />
           )}
 
-          {/* 점수 분포 */}
-          {hasDistData && (
-            <div>
+          {/* 한줄 소감 quote */}
+          {topReview && (
+            <div style={{ marginBottom: 12 }}>
               <p style={{
-                fontSize: 8.5, color: "rgba(255,255,255,0.24)",
-                letterSpacing: "0.12em", fontWeight: 600, marginBottom: 8,
-              }}>SCORE DISTRIBUTION</p>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 52 }}>
-                {scoreDist.map(d => (
-                  <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{
-                      width: "100%",
-                      height: `${(d.count / maxDistCount) * 36 + (d.count > 0 ? 4 : 0)}px`,
-                      backgroundColor: d.count > 0 ? scoreColor(d.score) : "rgba(255,255,255,0.06)",
-                      borderRadius: "2px 2px 0 0",
-                      opacity: 0.85,
-                      minHeight: 3,
-                    }} />
-                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.22)" }}>{d.score}</span>
-                  </div>
-                ))}
-              </div>
+                fontSize: 11.5,
+                fontStyle: "italic",
+                color: "rgba(255,255,255,0.58)",
+                lineHeight: 1.65,
+                letterSpacing: "-0.01em",
+                wordBreak: "break-word",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                marginBottom: 5,
+              }}>
+                &ldquo;{topReview.text}&rdquo;
+              </p>
+              <p style={{
+                fontSize: 9, color: "rgba(255,255,255,0.24)",
+                textAlign: "right", letterSpacing: "0.02em",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                — {topReview.albumTitle}
+              </p>
             </div>
           )}
 
           <div style={{ flex: 1 }} />
 
-          {/* 푸터 */}
-          <p style={{
-            fontSize: 10, fontWeight: 700,
-            color: "rgba(255,255,255,0.20)",
-            letterSpacing: "0.10em",
-          }}>아차청음사</p>
+          {/* 마이크로 점수 분포 도트 + 푸터 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {hasDistData && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "center" }}>
+                {scoreDist.map(d => {
+                  const size = d.count > 0
+                    ? Math.max(3.5, (d.count / maxDistCount) * 10)
+                    : 2.5;
+                  return (
+                    <div key={d.score} style={{
+                      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+                      backgroundColor: d.count > 0 ? scoreColor(d.score) : "rgba(255,255,255,0.08)",
+                      opacity: d.count > 0 ? 0.72 : 1,
+                    }} />
+                  );
+                })}
+              </div>
+            )}
+
+            <p style={{
+              fontSize: 10, fontWeight: 700,
+              color: "rgba(255,255,255,0.20)",
+              letterSpacing: "0.10em",
+            }}>아차청음사</p>
+          </div>
         </div>
       </div>
     </div>
