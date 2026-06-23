@@ -231,6 +231,30 @@ export default function StoryCard({
           />
         </div>
 
+        {/* 고스트 배경 점수 — 패널 배경에 희미하게 깔리는 워터마크 */}
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: -6,
+            bottom: 20,
+            fontSize: 192,
+            fontFamily:
+              "var(--font-barlow-condensed), 'Barlow Condensed', Impact, 'Arial Narrow', sans-serif",
+            fontWeight: 900,
+            fontStyle: "italic",
+            letterSpacing: "-0.05em",
+            lineHeight: 1,
+            color,
+            opacity: 0.07,
+            userSelect: "none",
+            pointerEvents: "none",
+            zIndex: -1,
+          }}
+        >
+          {scoreLabel}
+        </span>
+
         {/* 패널 콘텐츠 */}
         <div
           style={{
@@ -261,9 +285,10 @@ export default function StoryCard({
           {/* 아티스트 · 장르 */}
           <p
             style={{
-              fontSize: 11,
-              color: "rgba(255,255,255,0.40)",
-              letterSpacing: "0.04em",
+              fontSize: 10.5,
+              color: "rgba(255,255,255,0.42)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               marginBottom: 4,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -305,7 +330,7 @@ export default function StoryCard({
           />
 
           {/* 점수 + 한줄평 */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
               style={{
                 flexShrink: 0,
@@ -364,7 +389,6 @@ export default function StoryCard({
               <p
                 style={{
                   flex: 1,
-                  paddingTop: 8,
                   fontSize: 11,
                   fontStyle: "italic",
                   color: "rgba(255,255,255,0.52)",
