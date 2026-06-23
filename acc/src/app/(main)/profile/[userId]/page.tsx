@@ -309,6 +309,13 @@ export default async function ProfilePage({
   // 공유 카드용 장르 (상위 3개)
   const cardTopGenres = genreList.slice(0, 3).map(({ genre }) => genre);
 
+  // 공유 카드용 최애 아티스트 (평균 점수 최고, 3장 이상 조건) — 없으면 최다 청음으로 fallback
+  const cardFavoriteArtist = (() => {
+    const source = artistByAvg.length > 0 ? artistByAvg[0] : (artistByCount[0] ?? null);
+    if (!source) return null;
+    return { name: source.artist_display ?? source.artist, avg: source.avg };
+  })();
+
   // 공유 카드용 베스트 한줄 소감 (점수 높은 앨범 중 한줄평 있는 것)
   const cardTopReview = (() => {
     const withReview = validRatings.filter((r) => r.one_line_review && r.one_line_review.trim().length > 0);
@@ -445,6 +452,7 @@ export default async function ProfilePage({
               total,
               avg,
               topGenres: cardTopGenres,
+              favoriteArtist: cardFavoriteArtist,
               topReview: cardTopReview,
               coverUrls: cardCoverUrls,
             }} />

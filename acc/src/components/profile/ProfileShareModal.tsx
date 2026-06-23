@@ -13,6 +13,7 @@ export type ProfileCardData = {
   total: number;
   avg: string | null;
   topGenres: string[];
+  favoriteArtist: { name: string; avg: string } | null;
   topReview: { text: string; albumTitle: string; coverUrl: string | null; score: number } | null;
   coverUrls: (string | null)[];
 };

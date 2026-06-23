@@ -64,6 +64,7 @@ type Props = {
   total: number;
   avg: string | null;
   topGenres: string[];
+  favoriteArtist: { name: string; avg: string } | null;
   topReview: { text: string; albumTitle: string; coverUrl: string | null; score: number } | null;
   coverUrls: (string | null)[];
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -71,10 +72,12 @@ type Props = {
 
 const BARLOW = "var(--font-barlow-condensed), 'Barlow Condensed', Impact, 'Arial Narrow', sans-serif";
 const PRETENDARD = "var(--font-pretendard), 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+// 커버 strip: 3장, 2px gap × 2 = 4px, (360-4)/3 ≈ 118px
+const STRIP_H = 118;
 
 export default function ProfileShareCard({
   displayName, displayEmoji, avatarUrl, bio, total, avg,
-  topGenres, topReview, coverUrls, containerRef,
+  topGenres, favoriteArtist, topReview, coverUrls, containerRef,
 }: Props) {
   const proxiedCovers = coverUrls.map(url =>
     url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : null
@@ -98,8 +101,9 @@ export default function ProfileShareCard({
   useEffect(() => { setNoiseBg(generateNoiseBg()); }, []);
 
   const panelBg = `hsl(${panelHue}, 28%, 6%)`;
-  const separatorColor = `hsla(${panelHue}, 50%, 60%, 0.15)`;
-  const accentColor = `hsl(${panelHue}, 68%, 62%)`;
+  // 구분선: 양 끝 투명 → 중앙 색상 → 투명
+  const sep = `linear-gradient(to right, transparent 0%, hsla(${panelHue},50%,60%,0.20) 20%, hsla(${panelHue},50%,60%,0.20) 80%, transparent 100%)`;
+  const accentColor = `hsl(${panelHue}, 68%, 64%)`;
 
   const avgNum = avg ? parseFloat(avg) : null;
   const avgDisplay = avgNum !== null
@@ -107,9 +111,8 @@ export default function ProfileShareCard({
     : null;
   const avgColor = avgNum !== null ? scoreColor(avgNum) : "rgba(255,255,255,0.55)";
 
-  // 커버 strip: 최대 3장 (정사각형 컨테이너, 잘림 없음)
   const stripCovers = proxiedCovers.slice(0, 3);
-  const coverSize = Math.floor((360 - (stripCovers.length - 1) * 3) / Math.max(stripCovers.length, 1));
+  const hasGenreOrArtist = topGenres.length > 0 || !!favoriteArtist;
 
   return (
     <div
@@ -122,21 +125,21 @@ export default function ProfileShareCard({
         flexShrink: 0,
       }}
     >
-      {/* L0: 블러 배경 (색감 출처) */}
+      {/* L0: 블러 배경 */}
       {firstCover && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 0,
           backgroundImage: `url(${firstCover})`,
           backgroundSize: "cover", backgroundPosition: "center",
-          filter: "blur(32px) saturate(1.6) brightness(0.35)",
+          filter: "blur(32px) saturate(1.6) brightness(0.32)",
           transform: "scale(1.14)",
         }} />
       )}
 
-      {/* L1: 전체 다크 패널 */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: panelBg, opacity: 0.88 }} />
+      {/* L1: 다크 패널 */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: panelBg, opacity: 0.86 }} />
 
-      {/* L2: 그레인 노이즈 */}
+      {/* L2: 노이즈 */}
       {noiseBg && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 2,
@@ -149,41 +152,61 @@ export default function ProfileShareCard({
       )}
 
       {/* L3: 콘텐츠 */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 3,
-        display: "flex", flexDirection: "column",
-      }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", flexDirection: "column" }}>
+
         {/* Ghost watermark */}
         {total > 0 && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              right: -10, bottom: 120,
-              fontSize: 200,
-              fontFamily: BARLOW,
-              fontWeight: 900, fontStyle: "italic",
-              letterSpacing: "-0.05em", lineHeight: 1,
-              color: accentColor,
-              opacity: 0.06,
-              userSelect: "none", pointerEvents: "none",
-              zIndex: -1,
-            }}
-          >
+          <span aria-hidden="true" style={{
+            position: "absolute",
+            right: -12, bottom: 55,
+            fontSize: 210,
+            fontFamily: BARLOW,
+            fontWeight: 900, fontStyle: "italic",
+            letterSpacing: "-0.05em", lineHeight: 1,
+            color: accentColor,
+            opacity: 0.055,
+            userSelect: "none", pointerEvents: "none",
+            zIndex: -1,
+          }}>
             {total}
           </span>
         )}
 
-        {/* ── 메인 콘텐츠 (side padding) ── */}
-        <div style={{ padding: "26px 22px 0", display: "flex", flexDirection: "column" }}>
-
-          {/* 아바타 + 이름 + 소개글 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 20 }}>
+        {/* ── 상단 커버 strip (full bleed, 정사각형) ── */}
+        {stripCovers.length > 0 && (
+          <div style={{ position: "relative", height: STRIP_H, flexShrink: 0, display: "flex", gap: 2 }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{ flex: 1, overflow: "hidden", backgroundColor: `hsl(${panelHue}, 18%, 10%)` }}>
+                {stripCovers[i] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={stripCovers[i]!} alt="" crossOrigin="anonymous"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 22, color: "rgba(255,255,255,0.07)" }}>♪</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            {/* 커버 → 패널 그라디언트 페이드 */}
             <div style={{
-              width: 44, height: 44, borderRadius: "50%",
+              position: "absolute", bottom: 0, left: 0, right: 0, height: 56,
+              background: `linear-gradient(to bottom, transparent 0%, ${panelBg} 100%)`,
+              pointerEvents: "none",
+            }} />
+          </div>
+        )}
+
+        {/* ── 패널 콘텐츠 ── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "18px 22px 0" }}>
+
+          {/* 아바타 + 이름 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 18 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: "50%",
               overflow: "hidden", flexShrink: 0,
-              backgroundColor: `hsl(${panelHue}, 18%, 14%)`,
-              border: `1.5px solid hsla(${panelHue}, 40%, 60%, 0.20)`,
+              backgroundColor: `hsl(${panelHue}, 18%, 13%)`,
+              border: `1.5px solid hsla(${panelHue}, 45%, 65%, 0.28)`,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {proxiedAvatar ? (
@@ -191,18 +214,18 @@ export default function ProfileShareCard({
                 <img src={proxiedAvatar} alt={displayName} crossOrigin="anonymous"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{displayEmoji}</span>
+                <span style={{ fontSize: 21, lineHeight: 1 }}>{displayEmoji}</span>
               )}
             </div>
             <div style={{ minWidth: 0 }}>
               <p style={{
-                fontSize: 16, fontWeight: 700, color: "#fff",
+                fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.94)",
                 letterSpacing: "-0.03em",
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>{displayName}</p>
               {bio && (
                 <p style={{
-                  fontSize: 10.5, color: "rgba(255,255,255,0.34)",
+                  fontSize: 10.5, color: "rgba(255,255,255,0.32)",
                   marginTop: 2, lineHeight: 1.4,
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>{bio}</p>
@@ -211,26 +234,27 @@ export default function ProfileShareCard({
           </div>
 
           {/* 구분선 */}
-          <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 18 }} />
+          {hasGenreOrArtist && <div style={{ height: 1, background: sep, marginBottom: 16 }} />}
 
           {/* 장르 뱃지 */}
           {topGenres.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: favoriteArtist ? 10 : 0 }}>
               <p style={{
-                fontSize: 8.5, color: "rgba(255,255,255,0.22)",
-                letterSpacing: "0.13em", fontWeight: 600, marginBottom: 8,
+                fontSize: 8, color: "rgba(255,255,255,0.22)",
+                letterSpacing: "0.14em", fontWeight: 600, marginBottom: 7,
               }}>GENRE</p>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                 {topGenres.slice(0, 3).map(g => {
                   const gColor = GENRE_COLOR[g] ?? "#94a3b8";
                   return (
                     <span key={g} style={{
                       fontSize: 11, fontWeight: 600,
-                      backgroundColor: `${gColor}20`,
+                      backgroundColor: `${gColor}1e`,
                       color: gColor,
-                      border: `1px solid ${gColor}40`,
-                      borderRadius: 4,
+                      border: `1px solid ${gColor}3e`,
+                      borderRadius: 5,
                       padding: "3px 9px",
+                      letterSpacing: "0.005em",
                     }}>{g}</span>
                   );
                 })}
@@ -238,71 +262,88 @@ export default function ProfileShareCard({
             </div>
           )}
 
-          {/* 구분선 */}
-          {topReview && (
-            <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 18 }} />
-          )}
-
-          {/* 한줄 소감 quote — 커버 썸네일로 어느 앨범인지 명확히 */}
-          {topReview && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                {/* 앨범 커버 썸네일 */}
-                <div style={{
-                  width: 46, height: 46, flexShrink: 0,
-                  borderRadius: 5, overflow: "hidden",
-                  backgroundColor: `hsl(${panelHue}, 18%, 14%)`,
-                }}>
-                  {proxiedQuoteCover ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={proxiedQuoteCover} alt={topReview.albumTitle} crossOrigin="anonymous"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontSize: 20, color: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>♪</span>
-                  )}
-                </div>
-
-                {/* 텍스트 영역 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* 앨범명 + 점수 */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                    <p style={{
-                      fontSize: 10, color: "rgba(255,255,255,0.36)",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      flex: 1, marginRight: 8,
-                    }}>{topReview.albumTitle}</p>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, flexShrink: 0,
-                      color: scoreColor(topReview.score),
-                    }}>★ {topReview.score}</span>
-                  </div>
-                  {/* 한줄 소감 */}
-                  <p style={{
-                    fontSize: 11.5, fontStyle: "italic",
-                    color: "rgba(255,255,255,0.60)",
-                    lineHeight: 1.62, letterSpacing: "-0.01em",
-                    wordBreak: "break-word",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}>
-                    &ldquo;{topReview.text}&rdquo;
-                  </p>
-                </div>
+          {/* 최애 아티스트 */}
+          {favoriteArtist && (
+            <div style={{ marginBottom: 0 }}>
+              <p style={{
+                fontSize: 8, color: "rgba(255,255,255,0.22)",
+                letterSpacing: "0.14em", fontWeight: 600, marginBottom: 5,
+              }}>FAVORITE ARTIST</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                <span style={{
+                  fontSize: 13, fontWeight: 700,
+                  color: "rgba(255,255,255,0.86)",
+                  letterSpacing: "-0.01em",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  maxWidth: 180,
+                }}>{favoriteArtist.name}</span>
+                <span style={{
+                  fontSize: 9.5, fontWeight: 600, flexShrink: 0,
+                  color: scoreColor(parseFloat(favoriteArtist.avg)),
+                }}>avg {favoriteArtist.avg}점</span>
               </div>
             </div>
           )}
 
           {/* 구분선 */}
-          <div style={{ height: 1, backgroundColor: separatorColor, marginBottom: 18 }} />
+          {topReview && <div style={{ height: 1, background: sep, margin: "16px 0" }} />}
 
-          {/* 주요 통계 — TOTAL + AVG */}
-          <div style={{ display: "flex", gap: 32, alignItems: "flex-end" }}>
+          {/* 한줄 소감 + 앨범 커버 썸네일 */}
+          {topReview && (
+            <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+              <div style={{
+                width: 44, height: 44, flexShrink: 0,
+                borderRadius: 5, overflow: "hidden",
+                backgroundColor: `hsl(${panelHue}, 18%, 13%)`,
+              }}>
+                {proxiedQuoteCover ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={proxiedQuoteCover} alt={topReview.albumTitle} crossOrigin="anonymous"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 18, color: "rgba(255,255,255,0.12)" }}>♪</span>
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <p style={{
+                    fontSize: 9.5, color: "rgba(255,255,255,0.36)",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    flex: 1, marginRight: 8, letterSpacing: "0.01em",
+                  }}>{topReview.albumTitle}</p>
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 700, flexShrink: 0,
+                    color: scoreColor(topReview.score),
+                    letterSpacing: "0.01em",
+                  }}>★{topReview.score}</span>
+                </div>
+                <p style={{
+                  fontSize: 11, fontStyle: "italic",
+                  color: "rgba(255,255,255,0.58)",
+                  lineHeight: 1.65, letterSpacing: "-0.015em",
+                  wordBreak: "break-word",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}>
+                  &ldquo;{topReview.text}&rdquo;
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 구분선 */}
+          <div style={{ height: 1, background: sep, margin: "16px 0" }} />
+
+          {/* 주요 통계 */}
+          <div style={{ display: "flex", gap: 30, alignItems: "flex-end" }}>
             <div>
               <p style={{
-                fontSize: 9, color: "rgba(255,255,255,0.24)",
-                letterSpacing: "0.12em", fontWeight: 600, marginBottom: 1,
+                fontSize: 8.5, color: "rgba(255,255,255,0.22)",
+                letterSpacing: "0.13em", fontWeight: 600, marginBottom: 1,
               }}>TOTAL</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: 3, lineHeight: 1 }}>
                 <span style={{
@@ -310,14 +351,14 @@ export default function ProfileShareCard({
                   fontFamily: BARLOW, letterSpacing: "-0.03em", lineHeight: 1,
                   color: accentColor,
                 }}>{total}</span>
-                <span style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", lineHeight: 1 }}>장</span>
+                <span style={{ fontSize: 16, color: "rgba(255,255,255,0.40)", lineHeight: 1 }}>장</span>
               </div>
             </div>
             {avgDisplay !== null && (
               <div>
                 <p style={{
-                  fontSize: 9, color: "rgba(255,255,255,0.24)",
-                  letterSpacing: "0.12em", fontWeight: 600, marginBottom: 1,
+                  fontSize: 8.5, color: "rgba(255,255,255,0.22)",
+                  letterSpacing: "0.13em", fontWeight: 600, marginBottom: 1,
                 }}>AVG</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 3, lineHeight: 1 }}>
                   <span style={{
@@ -325,46 +366,23 @@ export default function ProfileShareCard({
                     fontFamily: BARLOW, letterSpacing: "-0.03em", lineHeight: 1,
                     color: avgColor,
                   }}>{avgDisplay}</span>
-                  <span style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", lineHeight: 1 }}>점</span>
+                  <span style={{ fontSize: 16, color: "rgba(255,255,255,0.40)", lineHeight: 1 }}>점</span>
                 </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* 여백 */}
-        <div style={{ flex: 1 }} />
+          <div style={{ flex: 1 }} />
 
-        {/* 명반 커버 strip — 정사각형 컨테이너, 잘림 없음 */}
-        {stripCovers.length > 0 && (
-          <div style={{ display: "flex", gap: 3, marginBottom: 0 }}>
-            {stripCovers.map((cover, i) => (
-              <div key={i} style={{
-                width: coverSize, height: coverSize, flexShrink: 0,
-                backgroundColor: `hsl(${panelHue}, 18%, 10%)`,
-                overflow: "hidden",
-              }}>
-                {cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={cover} alt="" crossOrigin="anonymous"
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 24, color: "rgba(255,255,255,0.08)" }}>♪</span>
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* 푸터 */}
+          <div style={{ paddingBottom: 20 }}>
+            <div style={{ height: 1, background: sep, marginBottom: 12 }} />
+            <p style={{
+              fontSize: 9.5, fontWeight: 700,
+              color: "rgba(255,255,255,0.18)",
+              letterSpacing: "0.12em",
+            }}>아차청음사</p>
           </div>
-        )}
-
-        {/* 푸터 */}
-        <div style={{ padding: "10px 22px 20px" }}>
-          <p style={{
-            fontSize: 10, fontWeight: 700,
-            color: "rgba(255,255,255,0.18)",
-            letterSpacing: "0.10em",
-          }}>아차청음사</p>
         </div>
       </div>
     </div>
