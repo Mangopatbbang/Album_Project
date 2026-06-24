@@ -12,27 +12,17 @@ import type { AlbumWithRatings } from "@/types";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CANVAS = 3000;
-const CX = CANVAS / 2; // 1500
+const CX = CANVAS / 2;
 const CY = CANVAS / 2;
 const MAX_ZOOM = 22;
-const RADIUS_MIN = 150; // most albums genre → nearest center
-const RADIUS_MAX = 600; // least albums genre → outer edge
+const INNER_R = 80;    // most recent albums — closest to center
+const OUTER_R = 1150;  // oldest albums — furthest out
 
-// Musical similarity grouping → base angles (degrees)
-const GENRE_ANGLES: Record<string, number> = {
-  "Hip-Hop":     0,
-  "R&B":         32,
-  "Electronic":  68,
-  "Pop":         100,
-  "Alternative": 152,
-  "Rock":        182,
-  "Folk":        212,
-  "Country":     242,
-  "Jazz":        272,
-  "OST":         302,
-  "Compilation": 325,
-  "Other":       348,
-};
+// Sector ordering by musical similarity (keeps related genres adjacent)
+const GENRE_ORDER = [
+  "Hip-Hop", "R&B", "Electronic", "Pop", "Alternative",
+  "Rock", "Folk", "Country", "Jazz", "OST", "Compilation", "Other",
+];
 
 // ─── Layout types ─────────────────────────────────────────────────────────────
 
@@ -51,6 +41,8 @@ interface GenreCloud {
   count: number;
   color: string;
   radius: number;
+  midAngle: number;
+  sectorSpan: number;
 }
 
 // ─── Layout computation ───────────────────────────────────────────────────────
@@ -61,12 +53,18 @@ function jitter(seed: string, range: number): number {
 }
 
 function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: GenreCloud[] } {
-  // Deduplicate: one entry per album (latest event wins)
   const albumMap = new Map<string, TimelineEvent>();
   for (const ev of events) {
     if (!albumMap.has(ev.album.id)) albumMap.set(ev.album.id, ev);
   }
   const unique = [...albumMap.values()];
+  if (unique.length === 0) return { stars: [], clouds: [] };
+
+  // Year range → determines radial position (recent = inner, old = outer)
+  const years = unique.map(ev => parseInt(ev.album.release_date?.slice(0, 4) ?? "2000"));
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
+  const yearSpan = Math.max(maxYear - minYear, 1);
 
   // Count per genre
   const genreCounts = new Map<string, number>();
@@ -74,81 +72,62 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
     const g = ev.album.genre ?? "Other";
     genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
   }
+  const totalAlbums = unique.length;
 
-  // Sort genres by count desc → assign radial distance (more = closer to center)
-  const sorted = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]);
-  const maxC = sorted[0]?.[1] ?? 1;
-  const minC = sorted[sorted.length - 1]?.[1] ?? 1;
+  // Musical-similarity ordering (adjacent genres are sonically related)
+  const genreOrder: string[] = [];
+  for (const g of GENRE_ORDER) { if (genreCounts.has(g)) genreOrder.push(g); }
+  for (const g of genreCounts.keys()) { if (!genreOrder.includes(g)) genreOrder.push(g); }
 
-  const genreCenters = new Map<string, { cx: number; cy: number; count: number }>();
-  for (const [genre, count] of sorted) {
-    const t = maxC === minC ? 0 : (maxC - count) / (maxC - minC);
-    const radius = RADIUS_MIN + t * (RADIUS_MAX - RADIUS_MIN);
-    const deg = GENRE_ANGLES[genre] ?? (jitter(genre, 360) + 180);
-    const rad = (deg * Math.PI) / 180;
-    genreCenters.set(genre, {
-      cx: CX + Math.cos(rad) * radius,
-      cy: CY + Math.sin(rad) * radius,
-      count,
-    });
+  // Assign pie sectors proportional to album count (popular genre = wider slice)
+  let curAngle = -Math.PI / 2; // start at 12 o'clock
+  const sectors = new Map<string, { start: number; end: number; mid: number; span: number }>();
+  for (const g of genreOrder) {
+    const count = genreCounts.get(g) ?? 0;
+    if (!count) continue;
+    const span = (count / totalAlbums) * Math.PI * 2;
+    const start = curAngle;
+    const end = curAngle + span;
+    sectors.set(g, { start, end, mid: start + span / 2, span });
+    curAngle = end;
   }
 
-  // Group unique albums by genre → artist
-  const byGenre = new Map<string, TimelineEvent[]>();
+  // Place each album: year → radius, jitter → angle within sector
+  const stars: StarPos[] = [];
   for (const ev of unique) {
     const g = ev.album.genre ?? "Other";
-    const arr = byGenre.get(g) ?? [];
-    arr.push(ev);
-    byGenre.set(g, arr);
-  }
+    const sector = sectors.get(g);
+    if (!sector) continue;
 
-  const stars: StarPos[] = [];
+    const year = parseInt(ev.album.release_date?.slice(0, 4) ?? "2000");
+    const yearNorm = (maxYear - year) / yearSpan; // 0 = newest, 1 = oldest
+    const baseR = INNER_R + yearNorm * (OUTER_R - INNER_R);
+    const rNoise = jitter(ev.album.id + "r", (OUTER_R - INNER_R) * 0.05);
+    const r = Math.max(INNER_R * 0.85, Math.min(OUTER_R * 1.04, baseR + rNoise));
 
-  for (const [genre, gevents] of byGenre) {
-    const center = genreCenters.get(genre);
-    if (!center) continue;
+    const aNoise = jitter(ev.album.id + "a", sector.span * 0.88);
+    const a = sector.mid + aNoise;
 
-    // Sub-group by artist
-    const byArtist = new Map<string, TimelineEvent[]>();
-    for (const ev of gevents) {
-      const arr = byArtist.get(ev.album.artist) ?? [];
-      arr.push(ev);
-      byArtist.set(ev.album.artist, arr);
-    }
-    const artistList = [...byArtist.entries()];
-    const artistCount = artistList.length;
-    // Artist cluster radius grows with number of distinct artists in genre
-    const clusterR = 55 + Math.min(artistCount, 10) * 14;
-
-    artistList.forEach(([artist, aevents], ai) => {
-      // Spread artists evenly around genre center with small jitter
-      const aAngle = (ai / Math.max(artistCount, 1)) * Math.PI * 2 + jitter(artist + genre, 0.4);
-      const acx = center.cx + Math.cos(aAngle) * clusterR;
-      const acy = center.cy + Math.sin(aAngle) * clusterR;
-
-      aevents.forEach((ev, i) => {
-        const albumAngle = (i / Math.max(aevents.length, 1)) * Math.PI * 2 + jitter(ev.album.id + "a", 0.6);
-        // Year offset: older albums sit slightly further from artist center
-        const year = parseInt(ev.album.release_date?.slice(0, 4) ?? "2000");
-        const yearNorm = Math.max(0, Math.min(1, (2025 - year) / 65));
-        const albumR = 14 + yearNorm * 24 + Math.abs(jitter(ev.album.id + "r", 16));
-        stars.push({
-          albumId: ev.album.id,
-          ev,
-          x: acx + Math.cos(albumAngle) * albumR,
-          y: acy + Math.sin(albumAngle) * albumR,
-          genre,
-        });
-      });
+    stars.push({
+      albumId: ev.album.id, ev,
+      x: CX + Math.cos(a) * r,
+      y: CY + Math.sin(a) * r,
+      genre: g,
     });
   }
 
-  // Clouds sized by album count
+  // Build clouds: two nebula circles per genre (inner + outer radial coverage)
   const clouds: GenreCloud[] = [];
-  for (const [genre, center] of genreCenters) {
+  for (const [genre, sector] of sectors) {
+    const count = genreCounts.get(genre) ?? 0;
     const color = GENRE_COLOR[genre] ?? "#888888";
-    const cloudRadius = 70 + Math.sqrt(center.count) * 30;
-    clouds.push({ genre, cx: center.cx, cy: center.cy, count: center.count, color, radius: cloudRadius });
+    const midR = INNER_R + (OUTER_R - INNER_R) * 0.42;
+    const cx = CX + Math.cos(sector.mid) * midR;
+    const cy = CY + Math.sin(sector.mid) * midR;
+    const arcWidth = sector.span * midR;
+    const radialDepth = (OUTER_R - INNER_R) * 0.5;
+    const radius = Math.max(55, Math.min(arcWidth, radialDepth) * 0.72 + Math.sqrt(count) * 12);
+    clouds.push({ genre, cx, cy, count, color, radius, midAngle: sector.mid, sectorSpan: sector.span });
   }
 
   return { stars, clouds };
@@ -168,7 +147,7 @@ function dotRadius(score: number | undefined): number {
 function coverSize(cssZoom: number, fitZoom: number): number {
   if (fitZoom <= 0) return 0;
   const spread = cssZoom / fitZoom;
-  if (spread < 1.6) return 0;
+  if (spread < 2.8) return 0;
   if (spread < 4)   return 30 / cssZoom;
   return 48 / cssZoom;
 }
@@ -639,37 +618,48 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             transformOrigin: "0 0",
             transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
           }}>
-            {/* Nebula clouds */}
-            {clouds.map(c => (
-              <div key={`neb-${c.genre}`} style={{
-                position: "absolute",
-                left: c.cx - c.radius, top: c.cy - c.radius,
-                width: c.radius * 2, height: c.radius * 2,
-                borderRadius: "50%",
-                background: `radial-gradient(circle, ${c.color}1a 0%, ${c.color}09 52%, transparent 74%)`,
-                filter: `blur(${20 / cssZoom}px)`,
-                pointerEvents: "none",
-              }} />
-            ))}
+            {/* Nebula clouds — two circles per genre for inner+outer sector coverage */}
+            {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
+              const nr = INNER_R + (OUTER_R - INNER_R) * frac;
+              const nx = CX + Math.cos(c.midAngle) * nr;
+              const ny = CY + Math.sin(c.midAngle) * nr;
+              const cr = Math.max(45, c.sectorSpan * nr * 0.6 + Math.sqrt(c.count) * 10);
+              return (
+                <div key={`neb-${c.genre}-${i}`} style={{
+                  position: "absolute",
+                  left: nx - cr, top: ny - cr,
+                  width: cr * 2, height: cr * 2,
+                  borderRadius: "50%",
+                  background: `radial-gradient(circle, ${c.color}16 0%, ${c.color}08 52%, transparent 74%)`,
+                  filter: `blur(${18 / cssZoom}px)`,
+                  pointerEvents: "none",
+                }} />
+              );
+            }))}
 
             {/* Genre labels */}
-            {clouds.map(c => (
-              <div key={`lbl-${c.genre}`} style={{
-                position: "absolute",
-                left: c.cx, top: c.cy - c.radius * 0.85,
-                transform: "translateX(-50%)",
-                fontSize: 11 / cssZoom,
-                fontWeight: 700,
-                color: c.color,
-                opacity: 0.32,
-                pointerEvents: "none",
-                whiteSpace: "nowrap",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-              }}>
-                {c.genre}
-              </div>
-            ))}
+            {clouds.map(c => {
+              const labelR = INNER_R + (OUTER_R - INNER_R) * 0.7;
+              const lx = CX + Math.cos(c.midAngle) * labelR;
+              const ly = CY + Math.sin(c.midAngle) * labelR;
+              return (
+                <div key={`lbl-${c.genre}`} style={{
+                  position: "absolute",
+                  left: lx, top: ly,
+                  transform: "translate(-50%,-50%)",
+                  fontSize: 11 / cssZoom,
+                  fontWeight: 700,
+                  color: c.color,
+                  opacity: 0.28,
+                  pointerEvents: "none",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                }}>
+                  {c.genre}
+                </div>
+              );
+            })}
 
             {/* Constellation lines */}
             <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
