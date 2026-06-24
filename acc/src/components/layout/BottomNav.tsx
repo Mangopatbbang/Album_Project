@@ -276,7 +276,14 @@ export default function BottomNav() {
                 style={{ color: active ? "var(--accent)" : "var(--text)", transition: "color 0.15s", boxShadow: active ? "inset 0 2px 0 var(--accent)" : "none" }}
                 className="flex-1 flex flex-col items-center justify-center gap-1 py-3"
               >
-                <span className={bouncingHref === href ? "nav-bounce" : ""} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span
+                  className={bouncingHref === href ? "nav-bounce" : ""}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    filter: active ? "drop-shadow(0 0 6px rgba(232,213,163,0.7))" : "drop-shadow(0 0 0px rgba(232,213,163,0))",
+                    transition: "filter 0.2s ease",
+                  }}
+                >
                   <Icon />
                 </span>
                 <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.04em" }}>
@@ -301,7 +308,11 @@ export default function BottomNav() {
                 gap: 4, padding: "12px 0",
               }}
             >
-              <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{
+                position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+                filter: notifOpen ? "drop-shadow(0 0 6px rgba(232,213,163,0.7))" : "drop-shadow(0 0 0px rgba(232,213,163,0))",
+                transition: "filter 0.2s ease",
+              }}>
                 <BellIcon />
                 {unreadCount > 0 && (
                   <span style={{ position: "absolute", top: -3, right: -4 }}>

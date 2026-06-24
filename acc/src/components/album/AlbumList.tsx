@@ -302,7 +302,7 @@ return (
                 backgroundColor: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 color: "var(--text)",
-                borderRadius: 8,
+                borderRadius: 50,
                 padding: "7px 12px 7px 32px",
                 fontSize: 13,
                 width: "100%",

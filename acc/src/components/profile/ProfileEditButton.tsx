@@ -350,7 +350,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
 
               {/* 닉네임 */}
               <div>
-                <label style={labelStyle}>DISPLAY NAME</label>
+                <label style={labelStyle}>닉네임</label>
                 <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={inputStyle} />
               </div>
 

@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <P>서비스는 회원가입 및 서비스 제공을 위해 아래 정보를 수집합니다.</P>
         <ul style={{ margin: "8px 0", padding: 0, listStyle: "none" }}>
           <Li>이메일 주소 (회원가입·로그인 수단)</Li>
-          <Li>닉네임 및 표시 이름</Li>
+          <Li>닉네임</Li>
           <Li>프로필 이모지</Li>
           <Li>서비스 이용 기록 (평점, 한줄평, 북마크, 트랙 좋아요, 댓글 등)</Li>
         </ul>

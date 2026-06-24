@@ -6,17 +6,6 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  backgroundColor: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  color: "var(--text)",
-  borderRadius: 6,
-  padding: "10px 14px",
-  fontSize: 16,
-  outline: "none",
-};
-
 function EyeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -35,39 +24,114 @@ function EyeOffIcon() {
   );
 }
 
-function PasswordField({
-  placeholder,
-  value,
-  onChange,
-  autoComplete,
-}: {
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  autoComplete?: string;
+function FloatInput({ id, label, type = "text", value, onChange, autoComplete, required, hasError, placeholder }: {
+  id: string; label: string; type?: string; value: string;
+  onChange: (v: string) => void; autoComplete?: string;
+  required?: boolean; hasError?: boolean; placeholder?: string;
 }) {
-  const [show, setShow] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const active = focused || value.length > 0;
   return (
     <div style={{ position: "relative" }}>
+      <label htmlFor={id} style={{
+        position: "absolute", left: 14, zIndex: 1, pointerEvents: "none",
+        top: active ? 8 : "50%",
+        transform: active ? "none" : "translateY(-50%)",
+        fontSize: active ? 10 : 15,
+        color: focused ? "var(--accent)" : "var(--text-muted)",
+        fontWeight: active ? 600 : 400,
+        letterSpacing: active ? "0.04em" : 0,
+        transition: "top 0.15s ease, font-size 0.15s ease, color 0.15s ease",
+      }}>
+        {label}
+      </label>
       <input
-        type={show ? "text" : "password"}
-        placeholder={placeholder}
+        id={id}
+        type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        placeholder={active ? placeholder : ""}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         autoComplete={autoComplete}
-        style={{ ...inputStyle, paddingRight: 42 }}
+        required={required}
+        style={{
+          width: "100%",
+          backgroundColor: "var(--bg-card)",
+          border: `1px solid ${hasError ? "var(--error)" : focused ? "var(--accent)" : "var(--border)"}`,
+          color: "var(--text)",
+          borderRadius: 8,
+          paddingTop: active ? 20 : 15,
+          paddingBottom: active ? 6 : 15,
+          paddingLeft: 14,
+          paddingRight: 14,
+          fontSize: 15,
+          outline: "none",
+          transition: "border-color 0.15s, padding 0.15s",
+          height: 52,
+          boxSizing: "border-box",
+        }}
+      />
+    </div>
+  );
+}
+
+function FloatPasswordInput({ id, label, value, onChange, autoComplete, minLength }: {
+  id: string; label: string; value: string;
+  onChange: (v: string) => void; autoComplete?: string; minLength?: number;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [show, setShow] = useState(false);
+  const active = focused || value.length > 0;
+  return (
+    <div style={{ position: "relative" }}>
+      <label htmlFor={id} style={{
+        position: "absolute", left: 14, zIndex: 1, pointerEvents: "none",
+        top: active ? 8 : "50%",
+        transform: active ? "none" : "translateY(-50%)",
+        fontSize: active ? 10 : 15,
+        color: focused ? "var(--accent)" : "var(--text-muted)",
+        fontWeight: active ? 600 : 400,
+        letterSpacing: active ? "0.04em" : 0,
+        transition: "top 0.15s ease, font-size 0.15s ease, color 0.15s ease",
+      }}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        autoComplete={autoComplete}
         required
-        minLength={6}
+        minLength={minLength}
+        style={{
+          width: "100%",
+          backgroundColor: "var(--bg-card)",
+          border: `1px solid ${focused ? "var(--accent)" : "var(--border)"}`,
+          color: "var(--text)",
+          borderRadius: 8,
+          paddingTop: active ? 20 : 15,
+          paddingBottom: active ? 6 : 15,
+          paddingLeft: 14,
+          paddingRight: 44,
+          fontSize: 15,
+          outline: "none",
+          transition: "border-color 0.15s, padding 0.15s",
+          height: 52,
+          boxSizing: "border-box",
+        }}
       />
       <button
         type="button"
-        onClick={() => setShow((s) => !s)}
+        onClick={() => setShow(s => !s)}
         tabIndex={-1}
         style={{
-          position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+          position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
           background: "none", border: "none", cursor: "pointer",
-          color: "var(--text-muted)", padding: 4,
-          display: "flex", alignItems: "center",
+          color: "var(--text-muted)", padding: 4, display: "flex", alignItems: "center",
         }}
       >
         {show ? <EyeOffIcon /> : <EyeIcon />}
@@ -96,20 +160,11 @@ function VisualCheckbox({ checked }: { checked: boolean }) {
   );
 }
 
-function CustomCheckbox({
-  checked,
-  onChange,
-  children,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  children: React.ReactNode;
+function CustomCheckbox({ checked, onChange, children }: {
+  checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode;
 }) {
   return (
-    <div
-      onClick={() => onChange(!checked)}
-      style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}
-    >
+    <div onClick={() => onChange(!checked)} style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
       <VisualCheckbox checked={checked} />
       <span style={{ fontSize: 13, color: "var(--text-sub)", lineHeight: 1.5, userSelect: "none" }}>
         {children}
@@ -120,36 +175,26 @@ function CustomCheckbox({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-      color: "var(--text-muted)", opacity: 0.7,
-    }}>
+    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--text-muted)", opacity: 0.7 }}>
       {children}
     </p>
   );
 }
 
-function HintText({ children }: { children: React.ReactNode }) {
+function HintText({ children, isError }: { children: React.ReactNode; isError?: boolean }) {
   return (
-    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: -4, paddingLeft: 2 }}>
+    <p style={{ fontSize: 11, color: isError ? "var(--error)" : "var(--text-muted)", marginTop: -4, paddingLeft: 2, lineHeight: 1.5 }}>
       {children}
     </p>
   );
 }
 
-function validateUsername(u: string): string | null {
-  if (u.length === 0) return null;
-  if (u.length < 2) return "2자 이상이어야 합니다";
-  if (!/^[a-zA-Z0-9_]+$/.test(u)) return "영문, 숫자, _ 만 사용 가능합니다";
-  return null;
-}
 
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
@@ -158,7 +203,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const allAgreed = agreeTerms && agreePrivacy && agreeAge;
-  const usernameError = validateUsername(username);
 
   const handleAllAgree = (v: boolean) => {
     setAgreeTerms(v);
@@ -170,15 +214,11 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    if (usernameError) return setError(usernameError);
     if (password !== passwordConfirm) return setError("비밀번호가 일치하지 않습니다");
 
     setLoading(true);
 
-    const { data: authData, error: authError } = await supabaseBrowser.auth.signUp({
-      email,
-      password,
-    });
+    const { data: authData, error: authError } = await supabaseBrowser.auth.signUp({ email, password });
 
     if (authError || !authData.user) {
       setError(authError?.message ?? "회원가입에 실패했습니다");
@@ -186,13 +226,17 @@ export default function SignupPage() {
       return;
     }
 
+    // username은 auth_id 앞 12자리로 자동 생성 (사용자에게 노출 안 됨)
+    const autoUsername = authData.user.id.replace(/-/g, "").slice(0, 12);
+    const nickname = displayName.trim() || email.split("@")[0];
+
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         auth_id: authData.user.id,
-        username,
-        display_name: displayName || username,
+        username: autoUsername,
+        display_name: nickname,
         emoji: "🎵",
         onboarded: false,
       }),
@@ -231,26 +275,22 @@ export default function SignupPage() {
           {/* 계정 정보 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SectionLabel>계정 정보</SectionLabel>
-            <input
-              type="email"
-              placeholder="이메일"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-              autoComplete="email"
-              required
+            <FloatInput
+              id="email" label="이메일" type="email"
+              value={email} onChange={setEmail}
+              autoComplete="email" required
             />
-            <PasswordField
-              placeholder="비밀번호"
-              value={password}
-              onChange={setPassword}
-              autoComplete="new-password"
-            />
-            <HintText>6자 이상</HintText>
-            <PasswordField
-              placeholder="비밀번호 확인"
-              value={passwordConfirm}
-              onChange={setPasswordConfirm}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <FloatPasswordInput
+                id="password" label="비밀번호"
+                value={password} onChange={setPassword}
+                autoComplete="new-password" minLength={6}
+              />
+              <HintText>6자 이상</HintText>
+            </div>
+            <FloatPasswordInput
+              id="password-confirm" label="비밀번호 확인"
+              value={passwordConfirm} onChange={setPasswordConfirm}
               autoComplete="new-password"
             />
           </div>
@@ -258,39 +298,19 @@ export default function SignupPage() {
           {/* 프로필 */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SectionLabel>프로필</SectionLabel>
+
+            {/* 닉네임 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <input
-                type="text"
-                placeholder="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={{
-                  ...inputStyle,
-                  borderColor: usernameError ? "var(--error)" : "var(--border)",
-                }}
-                autoComplete="username"
-                required
-              />
-              {usernameError
-                ? <p style={{ fontSize: 11, color: "var(--error)", paddingLeft: 2 }}>{usernameError}</p>
-                : <HintText>영문·숫자·_ 만 가능 · 로그인에 사용됩니다</HintText>
-              }
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <input
-                type="text"
-                placeholder="표시 이름 (선택)"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                style={inputStyle}
+              <FloatInput
+                id="display-name" label="닉네임 (선택)"
+                value={displayName} onChange={setDisplayName}
                 autoComplete="nickname"
+                placeholder="예: 재즈 좋아하는 사람"
               />
               <HintText>
                 {displayName
                   ? null
-                  : email.includes("@")
-                    ? <>비워두면 <span style={{ color: "var(--text-sub)", fontWeight: 600 }}>{email.split("@")[0]}</span>으로 표시됩니다</>
-                    : "이메일에서 자동 설정됩니다 (나중에 변경 가능)"}
+                  : <>비워두면 이메일 앞부분으로 설정돼요 · 나중에 변경 가능</>}
               </HintText>
             </div>
           </div>
@@ -304,9 +324,8 @@ export default function SignupPage() {
             <div style={{ height: 1, backgroundColor: "var(--border)" }} />
             <CustomCheckbox checked={agreeTerms} onChange={setAgreeTerms}>
               <Link
-                href="/terms"
-                target="_blank"
-                onClick={(e) => e.stopPropagation()}
+                href="/terms" target="_blank"
+                onClick={e => e.stopPropagation()}
                 style={{ color: "var(--accent)", textDecoration: "underline" }}
               >
                 이용약관
@@ -316,9 +335,8 @@ export default function SignupPage() {
             </CustomCheckbox>
             <CustomCheckbox checked={agreePrivacy} onChange={setAgreePrivacy}>
               <Link
-                href="/privacy"
-                target="_blank"
-                onClick={(e) => e.stopPropagation()}
+                href="/privacy" target="_blank"
+                onClick={e => e.stopPropagation()}
                 style={{ color: "var(--accent)", textDecoration: "underline" }}
               >
                 개인정보처리방침
@@ -343,21 +361,15 @@ export default function SignupPage() {
             </p>
           </div>
 
-          {error && (
-            <p style={{ color: "var(--error)", fontSize: 13 }}>{error}</p>
-          )}
+          {error && <p style={{ color: "var(--error)", fontSize: 13 }}>{error}</p>}
 
           <button
             type="submit"
             disabled={loading || !allAgreed}
             style={{
-              backgroundColor: "var(--accent)",
-              color: "var(--bg)",
-              fontWeight: 600,
-              fontSize: 14,
-              padding: "10px",
-              borderRadius: 6,
-              border: "none",
+              backgroundColor: "var(--accent)", color: "var(--bg)",
+              fontWeight: 700, fontSize: 14, padding: "13px",
+              borderRadius: 8, border: "none",
               cursor: (loading || !allAgreed) ? "default" : "pointer",
               opacity: (loading || !allAgreed) ? 0.7 : 1,
             }}
@@ -368,7 +380,7 @@ export default function SignupPage() {
 
         <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 24 }}>
           이미 청음사 식구인가요?{" "}
-          <Link href="/login" style={{ color: "var(--accent)" }}>
+          <Link href="/login" style={{ color: "var(--accent)", fontWeight: 600 }}>
             입장
           </Link>
         </p>
