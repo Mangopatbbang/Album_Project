@@ -291,6 +291,44 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
           }
         </button>
       )}
+
+      {/* Always-visible label in focus mode */}
+      {focused && (
+        <div style={{
+          position: "absolute",
+          top: isDot ? r * 2 + 3 / cssZoom : cs + 5 / cssZoom,
+          left: "50%",
+          transform: "translateX(-50%)",
+          pointerEvents: "none",
+          textAlign: "center",
+          whiteSpace: "nowrap",
+          maxWidth: 120 / cssZoom,
+          overflow: "hidden",
+        }}>
+          <p style={{
+            fontSize: 9 / cssZoom,
+            color: "var(--text)",
+            fontWeight: 600,
+            lineHeight: 1.2,
+            textShadow: "0 1px 5px rgba(0,0,0,0.98), 0 0 10px rgba(0,0,0,0.85)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}>
+            {ev.album.title}
+          </p>
+          {score != null && (
+            <p style={{
+              fontSize: 8 / cssZoom,
+              color,
+              fontWeight: 800,
+              marginTop: 1.5 / cssZoom,
+              textShadow: `0 0 8px ${color}99`,
+            }}>
+              {score}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -308,6 +346,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [isDragging, setIsDragging] = useState(false);
   const [fitZoom, setFitZoom] = useState(1);
   const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const cssZoomRef = useRef(1);
@@ -526,6 +565,33 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     [events],
   );
 
+  // Auto-pan+zoom to fit the focused artist's constellation
+  useEffect(() => {
+    if (!focusedArtist) return;
+    const artistStars = stars.filter(s => s.ev.album.artist === focusedArtist);
+    if (artistStars.length === 0) return;
+    const vpW = vpWRef.current, vpH = vpHRef.current;
+    if (!vpW || !vpH) return;
+
+    const xs = artistStars.map(s => s.x);
+    const ys = artistStars.map(s => s.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const PAD = 240;
+    const bw = (maxX - minX) + PAD * 2;
+    const bh = (maxY - minY) + PAD * 2;
+    const nz = Math.max(fitZoomRef.current * 1.4, Math.min(8, Math.min(vpW / bw, vpH / bh) * 0.85));
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const px = vpW / 2 - cx * nz;
+    const py = vpH / 2 - cy * nz;
+
+    cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
+    setIsAnimating(true);
+    setCssZoom(nz); setPanX(px); setPanY(py);
+    const t = setTimeout(() => setIsAnimating(false), 480);
+    return () => clearTimeout(t);
+  }, [focusedArtist, stars]);
+
   // Constellation lines (same artist, sorted by release year)
   const lines = useMemo(() => {
     const byArtist = new Map<string, StarPos[]>();
@@ -650,6 +716,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               width: CANVAS, height: CANVAS,
               transformOrigin: "0 0",
               transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
+              transition: isAnimating ? "transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
           >
