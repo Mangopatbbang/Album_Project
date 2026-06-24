@@ -230,9 +230,7 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
   const color = score != null ? scoreColor(score) : "rgba(255,255,255,0.22)";
   const r = dotRadius(score);
   const iz = 1 / cssZoom;
-  // Focused stars always show as covers (min 44px on screen), even if zoomed out
-  const effectiveCs = focused ? Math.max(cs, 44 / cssZoom) : cs;
-  const isDot = effectiveCs === 0;
+  const isDot = cs === 0;
   const dimmed = focusMode && !focused;
 
   const glow = score == null ? "none"
@@ -269,10 +267,10 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
         }} />
       ) : (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave} style={{
-          width: effectiveCs, height: effectiveCs, padding: 0,
+          width: cs, height: cs, padding: 0,
           overflow: "hidden", border: "none", cursor: "pointer",
           backgroundColor: "var(--bg-elevated)",
-          borderRadius: Math.round(effectiveCs * 0.15),
+          borderRadius: Math.round(cs * 0.15),
           outline: hov
             ? `${2.5 * iz}px solid ${color}`
             : focused ? `${1.5 * iz}px solid ${color}cc`
@@ -289,7 +287,7 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
             // eslint-disable-next-line @next/next/no-img-element
             ? <img loading="lazy" src={ev.album.cover_url} alt={ev.album.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(effectiveCs * 0.38) }}>♪</div>
+            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(cs * 0.38) }}>♪</div>
           }
         </button>
       )}
@@ -298,7 +296,7 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
       {focused && (
         <div style={{
           position: "absolute",
-          top: isDot ? r * 2 + 3 / cssZoom : effectiveCs + 5 / cssZoom,
+          top: isDot ? r * 2 + 3 / cssZoom : cs + 5 / cssZoom,
           left: "50%",
           transform: "translateX(-50%)",
           pointerEvents: "none",
@@ -797,17 +795,22 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             </svg>
 
             {/* Stars */}
-            {visStars.map(star => (
-              <Star
-                key={star.albumId}
-                star={star} cs={cs} cssZoom={cssZoom}
-                focusMode={focusedArtist !== null}
-                focused={focusedArtist === star.ev.album.artist}
-                onSelect={handleStarClick}
-                onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
-                onTipLeave={() => setTooltip(null)}
-              />
-            ))}
+            {visStars.map(star => {
+              const isFocused = focusedArtist !== null && focusedArtist === star.ev.album.artist;
+              // Focused stars always show as covers regardless of zoom level
+              const starCs = isFocused ? Math.max(cs, 46 / cssZoom) : cs;
+              return (
+                <Star
+                  key={star.albumId}
+                  star={star} cs={starCs} cssZoom={cssZoom}
+                  focusMode={focusedArtist !== null}
+                  focused={isFocused}
+                  onSelect={handleStarClick}
+                  onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
+                  onTipLeave={() => setTooltip(null)}
+                />
+              );
+            })}
           </div>
         )}
 
