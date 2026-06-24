@@ -1047,8 +1047,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
               style={{
-                position: "absolute", bottom: 28, left: "50%",
-                transform: "translateX(-50%)",
+                position: "absolute", bottom: isZoomed ? 140 : 24, right: 16,
                 backgroundColor: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 borderRadius: 14,
@@ -1057,6 +1056,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 zIndex: 50, pointerEvents: "auto",
                 boxShadow: "0 8px 28px rgba(0,0,0,0.55)",
                 whiteSpace: "nowrap",
+                maxWidth: 260,
               }}
             >
               {(() => {
@@ -1111,8 +1111,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.18 }}
               style={{
-                position: "absolute", bottom: 28, left: "50%",
-                transform: "translateX(-50%)",
+                position: "absolute", bottom: isZoomed ? 140 : 24, right: 16,
                 backgroundColor: "var(--bg-card)",
                 border: `1px solid ${GENRE_COLOR[focusedGenre] ?? "var(--border)"}55`,
                 borderRadius: 14, padding: "10px 16px",
@@ -1120,6 +1119,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 zIndex: 50, pointerEvents: "auto",
                 boxShadow: "0 8px 28px rgba(0,0,0,0.55)",
                 whiteSpace: "nowrap",
+                maxWidth: 240,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
