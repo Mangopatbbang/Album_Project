@@ -177,7 +177,7 @@ function artistMatch(star: StarPos, name: string): boolean {
 
 function dotRadius(score: number | undefined): number {
   if (score == null) return 3;
-  if (score >= 8) return 7;
+  if (score >= 8) return 8.5;
   if (score >= 7) return 5.5;
   if (score >= 6) return 4.5;
   return 3.5;
@@ -263,12 +263,15 @@ function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipL
     : 0;
 
   const glow = score == null ? "none"
-    : score >= 8 ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${10*iz}px ${color}cc, 0 0 ${26*iz}px ${color}55`
+    : score >= 8
+      ? `0 0 0 ${iz}px rgba(0,0,0,0.5), 0 0 ${4*iz}px white, 0 0 ${11*iz}px ${color}, 0 0 ${24*iz}px ${color}cc, 0 0 ${48*iz}px ${color}66, 0 0 ${80*iz}px ${color}28`
     : score >= 7 ? `0 0 0 ${iz}px var(--bg), 0 0 ${7*iz}px ${color}aa, 0 0 ${16*iz}px ${color}33`
     : score >= 6 ? `0 0 ${5*iz}px ${color}77`
     : "none";
 
-  const focusedGlow = `0 0 0 ${2*iz}px var(--bg), 0 0 ${14*iz}px ${color}ee, 0 0 ${32*iz}px ${color}88`;
+  const focusedGlow = score != null && score >= 8
+    ? `0 0 0 ${iz}px rgba(0,0,0,0.5), 0 0 ${5*iz}px white, 0 0 ${14*iz}px ${color}, 0 0 ${30*iz}px ${color}ee, 0 0 ${58*iz}px ${color}88`
+    : `0 0 0 ${2*iz}px var(--bg), 0 0 ${14*iz}px ${color}ee, 0 0 ${32*iz}px ${color}88`;
 
   const enter = (e: React.MouseEvent) => { if (!dimmed) { setHov(true); onTipEnter(ev, e.clientX, e.clientY); } };
   const leave = () => { setHov(false); onTipLeave(); };
@@ -293,13 +296,36 @@ function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipL
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
+          {/* 십자 스파이크 — score 8 전용 */}
+          {score != null && score >= 8 && (
+            <>
+              <div style={{
+                position: "absolute", pointerEvents: "none",
+                width: 32 * iz, height: 1.2 * iz,
+                left: "50%", top: "50%",
+                transform: "translate(-50%,-50%)",
+                background: `linear-gradient(to right, transparent, ${color}55, white, ${color}55, transparent)`,
+                animation: twinkleDuration > 0
+                  ? `csTwinkle ${twinkleDuration}s ${twinkleDelay}s ease-in-out infinite` : undefined,
+              }} />
+              <div style={{
+                position: "absolute", pointerEvents: "none",
+                width: 1.2 * iz, height: 32 * iz,
+                left: "50%", top: "50%",
+                transform: "translate(-50%,-50%)",
+                background: `linear-gradient(to bottom, transparent, ${color}55, white, ${color}55, transparent)`,
+                animation: twinkleDuration > 0
+                  ? `csTwinkle ${twinkleDuration}s ${twinkleDelay}s ease-in-out infinite` : undefined,
+              }} />
+            </>
+          )}
           <div style={{
             width: r * 2, height: r * 2, borderRadius: "50%",
-            backgroundColor: color,
-            border: score != null ? `${1.5 * iz}px solid var(--bg)` : "none",
+            backgroundColor: score != null && score >= 8 ? "white" : color,
+            border: score != null && score < 8 ? `${1.5 * iz}px solid var(--bg)` : "none",
             flexShrink: 0,
             boxShadow: hov
-              ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${16*iz}px ${color}ee, 0 0 ${30*iz}px ${color}66`
+              ? `0 0 0 ${iz}px rgba(0,0,0,0.4), 0 0 ${5*iz}px white, 0 0 ${18*iz}px ${color}ee, 0 0 ${36*iz}px ${color}88`
               : focused ? focusedGlow : glow,
             transform: hov ? "scale(1.7)" : focused ? "scale(1.35)" : "scale(1)",
             transition: "transform .13s ease, box-shadow .15s ease",
