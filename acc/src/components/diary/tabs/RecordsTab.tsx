@@ -163,7 +163,7 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
                     }}>
                       {e.albums?.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img loading="lazy" src={e.albums.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img loading="lazy" src={e.albums.cover_url} alt={e.albums.title ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 12 }}>♪</span>
                       }
                     </div>

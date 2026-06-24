@@ -220,7 +220,7 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
         maxWidth:220, minWidth:110, boxShadow:"0 12px 28px rgba(0,0,0,0.65)", backdropFilter:"blur(4px)" }}>
       {ev.album.cover_url && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img loading="lazy" src={ev.album.cover_url} alt="" style={{ width:32, height:32, borderRadius:5, objectFit:"cover", flexShrink:0 }} />
+        <img loading="lazy" src={ev.album.cover_url} alt={ev.album.title} style={{ width:32, height:32, borderRadius:5, objectFit:"cover", flexShrink:0 }} />
       )}
       <div style={{ minWidth:0, flex:1 }}>
         <p style={{ color:"var(--text)", fontSize:11, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.album.title}</p>

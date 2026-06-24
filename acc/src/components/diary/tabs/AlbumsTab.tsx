@@ -94,7 +94,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
             }}>
               {selectedGroup.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" src={selectedGroup.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img loading="lazy" src={selectedGroup.cover_url} alt={selectedGroup.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <span style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 22 }}>♪</span>
               }
             </div>
@@ -175,7 +175,7 @@ export default function AlbumsTab({ entries, onEdit, onDelete, isSample }: Props
             >
               {group.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" src={group.cover_url} alt="" className="group-hover:scale-[1.06]" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.35s ease" }} />
+                ? <img loading="lazy" src={group.cover_url} alt={group.title} className="group-hover:scale-[1.06]" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.35s ease" }} />
                 : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "var(--text-muted)", opacity: 0.3 }}>♪</div>
               }
               {group.count > 1 && (
