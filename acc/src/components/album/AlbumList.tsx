@@ -501,7 +501,13 @@ return (
         </div>
       ) : albums.length === 0 ? (
         <div className="text-center py-10 sm:py-20 flex flex-col items-center gap-3">
-          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>인연 닿는 음반이 없습니다</p>
+          <p style={{ fontSize: 28, marginBottom: 2 }}>♪</p>
+          <p style={{ color: "var(--text)", fontSize: 14, fontWeight: 600 }}>
+            {search ? `"${search}" 검색 결과가 없어요` : "아직 음반이 없어요"}
+          </p>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6, marginBottom: 4 }}>
+            {search ? "다른 검색어로 찾거나 직접 추가해보세요" : "필터를 바꾸거나 음반을 추가해보세요"}
+          </p>
           {search && profile && (
             <button
               onClick={() => setShowAddModal(true)}

@@ -225,12 +225,15 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
                   불러오지 못했어요. 잠시 후 다시 시도해주세요.
                 </div>
               ) : !items || items.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
-                  아직 좋아요 누른 곡이 없어요
+                <div style={{ textAlign: "center", padding: "48px 0" }}>
+                  <p style={{ fontSize: 24, marginBottom: 8 }}>♡</p>
+                  <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>아직 좋아요 누른 곡이 없어요</p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6 }}>앨범 모달에서 수록곡에<br />하트를 눌러보세요</p>
                 </div>
               ) : grouped.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
-                  검색 결과가 없어요
+                <div style={{ textAlign: "center", padding: "48px 0" }}>
+                  <p style={{ fontSize: 24, marginBottom: 8 }}>♪</p>
+                  <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>검색 결과가 없어요</p>
                 </div>
               ) : (
                 grouped.map((group) => (

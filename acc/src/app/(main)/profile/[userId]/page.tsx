@@ -672,7 +672,10 @@ export default async function ProfilePage({
               최근 한줄 소감
             </p>
             {recentReviews.length === 0 ? (
-              <p style={{ color: "var(--text-muted)", fontSize: 12, opacity: 0.5, fontStyle: "italic" }}>아직 한줄 소감이 없어요</p>
+              <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7 }}>
+                아직 한줄 소감이 없어요<br />
+                <span style={{ fontSize: 11, opacity: 0.6 }}>앨범 평가 시 100자 이내로 남길 수 있어요</span>
+              </p>
             ) : (
               <RecentReviewsSection items={recentReviews.map((r) => ({
                 id: r.albums!.id, title: r.albums!.title, artist: r.albums!.artist,

@@ -498,9 +498,11 @@ function RankedGrid({
 }) {
   if (list.length === 0) {
     return (
-      <p style={{ color: "var(--text-muted)", fontSize: 13, padding: "60px 0", textAlign: "center" }}>
-        해당 지역 청음 기록이 없습니다
-      </p>
+      <div style={{ textAlign: "center", padding: "60px 0" }}>
+        <p style={{ fontSize: 26, marginBottom: 10 }}>♪</p>
+        <p style={{ color: "var(--text)", fontSize: 14, fontWeight: 600, marginBottom: 6 }}>아직 청음 기록이 없어요</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6 }}>앨범을 평가하면<br />이 지역 명반 목록이 채워져요</p>
+      </div>
     );
   }
   const top10 = list.slice(0, 10);

@@ -17,9 +17,13 @@ export default function RecentAlbumsSection({ albums }: Props) {
 
   if (albums.length === 0) {
     return (
-      <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-        아직 청음 기록이 없어요
-      </p>
+      <div style={{ textAlign: "center", padding: "32px 0" }}>
+        <p style={{ fontSize: 24, marginBottom: 8 }}>♪</p>
+        <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>아직 청음 기록이 없어요</p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6 }}>
+          <Link href="/albums" style={{ color: "var(--accent)", fontWeight: 600 }}>음반고</Link>에서 앨범을 평가하면 여기에 쌓여요
+        </p>
+      </div>
     );
   }
 

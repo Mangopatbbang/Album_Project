@@ -232,7 +232,11 @@ export default function Header() {
                     </div>
                     <div style={{ maxHeight: "min(320px, 50dvh)", overflowY: "auto" }}>
                       {notifications.filter(n => n.type !== "comment").length === 0 ? (
-                        <p style={{ padding: "20px 16px", fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>새 알림이 없어요</p>
+                        <div style={{ padding: "28px 16px", textAlign: "center" }}>
+                          <p style={{ fontSize: 18, marginBottom: 6 }}>🔔</p>
+                          <p style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, marginBottom: 4 }}>새 알림이 없어요</p>
+                          <p style={{ fontSize: 11, color: "var(--text-muted)", opacity: 0.6, lineHeight: 1.5 }}>멤버가 소감에 공감하면<br />여기에 나타나요</p>
+                        </div>
                       ) : (
                         notifications.filter(n => n.type !== "comment").map((n) => {
                           const isSystemNotif = n.type !== "like";

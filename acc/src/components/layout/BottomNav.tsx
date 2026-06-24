@@ -172,9 +172,11 @@ export default function BottomNav() {
 
             {/* 알림 목록 */}
             {notifications.length === 0 ? (
-              <p style={{ padding: "28px 18px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
-                새 알림이 없어요
-              </p>
+              <div style={{ padding: "36px 18px", textAlign: "center" }}>
+                <p style={{ fontSize: 22, marginBottom: 8 }}>🔔</p>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600, marginBottom: 6 }}>새 알림이 없어요</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", opacity: 0.6, lineHeight: 1.6 }}>멤버가 소감에 공감하면<br />여기에 나타나요</p>
+              </div>
             ) : (
               notifications.map((n) => {
                 const isSystemNotif = n.type !== "comment" && n.type !== "like";

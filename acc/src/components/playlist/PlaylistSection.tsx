@@ -73,10 +73,12 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
 
       {playlists.length === 0 ? (
         <div style={{
-          border: "1px dashed var(--border)", borderRadius: 10, padding: "32px 24px",
-          textAlign: "center", color: "var(--text-muted)", fontSize: 13,
+          border: "1px dashed var(--border)", borderRadius: 10, padding: "40px 24px",
+          textAlign: "center",
         }}>
-          아직 청음집이 없습니다
+          <p style={{ fontSize: 24, marginBottom: 10 }}>♫</p>
+          <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>아직 청음집이 없어요</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6 }}>마음에 드는 앨범들을 모아<br />나만의 청음집을 만들어보세요</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

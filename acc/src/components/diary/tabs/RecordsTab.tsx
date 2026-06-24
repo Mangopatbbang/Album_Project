@@ -205,9 +205,11 @@ export default function RecordsTab({ entries, loading, onEdit, onDelete, onNewEn
 
         {/* 필터 결과 없음 */}
         {filtered.length === 0 && (
-          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "60px 0", opacity: 0.6 }}>
-            이달의 기록이 없어요
-          </p>
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <p style={{ fontSize: 22, marginBottom: 10 }}>📖</p>
+            <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>이달의 기록이 없어요</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6 }}>청음 후 일기를 남기면<br />월별로 모아볼 수 있어요</p>
+          </div>
         )}
 
         {/* 날짜별 엔트리 */}
