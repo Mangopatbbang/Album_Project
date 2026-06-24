@@ -166,7 +166,9 @@ export default function HomeWatchlistSection() {
           <p style={{ color: "var(--text-muted)", fontSize: 12, padding: "20px 0", textAlign: "center" }}>불러오는 중...</p>
         ) : items.length === 0 ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}>
+            <p style={{ fontSize: 18, marginBottom: 6 }}>🔖</p>
+            <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>아직 추가한 앨범이 없어요</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 11, lineHeight: 1.7, marginBottom: 12 }}>
               앨범 상세에서 🔖 탭하면<br />여기 쌓여요
             </p>
             <Link href="/albums" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600 }}>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AlbumWithRatings } from "@/types";
 import AlbumModal from "./AlbumModal";
 import ArtistModal from "./ArtistModal";
-import { glowShadow, glowBorder } from "@/lib/score";
+import { glowShadow, glowBorder, scoreColor } from "@/lib/score";
 
 type Props = {
   albums: AlbumWithRatings[];
@@ -66,7 +66,7 @@ export default function RecentAlbumsSection({ albums }: Props) {
                     className="hover:underline"
                   >{album.artist_display ?? album.artist}</span>
                 </p>
-                <p style={{ color: "var(--accent)", visibility: avg ? "visible" : "hidden" }} className="text-xs mt-2 font-medium">
+                <p style={{ color: avg ? scoreColor(Number(avg)) : "var(--accent)", visibility: avg ? "visible" : "hidden" }} className="text-xs mt-2 font-medium">
                   ★ {avg}
                 </p>
               </div>
