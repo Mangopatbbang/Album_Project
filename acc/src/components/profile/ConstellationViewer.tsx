@@ -385,8 +385,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
   const [focusedGenre, setFocusedGenre] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [scoreFilter, setScoreFilter] = useState<number | null>(null);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const prevFocusedArtistRef = useRef<string | null>(null);
@@ -612,7 +611,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       if (e.key === "Escape") {
         if (focusedArtist) { setFocusedArtist(null); return; }
         if (focusedGenre) { setFocusedGenre(null); return; }
-        if (searchQuery) { setSearchQuery(""); setSearchOpen(false); return; }
+        if (scoreFilter !== null) { setScoreFilter(null); return; }
         onClose(); return;
       }
       if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.4); }
@@ -621,7 +620,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     };
     document.addEventListener("keydown", fn);
     return () => document.removeEventListener("keydown", fn);
-  }, [zoomStep, resetZoom, focusedArtist, focusedGenre, searchQuery, onClose]);
+  }, [zoomStep, resetZoom, focusedArtist, focusedGenre, scoreFilter, onClose]);
 
   const { stars, clouds } = useMemo(
     () => events?.length ? computeLayout(events) : { stars: [], clouds: [] },
@@ -670,6 +669,28 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     }
     prevFocusedArtistRef.current = focusedArtist;
   }, [focusedArtist]);
+
+  // Genre focus → auto-zoom to fit all genre stars
+  useEffect(() => {
+    if (!focusedGenre) return;
+    const genreStars = stars.filter(s => s.genre === focusedGenre);
+    if (genreStars.length === 0) return;
+    const vpW = vpWRef.current, vpH = vpHRef.current;
+    if (!vpW || !vpH) return;
+    const xs = genreStars.map(s => s.x), ys = genreStars.map(s => s.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const PAD = 260;
+    const bw = (maxX - minX) + PAD * 2, bh = (maxY - minY) + PAD * 2;
+    const nz = Math.max(fitZoomRef.current * 1.2, Math.min(5, Math.min(vpW / bw, vpH / bh) * 0.85));
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const px = vpW / 2 - cx * nz, py = vpH / 2 - cy * nz;
+    cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
+    setIsAnimating(true);
+    setCssZoom(nz); setPanX(px); setPanY(py);
+    const t = setTimeout(() => setIsAnimating(false), 480);
+    return () => clearTimeout(t);
+  }, [focusedGenre, stars]);
 
   // Constellation lines — grouped by artist matching 음반고 discography logic:
   // main artist OR any token in extra_artists (semicolon-separated)
@@ -727,17 +748,6 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return ys.length ? { min: Math.min(...ys), max: Math.max(...ys) } : null;
   }, [events]);
 
-  // Search results — Set of matching albumIds
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return null;
-    return new Set(
-      stars.filter(s =>
-        s.ev.album.title.toLowerCase().includes(q) ||
-        (s.ev.album.artist_display ?? s.ev.album.artist).toLowerCase().includes(q)
-      ).map(s => s.albumId)
-    );
-  }, [stars, searchQuery]);
 
   // Visibility culling
   const margin = 80 / cssZoom;
@@ -769,6 +779,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     } else {
       setFocusedArtist(ev.album.artist);
       setFocusedGenre(null);
+      setScoreFilter(null);
     }
   }, [focusedArtist]);
 
@@ -814,33 +825,6 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               </button>
             );
           })}
-        </div>
-
-        {/* Search */}
-        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-          {searchOpen ? (
-            <input
-              autoFocus
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="앨범·아티스트"
-              onKeyDown={e => { if (e.key === "Escape") { setSearchQuery(""); setSearchOpen(false); } }}
-              style={{
-                width: 130, fontSize: 11, padding: "4px 8px",
-                backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                borderRadius: 6, color: "var(--text)", fontFamily: "inherit",
-                outline: "none",
-              }}
-            />
-          ) : (
-            <button
-              onClick={() => setSearchOpen(true)}
-              style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, fontFamily: "inherit" }}
-            >
-              검색
-            </button>
-          )}
         </div>
 
         {cssZoom > 0 && (
@@ -922,25 +906,33 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               );
             }))}
 
-            {/* Genre labels */}
+            {/* Genre labels — clickable for auto-zoom */}
             {clouds.map(c => {
               const labelR = INNER_R + (OUTER_R - INNER_R) * 0.7;
               const lx = CX + Math.cos(c.midAngle) * labelR;
               const ly = CY + Math.sin(c.midAngle) * labelR;
+              const isActive = focusedGenre === c.genre;
               return (
-                <div key={`lbl-${c.genre}`} style={{
-                  position: "absolute",
-                  left: lx, top: ly,
-                  transform: "translate(-50%,-50%)",
-                  fontSize: 11 / cssZoom,
-                  fontWeight: 700,
-                  color: c.color,
-                  opacity: 0.28,
-                  pointerEvents: "none",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                }}>
+                <div
+                  key={`lbl-${c.genre}`}
+                  onClick={e => { e.stopPropagation(); setFocusedGenre(isActive ? null : c.genre); setFocusedArtist(null); setScoreFilter(null); }}
+                  style={{
+                    position: "absolute",
+                    left: lx, top: ly,
+                    transform: "translate(-50%,-50%)",
+                    fontSize: 11 / cssZoom,
+                    fontWeight: 700,
+                    color: c.color,
+                    opacity: isActive ? 0.85 : 0.28,
+                    pointerEvents: "auto",
+                    whiteSpace: "nowrap",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    transition: "opacity 0.2s",
+                    userSelect: "none",
+                  }}
+                >
                   {c.genre}
                 </div>
               );
@@ -987,8 +979,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 ? !isFocused
                 : focusedGenre !== null
                   ? star.genre !== focusedGenre
-                  : searchResults !== null
-                    ? !searchResults.has(star.albumId)
+                  : scoreFilter !== null
+                    ? star.ev.score !== scoreFilter
                     : false;
               const starCs = isFocused ? Math.max(cs, 46 / cssZoom) : cs;
               return (
@@ -1010,6 +1002,35 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           <p style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 9, color: "var(--text-muted)", opacity: 0.25, pointerEvents: "none", whiteSpace: "nowrap" }}>
             스크롤·핀치·Ctrl+휠 확대 · 드래그 패닝
           </p>
+        )}
+
+        {/* Score filter — 1~8 pill row */}
+        {events && events.length > 0 && (
+          <div style={{ position: "absolute", bottom: 16, left: 16, display: "flex", gap: 4, zIndex: 30 }}>
+            {([1,2,3,4,5,6,7,8] as const).map(s => {
+              const c = scoreColor(s);
+              const active = scoreFilter === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => { setScoreFilter(active ? null : s); setFocusedArtist(null); setFocusedGenre(null); }}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", padding: 0,
+                    backgroundColor: active ? c : "rgba(0,0,0,0.45)",
+                    border: `1.5px solid ${c}`,
+                    color: active ? "var(--bg)" : c,
+                    fontSize: 9, fontWeight: 800, cursor: "pointer",
+                    fontFamily: "inherit",
+                    opacity: scoreFilter !== null && !active ? 0.35 : 1,
+                    transition: "all 0.15s",
+                    boxShadow: active ? `0 0 8px ${c}88` : "none",
+                  }}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {/* Mini-map */}
