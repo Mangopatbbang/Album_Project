@@ -442,34 +442,23 @@ function RankedTile({
       className={`${wrapClass} transition-transform active:scale-[0.93]`}
       onClick={() => onAlbumClick(album)}
     >
-      <div style={{ position: "relative", ...(rank === 1 && { marginRight: 6, marginBottom: 6 }) }}>
-        {rank === 1 && (
-          <div style={{
-            position: "absolute",
-            top: 6, left: 6, right: -6, bottom: -6,
-            border: `1px solid ${scoreColor(album.avg)}`,
-            borderRadius: 6,
-          }} />
-        )}
-        <div
-          style={{
-            borderRadius: 6, overflow: "hidden",
-            backgroundColor: "var(--bg-elevated)",
-            border: `1px solid ${glowBorder(album.avg)}`,
-            boxShadow: glowShadow(album.avg),
-            transition: "opacity 0.15s",
-            ...(rank === 1 && { position: "relative", zIndex: 1 }),
-          }}
-          className={`${coverClass} transition-opacity hover:opacity-80`}
-        >
-          {album.cover_url
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
-              </div>
-          }
-        </div>
+      <div
+        style={{
+          borderRadius: 6, overflow: "hidden",
+          backgroundColor: "var(--bg-elevated)",
+          border: `1px solid ${glowBorder(album.avg)}`,
+          boxShadow: glowShadow(album.avg),
+          transition: "opacity 0.15s",
+        }}
+        className={`${coverClass} transition-opacity hover:opacity-80`}
+      >
+        {album.cover_url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 20, color: "var(--text-muted)" }}>♪</span>
+            </div>
+        }
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
         <span style={{ fontSize: isMedal ? 14 : 10, fontWeight: 700, flexShrink: 0, lineHeight: 1 }}>
