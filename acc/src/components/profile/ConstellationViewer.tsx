@@ -423,6 +423,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [focusedGenre, setFocusedGenre] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [scoreFilter, setScoreFilter] = useState<number | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+  const [tourIdx, setTourIdx] = useState<number | null>(null);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const prevFocusedArtistRef = useRef<string | null>(null);
@@ -785,6 +788,122 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return ys.length ? { min: Math.min(...ys), max: Math.max(...ys) } : null;
   }, [events]);
 
+  // Tour artists — sorted by album count desc
+  const tourArtists = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of stars) map.set(s.ev.album.artist, (map.get(s.ev.album.artist) ?? 0) + 1);
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([a]) => a);
+  }, [stars]);
+
+  // Stats for overlay
+  const stats = useMemo(() => {
+    if (!stars.length) return null;
+    const genreMap = new Map<string, number>();
+    const scoreMap = new Map<number, number>();
+    const yearMap = new Map<number, number>();
+    const artistSet = new Set<string>();
+    for (const s of stars) {
+      genreMap.set(s.genre, (genreMap.get(s.genre) ?? 0) + 1);
+      artistSet.add(s.ev.album.artist);
+      if (s.ev.score != null) scoreMap.set(s.ev.score, (scoreMap.get(s.ev.score) ?? 0) + 1);
+      const y = parseInt(s.ev.album.release_date?.slice(0, 4) ?? "");
+      if (y > 1900) yearMap.set(y, (yearMap.get(y) ?? 0) + 1);
+    }
+    const scored = stars.filter(s => s.ev.score != null);
+    const avgScore = scored.length ? (scored.reduce((a, s) => a + (s.ev.score ?? 0), 0) / scored.length).toFixed(1) : null;
+    const genres = [...genreMap.entries()].sort((a, b) => b[1] - a[1]);
+    const yearEntries = [...yearMap.entries()].sort((a, b) => a[0] - b[0]);
+    const maxYearCount = Math.max(...yearEntries.map(([, c]) => c), 1);
+    return { total: stars.length, artists: artistSet.size, genres, scoreMap, yearEntries, maxYearCount, avgScore };
+  }, [stars]);
+
+  // Tour mode — auto-advance every 3.8s
+  useEffect(() => {
+    if (!tourActive || tourArtists.length === 0) return;
+    const t = setTimeout(() => {
+      setTourIdx(prev => {
+        const next = ((prev ?? -1) + 1) % tourArtists.length;
+        setFocusedArtist(tourArtists[next]);
+        setFocusedGenre(null); setScoreFilter(null);
+        return next;
+      });
+    }, 3800);
+    return () => clearTimeout(t);
+  }, [tourActive, tourIdx, tourArtists]);
+
+  const startTour = useCallback(() => {
+    if (!tourArtists.length) return;
+    setTourActive(true); setTourIdx(0);
+    setFocusedArtist(tourArtists[0]);
+    setFocusedGenre(null); setScoreFilter(null);
+  }, [tourArtists]);
+
+  const stopTour = useCallback(() => {
+    setTourActive(false); setTourIdx(null);
+  }, []);
+
+  // Canvas export (PNG)
+  const handleExport = useCallback(() => {
+    if (!stars.length) return;
+    const SIZE = 1080;
+    const cv = document.createElement("canvas");
+    cv.width = SIZE; cv.height = SIZE;
+    const ctx = cv.getContext("2d"); if (!ctx) return;
+    ctx.fillStyle = "#080710"; ctx.fillRect(0, 0, SIZE, SIZE);
+    const xs = stars.map(s => s.x), ys = stars.map(s => s.y);
+    const mnX = Math.min(...xs), mxX = Math.max(...xs);
+    const mnY = Math.min(...ys), mxY = Math.max(...ys);
+    const pad = 80;
+    const sc = Math.min((SIZE - pad * 2) / (mxX - mnX), (SIZE - pad * 2) / (mxY - mnY));
+    const ox = (SIZE - (mxX - mnX) * sc) / 2 - mnX * sc;
+    const oy = (SIZE - (mxY - mnY) * sc) / 2 - mnY * sc;
+    const tx2 = (x: number) => x * sc + ox, ty2 = (y: number) => y * sc + oy;
+    for (const b of bgStars) {
+      ctx.globalAlpha = b.op * 0.7;
+      ctx.fillStyle = "white";
+      ctx.beginPath(); ctx.arc(tx2(b.x), ty2(b.y), b.r * sc, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.lineWidth = 0.7; ctx.lineCap = "round";
+    for (const l of lines) {
+      const dxl = l.x2 - l.x1, dyl = l.y2 - l.y1;
+      const side = (l.artist.charCodeAt(0) % 2 === 0) ? 1 : -1;
+      const cpx = tx2((l.x1 + l.x2) / 2 - dyl * 0.12 * side);
+      const cpy = ty2((l.y1 + l.y2) / 2 + dxl * 0.12 * side);
+      ctx.globalAlpha = 0.15; ctx.strokeStyle = l.color;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath(); ctx.moveTo(tx2(l.x1), ty2(l.y1));
+      ctx.quadraticCurveTo(cpx, cpy, tx2(l.x2), ty2(l.y2)); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    for (const s of stars) {
+      const r = dotRadius(s.ev.score) * sc;
+      const c = s.ev.score != null ? scoreColor(s.ev.score) : "rgba(255,255,255,0.4)";
+      if (s.ev.score != null && s.ev.score >= 8) {
+        const grd = ctx.createRadialGradient(tx2(s.x), ty2(s.y), 0, tx2(s.x), ty2(s.y), r * 7);
+        grd.addColorStop(0, "white"); grd.addColorStop(0.25, c); grd.addColorStop(1, "transparent");
+        ctx.globalAlpha = 0.75; ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(tx2(s.x), ty2(s.y), r * 7, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1; ctx.fillStyle = "white";
+      } else {
+        ctx.globalAlpha = 1; ctx.fillStyle = c;
+      }
+      ctx.beginPath(); ctx.arc(tx2(s.x), ty2(s.y), Math.max(r, 1), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 0.65; ctx.fillStyle = "white";
+    ctx.font = `bold ${Math.round(SIZE * 0.022)}px -apple-system,sans-serif`;
+    ctx.textAlign = "left";
+    ctx.fillText("나의 청음 별자리", pad, SIZE - pad - 22);
+    ctx.font = `${Math.round(SIZE * 0.016)}px -apple-system,sans-serif`;
+    ctx.globalAlpha = 0.38;
+    ctx.fillText(`${stars.length}장${yearRange ? ` · ${yearRange.min}–${yearRange.max}` : ""}`, pad, SIZE - pad + 4);
+    cv.toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url;
+      a.download = `내별자리_${new Date().toISOString().slice(0, 10)}.png`;
+      a.click(); URL.revokeObjectURL(url);
+    });
+  }, [stars, lines, bgStars, yearRange]);
 
   // Visibility culling
   const margin = 80 / cssZoom;
@@ -826,7 +945,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         @keyframes csIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
         @keyframes csTwinkle { 0%,100% { opacity:1; } 50% { opacity:0.42; } }
         @keyframes csCoverIn { from { opacity:0; transform:scale(0.62); } to { opacity:1; transform:scale(1); } }
-        @keyframes csLineIn { from { stroke-dashoffset: var(--csLD, 9999); } to { stroke-dashoffset: 0; } }
+        @keyframes csLineIn { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
       `}</style>
 
       {/* ── Header ── */}
@@ -863,6 +982,45 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             );
           })}
         </div>
+
+        {/* Action buttons */}
+        {events && events.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+            <button
+              onClick={() => { setShowStats(v => !v); }}
+              title="통계"
+              style={{
+                height: 24, padding: "0 8px", borderRadius: 5, fontSize: 9, fontWeight: 700,
+                backgroundColor: showStats ? "var(--accent)" : "var(--bg-elevated)",
+                border: "1px solid var(--border)", color: showStats ? "var(--bg)" : "var(--text-muted)",
+                cursor: "pointer", fontFamily: "inherit", letterSpacing: "0.02em",
+                transition: "all 0.15s",
+              }}
+            >통계</button>
+            <button
+              onClick={() => tourActive ? stopTour() : startTour()}
+              title="아티스트 투어"
+              style={{
+                height: 24, padding: "0 8px", borderRadius: 5, fontSize: 9, fontWeight: 700,
+                backgroundColor: tourActive ? "#7c3aed" : "var(--bg-elevated)",
+                border: `1px solid ${tourActive ? "#7c3aed" : "var(--border)"}`,
+                color: tourActive ? "white" : "var(--text-muted)",
+                cursor: "pointer", fontFamily: "inherit",
+                transition: "all 0.15s",
+              }}
+            >{tourActive ? "■ 투어" : "▶ 투어"}</button>
+            <button
+              onClick={handleExport}
+              title="PNG 저장"
+              style={{
+                height: 24, padding: "0 8px", borderRadius: 5, fontSize: 9, fontWeight: 700,
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border)", color: "var(--text-muted)",
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >↓ 저장</button>
+          </div>
+        )}
 
         {cssZoom > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
@@ -924,6 +1082,27 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               ))}
             </svg>
 
+            {/* Milky Way — subtle diagonal gradient blobs */}
+            {[
+              { x: 400, y: 2600, rx: 900, ry: 320, rot: -38 },
+              { x: 1100, y: 1900, rx: 700, ry: 260, rot: -36 },
+              { x: 1700, y: 1300, rx: 800, ry: 280, rot: -34 },
+              { x: 2300, y: 700,  rx: 650, ry: 220, rot: -32 },
+              { x: 2800, y: 300,  rx: 500, ry: 180, rot: -30 },
+            ].map((b, i) => (
+              <div key={`mw-${i}`} style={{
+                position: "absolute",
+                left: b.x - b.rx, top: b.y - b.ry,
+                width: b.rx * 2, height: b.ry * 2,
+                borderRadius: "50%",
+                background: "radial-gradient(ellipse, rgba(200,210,255,0.035) 0%, rgba(180,195,255,0.018) 45%, transparent 75%)",
+                filter: "blur(48px)",
+                transform: `rotate(${b.rot}deg)`,
+                transformOrigin: "center",
+                pointerEvents: "none",
+              }} />
+            ))}
+
             {/* Nebula clouds — two circles per genre for inner+outer sector coverage */}
             {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
               const nr = INNER_R + (OUTER_R - INNER_R) * frac;
@@ -975,38 +1154,53 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               );
             })}
 
-            {/* Constellation lines — glow halo + crisp main line */}
+            {/* Constellation lines — curved bezier, stagger draw-in on artist focus */}
             <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
-              {lines.map((l, i) => {
-                const isFocused = focusedArtist === l.artist;
-                const inFocusMode = focusedArtist !== null;
-                const lineLen = Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
-                return (
-                  <g key={i}>
-                    {/* Glow halo — draw-in animation on focus */}
-                    {isFocused && (
-                      <line
-                        x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+              {(() => {
+                const artistLineIdx = new Map<string, number>();
+                return lines.map((l, i) => {
+                  const isFocused = focusedArtist === l.artist;
+                  const inFocusMode = focusedArtist !== null;
+                  const dx = l.x2 - l.x1, dy = l.y2 - l.y1;
+                  const curveSide = (l.artist.charCodeAt(0) % 2 === 0) ? 1 : -1;
+                  const cpx = (l.x1 + l.x2) / 2 - dy * 0.12 * curveSide;
+                  const cpy = (l.y1 + l.y2) / 2 + dx * 0.12 * curveSide;
+                  const pathD = `M${l.x1},${l.y1} Q${cpx},${cpy} ${l.x2},${l.y2}`;
+                  const lineIdx = isFocused ? (() => {
+                    const cur = artistLineIdx.get(l.artist) ?? 0;
+                    artistLineIdx.set(l.artist, cur + 1);
+                    return cur;
+                  })() : 0;
+                  const staggerDelay = lineIdx * 0.09;
+                  return (
+                    <g key={i}>
+                      {isFocused && (
+                        <path
+                          d={pathD} fill="none"
+                          stroke={l.color}
+                          strokeWidth={5 / cssZoom}
+                          strokeOpacity={0.18}
+                          strokeLinecap="round"
+                          pathLength={1}
+                          strokeDasharray={1}
+                          style={{ animation: `csLineIn 0.48s ${staggerDelay}s ease forwards`, strokeDashoffset: 1 } as React.CSSProperties}
+                        />
+                      )}
+                      <path
+                        d={pathD} fill="none"
                         stroke={l.color}
-                        strokeWidth={5 / cssZoom}
-                        strokeOpacity={0.18}
+                        strokeWidth={isFocused ? 1.1 / cssZoom : 0.8 / cssZoom}
+                        strokeOpacity={inFocusMode ? (isFocused ? 0.62 : 0.02) : 0.12}
                         strokeLinecap="round"
-                        strokeDasharray={lineLen}
-                        style={{ "--csLD": String(lineLen), animation: "csLineIn 0.52s ease forwards" } as React.CSSProperties}
+                        strokeDasharray={inFocusMode ? undefined : `${4 / cssZoom} ${5.5 / cssZoom}`}
+                        pathLength={isFocused ? 1 : undefined}
+                        strokeDashoffset={isFocused ? undefined : undefined}
+                        style={isFocused ? { animation: `csLineIn 0.48s ${staggerDelay}s ease forwards`, strokeDashoffset: 1 } as React.CSSProperties : undefined}
                       />
-                    )}
-                    {/* Main line */}
-                    <line
-                      x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-                      stroke={l.color}
-                      strokeWidth={isFocused ? 1.1 / cssZoom : 0.8 / cssZoom}
-                      strokeOpacity={inFocusMode ? (isFocused ? 0.62 : 0.02) : 0.12}
-                      strokeLinecap="round"
-                      strokeDasharray={inFocusMode ? undefined : `${4 / cssZoom} ${5.5 / cssZoom}`}
-                    />
-                  </g>
-                );
-              })}
+                    </g>
+                  );
+                });
+              })()}
             </svg>
 
             {/* Stars */}
@@ -1163,6 +1357,154 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               >
                 ×
               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tour control bar */}
+        <AnimatePresence>
+          {tourActive && tourIdx !== null && (
+            <motion.div
+              key="tour-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+                backgroundColor: "rgba(0,0,0,0.72)",
+                border: "1px solid #7c3aed55",
+                borderRadius: 20, padding: "5px 12px",
+                display: "flex", alignItems: "center", gap: 8,
+                zIndex: 60, pointerEvents: "auto",
+                backdropFilter: "blur(8px)",
+                boxShadow: "0 4px 16px rgba(124,58,237,0.25)",
+              }}
+            >
+              <button
+                onClick={() => {
+                  const prev = ((tourIdx - 1) + tourArtists.length) % tourArtists.length;
+                  setTourIdx(prev); setFocusedArtist(tourArtists[prev]);
+                }}
+                style={{ background: "none", border: "none", color: "#a78bfa", cursor: "pointer", fontSize: 12, padding: "0 2px", fontFamily: "inherit" }}
+              >◀</button>
+              <span style={{ fontSize: 10, color: "#e9d5ff", fontWeight: 600, minWidth: 120, textAlign: "center" }}>
+                {focusedArtist} <span style={{ opacity: 0.5 }}>· {tourIdx + 1}/{tourArtists.length}</span>
+              </span>
+              <button
+                onClick={() => {
+                  const next = (tourIdx + 1) % tourArtists.length;
+                  setTourIdx(next); setFocusedArtist(tourArtists[next]);
+                }}
+                style={{ background: "none", border: "none", color: "#a78bfa", cursor: "pointer", fontSize: 12, padding: "0 2px", fontFamily: "inherit" }}
+              >▶</button>
+              <button
+                onClick={stopTour}
+                style={{ background: "none", border: "none", color: "#a78bfa", cursor: "pointer", fontSize: 12, padding: "0 2px", fontFamily: "inherit" }}
+              >■</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stats overlay */}
+        <AnimatePresence>
+          {showStats && stats && (
+            <motion.div
+              key="stats-overlay"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: "absolute", top: 12, left: 12,
+                backgroundColor: "rgba(8,7,16,0.88)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 14, padding: "14px 16px",
+                zIndex: 55, pointerEvents: "auto",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 8px 28px rgba(0,0,0,0.6)",
+                minWidth: 200, maxWidth: 220,
+              }}
+            >
+              {/* Summary row */}
+              <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                {[
+                  { label: "앨범", value: stats.total },
+                  { label: "아티스트", value: stats.artists },
+                  { label: "장르", value: stats.genres.length },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ textAlign: "center" }}>
+                    <p style={{ color: "var(--text)", fontSize: 15, fontWeight: 800, lineHeight: 1 }}>{value}</p>
+                    <p style={{ color: "var(--text-muted)", fontSize: 9, marginTop: 2 }}>{label}</p>
+                  </div>
+                ))}
+                {stats.avgScore && (
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ color: scoreColor(parseFloat(stats.avgScore)), fontSize: 15, fontWeight: 800, lineHeight: 1 }}>{stats.avgScore}</p>
+                    <p style={{ color: "var(--text-muted)", fontSize: 9, marginTop: 2 }}>평균점수</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Genre bar chart */}
+              <p style={{ color: "var(--text-muted)", fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 5 }}>장르</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                {stats.genres.slice(0, 6).map(([genre, count]) => {
+                  const pct = count / stats.total;
+                  const c = GENRE_COLOR[genre] ?? "rgba(255,255,255,0.4)";
+                  return (
+                    <div key={genre} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <span style={{ fontSize: 8, color: c, minWidth: 56, opacity: 0.85, fontWeight: 600 }}>{genre}</span>
+                      <div style={{ flex: 1, height: 4, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ width: `${pct * 100}%`, height: "100%", backgroundColor: c, borderRadius: 2, opacity: 0.75 }} />
+                      </div>
+                      <span style={{ fontSize: 8, color: "var(--text-muted)", minWidth: 14, textAlign: "right" }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Score distribution */}
+              <p style={{ color: "var(--text-muted)", fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", marginTop: 10, marginBottom: 5 }}>점수 분포</p>
+              <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 28 }}>
+                {[1,2,3,4,5,6,7,8].map(s => {
+                  const cnt = stats.scoreMap.get(s) ?? 0;
+                  const maxCnt = Math.max(...[1,2,3,4,5,6,7,8].map(x => stats.scoreMap.get(x) ?? 0), 1);
+                  const h = cnt > 0 ? Math.max(4, cnt / maxCnt * 28) : 0;
+                  const c = scoreColor(s);
+                  return (
+                    <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                      <div style={{ width: "100%", height: h, backgroundColor: c, opacity: 0.75, borderRadius: 2, transition: "height 0.3s" }} />
+                      <span style={{ fontSize: 7, color: "var(--text-muted)", opacity: 0.5 }}>{s}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Year histogram */}
+              {stats.yearEntries.length > 1 && (
+                <>
+                  <p style={{ color: "var(--text-muted)", fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", marginTop: 10, marginBottom: 5 }}>연도 분포</p>
+                  <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 24 }}>
+                    {stats.yearEntries.map(([year, cnt]) => {
+                      const h = Math.max(2, cnt / stats.maxYearCount * 24);
+                      return (
+                        <div key={year} style={{ flex: 1, height: h, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 1 }}
+                          title={`${year}: ${cnt}장`} />
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+                    <span style={{ fontSize: 7, color: "var(--text-muted)", opacity: 0.45 }}>{stats.yearEntries[0]?.[0]}</span>
+                    <span style={{ fontSize: 7, color: "var(--text-muted)", opacity: 0.45 }}>{stats.yearEntries[stats.yearEntries.length - 1]?.[0]}</span>
+                  </div>
+                </>
+              )}
+
+              <button
+                onClick={() => setShowStats(false)}
+                style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", color: "var(--text-muted)", fontSize: 16, cursor: "pointer", lineHeight: 1, fontFamily: "inherit" }}
+              >×</button>
             </motion.div>
           )}
         </AnimatePresence>
