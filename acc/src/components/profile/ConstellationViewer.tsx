@@ -217,8 +217,9 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
 
 // ─── Star ─────────────────────────────────────────────────────────────────────
 
-function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
+function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onTipLeave }: {
   star: StarPos; cs: number; cssZoom: number;
+  focusMode: boolean; focused: boolean;
   onSelect: (ev: TimelineEvent) => void;
   onTipEnter: (ev: TimelineEvent, mx: number, my: number) => void;
   onTipLeave: () => void;
@@ -230,6 +231,7 @@ function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
   const r = dotRadius(score);
   const iz = 1 / cssZoom;
   const isDot = cs === 0;
+  const dimmed = focusMode && !focused;
 
   const glow = score == null ? "none"
     : score >= 8 ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${10*iz}px ${color}cc, 0 0 ${26*iz}px ${color}55`
@@ -237,7 +239,9 @@ function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
     : score >= 6 ? `0 0 ${5*iz}px ${color}77`
     : "none";
 
-  const enter = (e: React.MouseEvent) => { setHov(true); onTipEnter(ev, e.clientX, e.clientY); };
+  const focusedGlow = `0 0 0 ${2*iz}px var(--bg), 0 0 ${14*iz}px ${color}ee, 0 0 ${32*iz}px ${color}88`;
+
+  const enter = (e: React.MouseEvent) => { if (!dimmed) { setHov(true); onTipEnter(ev, e.clientX, e.clientY); } };
   const leave = () => { setHov(false); onTipLeave(); };
 
   return (
@@ -245,6 +249,9 @@ function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
       position: "absolute", left: star.x, top: star.y,
       transform: "translate(-50%,-50%)",
       zIndex: hov ? 40 : (score ?? 2),
+      opacity: dimmed ? 0.08 : 1,
+      transition: "opacity 0.28s ease",
+      pointerEvents: dimmed ? "none" : "auto",
     }}>
       {isDot ? (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave} style={{
@@ -252,8 +259,10 @@ function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
           backgroundColor: color,
           border: score != null ? `${1.5 * iz}px solid var(--bg)` : "none",
           padding: 0, cursor: "pointer",
-          boxShadow: hov ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${16*iz}px ${color}ee, 0 0 ${30*iz}px ${color}66` : glow,
-          transform: hov ? "scale(1.7)" : "scale(1)",
+          boxShadow: hov
+            ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${16*iz}px ${color}ee, 0 0 ${30*iz}px ${color}66`
+            : focused ? focusedGlow : glow,
+          transform: hov ? "scale(1.7)" : focused ? "scale(1.35)" : "scale(1)",
           transition: "transform .13s ease, box-shadow .15s ease",
         }} />
       ) : (
@@ -264,12 +273,14 @@ function Star({ star, cs, cssZoom, onSelect, onTipEnter, onTipLeave }: {
           borderRadius: Math.round(cs * 0.15),
           outline: hov
             ? `${2.5 * iz}px solid ${color}`
+            : focused ? `${1.5 * iz}px solid ${color}cc`
             : score && score >= 7 ? `${iz}px solid ${color}55` : "none",
           outlineOffset: 2 * iz,
           boxShadow: hov
             ? `0 ${8*iz}px ${28*iz}px rgba(0,0,0,.72), 0 0 ${20*iz}px ${color}bb`
+            : focused ? `0 ${6*iz}px ${22*iz}px rgba(0,0,0,.65), 0 0 ${18*iz}px ${color}99`
             : glow,
-          transform: hov ? "scale(1.12)" : "scale(1)",
+          transform: hov ? "scale(1.12)" : focused ? "scale(1.1)" : "scale(1)",
           transition: "transform .13s ease, box-shadow .14s ease",
         }}>
           {ev.album.cover_url
@@ -296,6 +307,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [tooltip, setTooltip] = useState<{ ev: TimelineEvent; mx: number; my: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fitZoom, setFitZoom] = useState(1);
+  const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const cssZoomRef = useRef(1);
@@ -319,17 +331,14 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   }, [userId]);
 
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", esc);
     document.body.style.overflow = "hidden";
     const blockPinch = (e: WheelEvent) => { if (e.ctrlKey || e.metaKey) e.preventDefault(); };
     document.addEventListener("wheel", blockPinch, { passive: false });
     return () => {
-      document.removeEventListener("keydown", esc);
       document.removeEventListener("wheel", blockPinch);
       document.body.style.overflow = "";
     };
-  }, [onClose]);
+  }, []);
 
   const initView = useCallback(() => {
     const vp = vpRef.current; if (!vp) return;
@@ -503,13 +512,14 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { if (focusedArtist) setFocusedArtist(null); else onClose(); return; }
       if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.4); }
       if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomStep(1 / 1.4); }
       if (e.key === "0") { e.preventDefault(); resetZoom(); }
     };
     document.addEventListener("keydown", fn);
     return () => document.removeEventListener("keydown", fn);
-  }, [zoomStep, resetZoom]);
+  }, [zoomStep, resetZoom, focusedArtist, onClose]);
 
   const { stars, clouds } = useMemo(
     () => events?.length ? computeLayout(events) : { stars: [], clouds: [] },
@@ -524,8 +534,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       arr.push(s);
       byArtist.set(s.ev.album.artist, arr);
     }
-    const result: { x1: number; y1: number; x2: number; y2: number; color: string }[] = [];
-    for (const group of byArtist.values()) {
+    const result: { x1: number; y1: number; x2: number; y2: number; color: string; artist: string }[] = [];
+    for (const [artist, group] of byArtist) {
       if (group.length < 2) continue;
       const sorted = [...group].sort((a, b) =>
         parseInt(a.ev.album.release_date?.slice(0, 4) ?? "2000") -
@@ -533,7 +543,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       );
       const color = GENRE_COLOR[sorted[0].genre] ?? "rgba(255,255,255,0.2)";
       for (let i = 0; i < sorted.length - 1; i++) {
-        result.push({ x1: sorted[i].x, y1: sorted[i].y, x2: sorted[i+1].x, y2: sorted[i+1].y, color });
+        result.push({ x1: sorted[i].x, y1: sorted[i].y, x2: sorted[i+1].x, y2: sorted[i+1].y, color, artist });
       }
     }
     return result;
@@ -555,16 +565,22 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const isZoomed = cssZoom > fitZoom * 1.1;
   const cloudsSorted = useMemo(() => [...clouds].sort((a, b) => b.count - a.count), [clouds]);
 
-  const handleSelect = useCallback((ev: TimelineEvent) => {
+  const handleStarClick = useCallback((ev: TimelineEvent) => {
     setTooltip(null);
-    setSelected({
-      id: ev.album.id, title: ev.album.title,
-      artist: ev.album.artist_display ?? ev.album.artist,
-      cover_url: ev.album.cover_url ?? undefined,
-      genre: ev.album.genre ?? undefined,
-      ratings: [],
-    } as AlbumWithRatings);
-  }, []);
+    if (focusedArtist === ev.album.artist) {
+      // 이미 이 아티스트에 포커스된 상태 → 모달 오픈
+      setSelected({
+        id: ev.album.id, title: ev.album.title,
+        artist: ev.album.artist_display ?? ev.album.artist,
+        cover_url: ev.album.cover_url ?? undefined,
+        genre: ev.album.genre ?? undefined,
+        ratings: [],
+      } as AlbumWithRatings);
+    } else {
+      // 첫 클릭 → 아티스트 포커스
+      setFocusedArtist(ev.album.artist);
+    }
+  }, [focusedArtist]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 400, backgroundColor: "var(--bg)", display: "flex", flexDirection: "column", animation: "csIn .2s ease-out" }}>
@@ -628,12 +644,15 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         )}
 
         {events && events.length > 0 && (
-          <div style={{
-            position: "absolute", left: 0, top: 0,
-            width: CANVAS, height: CANVAS,
-            transformOrigin: "0 0",
-            transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
-          }}>
+          <div
+            style={{
+              position: "absolute", left: 0, top: 0,
+              width: CANVAS, height: CANVAS,
+              transformOrigin: "0 0",
+              transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
+            }}
+            onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
+          >
             {/* Nebula clouds — two circles per genre for inner+outer sector coverage */}
             {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
               const nr = INNER_R + (OUTER_R - INNER_R) * frac;
@@ -683,8 +702,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 <line key={i}
                   x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
                   stroke={l.color}
-                  strokeWidth={0.9 / cssZoom}
-                  strokeOpacity={0.2}
+                  strokeWidth={focusedArtist === l.artist ? 1.4 / cssZoom : 0.9 / cssZoom}
+                  strokeOpacity={focusedArtist ? (focusedArtist === l.artist ? 0.7 : 0.03) : 0.2}
                   strokeDasharray={`${3.5 / cssZoom} ${4.5 / cssZoom}`}
                 />
               ))}
@@ -695,7 +714,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               <Star
                 key={star.albumId}
                 star={star} cs={cs} cssZoom={cssZoom}
-                onSelect={handleSelect}
+                focusMode={focusedArtist !== null}
+                focused={focusedArtist === star.ev.album.artist}
+                onSelect={handleStarClick}
                 onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
                 onTipLeave={() => setTooltip(null)}
               />
@@ -703,11 +724,57 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           </div>
         )}
 
-        {!isZoomed && events && events.length > 0 && (
+        {!isZoomed && !focusedArtist && events && events.length > 0 && (
           <p style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 9, color: "var(--text-muted)", opacity: 0.25, pointerEvents: "none", whiteSpace: "nowrap" }}>
             스크롤·핀치·Ctrl+휠 확대 · 드래그 패닝
           </p>
         )}
+
+        {/* Artist focus panel */}
+        <AnimatePresence>
+          {focusedArtist && (
+            <motion.div
+              key="artist-panel"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: "absolute", bottom: 28, left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: 14,
+                padding: "10px 16px",
+                display: "flex", alignItems: "center", gap: 14,
+                zIndex: 50, pointerEvents: "auto",
+                boxShadow: "0 8px 28px rgba(0,0,0,0.55)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <div>
+                <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>
+                  {focusedArtist}
+                </p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
+                  {stars.filter(s => s.ev.album.artist === focusedArtist).length}장 · 앨범을 클릭하면 열려요
+                </p>
+              </div>
+              <button
+                onClick={() => setFocusedArtist(null)}
+                style={{
+                  background: "none", border: "none",
+                  color: "var(--text-muted)", fontSize: 20,
+                  cursor: "pointer", padding: "2px 6px",
+                  lineHeight: 1, flexShrink: 0, fontFamily: "inherit",
+                }}
+                className="hover:opacity-70 transition-opacity"
+              >
+                ×
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
