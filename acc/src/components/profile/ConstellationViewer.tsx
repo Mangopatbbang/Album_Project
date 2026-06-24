@@ -663,18 +663,33 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     prevFocusedArtistRef.current = focusedArtist;
   }, [focusedArtist]);
 
-  // Constellation lines (same artist, sorted by release year)
+  // Constellation lines — grouped by artist matching 음반고 discography logic:
+  // main artist OR any token in extra_artists (semicolon-separated)
   const lines = useMemo(() => {
     const byArtist = new Map<string, StarPos[]>();
+    const addTo = (artistKey: string, star: StarPos) => {
+      const arr = byArtist.get(artistKey) ?? [];
+      arr.push(star);
+      byArtist.set(artistKey, arr);
+    };
     for (const s of stars) {
-      const arr = byArtist.get(s.ev.album.artist) ?? [];
-      arr.push(s);
-      byArtist.set(s.ev.album.artist, arr);
+      addTo(s.ev.album.artist, s);
+      const extra = s.ev.album.extra_artists;
+      if (extra) {
+        for (const token of extra.split(";")) {
+          const name = token.trim();
+          if (name) addTo(name, s);
+        }
+      }
     }
     const result: { x1: number; y1: number; x2: number; y2: number; color: string; artist: string }[] = [];
     for (const [artist, group] of byArtist) {
       if (group.length < 2) continue;
-      const sorted = [...group].sort((a, b) =>
+      // dedup (same star can appear multiple times via extra_artists)
+      const seen = new Set<string>();
+      const unique = group.filter(s => seen.has(s.albumId) ? false : (seen.add(s.albumId), true));
+      if (unique.length < 2) continue;
+      const sorted = [...unique].sort((a, b) =>
         parseInt(a.ev.album.release_date?.slice(0, 4) ?? "2000") -
         parseInt(b.ev.album.release_date?.slice(0, 4) ?? "2000")
       );

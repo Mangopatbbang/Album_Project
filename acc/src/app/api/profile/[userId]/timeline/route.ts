@@ -9,6 +9,7 @@ export type TimelineEvent = {
     title: string;
     artist: string;
     artist_display?: string | null;
+    extra_artists?: string | null;
     cover_url: string | null;
     genre: string | null;
     release_date?: string | null;
@@ -27,7 +28,7 @@ export async function GET(
   const [ratingsRes, logsRes] = await Promise.all([
     supabaseServer
       .from("ratings")
-      .select("album_id, score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, cover_url, genre, release_date)")
+      .select("album_id, score, one_line_review, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, cover_url, genre, release_date)")
       .eq("user_id", userId)
       .order("updated_at", { ascending: false }),
     supabaseServer
@@ -40,7 +41,7 @@ export async function GET(
   const events: TimelineEvent[] = [];
 
   for (const r of ratingsRes.data ?? []) {
-    const album = r.albums as unknown as { id: string; title: string; artist: string; use_artist_variant?: boolean; cover_url: string | null; genre: string | null; release_date?: string | null } | null;
+    const album = r.albums as unknown as { id: string; title: string; artist: string; use_artist_variant?: boolean; extra_artists?: string | null; cover_url: string | null; genre: string | null; release_date?: string | null } | null;
     if (!album) continue;
     events.push({
       type: "rating",
@@ -49,6 +50,7 @@ export async function GET(
         id: album.id,
         title: album.title,
         artist: album.artist,
+        extra_artists: album.extra_artists ?? null,
         cover_url: album.cover_url,
         genre: album.genre,
         release_date: album.release_date,
