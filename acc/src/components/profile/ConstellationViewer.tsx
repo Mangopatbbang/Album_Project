@@ -16,7 +16,7 @@ const CX = CANVAS / 2;
 const CY = CANVAS / 2;
 const MAX_ZOOM = 22;
 const INNER_R = 80;    // most recent albums — closest to center
-const OUTER_R = 1150;  // oldest albums — furthest out
+const OUTER_R = 1400;  // oldest albums — furthest out
 
 // Sector ordering by musical similarity (keeps related genres adjacent)
 const GENRE_ORDER = [
@@ -59,12 +59,26 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
   }
   const unique = [...albumMap.values()];
   if (unique.length === 0) return { stars: [], clouds: [] };
+  const totalAlbums = unique.length;
 
-  // Year range → determines radial position (recent = inner, old = outer)
-  const years = unique.map(ev => parseInt(ev.album.release_date?.slice(0, 4) ?? "2000"));
-  const minYear = Math.min(...years);
-  const maxYear = Math.max(...years);
-  const yearSpan = Math.max(maxYear - minYear, 1);
+  // Radial: year-band allocation — each year gets a band proportional to its
+  // album count, so same-year albums spread within their band (no fixed-radius rings).
+  const byYear = new Map<number, TimelineEvent[]>();
+  for (const ev of unique) {
+    const y = parseInt(ev.album.release_date?.slice(0, 4) ?? "2000");
+    const arr = byYear.get(y) ?? [];
+    arr.push(ev);
+    byYear.set(y, arr);
+  }
+  const yearsDesc = [...byYear.keys()].sort((a, b) => b - a); // newest first → inner
+  let curR = INNER_R;
+  const yearBands = new Map<number, { mid: number; half: number }>();
+  for (const year of yearsDesc) {
+    const count = byYear.get(year)!.length;
+    const bandSize = (count / totalAlbums) * (OUTER_R - INNER_R);
+    yearBands.set(year, { mid: curR + bandSize / 2, half: bandSize / 2 });
+    curR += bandSize;
+  }
 
   // Count per genre
   const genreCounts = new Map<string, number>();
@@ -72,7 +86,6 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
     const g = ev.album.genre ?? "Other";
     genreCounts.set(g, (genreCounts.get(g) ?? 0) + 1);
   }
-  const totalAlbums = unique.length;
 
   // Musical-similarity ordering (adjacent genres are sonically related)
   const genreOrder: string[] = [];
@@ -92,7 +105,7 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
     curAngle = end;
   }
 
-  // Place each album: year → radius, jitter → angle within sector
+  // Place each album: year-band → radius, sector → angle
   const stars: StarPos[] = [];
   for (const ev of unique) {
     const g = ev.album.genre ?? "Other";
@@ -100,11 +113,14 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
     if (!sector) continue;
 
     const year = parseInt(ev.album.release_date?.slice(0, 4) ?? "2000");
-    const yearNorm = (maxYear - year) / yearSpan; // 0 = newest, 1 = oldest
-    const baseR = INNER_R + yearNorm * (OUTER_R - INNER_R);
-    const rNoise = jitter(ev.album.id + "r", (OUTER_R - INNER_R) * 0.05);
-    const r = Math.max(INNER_R * 0.85, Math.min(OUTER_R * 1.04, baseR + rNoise));
+    const band = yearBands.get(year);
+    if (!band) continue;
 
+    // Radius: center of year's band ± jitter (fills the full band width)
+    const rNoise = jitter(ev.album.id + "r", band.half * 1.8);
+    const r = Math.max(INNER_R * 0.8, Math.min(OUTER_R * 1.05, band.mid + rNoise));
+
+    // Angle: within genre sector with jitter
     const aNoise = jitter(ev.album.id + "a", sector.span * 0.88);
     const a = sector.mid + aNoise;
 
