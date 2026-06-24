@@ -131,6 +131,9 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
       : null;
 
+  const myRating = album.ratings?.find((r) => r.user_id === profile?.id);
+  const offsetBorderColor = myRating?.score ? scoreColor(myRating.score) : "var(--border)";
+
   const year = album.release_date?.slice(0, 4) ?? null;
   const tracks = parseTracklist(album.tracklist);
   const COLLAPSED_SHOW = 4;
@@ -158,29 +161,37 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         {/* 커버 + 우측 정보 */}
         <div style={{ display: "flex", alignItems: "flex-start", padding: "14px 14px 0", gap: 14 }}>
 
-          {/* 커버 */}
-          <div
-            style={{ flexShrink: 0, borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer", transition: "opacity 0.1s" }}
-            className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] group relative today-cover"
-            onClick={() => setModalOpen(true)}
-          >
-            {album.cover_url ? (
-              <>
-                {!coverLoaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={album.cover_url}
-                  alt={album.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s ease, opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
-                  className="group-hover:scale-[1.06]"
-                  onLoad={() => setCoverLoaded(true)}
-                />
-              </>
-            ) : (
-              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 24 }}>
-                ♪
-              </div>
-            )}
+          {/* 커버 — offset card wrapper */}
+          <div style={{ position: "relative", flexShrink: 0, marginRight: 6, marginBottom: 6 }}>
+            <div style={{
+              position: "absolute",
+              top: 6, left: 6, right: -6, bottom: -6,
+              border: `1px solid ${offsetBorderColor}`,
+              borderRadius: 8,
+            }} />
+            <div
+              style={{ borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer", transition: "opacity 0.1s", position: "relative", zIndex: 1 }}
+              className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] group today-cover"
+              onClick={() => setModalOpen(true)}
+            >
+              {album.cover_url ? (
+                <>
+                  {!coverLoaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={album.cover_url}
+                    alt={album.title}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s ease, opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
+                    className="group-hover:scale-[1.06]"
+                    onLoad={() => setCoverLoaded(true)}
+                  />
+                </>
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 24 }}>
+                  ♪
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 우측: 타이틀 / 아티스트 / 태그 / 트랙리스트 */}
