@@ -165,19 +165,22 @@ export default function LoginPage() {
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div
-        className="w-full max-w-[440px] md:max-w-[860px] md:flex overflow-hidden rounded-2xl"
-        style={{ border: "1px solid var(--border)" }}
+        className="w-full max-w-[440px] md:max-w-[900px] md:flex overflow-hidden rounded-2xl"
+        style={{ border: "1px solid var(--border)", minHeight: 520 }}
       >
         {/* 좌: 폼 */}
-        <div style={{ backgroundColor: "var(--bg-card)" }} className="w-full md:w-[420px] md:flex-shrink-0 p-6 md:p-10">
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <LogoMark height={52} />
-              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 24, letterSpacing: "-0.04em" }}>
+        <div
+          style={{ backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", justifyContent: "center" }}
+          className="w-full md:w-[400px] md:flex-shrink-0 p-8 md:px-12 md:py-10"
+        >
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <LogoMark height={48} />
+              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.04em" }}>
                 아차청음사
               </p>
             </Link>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 6 }}>청음사 입문</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 5 }}>청음사 입문</p>
           </div>
 
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -209,7 +212,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 24 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 28 }}>
             아직 청음사 식구가 아닌가요?{" "}
             <Link href="/signup" style={{ color: "var(--accent)", fontWeight: 600 }}>
               입문하기
@@ -223,26 +226,26 @@ export default function LoginPage() {
           style={{
             background: "linear-gradient(145deg, var(--bg-elevated) 0%, rgba(232,213,163,0.05) 60%, var(--bg) 100%)",
             borderLeft: "1px solid var(--border)",
-            padding: "56px 48px",
             textAlign: "center",
+            padding: "0 48px",
           }}
         >
-          <LogoMark height={72} />
-          <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 26, marginTop: 24, letterSpacing: "-0.04em" }}>
+          <LogoMark height={80} />
+          <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 28, marginTop: 24, letterSpacing: "-0.04em" }}>
             아차청음사
           </p>
-          <p style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 12, lineHeight: 1.9 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 12, lineHeight: 2 }}>
             취향을 기록하고<br />청음을 나누는 곳
           </p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 36 }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 40 }}>
             {([1, 2, 3, 4, 5, 6, 7, 8] as const).map(n => (
               <div
                 key={n}
                 style={{
-                  width: 9, height: 9, borderRadius: "50%",
+                  width: 10, height: 10, borderRadius: "50%",
                   backgroundColor: scoreColor(n),
-                  opacity: 0.75,
-                  boxShadow: `0 0 6px ${scoreColor(n)}60`,
+                  opacity: 0.8,
+                  boxShadow: `0 0 7px ${scoreColor(n)}70`,
                 }}
               />
             ))}
