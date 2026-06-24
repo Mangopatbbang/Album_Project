@@ -217,9 +217,9 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
 
 // ─── Star ─────────────────────────────────────────────────────────────────────
 
-function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onTipLeave }: {
+function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipLeave }: {
   star: StarPos; cs: number; cssZoom: number;
-  focusMode: boolean; focused: boolean;
+  dimmed: boolean; focused: boolean;
   onSelect: (ev: TimelineEvent) => void;
   onTipEnter: (ev: TimelineEvent, mx: number, my: number) => void;
   onTipLeave: () => void;
@@ -231,7 +231,12 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
   const r = dotRadius(score);
   const iz = 1 / cssZoom;
   const isDot = cs === 0;
-  const dimmed = focusMode && !focused;
+  const twinkleDuration = score != null && score >= 8
+    ? 2.2 + ((ev.album.id.charCodeAt(0) * 37 + (ev.album.id.charCodeAt(1) || 0)) % 23) / 10
+    : 0;
+  const twinkleDelay = score != null && score >= 8
+    ? -((ev.album.id.charCodeAt(2) || 0) % 18) / 10
+    : 0;
 
   const glow = score == null ? "none"
     : score >= 8 ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${10*iz}px ${color}cc, 0 0 ${26*iz}px ${color}55`
@@ -264,32 +269,40 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
             : focused ? focusedGlow : glow,
           transform: hov ? "scale(1.7)" : focused ? "scale(1.35)" : "scale(1)",
           transition: "transform .13s ease, box-shadow .15s ease",
+          animation: twinkleDuration > 0 && !hov && !focused
+            ? `csTwinkle ${twinkleDuration}s ${twinkleDelay}s ease-in-out infinite`
+            : undefined,
         }} />
       ) : (
-        <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave} style={{
-          width: cs, height: cs, padding: 0,
-          overflow: "hidden", border: "none", cursor: "pointer",
-          backgroundColor: "var(--bg-elevated)",
-          borderRadius: Math.round(cs * 0.15),
-          outline: hov
-            ? `${2.5 * iz}px solid ${color}`
-            : focused ? `${1.5 * iz}px solid ${color}cc`
-            : score && score >= 7 ? `${iz}px solid ${color}55` : "none",
-          outlineOffset: 2 * iz,
-          boxShadow: hov
-            ? `0 ${8*iz}px ${28*iz}px rgba(0,0,0,.72), 0 0 ${20*iz}px ${color}bb`
-            : focused ? `0 ${6*iz}px ${22*iz}px rgba(0,0,0,.65), 0 0 ${18*iz}px ${color}99`
-            : glow,
-          transform: hov ? "scale(1.12)" : focused ? "scale(1.1)" : "scale(1)",
-          transition: "transform .13s ease, box-shadow .14s ease",
-        }}>
+        <motion.button
+          initial={{ scale: 0.65, opacity: 0 }}
+          animate={{ scale: hov ? 1.12 : focused ? 1.1 : 1, opacity: 1 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave}
+          style={{
+            width: cs, height: cs, padding: 0,
+            overflow: "hidden", border: "none", cursor: "pointer",
+            backgroundColor: "var(--bg-elevated)",
+            borderRadius: Math.round(cs * 0.15),
+            outline: hov
+              ? `${2.5 * iz}px solid ${color}`
+              : focused ? `${1.5 * iz}px solid ${color}cc`
+              : score && score >= 7 ? `${iz}px solid ${color}55` : "none",
+            outlineOffset: 2 * iz,
+            boxShadow: hov
+              ? `0 ${8*iz}px ${28*iz}px rgba(0,0,0,.72), 0 0 ${20*iz}px ${color}bb`
+              : focused ? `0 ${6*iz}px ${22*iz}px rgba(0,0,0,.65), 0 0 ${18*iz}px ${color}99`
+              : glow,
+            transition: "box-shadow .14s ease, outline .14s ease",
+          }}
+        >
           {ev.album.cover_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img loading="lazy" src={ev.album.cover_url} alt={ev.album.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(cs * 0.38) }}>♪</div>
           }
-        </button>
+        </motion.button>
       )}
 
       {/* Always-visible label in focus mode */}
@@ -346,9 +359,12 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [isDragging, setIsDragging] = useState(false);
   const [fitZoom, setFitZoom] = useState(1);
   const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
+  const [focusedGenre, setFocusedGenre] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const vpRef = useRef<HTMLDivElement>(null);
+  const prevFocusedArtistRef = useRef<string | null>(null);
+  const animDuration = useRef(0.44);
   const cssZoomRef = useRef(1);
   const panXRef = useRef(0);
   const panYRef = useRef(0);
@@ -379,7 +395,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     };
   }, []);
 
-  const initView = useCallback(() => {
+  const initView = useCallback((intro = false) => {
     const vp = vpRef.current; if (!vp) return;
     const vpW = vp.clientWidth, vpH = vp.clientHeight;
     vpWRef.current = vpW; vpHRef.current = vpH;
@@ -388,11 +404,27 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     setFitZoom(fz);
     const px = (vpW - CANVAS * fz) / 2;
     const py = (vpH - CANVAS * fz) / 2;
-    cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-    setCssZoom(fz); setPanX(px); setPanY(py);
+    if (intro) {
+      const startFz = fz * 0.14;
+      const spx = (vpW - CANVAS * startFz) / 2;
+      const spy = (vpH - CANVAS * startFz) / 2;
+      cssZoomRef.current = startFz; panXRef.current = spx; panYRef.current = spy;
+      setCssZoom(startFz); setPanX(spx); setPanY(spy);
+      animDuration.current = 0.92;
+      requestAnimationFrame(() => {
+        setIsAnimating(true);
+        cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
+        setCssZoom(fz); setPanX(px); setPanY(py);
+        const t = setTimeout(() => { setIsAnimating(false); animDuration.current = 0.44; }, 970);
+        return () => clearTimeout(t);
+      });
+    } else {
+      cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
+      setCssZoom(fz); setPanX(px); setPanY(py);
+    }
   }, []);
 
-  useEffect(() => { if (events?.length) initView(); }, [events, initView]);
+  useEffect(() => { if (events?.length) initView(true); }, [events, initView]);
   useEffect(() => {
     const fn = () => { if (events?.length) initView(); };
     window.addEventListener("resize", fn);
@@ -551,14 +583,18 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (focusedArtist) setFocusedArtist(null); else onClose(); return; }
+      if (e.key === "Escape") {
+        if (focusedArtist) { setFocusedArtist(null); return; }
+        if (focusedGenre) { setFocusedGenre(null); return; }
+        onClose(); return;
+      }
       if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.4); }
       if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomStep(1 / 1.4); }
       if (e.key === "0") { e.preventDefault(); resetZoom(); }
     };
     document.addEventListener("keydown", fn);
     return () => document.removeEventListener("keydown", fn);
-  }, [zoomStep, resetZoom, focusedArtist, onClose]);
+  }, [zoomStep, resetZoom, focusedArtist, focusedGenre, onClose]);
 
   const { stars, clouds } = useMemo(
     () => events?.length ? computeLayout(events) : { stars: [], clouds: [] },
@@ -592,6 +628,22 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return () => clearTimeout(t);
   }, [focusedArtist, stars]);
 
+  // Auto-return to fit view when artist focus is cleared
+  useEffect(() => {
+    if (prevFocusedArtistRef.current !== null && focusedArtist === null) {
+      const fz = fitZoomRef.current;
+      const px = (vpWRef.current - CANVAS * fz) / 2;
+      const py = (vpHRef.current - CANVAS * fz) / 2;
+      cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
+      setIsAnimating(true);
+      setCssZoom(fz); setPanX(px); setPanY(py);
+      const t = setTimeout(() => setIsAnimating(false), 480);
+      prevFocusedArtistRef.current = null;
+      return () => clearTimeout(t);
+    }
+    prevFocusedArtistRef.current = focusedArtist;
+  }, [focusedArtist]);
+
   // Constellation lines (same artist, sorted by release year)
   const lines = useMemo(() => {
     const byArtist = new Map<string, StarPos[]>();
@@ -614,6 +666,24 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     }
     return result;
   }, [stars]);
+
+  // Background starfield — deterministic 700 tiny dots, no deps
+  const bgStars = useMemo(() => {
+    let s = 0x12345678;
+    const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0x100000000; };
+    return Array.from({ length: 700 }, () => ({
+      x: rng() * CANVAS, y: rng() * CANVAS,
+      r: 0.4 + rng() * 1.3,
+      op: 0.06 + rng() * 0.32,
+    }));
+  }, []);
+
+  // Year range for header
+  const yearRange = useMemo(() => {
+    if (!events?.length) return null;
+    const ys = events.map(e => parseInt(e.album.release_date?.slice(0, 4) ?? "")).filter(y => !isNaN(y) && y > 1900);
+    return ys.length ? { min: Math.min(...ys), max: Math.max(...ys) } : null;
+  }, [events]);
 
   // Visibility culling
   const margin = 80 / cssZoom;
@@ -643,32 +713,52 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         ratings: [],
       } as AlbumWithRatings);
     } else {
-      // 첫 클릭 → 아티스트 포커스
       setFocusedArtist(ev.album.artist);
+      setFocusedGenre(null);
     }
   }, [focusedArtist]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 400, backgroundColor: "var(--bg)", display: "flex", flexDirection: "column", animation: "csIn .2s ease-out" }}>
-      <style>{`@keyframes csIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }`}</style>
+      <style>{`
+        @keyframes csIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes csTwinkle { 0%,100% { opacity:1; } 50% { opacity:0.42; } }
+        @keyframes csCoverIn { from { opacity:0; transform:scale(0.62); } to { opacity:1; transform:scale(1); } }
+      `}</style>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em" }}>청음 별자리</p>
           <p style={{ color: "var(--text-sub)", fontSize: 12 }}>
-            {events ? `${stars.length}장의 앨범` : "불러오는 중…"}
+            {events
+              ? `${stars.length}장의 앨범${yearRange ? ` · ${yearRange.min}–${yearRange.max}` : ""}`
+              : "불러오는 중…"}
           </p>
         </div>
 
-        {/* Genre legend (compact) */}
+        {/* Genre legend — clickable for genre focus */}
         <div className="hidden sm:flex" style={{ gap: 8, alignItems: "center", flexWrap: "wrap", maxWidth: 380 }}>
-          {cloudsSorted.map(c => (
-            <div key={c.genre} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: c.color, opacity: 0.7, flexShrink: 0 }} />
-              <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.55, whiteSpace: "nowrap" }}>{c.genre}</span>
-            </div>
-          ))}
+          {cloudsSorted.map(c => {
+            const isActive = focusedGenre === c.genre;
+            return (
+              <button
+                key={c.genre}
+                onClick={() => setFocusedGenre(isActive ? null : c.genre)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "2px 5px", borderRadius: 4,
+                  backgroundColor: isActive ? `${c.color}22` : "transparent",
+                  outline: isActive ? `1px solid ${c.color}55` : "none",
+                  transition: "background-color .15s, outline .15s",
+                }}
+              >
+                <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: c.color, opacity: isActive ? 1 : 0.7, flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: isActive ? c.color : "var(--text-muted)", opacity: isActive ? 1 : 0.55, whiteSpace: "nowrap", fontFamily: "inherit", fontWeight: isActive ? 700 : 400 }}>{c.genre}</span>
+              </button>
+            );
+          })}
         </div>
 
         {cssZoom > 0 && (
@@ -716,10 +806,17 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               width: CANVAS, height: CANVAS,
               transformOrigin: "0 0",
               transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
-              transition: isAnimating ? "transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
+              transition: isAnimating ? `transform ${animDuration.current}s cubic-bezier(0.25, 0.46, 0.45, 0.94)` : "none",
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
           >
+            {/* Background starfield */}
+            <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
+              {bgStars.map((bs, i) => (
+                <circle key={i} cx={bs.x} cy={bs.y} r={bs.r} fill="white" opacity={bs.op} />
+              ))}
+            </svg>
+
             {/* Nebula clouds — two circles per genre for inner+outer sector coverage */}
             {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
               const nr = INNER_R + (OUTER_R - INNER_R) * frac;
@@ -797,13 +894,15 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             {/* Stars */}
             {visStars.map(star => {
               const isFocused = focusedArtist !== null && focusedArtist === star.ev.album.artist;
-              // Focused stars always show as covers regardless of zoom level
+              const isGenreLit = focusedArtist === null && focusedGenre !== null && star.genre === focusedGenre;
+              const inAnyFocusMode = focusedArtist !== null || focusedGenre !== null;
+              const isDimmed = inAnyFocusMode && !isFocused && !isGenreLit;
               const starCs = isFocused ? Math.max(cs, 46 / cssZoom) : cs;
               return (
                 <Star
                   key={star.albumId}
                   star={star} cs={starCs} cssZoom={cssZoom}
-                  focusMode={focusedArtist !== null}
+                  dimmed={isDimmed}
                   focused={isFocused}
                   onSelect={handleStarClick}
                   onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
@@ -842,14 +941,32 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 whiteSpace: "nowrap",
               }}
             >
-              <div>
-                <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>
-                  {focusedArtist}
-                </p>
-                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>
-                  {stars.filter(s => s.ev.album.artist === focusedArtist).length}장 · 앨범을 클릭하면 열려요
-                </p>
-              </div>
+              {(() => {
+                const artistStars = stars.filter(s => s.ev.album.artist === focusedArtist);
+                const scored = artistStars.filter(s => s.ev.score != null);
+                const avgScore = scored.length
+                  ? (scored.reduce((sum, s) => sum + (s.ev.score ?? 0), 0) / scored.length).toFixed(1)
+                  : null;
+                const ys = artistStars.map(s => parseInt(s.ev.album.release_date?.slice(0, 4) ?? "")).filter(y => y > 1900);
+                const yMin = ys.length ? Math.min(...ys) : null;
+                const yMax = ys.length ? Math.max(...ys) : null;
+                const genres = [...new Set(artistStars.map(s => s.genre))];
+                const genreColor = GENRE_COLOR[genres[0]] ?? "var(--text-muted)";
+                return (
+                  <div>
+                    <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>{focusedArtist}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{artistStars.length}장</span>
+                      {yMin && <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{yMin === yMax ? yMin : `${yMin}–${yMax}`}</span>}
+                      {avgScore && <span style={{ fontSize: 10, color: scoreColor(parseFloat(avgScore)), fontWeight: 700 }}>avg {avgScore}</span>}
+                      {genres.slice(0, 2).map(g => (
+                        <span key={g} style={{ fontSize: 9, color: genreColor, fontWeight: 600 }}>{g}</span>
+                      ))}
+                    </div>
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2, opacity: 0.6 }}>앨범을 클릭하면 열려요</p>
+                  </div>
+                );
+              })()}
               <button
                 onClick={() => setFocusedArtist(null)}
                 style={{
@@ -862,6 +979,45 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               >
                 ×
               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Genre focus panel */}
+        <AnimatePresence>
+          {!focusedArtist && focusedGenre && (
+            <motion.div
+              key="genre-panel"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: "absolute", bottom: 28, left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "var(--bg-card)",
+                border: `1px solid ${GENRE_COLOR[focusedGenre] ?? "var(--border)"}55`,
+                borderRadius: 14, padding: "10px 16px",
+                display: "flex", alignItems: "center", gap: 14,
+                zIndex: 50, pointerEvents: "auto",
+                boxShadow: "0 8px 28px rgba(0,0,0,0.55)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: GENRE_COLOR[focusedGenre] ?? "white", flexShrink: 0 }} />
+                <div>
+                  <p style={{ color: "var(--text)", fontSize: 13, fontWeight: 700 }}>{focusedGenre}</p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 1 }}>
+                    {stars.filter(s => s.genre === focusedGenre).length}장 · 아티스트를 클릭해 포커스
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFocusedGenre(null)}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 20, cursor: "pointer", padding: "2px 6px", lineHeight: 1, flexShrink: 0, fontFamily: "inherit" }}
+                className="hover:opacity-70 transition-opacity"
+              >×</button>
             </motion.div>
           )}
         </AnimatePresence>
