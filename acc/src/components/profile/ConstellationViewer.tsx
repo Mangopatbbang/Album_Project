@@ -167,6 +167,14 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// 음반고 디스코그래피와 동일 기준: main artist OR extra_artists 토큰 일치
+function artistMatch(star: StarPos, name: string): boolean {
+  if (star.ev.album.artist === name) return true;
+  const extra = star.ev.album.extra_artists;
+  if (!extra) return false;
+  return extra.split(";").some(t => t.trim() === name);
+}
+
 function dotRadius(score: number | undefined): number {
   if (score == null) return 3;
   if (score >= 8) return 7;
@@ -623,7 +631,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   // Auto-pan+zoom to fit the focused artist's constellation
   useEffect(() => {
     if (!focusedArtist) return;
-    const artistStars = stars.filter(s => s.ev.album.artist === focusedArtist);
+    const artistStars = stars.filter(s => artistMatch(s, focusedArtist));
     if (artistStars.length === 0) return;
     const vpW = vpWRef.current, vpH = vpHRef.current;
     if (!vpW || !vpH) return;
@@ -974,7 +982,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
 
             {/* Stars */}
             {visStars.map(star => {
-              const isFocused = focusedArtist !== null && focusedArtist === star.ev.album.artist;
+              const isFocused = focusedArtist !== null && artistMatch(star, focusedArtist);
               const isDimmed = focusedArtist !== null
                 ? !isFocused
                 : focusedGenre !== null
@@ -1060,7 +1068,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               }}
             >
               {(() => {
-                const artistStars = stars.filter(s => s.ev.album.artist === focusedArtist);
+                const artistStars = stars.filter(s => artistMatch(s, focusedArtist!));
                 const scored = artistStars.filter(s => s.ev.score != null);
                 const avgScore = scored.length
                   ? (scored.reduce((sum, s) => sum + (s.ev.score ?? 0), 0) / scored.length).toFixed(1)
