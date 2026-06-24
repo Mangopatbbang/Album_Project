@@ -230,7 +230,9 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
   const color = score != null ? scoreColor(score) : "rgba(255,255,255,0.22)";
   const r = dotRadius(score);
   const iz = 1 / cssZoom;
-  const isDot = cs === 0;
+  // Focused stars always show as covers (min 44px on screen), even if zoomed out
+  const effectiveCs = focused ? Math.max(cs, 44 / cssZoom) : cs;
+  const isDot = effectiveCs === 0;
   const dimmed = focusMode && !focused;
 
   const glow = score == null ? "none"
@@ -267,10 +269,10 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
         }} />
       ) : (
         <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave} style={{
-          width: cs, height: cs, padding: 0,
+          width: effectiveCs, height: effectiveCs, padding: 0,
           overflow: "hidden", border: "none", cursor: "pointer",
           backgroundColor: "var(--bg-elevated)",
-          borderRadius: Math.round(cs * 0.15),
+          borderRadius: Math.round(effectiveCs * 0.15),
           outline: hov
             ? `${2.5 * iz}px solid ${color}`
             : focused ? `${1.5 * iz}px solid ${color}cc`
@@ -287,7 +289,7 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
             // eslint-disable-next-line @next/next/no-img-element
             ? <img loading="lazy" src={ev.album.cover_url} alt={ev.album.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(cs * 0.38) }}>♪</div>
+            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: Math.floor(effectiveCs * 0.38) }}>♪</div>
           }
         </button>
       )}
@@ -296,7 +298,7 @@ function Star({ star, cs, cssZoom, focusMode, focused, onSelect, onTipEnter, onT
       {focused && (
         <div style={{
           position: "absolute",
-          top: isDot ? r * 2 + 3 / cssZoom : cs + 5 / cssZoom,
+          top: isDot ? r * 2 + 3 / cssZoom : effectiveCs + 5 / cssZoom,
           left: "50%",
           transform: "translateX(-50%)",
           pointerEvents: "none",
@@ -763,17 +765,35 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               );
             })}
 
-            {/* Constellation lines */}
+            {/* Constellation lines — glow halo + crisp main line */}
             <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
-              {lines.map((l, i) => (
-                <line key={i}
-                  x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-                  stroke={l.color}
-                  strokeWidth={focusedArtist === l.artist ? 1.4 / cssZoom : 0.9 / cssZoom}
-                  strokeOpacity={focusedArtist ? (focusedArtist === l.artist ? 0.7 : 0.03) : 0.2}
-                  strokeDasharray={`${3.5 / cssZoom} ${4.5 / cssZoom}`}
-                />
-              ))}
+              {lines.map((l, i) => {
+                const isFocused = focusedArtist === l.artist;
+                const inFocusMode = focusedArtist !== null;
+                return (
+                  <g key={i}>
+                    {/* Glow halo — only for focused artist */}
+                    {isFocused && (
+                      <line
+                        x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+                        stroke={l.color}
+                        strokeWidth={5 / cssZoom}
+                        strokeOpacity={0.14}
+                        strokeLinecap="round"
+                      />
+                    )}
+                    {/* Main line */}
+                    <line
+                      x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+                      stroke={l.color}
+                      strokeWidth={isFocused ? 1.1 / cssZoom : 0.8 / cssZoom}
+                      strokeOpacity={inFocusMode ? (isFocused ? 0.62 : 0.02) : 0.12}
+                      strokeLinecap="round"
+                      strokeDasharray={inFocusMode ? undefined : `${4 / cssZoom} ${5.5 / cssZoom}`}
+                    />
+                  </g>
+                );
+              })}
             </svg>
 
             {/* Stars */}
