@@ -132,6 +132,22 @@ function computeLayout(events: TimelineEvent[]): { stars: StarPos[]; clouds: Gen
     });
   }
 
+  // Repulsion: push overlapping stars apart so covers don't collide at artist-focus zoom
+  const MIN_D = 74, REPEL_ITER = 45;
+  for (let it = 0; it < REPEL_ITER; it++) {
+    for (let i = 0; i < stars.length; i++) {
+      for (let j = i + 1; j < stars.length; j++) {
+        const dx = stars[j].x - stars[i].x, dy = stars[j].y - stars[i].y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > 0.01 && d2 < MIN_D * MIN_D) {
+          const d = Math.sqrt(d2), push = (MIN_D - d) / d * 0.28;
+          stars[i].x -= dx * push; stars[i].y -= dy * push;
+          stars[j].x += dx * push; stars[j].y += dy * push;
+        }
+      }
+    }
+  }
+
   // Build clouds: two nebula circles per genre (inner + outer radial coverage)
   const clouds: GenreCloud[] = [];
   for (const [genre, sector] of sectors) {
@@ -361,6 +377,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
   const [focusedGenre, setFocusedGenre] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const prevFocusedArtistRef = useRef<string | null>(null);
@@ -586,6 +604,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       if (e.key === "Escape") {
         if (focusedArtist) { setFocusedArtist(null); return; }
         if (focusedGenre) { setFocusedGenre(null); return; }
+        if (searchQuery) { setSearchQuery(""); setSearchOpen(false); return; }
         onClose(); return;
       }
       if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.4); }
@@ -594,7 +613,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     };
     document.addEventListener("keydown", fn);
     return () => document.removeEventListener("keydown", fn);
-  }, [zoomStep, resetZoom, focusedArtist, focusedGenre, onClose]);
+  }, [zoomStep, resetZoom, focusedArtist, focusedGenre, searchQuery, onClose]);
 
   const { stars, clouds } = useMemo(
     () => events?.length ? computeLayout(events) : { stars: [], clouds: [] },
@@ -685,6 +704,18 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return ys.length ? { min: Math.min(...ys), max: Math.max(...ys) } : null;
   }, [events]);
 
+  // Search results — Set of matching albumIds
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return null;
+    return new Set(
+      stars.filter(s =>
+        s.ev.album.title.toLowerCase().includes(q) ||
+        (s.ev.album.artist_display ?? s.ev.album.artist).toLowerCase().includes(q)
+      ).map(s => s.albumId)
+    );
+  }, [stars, searchQuery]);
+
   // Visibility culling
   const margin = 80 / cssZoom;
   const vl = -panX / cssZoom - margin;
@@ -724,6 +755,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         @keyframes csIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
         @keyframes csTwinkle { 0%,100% { opacity:1; } 50% { opacity:0.42; } }
         @keyframes csCoverIn { from { opacity:0; transform:scale(0.62); } to { opacity:1; transform:scale(1); } }
+        @keyframes csLineIn { from { stroke-dashoffset: var(--csLD, 9999); } to { stroke-dashoffset: 0; } }
       `}</style>
 
       {/* ── Header ── */}
@@ -761,6 +793,33 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           })}
         </div>
 
+        {/* Search */}
+        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+          {searchOpen ? (
+            <input
+              autoFocus
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="앨범·아티스트"
+              onKeyDown={e => { if (e.key === "Escape") { setSearchQuery(""); setSearchOpen(false); } }}
+              style={{
+                width: 130, fontSize: 11, padding: "4px 8px",
+                backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
+                borderRadius: 6, color: "var(--text)", fontFamily: "inherit",
+                outline: "none",
+              }}
+            />
+          ) : (
+            <button
+              onClick={() => setSearchOpen(true)}
+              style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, fontFamily: "inherit" }}
+            >
+              검색
+            </button>
+          )}
+        </div>
+
         {cssZoom > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
             {isZoomed && (
@@ -769,6 +828,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               </button>
             )}
             <button onClick={() => zoomStep(1 / 1.6)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+            <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.55, minWidth: 28, textAlign: "center" }}>
+              {fitZoom > 0 ? `${Math.round(cssZoom / fitZoom * 100)}%` : ""}
+            </span>
             <button onClick={() => zoomStep(1.6)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
           </div>
         )}
@@ -806,6 +868,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               width: CANVAS, height: CANVAS,
               transformOrigin: "0 0",
               transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
+              willChange: "transform",
               transition: isAnimating ? `transform ${animDuration.current}s cubic-bezier(0.25, 0.46, 0.45, 0.94)` : "none",
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
@@ -830,7 +893,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                   width: cr * 2, height: cr * 2,
                   borderRadius: "50%",
                   background: `radial-gradient(circle, ${c.color}16 0%, ${c.color}08 52%, transparent 74%)`,
-                  filter: `blur(${18 / cssZoom}px)`,
+                  filter: "blur(36px)",
                   pointerEvents: "none",
                 }} />
               );
@@ -865,16 +928,19 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               {lines.map((l, i) => {
                 const isFocused = focusedArtist === l.artist;
                 const inFocusMode = focusedArtist !== null;
+                const lineLen = Math.hypot(l.x2 - l.x1, l.y2 - l.y1);
                 return (
                   <g key={i}>
-                    {/* Glow halo — only for focused artist */}
+                    {/* Glow halo — draw-in animation on focus */}
                     {isFocused && (
                       <line
                         x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
                         stroke={l.color}
                         strokeWidth={5 / cssZoom}
-                        strokeOpacity={0.14}
+                        strokeOpacity={0.18}
                         strokeLinecap="round"
+                        strokeDasharray={lineLen}
+                        style={{ "--csLD": String(lineLen), animation: "csLineIn 0.52s ease forwards" } as React.CSSProperties}
                       />
                     )}
                     {/* Main line */}
@@ -894,9 +960,13 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             {/* Stars */}
             {visStars.map(star => {
               const isFocused = focusedArtist !== null && focusedArtist === star.ev.album.artist;
-              const isGenreLit = focusedArtist === null && focusedGenre !== null && star.genre === focusedGenre;
-              const inAnyFocusMode = focusedArtist !== null || focusedGenre !== null;
-              const isDimmed = inAnyFocusMode && !isFocused && !isGenreLit;
+              const isDimmed = focusedArtist !== null
+                ? !isFocused
+                : focusedGenre !== null
+                  ? star.genre !== focusedGenre
+                  : searchResults !== null
+                    ? !searchResults.has(star.albumId)
+                    : false;
               const starCs = isFocused ? Math.max(cs, 46 / cssZoom) : cs;
               return (
                 <Star
@@ -917,6 +987,39 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           <p style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", fontSize: 9, color: "var(--text-muted)", opacity: 0.25, pointerEvents: "none", whiteSpace: "nowrap" }}>
             스크롤·핀치·Ctrl+휠 확대 · 드래그 패닝
           </p>
+        )}
+
+        {/* Mini-map */}
+        {events && events.length > 0 && isZoomed && (
+          <div style={{
+            position: "absolute", bottom: 16, right: 16,
+            width: 108, height: 108,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 8, overflow: "hidden",
+            pointerEvents: "none", zIndex: 30,
+          }}>
+            <svg width={108} height={108} style={{ display: "block" }}>
+              {stars.map(s => (
+                <circle key={s.albumId}
+                  cx={s.x / CANVAS * 108} cy={s.y / CANVAS * 108}
+                  r={1.3}
+                  fill={GENRE_COLOR[s.genre] ?? "white"}
+                  opacity={0.5}
+                />
+              ))}
+              <rect
+                x={Math.max(0, (-panX / cssZoom) / CANVAS * 108)}
+                y={Math.max(0, (-panY / cssZoom) / CANVAS * 108)}
+                width={Math.min(108, (vpWRef.current / cssZoom) / CANVAS * 108)}
+                height={Math.min(108, (vpHRef.current / cssZoom) / CANVAS * 108)}
+                fill="rgba(255,255,255,0.05)"
+                stroke="rgba(255,255,255,0.28)"
+                strokeWidth={0.8}
+                rx={1}
+              />
+            </svg>
+          </div>
         )}
 
         {/* Artist focus panel */}
