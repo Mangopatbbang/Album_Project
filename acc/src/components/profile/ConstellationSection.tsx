@@ -3,14 +3,14 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
-const ChronicleViewer = dynamic(() => import("@/components/profile/ChronicleViewer"), { ssr: false });
 
-export default function TimelineSection({ userId }: { userId: string }) {
+const ConstellationViewer = dynamic(() => import("@/components/profile/ConstellationViewer"), { ssr: false });
+
+export default function ConstellationSection({ userId }: { userId: string }) {
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
 
-  // admin이 본인 프로필을 볼 때만 표시
-  if (profile?.role !== "admin" || profile?.id !== userId) return null;
+  if (profile?.id !== userId) return null;
 
   return (
     <>
@@ -26,10 +26,10 @@ export default function TimelineSection({ userId }: { userId: string }) {
       }}>
         <div>
           <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 4 }}>
-            청음 연대기
+            청음 별자리
           </p>
           <p style={{ color: "var(--text-sub)", fontSize: 12 }}>
-            내가 들어온 모든 앨범의 타임라인
+            내가 들어온 앨범들의 우주
           </p>
         </div>
 
@@ -48,9 +48,7 @@ export default function TimelineSection({ userId }: { userId: string }) {
         </button>
       </div>
 
-      {open && (
-        <ChronicleViewer userId={userId} onClose={() => setOpen(false)} />
-      )}
+      {open && <ConstellationViewer userId={userId} onClose={() => setOpen(false)} />}
     </>
   );
 }

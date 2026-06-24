@@ -22,7 +22,7 @@ import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls, type ProfileRatingRow } from "@/lib/stats";
 import ListeningLogsSection from "@/components/profile/ListeningLogsSection";
 import InsightSection from "@/components/profile/InsightSection";
-import TimelineSection from "@/components/profile/TimelineSection";
+import ConstellationSection from "@/components/profile/ConstellationSection";
 import ProfileDiaryButton from "@/components/profile/ProfileDiaryButton";
 import type { DayAlbum } from "@/components/profile/CalendarSection";
 
@@ -785,7 +785,7 @@ export default async function ProfilePage({
           <div data-tour="profile-comparison"><ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} /></div>
 
           {/* 청음 연대기 — admin only (데이터 충분히 쌓이면 공개) */}
-          <TimelineSection userId={userId} />
+          <ConstellationSection userId={userId} />
 
         </div>
       </div>
