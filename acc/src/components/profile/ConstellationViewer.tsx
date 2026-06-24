@@ -283,20 +283,31 @@ function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipL
       pointerEvents: dimmed ? "none" : "auto",
     }}>
       {isDot ? (
-        <button onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave} style={{
-          width: r * 2, height: r * 2, borderRadius: "50%",
-          backgroundColor: color,
-          border: score != null ? `${1.5 * iz}px solid var(--bg)` : "none",
-          padding: 0, cursor: "pointer",
-          boxShadow: hov
-            ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${16*iz}px ${color}ee, 0 0 ${30*iz}px ${color}66`
-            : focused ? focusedGlow : glow,
-          transform: hov ? "scale(1.7)" : focused ? "scale(1.35)" : "scale(1)",
-          transition: "transform .13s ease, box-shadow .15s ease",
-          animation: twinkleDuration > 0 && !hov && !focused
-            ? `csTwinkle ${twinkleDuration}s ${twinkleDelay}s ease-in-out infinite`
-            : undefined,
-        }} />
+        // 투명 래퍼로 호버/클릭 판정 영역을 시각 크기보다 크게 확보
+        <button
+          onClick={() => onSelect(ev)} onMouseEnter={enter} onMouseLeave={leave}
+          style={{
+            width: Math.max(r * 2, 18 * iz), height: Math.max(r * 2, 18 * iz),
+            borderRadius: "50%", backgroundColor: "transparent",
+            border: "none", padding: 0, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div style={{
+            width: r * 2, height: r * 2, borderRadius: "50%",
+            backgroundColor: color,
+            border: score != null ? `${1.5 * iz}px solid var(--bg)` : "none",
+            flexShrink: 0,
+            boxShadow: hov
+              ? `0 0 0 ${2*iz}px var(--bg), 0 0 ${16*iz}px ${color}ee, 0 0 ${30*iz}px ${color}66`
+              : focused ? focusedGlow : glow,
+            transform: hov ? "scale(1.7)" : focused ? "scale(1.35)" : "scale(1)",
+            transition: "transform .13s ease, box-shadow .15s ease",
+            animation: twinkleDuration > 0 && !hov && !focused
+              ? `csTwinkle ${twinkleDuration}s ${twinkleDelay}s ease-in-out infinite`
+              : undefined,
+          }} />
+        </button>
       ) : (
         <motion.button
           initial={{ scale: 0.65, opacity: 0 }}
@@ -680,9 +691,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const xs = genreStars.map(s => s.x), ys = genreStars.map(s => s.y);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const PAD = 260;
+    const PAD = 160;
     const bw = (maxX - minX) + PAD * 2, bh = (maxY - minY) + PAD * 2;
-    const nz = Math.max(fitZoomRef.current * 1.2, Math.min(5, Math.min(vpW / bw, vpH / bh) * 0.85));
+    const nz = Math.max(fitZoomRef.current * 2.2, Math.min(6, Math.min(vpW / bw, vpH / bh) * 0.9));
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     const px = vpW / 2 - cx * nz, py = vpH / 2 - cy * nz;
     cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
