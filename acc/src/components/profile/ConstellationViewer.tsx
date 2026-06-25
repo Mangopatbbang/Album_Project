@@ -462,10 +462,11 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   }, []);
 
   // Direct DOM transform — bypasses React setState during drag/wheel for 60fps
-  const applyTransform = useCallback((x: number, y: number, z: number, withAnim = false) => {
+  // dur=0: instant, dur>0: smooth transition with that duration (seconds)
+  const applyTransform = useCallback((x: number, y: number, z: number, dur = 0) => {
     const el = innerRef.current; if (!el) return;
-    el.style.transition = withAnim
-      ? `transform ${animDuration.current}s cubic-bezier(0.25,0.46,0.45,0.94)`
+    el.style.transition = dur > 0
+      ? `transform ${dur}s cubic-bezier(0.25,0.46,0.45,0.94)`
       : "none";
     el.style.transform = `translate(${x}px,${y}px) scale(${z})`;
   }, []);
@@ -495,7 +496,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       animDuration.current = 0.92;
       requestAnimationFrame(() => {
         cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-        applyTransform(px, py, fz, true);
+        applyTransform(px, py, fz, animDuration.current);
         syncState();
         const t = setTimeout(() => {
           animDuration.current = 0.44;
@@ -534,9 +535,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       } else {
         panXRef.current -= e.deltaX; panYRef.current -= e.deltaY;
       }
-      applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
+      applyTransform(panXRef.current, panYRef.current, cssZoomRef.current, 0.09);
       if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
-      wheelTimerRef.current = setTimeout(syncState, 150);
+      wheelTimerRef.current = setTimeout(syncState, 200);
     };
     el.addEventListener("wheel", fn, { passive: false });
     return () => el.removeEventListener("wheel", fn);
@@ -657,7 +658,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     cssZoomRef.current = nz;
     panXRef.current = cx - (cx - panXRef.current) * nz / pz;
     panYRef.current = cy - (cy - panYRef.current) * nz / pz;
-    applyTransform(panXRef.current, panYRef.current, nz);
+    applyTransform(panXRef.current, panYRef.current, nz, 0.15);
     syncState();
   }, [applyTransform, syncState]);
 
@@ -666,7 +667,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     cssZoomRef.current = fz;
     panXRef.current = (vpWRef.current - CANVAS * fz) / 2;
     panYRef.current = (vpHRef.current - CANVAS * fz) / 2;
-    applyTransform(panXRef.current, panYRef.current, fz);
+    applyTransform(panXRef.current, panYRef.current, fz, 0.25);
     syncState();
   }, [applyTransform, syncState]);
 
@@ -712,7 +713,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const py = vpH / 2 - cy * nz;
 
     cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
-    applyTransform(px, py, nz, true);
+    applyTransform(px, py, nz, animDuration.current);
     syncState();
     const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
     return () => clearTimeout(t);
@@ -725,7 +726,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       const px = (vpWRef.current - CANVAS * fz) / 2;
       const py = (vpHRef.current - CANVAS * fz) / 2;
       cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-      applyTransform(px, py, fz, true);
+      applyTransform(px, py, fz, animDuration.current);
       syncState();
       const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
       prevFocusedArtistRef.current = null;
@@ -750,7 +751,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     const px = vpW / 2 - cx * nz, py = vpH / 2 - cy * nz;
     cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
-    applyTransform(px, py, nz, true);
+    applyTransform(px, py, nz, animDuration.current);
     syncState();
     const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
     return () => clearTimeout(t);
