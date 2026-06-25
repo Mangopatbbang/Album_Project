@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { scoreColor } from "@/lib/score";
 import { GENRE_COLOR } from "@/lib/bio";
@@ -241,7 +241,7 @@ function Tooltip({ ev, mx, my }: { ev: TimelineEvent; mx: number; my: number }) 
 
 // ─── Star ─────────────────────────────────────────────────────────────────────
 
-function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipLeave }: {
+const Star = memo(function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipLeave }: {
   star: StarPos; cs: number; cssZoom: number;
   dimmed: boolean; focused: boolean;
   onSelect: (ev: TimelineEvent) => void;
@@ -405,7 +405,7 @@ function Star({ star, cs, cssZoom, dimmed, focused, onSelect, onTipEnter, onTipL
       )}
     </div>
   );
-}
+});
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -421,13 +421,14 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [fitZoom, setFitZoom] = useState(1);
   const [focusedArtist, setFocusedArtist] = useState<string | null>(null);
   const [focusedGenre, setFocusedGenre] = useState<string | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [scoreFilter, setScoreFilter] = useState<number | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [tourActive, setTourActive] = useState(false);
   const [tourIdx, setTourIdx] = useState<number | null>(null);
 
   const vpRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevFocusedArtistRef = useRef<string | null>(null);
   const animDuration = useRef(0.44);
   const cssZoomRef = useRef(1);
@@ -460,6 +461,22 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     };
   }, []);
 
+  // Direct DOM transform — bypasses React setState during drag/wheel for 60fps
+  const applyTransform = useCallback((x: number, y: number, z: number, withAnim = false) => {
+    const el = innerRef.current; if (!el) return;
+    el.style.transition = withAnim
+      ? `transform ${animDuration.current}s cubic-bezier(0.25,0.46,0.45,0.94)`
+      : "none";
+    el.style.transform = `translate(${x}px,${y}px) scale(${z})`;
+  }, []);
+
+  // Sync refs → React state once (for culling, cover sizes, zoom indicator)
+  const syncState = useCallback(() => {
+    setCssZoom(cssZoomRef.current);
+    setPanX(panXRef.current);
+    setPanY(panYRef.current);
+  }, []);
+
   const initView = useCallback((intro = false) => {
     const vp = vpRef.current; if (!vp) return;
     const vpW = vp.clientWidth, vpH = vp.clientHeight;
@@ -474,20 +491,24 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       const spx = (vpW - CANVAS * startFz) / 2;
       const spy = (vpH - CANVAS * startFz) / 2;
       cssZoomRef.current = startFz; panXRef.current = spx; panYRef.current = spy;
-      setCssZoom(startFz); setPanX(spx); setPanY(spy);
+      applyTransform(spx, spy, startFz);
       animDuration.current = 0.92;
       requestAnimationFrame(() => {
-        setIsAnimating(true);
         cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-        setCssZoom(fz); setPanX(px); setPanY(py);
-        const t = setTimeout(() => { setIsAnimating(false); animDuration.current = 0.44; }, 970);
+        applyTransform(px, py, fz, true);
+        syncState();
+        const t = setTimeout(() => {
+          animDuration.current = 0.44;
+          if (innerRef.current) innerRef.current.style.transition = "none";
+        }, 970);
         return () => clearTimeout(t);
       });
     } else {
       cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-      setCssZoom(fz); setPanX(px); setPanY(py);
+      applyTransform(px, py, fz);
+      syncState();
     }
-  }, []);
+  }, [applyTransform, syncState]);
 
   useEffect(() => { if (events?.length) initView(true); }, [events, initView]);
   useEffect(() => {
@@ -510,15 +531,16 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         cssZoomRef.current = nz;
         panXRef.current = cx - (cx - panXRef.current) * nz / pz;
         panYRef.current = cy - (cy - panYRef.current) * nz / pz;
-        setCssZoom(nz); setPanX(panXRef.current); setPanY(panYRef.current);
       } else {
         panXRef.current -= e.deltaX; panYRef.current -= e.deltaY;
-        setPanX(panXRef.current); setPanY(panYRef.current);
       }
+      applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
+      if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
+      wheelTimerRef.current = setTimeout(syncState, 150);
     };
     el.addEventListener("wheel", fn, { passive: false });
     return () => el.removeEventListener("wheel", fn);
-  }, [events]);
+  }, [events, applyTransform, syncState]);
 
   // Mouse drag + inertia
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -537,7 +559,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       const dx = e.clientX - dragRef.current.sx, dy = e.clientY - dragRef.current.sy;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragMoved.current = true;
       panXRef.current = dragRef.current.px + dx; panYRef.current = dragRef.current.py + dy;
-      setPanX(panXRef.current); setPanY(panYRef.current);
+      applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
       const now = performance.now();
       velX.current = (lx - e.clientX) / Math.max(now - lt, 1) * 16;
       velY.current = (ly - e.clientY) / Math.max(now - lt, 1) * 16;
@@ -548,9 +570,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       dragRef.current = null; setIsDragging(false);
       let vx = velX.current, vy = velY.current;
       const coast = () => {
-        if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) return;
+        if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) { syncState(); return; }
         panXRef.current -= vx; panYRef.current -= vy;
-        setPanX(panXRef.current); setPanY(panYRef.current);
+        applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
         vx *= 0.93; vy *= 0.93;
         rafRef.current = requestAnimationFrame(coast);
       };
@@ -580,7 +602,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         const dx = curr[0].x - p.x, dy = curr[0].y - p.y;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved.current = true;
         panXRef.current += dx; panYRef.current += dy;
-        setPanX(panXRef.current); setPanY(panYRef.current);
+        applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
         velX.current = -dx; velY.current = -dy;
       } else if (curr.length === 2 && prev.length >= 2) {
         const p0 = prev.find(p => p.id === curr[0].id) ?? prev[0];
@@ -597,7 +619,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           cssZoomRef.current = nz;
           panXRef.current = lcx - (lcx - panXRef.current) * nz / pz;
           panYRef.current = lcy - (lcy - panYRef.current) * nz / pz;
-          setCssZoom(nz); setPanX(panXRef.current); setPanY(panYRef.current);
+          applyTransform(panXRef.current, panYRef.current, nz);
         }
       }
       touchRef.current.prev = curr;
@@ -607,9 +629,9 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         touchRef.current = null; setIsDragging(false);
         let vx = velX.current, vy = velY.current;
         const coast = () => {
-          if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) return;
+          if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) { syncState(); return; }
           panXRef.current -= vx; panYRef.current -= vy;
-          setPanX(panXRef.current); setPanY(panYRef.current);
+          applyTransform(panXRef.current, panYRef.current, cssZoomRef.current);
           vx *= 0.93; vy *= 0.93;
           rafRef.current = requestAnimationFrame(coast);
         };
@@ -635,16 +657,18 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     cssZoomRef.current = nz;
     panXRef.current = cx - (cx - panXRef.current) * nz / pz;
     panYRef.current = cy - (cy - panYRef.current) * nz / pz;
-    setCssZoom(nz); setPanX(panXRef.current); setPanY(panYRef.current);
-  }, []);
+    applyTransform(panXRef.current, panYRef.current, nz);
+    syncState();
+  }, [applyTransform, syncState]);
 
   const resetZoom = useCallback(() => {
     const fz = fitZoomRef.current;
     cssZoomRef.current = fz;
     panXRef.current = (vpWRef.current - CANVAS * fz) / 2;
     panYRef.current = (vpHRef.current - CANVAS * fz) / 2;
-    setCssZoom(fz); setPanX(panXRef.current); setPanY(panYRef.current);
-  }, []);
+    applyTransform(panXRef.current, panYRef.current, fz);
+    syncState();
+  }, [applyTransform, syncState]);
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
@@ -688,11 +712,11 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const py = vpH / 2 - cy * nz;
 
     cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
-    setIsAnimating(true);
-    setCssZoom(nz); setPanX(px); setPanY(py);
-    const t = setTimeout(() => setIsAnimating(false), 480);
+    applyTransform(px, py, nz, true);
+    syncState();
+    const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
     return () => clearTimeout(t);
-  }, [focusedArtist, stars]);
+  }, [focusedArtist, stars, applyTransform, syncState]);
 
   // Auto-return to fit view when artist focus is cleared
   useEffect(() => {
@@ -701,14 +725,14 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       const px = (vpWRef.current - CANVAS * fz) / 2;
       const py = (vpHRef.current - CANVAS * fz) / 2;
       cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;
-      setIsAnimating(true);
-      setCssZoom(fz); setPanX(px); setPanY(py);
-      const t = setTimeout(() => setIsAnimating(false), 480);
+      applyTransform(px, py, fz, true);
+      syncState();
+      const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
       prevFocusedArtistRef.current = null;
       return () => clearTimeout(t);
     }
     prevFocusedArtistRef.current = focusedArtist;
-  }, [focusedArtist]);
+  }, [focusedArtist, applyTransform, syncState]);
 
   // Genre focus → auto-zoom to fit all genre stars
   useEffect(() => {
@@ -726,11 +750,11 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     const px = vpW / 2 - cx * nz, py = vpH / 2 - cy * nz;
     cssZoomRef.current = nz; panXRef.current = px; panYRef.current = py;
-    setIsAnimating(true);
-    setCssZoom(nz); setPanX(px); setPanY(py);
-    const t = setTimeout(() => setIsAnimating(false), 480);
+    applyTransform(px, py, nz, true);
+    syncState();
+    const t = setTimeout(() => { if (innerRef.current) innerRef.current.style.transition = "none"; }, 480);
     return () => clearTimeout(t);
-  }, [focusedGenre, stars]);
+  }, [focusedGenre, stars, applyTransform, syncState]);
 
   // Constellation lines — grouped by artist matching 음반고 discography logic:
   // main artist OR any token in extra_artists (semicolon-separated)
@@ -921,10 +945,20 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const isZoomed = cssZoom > fitZoom * 1.1;
   const cloudsSorted = useMemo(() => [...clouds].sort((a, b) => b.count - a.count), [clouds]);
 
+  // focusedArtistRef: stable ref to avoid recreating handleStarClick on every artist focus change
+  const focusedArtistRef = useRef(focusedArtist);
+  useEffect(() => { focusedArtistRef.current = focusedArtist; }, [focusedArtist]);
+
+  const handleTipEnter = useCallback((ev: TimelineEvent, mx: number, my: number) => {
+    if (dragRef.current) return;
+    setTooltip({ ev, mx, my });
+  }, []);
+
+  const handleTipLeave = useCallback(() => setTooltip(null), []);
+
   const handleStarClick = useCallback((ev: TimelineEvent) => {
     setTooltip(null);
-    if (focusedArtist === ev.album.artist) {
-      // 이미 이 아티스트에 포커스된 상태 → 모달 오픈
+    if (focusedArtistRef.current === ev.album.artist) {
       setSelected({
         id: ev.album.id, title: ev.album.title,
         artist: ev.album.artist_display ?? ev.album.artist,
@@ -937,7 +971,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       setFocusedGenre(null);
       setScoreFilter(null);
     }
-  }, [focusedArtist]);
+  }, []);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 400, backgroundColor: "var(--bg)", display: "flex", flexDirection: "column", animation: "csIn .2s ease-out" }}>
@@ -1065,13 +1099,12 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
 
         {events && events.length > 0 && (
           <div
+            ref={innerRef}
             style={{
               position: "absolute", left: 0, top: 0,
               width: CANVAS, height: CANVAS,
               transformOrigin: "0 0",
-              transform: `translate(${panX}px,${panY}px) scale(${cssZoom})`,
               willChange: "transform",
-              transition: isAnimating ? `transform ${animDuration.current}s cubic-bezier(0.25, 0.46, 0.45, 0.94)` : "none",
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
           >
@@ -1221,8 +1254,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                   dimmed={isDimmed}
                   focused={isFocused}
                   onSelect={handleStarClick}
-                  onTipEnter={(ev, mx, my) => setTooltip({ ev, mx, my })}
-                  onTipLeave={() => setTooltip(null)}
+                  onTipEnter={handleTipEnter}
+                  onTipLeave={handleTipLeave}
                 />
               );
             })}
