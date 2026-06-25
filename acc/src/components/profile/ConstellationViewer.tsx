@@ -510,10 +510,10 @@ const GenreLabels = memo(function GenreLabels({
   );
 });
 
-// 별자리선 SVG: focusedArtist·cssZoom 바뀔 때만 리렌더
+// 별자리선 SVG: focusedArtist·cssZoom·linesReady 바뀔 때만 리렌더
 const ConstellationLines = memo(function ConstellationLines({
-  lines, focusedArtist, cssZoom,
-}: { lines: LineData[]; focusedArtist: string | null; cssZoom: number }) {
+  lines, focusedArtist, cssZoom, linesReady,
+}: { lines: LineData[]; focusedArtist: string | null; cssZoom: number; linesReady: boolean }) {
   const artistLineIdx = new Map<string, number>();
   const drawDur = 0.85;
   return (
@@ -532,13 +532,14 @@ const ConstellationLines = memo(function ConstellationLines({
           return cur;
         })() : 0;
         const staggerDelay = lineIdx * 0.18;
+        const lineAnim = linesReady ? `csLineIn ${drawDur}s ${staggerDelay}s linear forwards` : "none";
         return (
           <g key={i}>
             {isFocused && (
               <path d={pathD} fill="none" stroke={l.color}
                 strokeWidth={8 / cssZoom} strokeLinecap="round"
                 pathLength={1} strokeDasharray={1}
-                style={{ strokeDashoffset: 1, animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`, opacity: 0.22 } as React.CSSProperties}
+                style={{ strokeDashoffset: 1, animation: lineAnim, opacity: 0.22 } as React.CSSProperties}
               />
             )}
             <path d={pathD} fill="none" stroke={l.color}
@@ -547,7 +548,7 @@ const ConstellationLines = memo(function ConstellationLines({
               strokeDasharray={isFocused ? 1 : `${3.5 / cssZoom} ${7 / cssZoom}`}
               strokeOpacity={inFocusMode ? (isFocused ? 0 : 0.01) : 0.04}
               pathLength={isFocused ? 1 : undefined}
-              style={isFocused ? { strokeDashoffset: 1, animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`, strokeOpacity: 0.78 } as React.CSSProperties : undefined}
+              style={isFocused ? { strokeDashoffset: 1, animation: lineAnim, strokeOpacity: 0.78 } as React.CSSProperties : undefined}
             />
           </g>
         );
@@ -574,6 +575,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const [showStats, setShowStats] = useState(false);
   const [tourActive, setTourActive] = useState(false);
   const [tourIdx, setTourIdx] = useState<number | null>(null);
+  const [linesReady, setLinesReady] = useState(true);
 
   const vpRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -592,6 +594,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const velY = useRef(0);
   const rafRef = useRef<number>(0);
   const touchRef = useRef<{ prev: { id: number; x: number; y: number }[] } | null>(null);
+  const tourTransitionRef = useRef(false);
+  const transitionTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     fetch(`/api/profile/${userId}/timeline`)
@@ -625,6 +629,12 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     setCssZoom(cssZoomRef.current);
     setPanX(panXRef.current);
     setPanY(panYRef.current);
+  }, []);
+
+  const clearTransitionTimers = useCallback(() => {
+    transitionTimersRef.current.forEach(clearTimeout);
+    transitionTimersRef.current = [];
+    tourTransitionRef.current = false;
   }, []);
 
   const initView = useCallback((intro = false) => {
@@ -844,6 +854,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   // Auto-pan+zoom to fit the focused artist's constellation
   useEffect(() => {
     if (!focusedArtist) return;
+    if (tourTransitionRef.current) return; // advanceTour handles zoom during tour transitions
     const artistStars = stars.filter(s => artistMatch(s, focusedArtist));
     if (artistStars.length === 0) return;
     const vpW = vpWRef.current, vpH = vpHRef.current;
@@ -969,6 +980,63 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([a]) => a);
   }, [stars]);
 
+  // Cinematic 3-phase tour transition:
+  // Phase 1 (0.65s): zoom out toward next artist's position
+  // Phase 2 (0.65s): zoom in to next artist, update React state
+  // Phase 3 (after 750ms): unlock line drawing animation
+  const advanceTour = useCallback((nextIdx: number) => {
+    clearTransitionTimers();
+    const nextArtist = tourArtists[nextIdx];
+    const vpW = vpWRef.current, vpH = vpHRef.current;
+    const nextStars = stars.filter(s => artistMatch(s, nextArtist));
+
+    tourTransitionRef.current = true;
+    setLinesReady(false);
+
+    // Compute target zoom for next artist
+    let targetNz = fitZoomRef.current * 1.4;
+    let targetPx = (vpW - CANVAS * targetNz) / 2;
+    let targetPy = (vpH - CANVAS * targetNz) / 2;
+    if (nextStars.length > 0) {
+      const xs = nextStars.map(s => s.x), ys = nextStars.map(s => s.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const PAD = 240, bw = (maxX-minX)+PAD*2, bh = (maxY-minY)+PAD*2;
+      targetNz = Math.max(fitZoomRef.current * 1.4, Math.min(8, Math.min(vpW/bw, vpH/bh)*0.85));
+      const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+      targetPx = vpW/2 - cx*targetNz;
+      targetPy = vpH/2 - cy*targetNz;
+    }
+
+    // Phase 1: pull back to overview, drifting toward next artist
+    const overviewNz = fitZoomRef.current * 0.92;
+    const ncx = nextStars.length ? nextStars.reduce((a,s)=>a+s.x,0)/nextStars.length : CX;
+    const ncy = nextStars.length ? nextStars.reduce((a,s)=>a+s.y,0)/nextStars.length : CY;
+    const overviewPx = vpW/2 - ncx*overviewNz;
+    const overviewPy = vpH/2 - ncy*overviewNz;
+    cssZoomRef.current = overviewNz; panXRef.current = overviewPx; panYRef.current = overviewPy;
+    applyTransform(overviewPx, overviewPy, overviewNz, 0.65);
+
+    const t1 = setTimeout(() => {
+      // Phase 2: zoom in to next artist, update React state in one batch
+      cssZoomRef.current = targetNz; panXRef.current = targetPx; panYRef.current = targetPy;
+      applyTransform(targetPx, targetPy, targetNz, 0.65);
+      setFocusedArtist(nextArtist);
+      setFocusedGenre(null); setScoreFilter(null);
+      setTourIdx(nextIdx);
+      syncState();
+
+      const t2 = setTimeout(() => {
+        // Phase 3: lines start drawing
+        if (innerRef.current) innerRef.current.style.transition = "none";
+        tourTransitionRef.current = false;
+        setLinesReady(true);
+      }, 750);
+      transitionTimersRef.current.push(t2);
+    }, 720);
+    transitionTimersRef.current.push(t1);
+  }, [tourArtists, stars, applyTransform, syncState, clearTransitionTimers]);
+
   // Stats for overlay
   const stats = useMemo(() => {
     if (!stars.length) return null;
@@ -991,30 +1059,27 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     return { total: stars.length, artists: artistSet.size, genres, scoreMap, yearEntries, maxYearCount, avgScore };
   }, [stars]);
 
-  // Tour mode — auto-advance every 3.8s
+  // Tour mode — auto-advance after each artist's display time
   useEffect(() => {
     if (!tourActive || tourArtists.length === 0) return;
     const t = setTimeout(() => {
-      setTourIdx(prev => {
-        const next = ((prev ?? -1) + 1) % tourArtists.length;
-        setFocusedArtist(tourArtists[next]);
-        setFocusedGenre(null); setScoreFilter(null);
-        return next;
-      });
+      const nextIdx = ((tourIdx ?? -1) + 1) % tourArtists.length;
+      advanceTour(nextIdx);
     }, 6500);
     return () => clearTimeout(t);
-  }, [tourActive, tourIdx, tourArtists]);
+  }, [tourActive, tourIdx, tourArtists, advanceTour]);
 
   const startTour = useCallback(() => {
     if (!tourArtists.length) return;
-    setTourActive(true); setTourIdx(0);
-    setFocusedArtist(tourArtists[0]);
-    setFocusedGenre(null); setScoreFilter(null);
-  }, [tourArtists]);
+    setTourActive(true);
+    advanceTour(0);
+  }, [tourArtists, advanceTour]);
 
   const stopTour = useCallback(() => {
     setTourActive(false); setTourIdx(null);
-  }, []);
+    clearTransitionTimers();
+    setLinesReady(true);
+  }, [clearTransitionTimers]);
 
   // Canvas export (PNG)
   const handleExport = useCallback(() => {
@@ -1269,7 +1334,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
 
             <NebulaClouds clouds={clouds} />
             <GenreLabels clouds={clouds} focusedGenre={focusedGenre} cssZoom={cssZoom} onGenreClick={handleGenreClick} />
-            <ConstellationLines lines={lines} focusedArtist={focusedArtist} cssZoom={cssZoom} />
+            <ConstellationLines lines={lines} focusedArtist={focusedArtist} cssZoom={cssZoom} linesReady={linesReady} />
 
             {/* Stars */}
             {visStars.map(star => {
