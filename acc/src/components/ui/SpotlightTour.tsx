@@ -538,7 +538,7 @@ function Callout({
               <div key={i} style={{
                 width: i === stepIdx ? 16 : 5, height: 5, borderRadius: 3, flexShrink: 0,
                 backgroundColor: i === stepIdx ? "var(--accent)" : i < stepIdx ? "rgba(232,213,163,0.38)" : "var(--border-light)",
-                transition: "all 0.18s",
+                transition: "opacity 0.18s, background-color 0.18s, color 0.18s",
               }} />
             ))}
             <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>

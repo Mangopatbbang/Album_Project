@@ -458,7 +458,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   fontSize: 12, fontWeight: 600,
                   cursor: !aliasInput.trim() || aliasSaving ? "not-allowed" : "pointer",
                   opacity: !aliasInput.trim() || aliasSaving ? 0.5 : 1,
-                  transition: "all 0.15s",
+                  transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 }}
               >
@@ -768,7 +768,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                       backgroundColor: region === r ? "rgba(var(--accent-rgb), 0.12)" : "var(--bg-elevated)",
                       color: region === r ? "var(--accent)" : "var(--text-muted)",
                       fontSize: 12, fontWeight: 600, cursor: "pointer",
-                      transition: "all 0.15s",
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                     }}
                   >
                     {r}
@@ -805,7 +805,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                   backgroundColor: score === s ? "rgba(var(--accent-rgb),0.12)" : "var(--bg-elevated)",
                   color: score === s ? "var(--accent)" : "var(--text)",
                   fontSize: 14, fontWeight: 600, cursor: "pointer",
-                  transition: "all 0.12s",
+                  transition: "opacity 0.12s, background-color 0.12s, color 0.12s",
                 }}
               >{s}</button>
             ))}

@@ -278,11 +278,7 @@ export default function BottomNav() {
               >
                 <span
                   className={bouncingHref === href ? "nav-bounce" : ""}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    filter: active ? "drop-shadow(0 0 6px rgba(232,213,163,0.7))" : "drop-shadow(0 0 0px rgba(232,213,163,0))",
-                    transition: "filter 0.2s ease",
-                  }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Icon />
                 </span>
@@ -308,28 +304,17 @@ export default function BottomNav() {
                 gap: 4, padding: "12px 0",
               }}
             >
-              <span style={{
-                position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-                filter: notifOpen ? "drop-shadow(0 0 6px rgba(232,213,163,0.7))" : "drop-shadow(0 0 0px rgba(232,213,163,0))",
-                transition: "filter 0.2s ease",
-              }}>
+              <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <BellIcon />
                 {unreadCount > 0 && (
-                  <span style={{ position: "absolute", top: -3, right: -4 }}>
-                    <span style={{
-                      position: "absolute", inset: 0, borderRadius: "50%",
-                      backgroundColor: "var(--accent)", opacity: 0.5,
-                      pointerEvents: "none",
-                    }} className="animate-ping" />
-                    <span style={{
-                      position: "relative",
-                      width: 14, height: 14, borderRadius: "50%",
-                      backgroundColor: "var(--accent)", color: "var(--bg)",
-                      fontSize: 9, fontWeight: 700,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
+                  <span style={{
+                    position: "absolute", top: -3, right: -4,
+                    width: 14, height: 14, borderRadius: "50%",
+                    backgroundColor: "var(--accent)", color: "var(--bg)",
+                    fontSize: 9, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </span>

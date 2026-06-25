@@ -492,7 +492,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
                     backgroundColor: region === r ? "rgba(var(--accent-rgb), 0.12)" : "var(--bg-elevated)",
                     color: region === r ? "var(--accent)" : "var(--text-muted)",
                     fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    transition: "all 0.15s",
+                    transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                   }}
                 >
                   {r}

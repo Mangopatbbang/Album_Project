@@ -30,54 +30,52 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+async function fetchProfileData(userId: string): Promise<UserProfile | null> {
+  const { data } = await supabaseBrowser
+    .from("users")
+    .select("id, display_name, emoji, role, auth_id, avatar_url, onboarded")
+    .eq("auth_id", userId)
+    .single();
+  return (data as UserProfile | null);
+}
 
-  async function fetchProfile(userId: string) {
-    const { data, error } = await supabaseBrowser
-      .from("users")
-      .select("id, display_name, emoji, role, auth_id, avatar_url, onboarded")
-      .eq("auth_id", userId)
-      .single();
-    if (error) {
-      const { data: fallback } = await supabaseBrowser
-        .from("users")
-        .select("id, display_name, emoji, role, auth_id, avatar_url, onboarded")
-        .eq("auth_id", userId)
-        .single();
-      setProfile(fallback as UserProfile | null);
-      return;
-    }
-    setProfile(data as UserProfile | null);
-  }
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Single state object — one setState = one render, no cascading re-renders on load
+  const [authState, setAuthState] = useState<{
+    authUser: SupabaseUser | null;
+    profile: UserProfile | null;
+    loading: boolean;
+  }>({ authUser: null, profile: null, loading: true });
 
   useEffect(() => {
-    supabaseBrowser.auth.getSession().then(async ({ data: { session } }) => {
-      setAuthUser(session?.user ?? null);
-      if (session?.user) await fetchProfile(session.user.id);
-      setLoading(false);
-    });
+    let cancelled = false;
+
+    async function init() {
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      if (cancelled) return;
+      const user = session?.user ?? null;
+      const profile = user ? await fetchProfileData(user.id) : null;
+      if (cancelled) return;
+      setAuthState({ authUser: user, profile, loading: false });
+    }
+    init();
 
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
-      (_event, session) => {
-        setAuthUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
+      async (_event, session) => {
+        const user = session?.user ?? null;
+        const profile = user ? await fetchProfileData(user.id) : null;
+        setAuthState({ authUser: user, profile, loading: false });
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => { cancelled = true; subscription.unsubscribe(); };
   }, []);
 
   const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
-    if (session?.user) await fetchProfile(session.user.id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!session?.user) return;
+    const profile = await fetchProfileData(session.user.id);
+    setAuthState(prev => ({ ...prev, profile }));
   }, []);
 
   const signOut = useCallback(async () => {
@@ -85,8 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ authUser, profile, loading, signOut, refreshProfile }),
-    [authUser, profile, loading, signOut, refreshProfile],
+    () => ({ ...authState, signOut, refreshProfile }),
+    [authState, signOut, refreshProfile],
   );
 
   return (

@@ -33,7 +33,7 @@ export default function ElementCaptureButton({ targetId }: { targetId: string })
         display: "flex",
         alignItems: "center",
         gap: 5,
-        transition: "all 0.2s",
+        transition: "opacity 0.2s, background-color 0.2s, color 0.2s",
         opacity: capturing ? 0.5 : 1,
         flexShrink: 0,
       }}

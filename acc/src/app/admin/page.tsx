@@ -1068,7 +1068,7 @@ export default function AdminPage() {
                 fontWeight: activeTab === tab.key ? 700 : 500, fontSize: 13,
                 backgroundColor: activeTab === tab.key ? "var(--bg-card)" : "transparent",
                 color: activeTab === tab.key ? "var(--text)" : "var(--text-muted)",
-                transition: "all 0.15s",
+                transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
               }}
             >
               {tab.label}

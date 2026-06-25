@@ -183,13 +183,13 @@ export default function StoryCardPreviewModal({
             <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, overflow: "hidden", fontSize: 12, fontWeight: 600 }}>
               <button
                 onClick={() => setUseAvgScore(false)}
-                style={{ padding: "6px 16px", background: !useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: !useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "all 0.15s" }}
+                style={{ padding: "6px 16px", background: !useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: !useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s" }}
               >
                 내 점수
               </button>
               <button
                 onClick={() => setUseAvgScore(true)}
-                style={{ padding: "6px 16px", background: useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "all 0.15s" }}
+                style={{ padding: "6px 16px", background: useAvgScore ? "rgba(255,255,255,0.16)" : "none", color: useAvgScore ? "#fff" : "rgba(255,255,255,0.35)", border: "none", cursor: "pointer", transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s" }}
               >
                 평균 점수
               </button>
@@ -208,7 +208,7 @@ export default function StoryCardPreviewModal({
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: "pointer",
-                  transition: "all 0.15s",
+                  transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                 }}
               >
                 한줄평
@@ -226,7 +226,7 @@ export default function StoryCardPreviewModal({
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: "pointer",
-                  transition: "all 0.15s",
+                  transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                 }}
               >
                 Best Tracks
@@ -244,7 +244,7 @@ export default function StoryCardPreviewModal({
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: "pointer",
-                  transition: "all 0.15s",
+                  transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                 }}
               >
                 닉네임

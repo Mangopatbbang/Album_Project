@@ -321,7 +321,7 @@ export default function Header() {
                                 <button
                                   onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }}
                                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, padding: "2px 2px", lineHeight: 1, opacity: 0.6 }}
-                                  className="hover:opacity-100 hover:text-[var(--error)] transition-all"
+                                  className="hover:opacity-100 hover:text-[var(--error)] transition-[opacity,color]"
                                 >
                                   ✕
                                 </button>

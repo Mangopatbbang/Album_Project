@@ -743,7 +743,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       color: "var(--text-muted)", fontSize: 12, lineHeight: 1,
                       padding: "4px 10px", borderRadius: 5,
                       border: "1px solid var(--border)",
-                      transition: "all 0.15s", whiteSpace: "nowrap",
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap",
                     }}
                     className="hover:!border-[var(--accent)] hover:!text-[var(--accent)]"
                   >
@@ -759,7 +759,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         fontSize: 12, lineHeight: 1,
                         padding: "4px 10px", borderRadius: 5,
                         border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                        transition: "all 0.15s", whiteSpace: "nowrap",
+                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap",
                       }}
                     >
                       {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
@@ -774,7 +774,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         color: "var(--text-muted)", lineHeight: 1,
                         padding: "4px 7px", borderRadius: 5,
                         border: "1px solid var(--border)",
-                        transition: "all 0.15s", display: "flex", alignItems: "center",
+                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", display: "flex", alignItems: "center",
                       }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -791,7 +791,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         color: full ? "var(--text-muted)" : "var(--text-muted)", fontSize: 12, lineHeight: 1,
                         padding: "4px 10px", borderRadius: 5,
                         border: "1px solid var(--border)",
-                        opacity: full ? 1 : 0.4, transition: "all 0.15s",
+                        opacity: full ? 1 : 0.4, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                       }}
                     >
                       {full ? "수정" : "…"}
@@ -806,7 +806,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         color: "var(--error)", fontSize: 12, lineHeight: 1,
                         padding: "4px 10px", borderRadius: 5,
                         border: "1px solid rgba(var(--error-rgb), 0.4)",
-                        opacity: deletingAlbum ? 0.5 : 1, transition: "all 0.15s",
+                        opacity: deletingAlbum ? 0.5 : 1, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                       }}
                     >
                       {deletingAlbum ? "…" : "삭제"}
@@ -999,7 +999,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                     color: "var(--text-sub)", fontSize: 13, lineHeight: 1,
                     padding: "6px 12px", borderRadius: 6,
                     border: "1px solid var(--border)",
-                    transition: "all 0.15s", whiteSpace: "nowrap", fontWeight: 500,
+                    transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap", fontWeight: 500,
                   }}
                 >
                   ✎ 청음 기록
@@ -1014,7 +1014,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       fontSize: 13, lineHeight: 1,
                       padding: "6px 12px", borderRadius: 6,
                       border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                      transition: "all 0.15s", whiteSpace: "nowrap", fontWeight: 500,
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap", fontWeight: 500,
                     }}
                   >
                     {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
@@ -1030,7 +1030,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       color: "var(--text-sub)", lineHeight: 1,
                       padding: "6px 10px", borderRadius: 6,
                       border: "1px solid var(--border)",
-                      transition: "all 0.15s",
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                     }}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1047,7 +1047,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       color: full ? "var(--text-sub)" : "var(--text-muted)", fontSize: 13, lineHeight: 1,
                       padding: "6px 12px", borderRadius: 6,
                       border: "1px solid var(--border)",
-                      opacity: full ? 1 : 0.4, fontWeight: 500, transition: "all 0.15s",
+                      opacity: full ? 1 : 0.4, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                     }}
                   >
                     {full ? "수정" : "로딩 중…"}
@@ -1062,7 +1062,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       color: "var(--error)", fontSize: 13, lineHeight: 1,
                       padding: "6px 12px", borderRadius: 6,
                       border: "1px solid rgba(var(--error-rgb), 0.4)",
-                      opacity: deletingAlbum ? 0.5 : 1, fontWeight: 500, transition: "all 0.15s",
+                      opacity: deletingAlbum ? 0.5 : 1, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                     }}
                   >
                     {deletingAlbum ? "삭제 중…" : "삭제"}
@@ -1502,7 +1502,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         borderRadius: 6,
                         cursor: "pointer",
                         border: "1px solid var(--border)",
-                        transition: "all 0.15s",
+                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                       }}
                     >
                       삭제
@@ -1665,7 +1665,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                         fontWeight: 600, fontSize: 13,
                         cursor: evictAlbumId && evictScore !== null && !evicting ? "pointer" : "not-allowed",
                         opacity: evicting ? 0.5 : 1,
-                        transition: "all 0.15s",
+                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
                       }}
                     >
                       {evicting ? "저장 중…" : "확인"}
