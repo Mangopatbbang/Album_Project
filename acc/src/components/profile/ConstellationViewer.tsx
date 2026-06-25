@@ -981,6 +981,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         @keyframes csTwinkle { 0%,100% { opacity:1; } 50% { opacity:0.42; } }
         @keyframes csCoverIn { from { opacity:0; transform:scale(0.62); } to { opacity:1; transform:scale(1); } }
         @keyframes csLineIn { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes csGlowIn { from { opacity: 0; } to { opacity: 0.22; } }
       `}</style>
 
       {/* ── Header ── */}
@@ -1205,31 +1206,40 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                     artistLineIdx.set(l.artist, cur + 1);
                     return cur;
                   })() : 0;
-                  const staggerDelay = lineIdx * 0.09;
+                  const staggerDelay = lineIdx * 0.18;
+                  const drawDur = 0.85;
                   return (
                     <g key={i}>
+                      {/* 글로우 헤일로 — 그려진 이후 페이드인 (선 완성 후 등장) */}
                       {isFocused && (
                         <path
                           d={pathD} fill="none"
                           stroke={l.color}
-                          strokeWidth={5 / cssZoom}
-                          strokeOpacity={0.18}
+                          strokeWidth={8 / cssZoom}
                           strokeLinecap="round"
                           pathLength={1}
                           strokeDasharray={1}
-                          style={{ animation: `csLineIn 0.48s ${staggerDelay}s ease forwards`, strokeDashoffset: 1 } as React.CSSProperties}
+                          style={{
+                            strokeDashoffset: 1,
+                            animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`,
+                            opacity: 0.22,
+                          } as React.CSSProperties}
                         />
                       )}
+                      {/* 메인 선 — 포커스 시 처음부터 그려짐, 평소엔 거의 안 보임 */}
                       <path
                         d={pathD} fill="none"
                         stroke={l.color}
-                        strokeWidth={isFocused ? 1.1 / cssZoom : 0.8 / cssZoom}
-                        strokeOpacity={inFocusMode ? (isFocused ? 0.62 : 0.02) : 0.12}
+                        strokeWidth={isFocused ? 1.4 / cssZoom : 0.6 / cssZoom}
                         strokeLinecap="round"
-                        strokeDasharray={inFocusMode ? undefined : `${4 / cssZoom} ${5.5 / cssZoom}`}
+                        strokeDasharray={isFocused ? 1 : `${3.5 / cssZoom} ${7 / cssZoom}`}
+                        strokeOpacity={inFocusMode ? (isFocused ? 0 : 0.01) : 0.04}
                         pathLength={isFocused ? 1 : undefined}
-                        strokeDashoffset={isFocused ? undefined : undefined}
-                        style={isFocused ? { animation: `csLineIn 0.48s ${staggerDelay}s ease forwards`, strokeDashoffset: 1 } as React.CSSProperties : undefined}
+                        style={isFocused ? {
+                          strokeDashoffset: 1,
+                          animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`,
+                          strokeOpacity: 0.78,
+                        } as React.CSSProperties : undefined}
                       />
                     </g>
                   );
