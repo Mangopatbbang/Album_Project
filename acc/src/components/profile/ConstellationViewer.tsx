@@ -523,7 +523,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     const fn = (e: WheelEvent) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
-        const fac = e.deltaMode === 0 ? Math.exp(-e.deltaY * 0.008) : e.deltaY > 0 ? 1 / 1.25 : 1.25;
+        const fac = e.deltaMode === 0 ? Math.exp(-e.deltaY * 0.003) : e.deltaY > 0 ? 1 / 1.15 : 1.15;
         const rect = el.getBoundingClientRect();
         const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
         const pz = cssZoomRef.current;
@@ -678,8 +678,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         if (scoreFilter !== null) { setScoreFilter(null); return; }
         onClose(); return;
       }
-      if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.4); }
-      if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomStep(1 / 1.4); }
+      if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomStep(1.2); }
+      if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomStep(1 / 1.2); }
       if (e.key === "0") { e.preventDefault(); resetZoom(); }
     };
     document.addEventListener("keydown", fn);
@@ -1063,11 +1063,11 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
                 전체보기
               </button>
             )}
-            <button onClick={() => zoomStep(1 / 1.6)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+            <button onClick={() => zoomStep(1 / 1.3)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
             <span style={{ fontSize: 9, color: "var(--text-muted)", opacity: 0.55, minWidth: 28, textAlign: "center" }}>
               {fitZoom > 0 ? `${Math.round(cssZoom / fitZoom * 100)}%` : ""}
             </span>
-            <button onClick={() => zoomStep(1.6)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            <button onClick={() => zoomStep(1.3)} style={{ width: 24, height: 24, borderRadius: 5, fontSize: 16, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
           </div>
         )}
 
