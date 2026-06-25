@@ -297,11 +297,11 @@ export function getBestByArtist(albums: RawAlbum[]): Map<string, AlbumStat[]> {
 
 export type RegionSplit<T> = { all: T; domestic: T; foreign: T };
 
-// 전체/국내/해외 필터를 한 번에 계산 — best/page.tsx에서 9번 중복 호출 방지
+// 전체/국내/해외 중 통합 1벌만 직렬화 — region 필드로 클라이언트에서 필터링
 export function getBestDataForPage(albums: RawAlbum[]): {
-  yearData: RegionSplit<[string, AlbumStat[]][]>;
-  genreData: RegionSplit<[string, AlbumStat[]][]>;
-  artistData: RegionSplit<[string, AlbumStat[]][]>;
+  yearData: [string, AlbumStat[]][];
+  genreData: [string, AlbumStat[]][];
+  artistData: [string, AlbumStat[]][];
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
@@ -309,21 +309,9 @@ export function getBestDataForPage(albums: RawAlbum[]): {
   const dom = albums.filter((a) => a.region === "국내");
   const for_ = albums.filter((a) => a.region === "해외");
   return {
-    yearData: {
-      all: [...getBestByYear(albums).entries()],
-      domestic: [...getBestByYear(dom).entries()],
-      foreign: [...getBestByYear(for_).entries()],
-    },
-    genreData: {
-      all: [...getBestByGenre(albums).entries()],
-      domestic: [...getBestByGenre(dom).entries()],
-      foreign: [...getBestByGenre(for_).entries()],
-    },
-    artistData: {
-      all: [...getBestByArtist(albums).entries()],
-      domestic: [...getBestByArtist(dom).entries()],
-      foreign: [...getBestByArtist(for_).entries()],
-    },
+    yearData: [...getBestByYear(albums).entries()],
+    genreData: [...getBestByGenre(albums).entries()],
+    artistData: [...getBestByArtist(albums).entries()],
     allRanked: getRankedAll(albums),
     domesticRanked: getRankedAll(dom),
     foreignRanked: getRankedAll(for_),

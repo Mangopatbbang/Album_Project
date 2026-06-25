@@ -25,7 +25,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (!profile) return;
-    fetch(`/api/notifications?userId=${profile.id}`)
+    apiFetch(`/api/notifications?userId=${profile.id}`)
       .then((r) => r.json())
       .then((d) => setNotifications(d.notifications ?? []))
       .catch(() => {});

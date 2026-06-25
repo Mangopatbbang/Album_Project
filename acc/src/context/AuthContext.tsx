@@ -50,20 +50,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function init() {
-      const { data: { session } } = await supabaseBrowser.auth.getSession();
-      if (cancelled) return;
-      const user = session?.user ?? null;
-      const profile = user ? await fetchProfileData(user.id) : null;
-      if (cancelled) return;
-      setAuthState({ authUser: user, profile, loading: false });
-    }
-    init();
-
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (_event, session) => {
+        if (cancelled) return;
         const user = session?.user ?? null;
         const profile = user ? await fetchProfileData(user.id) : null;
+        if (cancelled) return;
         setAuthState({ authUser: user, profile, loading: false });
       }
     );

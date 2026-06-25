@@ -185,11 +185,14 @@ export default async function ProfilePage({
   }
   const maxMonthCount = Math.max(...monthData.map((m) => m.count), 1);
 
-  // 일별 청음 (캘린더용 — 전체 기간)
+  // 일별 청음 (캘린더용 — 최근 3년)
+  const calendarCutoff = new Date();
+  calendarCutoff.setFullYear(calendarCutoff.getFullYear() - 3);
+  const calendarCutoffStr = calendarCutoff.toISOString().slice(0, 10);
   const dailyData: Record<string, DayAlbum[]> = {};
   for (const r of validRatings) {
-    // 최초 평가일 기준 (created_at), 없으면 updated_at fallback
     const key = (r.created_at ?? r.updated_at).slice(0, 10);
+    if (key < calendarCutoffStr) continue;
     const updatedDay = r.updated_at.slice(0, 10);
     if (!dailyData[key]) dailyData[key] = [];
     dailyData[key].push({

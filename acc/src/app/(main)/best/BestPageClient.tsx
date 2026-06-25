@@ -549,8 +549,6 @@ function RankedGrid({
   );
 }
 
-type ViewSections = { all: [string, AlbumStat[]][]; domestic: [string, AlbumStat[]][]; foreign: [string, AlbumStat[]][] };
-
 export default function BestPageClient({
   yearData,
   genreData,
@@ -561,9 +559,9 @@ export default function BestPageClient({
   hiddenGems,
   initialView,
 }: {
-  yearData: ViewSections;
-  genreData: ViewSections;
-  artistData: ViewSections;
+  yearData: [string, AlbumStat[]][];
+  genreData: [string, AlbumStat[]][];
+  artistData: [string, AlbumStat[]][];
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
@@ -577,11 +575,18 @@ export default function BestPageClient({
   const [regionFilter, setRegionFilter] = useState<"전체" | "국내" | "해외">("전체");
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
-  const viewData = view === "genre" ? genreData : view === "artist" ? artistData : yearData;
-  const sections =
-    regionFilter === "국내" ? viewData.domestic :
-    regionFilter === "해외" ? viewData.foreign :
-    viewData.all;
+  const viewData = useMemo(
+    () => view === "genre" ? genreData : view === "artist" ? artistData : yearData,
+    [view, genreData, artistData, yearData]
+  );
+
+  const sections = useMemo(() => {
+    if (regionFilter === "전체") return viewData;
+    const regionKey = regionFilter === "국내" ? "국내" : "해외";
+    return viewData
+      .map(([label, list]) => [label, list.filter((a) => a.region === regionKey)] as [string, AlbumStat[]])
+      .filter(([, list]) => list.length > 0);
+  }, [viewData, regionFilter]);
 
   const rankedList =
     regionFilter === "국내" ? domesticRanked :
