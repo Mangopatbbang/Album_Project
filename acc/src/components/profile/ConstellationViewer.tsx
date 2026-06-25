@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo, startTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { scoreColor } from "@/lib/score";
 import { GENRE_COLOR } from "@/lib/bio";
@@ -281,14 +281,17 @@ const Star = memo(function Star({ star, cs, cssZoom, dimmed, focused, onSelect, 
   const leave = () => { setHov(false); onTipLeave(); };
 
   return (
-    <div style={{
-      position: "absolute", left: star.x, top: star.y,
-      transform: "translate(-50%,-50%)",
-      zIndex: hov ? 40 : (score ?? 2),
-      opacity: dimmed ? 0.08 : 1,
-      transition: "opacity 0.28s ease",
-      pointerEvents: dimmed ? "none" : "auto",
-    }}>
+    <div
+      className={`cs-star${focused ? " cs-focused" : ""}`}
+      style={{
+        position: "absolute", left: star.x, top: star.y,
+        transform: "translate(-50%,-50%)",
+        zIndex: hov ? 40 : (score ?? 2),
+        transition: "opacity 0.28s ease",
+        // dimmed only fires for genre/score filter (not artist focus — CSS handles that)
+        ...(dimmed ? { opacity: 0.08, pointerEvents: "none" as const } : {}),
+      }}
+    >
       {isDot ? (
         // 투명 래퍼로 호버/클릭 판정 영역을 시각 크기보다 크게 확보
         <button
@@ -1018,13 +1021,17 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     applyTransform(overviewPx, overviewPy, overviewNz, 0.65);
 
     const t1 = setTimeout(() => {
-      // Phase 2: zoom in to next artist, update React state in one batch
+      // Phase 2: zoom in to next artist
       cssZoomRef.current = targetNz; panXRef.current = targetPx; panYRef.current = targetPy;
       applyTransform(targetPx, targetPy, targetNz, 0.65);
+      // Urgent: artist focus (star dimming responds to this)
       setFocusedArtist(nextArtist);
-      setFocusedGenre(null); setScoreFilter(null);
-      setTourIdx(nextIdx);
-      syncState();
+      // Non-urgent: sidebar state, zoom indicator - can yield to animation frames
+      startTransition(() => {
+        setFocusedGenre(null); setScoreFilter(null);
+        setTourIdx(nextIdx);
+        syncState();
+      });
 
       const t2 = setTimeout(() => {
         // Phase 3: lines start drawing
@@ -1144,6 +1151,11 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     });
   }, [stars, lines, bgStars, yearRange]);
 
+  // Sync artist-focus dimming to CSS class — bypasses React re-renders for all non-focused stars
+  useEffect(() => {
+    innerRef.current?.classList.toggle("cs-focus-mode", focusedArtist !== null);
+  }, [focusedArtist]);
+
   // Visibility culling
   const margin = 80 / cssZoom;
   const vl = -panX / cssZoom - margin;
@@ -1200,6 +1212,8 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         @keyframes csCoverIn { from { opacity:0; transform:scale(0.62); } to { opacity:1; transform:scale(1); } }
         @keyframes csLineIn { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
         @keyframes csGlowIn { from { opacity: 0; } to { opacity: 0.22; } }
+        .cs-focus-mode .cs-star { opacity: 0.07; pointer-events: none; transition: opacity 0.28s ease; }
+        .cs-focus-mode .cs-star.cs-focused { opacity: 1 !important; pointer-events: auto !important; }
       `}</style>
 
       {/* ── Header ── */}
@@ -1325,6 +1339,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
               width: CANVAS, height: CANVAS,
               transformOrigin: "0 0",
               willChange: "transform",
+              contain: "layout style paint",
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
           >
@@ -1339,8 +1354,10 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             {/* Stars */}
             {visStars.map(star => {
               const isFocused = focusedArtist !== null && artistMatch(star, focusedArtist);
+              // Artist-focus dimming is handled by CSS (.cs-focus-mode) — no React prop needed.
+              // Only pass dimmed for genre/score filter (less frequent, manual actions).
               const isDimmed = focusedArtist !== null
-                ? !isFocused
+                ? false
                 : focusedGenre !== null
                   ? star.genre !== focusedGenre
                   : scoreFilter !== null
