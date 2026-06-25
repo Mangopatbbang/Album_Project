@@ -26,6 +26,10 @@ const GENRE_ORDER = [
 
 // ─── Layout types ─────────────────────────────────────────────────────────────
 
+interface LineData {
+  x1: number; y1: number; x2: number; y2: number; color: string; artist: string;
+}
+
 interface StarPos {
   albumId: string;
   ev: TimelineEvent;
@@ -404,6 +408,151 @@ const Star = memo(function Star({ star, cs, cssZoom, dimmed, focused, onSelect, 
         </div>
       )}
     </div>
+  );
+});
+
+// ─── Static sub-components (memo'd → skip React diffing on every tour step) ───
+
+// 배경별: Canvas 1개로 700개 SVG circle 대체 → 초기 1회만 드로우
+const BgStarCanvas = memo(function BgStarCanvas({
+  bgStars,
+}: { bgStars: { x: number; y: number; r: number; op: number }[] }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext("2d"); if (!ctx) return;
+    ctx.clearRect(0, 0, CANVAS, CANVAS);
+    for (const b of bgStars) {
+      ctx.globalAlpha = b.op;
+      ctx.fillStyle = "white";
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }, [bgStars]);
+  return <canvas ref={ref} width={CANVAS} height={CANVAS} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />;
+});
+
+// Milky Way: props 없음 → 절대 리렌더 안 함
+const MW_BLOBS = [
+  { x: 400, y: 2600, rx: 900, ry: 320, rot: -38 },
+  { x: 1100, y: 1900, rx: 700, ry: 260, rot: -36 },
+  { x: 1700, y: 1300, rx: 800, ry: 280, rot: -34 },
+  { x: 2300, y: 700,  rx: 650, ry: 220, rot: -32 },
+  { x: 2800, y: 300,  rx: 500, ry: 180, rot: -30 },
+] as const;
+
+const MilkyWayBlobs = memo(function MilkyWayBlobs() {
+  return (
+    <>
+      {MW_BLOBS.map((b, i) => (
+        <div key={i} style={{
+          position: "absolute", left: b.x - b.rx, top: b.y - b.ry,
+          width: b.rx * 2, height: b.ry * 2, borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(200,210,255,0.035) 0%, rgba(180,195,255,0.018) 45%, transparent 75%)",
+          filter: "blur(48px)", transform: `rotate(${b.rot}deg)`, transformOrigin: "center",
+          pointerEvents: "none",
+        }} />
+      ))}
+    </>
+  );
+});
+
+// 장르 성운: events 바뀔 때만 clouds 바뀜 → 이후 절대 리렌더 안 함
+const NebulaClouds = memo(function NebulaClouds({ clouds }: { clouds: GenreCloud[] }) {
+  return (
+    <>
+      {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
+        const nr = INNER_R + (OUTER_R - INNER_R) * frac;
+        const nx = CX + Math.cos(c.midAngle) * nr;
+        const ny = CY + Math.sin(c.midAngle) * nr;
+        const cr = Math.max(45, c.sectorSpan * nr * 0.6 + Math.sqrt(c.count) * 10);
+        return (
+          <div key={`neb-${c.genre}-${i}`} style={{
+            position: "absolute", left: nx - cr, top: ny - cr,
+            width: cr * 2, height: cr * 2, borderRadius: "50%",
+            background: `radial-gradient(circle, ${c.color}16 0%, ${c.color}08 52%, transparent 74%)`,
+            filter: "blur(36px)", pointerEvents: "none",
+          }} />
+        );
+      }))}
+    </>
+  );
+});
+
+// 장르 레이블: focusedGenre·cssZoom 바뀔 때만 리렌더
+const GenreLabels = memo(function GenreLabels({
+  clouds, focusedGenre, cssZoom, onGenreClick,
+}: {
+  clouds: GenreCloud[]; focusedGenre: string | null; cssZoom: number;
+  onGenreClick: (g: string | null) => void;
+}) {
+  return (
+    <>
+      {clouds.map(c => {
+        const labelR = INNER_R + (OUTER_R - INNER_R) * 0.7;
+        const lx = CX + Math.cos(c.midAngle) * labelR;
+        const ly = CY + Math.sin(c.midAngle) * labelR;
+        const isActive = focusedGenre === c.genre;
+        return (
+          <div key={`lbl-${c.genre}`}
+            onClick={e => { e.stopPropagation(); onGenreClick(isActive ? null : c.genre); }}
+            style={{
+              position: "absolute", left: lx, top: ly, transform: "translate(-50%,-50%)",
+              fontSize: 11 / cssZoom, fontWeight: 700, color: c.color,
+              opacity: isActive ? 0.85 : 0.28, pointerEvents: "auto", whiteSpace: "nowrap",
+              letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer",
+              transition: "opacity 0.2s", userSelect: "none",
+            }}
+          >{c.genre}</div>
+        );
+      })}
+    </>
+  );
+});
+
+// 별자리선 SVG: focusedArtist·cssZoom 바뀔 때만 리렌더
+const ConstellationLines = memo(function ConstellationLines({
+  lines, focusedArtist, cssZoom,
+}: { lines: LineData[]; focusedArtist: string | null; cssZoom: number }) {
+  const artistLineIdx = new Map<string, number>();
+  const drawDur = 0.85;
+  return (
+    <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
+      {lines.map((l, i) => {
+        const isFocused = focusedArtist === l.artist;
+        const inFocusMode = focusedArtist !== null;
+        const dx = l.x2 - l.x1, dy = l.y2 - l.y1;
+        const curveSide = (l.artist.charCodeAt(0) % 2 === 0) ? 1 : -1;
+        const cpx = (l.x1 + l.x2) / 2 - dy * 0.12 * curveSide;
+        const cpy = (l.y1 + l.y2) / 2 + dx * 0.12 * curveSide;
+        const pathD = `M${l.x1},${l.y1} Q${cpx},${cpy} ${l.x2},${l.y2}`;
+        const lineIdx = isFocused ? (() => {
+          const cur = artistLineIdx.get(l.artist) ?? 0;
+          artistLineIdx.set(l.artist, cur + 1);
+          return cur;
+        })() : 0;
+        const staggerDelay = lineIdx * 0.18;
+        return (
+          <g key={i}>
+            {isFocused && (
+              <path d={pathD} fill="none" stroke={l.color}
+                strokeWidth={8 / cssZoom} strokeLinecap="round"
+                pathLength={1} strokeDasharray={1}
+                style={{ strokeDashoffset: 1, animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`, opacity: 0.22 } as React.CSSProperties}
+              />
+            )}
+            <path d={pathD} fill="none" stroke={l.color}
+              strokeWidth={isFocused ? 1.4 / cssZoom : 0.6 / cssZoom}
+              strokeLinecap="round"
+              strokeDasharray={isFocused ? 1 : `${3.5 / cssZoom} ${7 / cssZoom}`}
+              strokeOpacity={inFocusMode ? (isFocused ? 0 : 0.01) : 0.04}
+              pathLength={isFocused ? 1 : undefined}
+              style={isFocused ? { strokeDashoffset: 1, animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`, strokeOpacity: 0.78 } as React.CSSProperties : undefined}
+            />
+          </g>
+        );
+      })}
+    </svg>
   );
 });
 
@@ -852,7 +1001,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
         setFocusedGenre(null); setScoreFilter(null);
         return next;
       });
-    }, 3800);
+    }, 6500);
     return () => clearTimeout(t);
   }, [tourActive, tourIdx, tourArtists]);
 
@@ -945,6 +1094,10 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
   const cs = coverSize(cssZoom, fitZoom);
   const isZoomed = cssZoom > fitZoom * 1.1;
   const cloudsSorted = useMemo(() => [...clouds].sort((a, b) => b.count - a.count), [clouds]);
+
+  const handleGenreClick = useCallback((g: string | null) => {
+    setFocusedGenre(g); setFocusedArtist(null); setScoreFilter(null);
+  }, []);
 
   // focusedArtistRef: stable ref to avoid recreating handleStarClick on every artist focus change
   const focusedArtistRef = useRef(focusedArtist);
@@ -1110,142 +1263,13 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
             }}
             onClick={(e) => { if (!dragMoved.current && e.target === e.currentTarget) setFocusedArtist(null); }}
           >
-            {/* Background starfield */}
-            <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
-              {bgStars.map((bs, i) => (
-                <circle key={i} cx={bs.x} cy={bs.y} r={bs.r} fill="white" opacity={bs.op} />
-              ))}
-            </svg>
+            <BgStarCanvas bgStars={bgStars} />
 
-            {/* Milky Way — subtle diagonal gradient blobs */}
-            {[
-              { x: 400, y: 2600, rx: 900, ry: 320, rot: -38 },
-              { x: 1100, y: 1900, rx: 700, ry: 260, rot: -36 },
-              { x: 1700, y: 1300, rx: 800, ry: 280, rot: -34 },
-              { x: 2300, y: 700,  rx: 650, ry: 220, rot: -32 },
-              { x: 2800, y: 300,  rx: 500, ry: 180, rot: -30 },
-            ].map((b, i) => (
-              <div key={`mw-${i}`} style={{
-                position: "absolute",
-                left: b.x - b.rx, top: b.y - b.ry,
-                width: b.rx * 2, height: b.ry * 2,
-                borderRadius: "50%",
-                background: "radial-gradient(ellipse, rgba(200,210,255,0.035) 0%, rgba(180,195,255,0.018) 45%, transparent 75%)",
-                filter: "blur(48px)",
-                transform: `rotate(${b.rot}deg)`,
-                transformOrigin: "center",
-                pointerEvents: "none",
-              }} />
-            ))}
+            <MilkyWayBlobs />
 
-            {/* Nebula clouds — two circles per genre for inner+outer sector coverage */}
-            {clouds.flatMap(c => [0.22, 0.62].map((frac, i) => {
-              const nr = INNER_R + (OUTER_R - INNER_R) * frac;
-              const nx = CX + Math.cos(c.midAngle) * nr;
-              const ny = CY + Math.sin(c.midAngle) * nr;
-              const cr = Math.max(45, c.sectorSpan * nr * 0.6 + Math.sqrt(c.count) * 10);
-              return (
-                <div key={`neb-${c.genre}-${i}`} style={{
-                  position: "absolute",
-                  left: nx - cr, top: ny - cr,
-                  width: cr * 2, height: cr * 2,
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle, ${c.color}16 0%, ${c.color}08 52%, transparent 74%)`,
-                  filter: "blur(36px)",
-                  pointerEvents: "none",
-                }} />
-              );
-            }))}
-
-            {/* Genre labels — clickable for auto-zoom */}
-            {clouds.map(c => {
-              const labelR = INNER_R + (OUTER_R - INNER_R) * 0.7;
-              const lx = CX + Math.cos(c.midAngle) * labelR;
-              const ly = CY + Math.sin(c.midAngle) * labelR;
-              const isActive = focusedGenre === c.genre;
-              return (
-                <div
-                  key={`lbl-${c.genre}`}
-                  onClick={e => { e.stopPropagation(); setFocusedGenre(isActive ? null : c.genre); setFocusedArtist(null); setScoreFilter(null); }}
-                  style={{
-                    position: "absolute",
-                    left: lx, top: ly,
-                    transform: "translate(-50%,-50%)",
-                    fontSize: 11 / cssZoom,
-                    fontWeight: 700,
-                    color: c.color,
-                    opacity: isActive ? 0.85 : 0.28,
-                    pointerEvents: "auto",
-                    whiteSpace: "nowrap",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    transition: "opacity 0.2s",
-                    userSelect: "none",
-                  }}
-                >
-                  {c.genre}
-                </div>
-              );
-            })}
-
-            {/* Constellation lines — curved bezier, stagger draw-in on artist focus */}
-            <svg style={{ position: "absolute", inset: 0, width: CANVAS, height: CANVAS, pointerEvents: "none", overflow: "visible" }}>
-              {(() => {
-                const artistLineIdx = new Map<string, number>();
-                return lines.map((l, i) => {
-                  const isFocused = focusedArtist === l.artist;
-                  const inFocusMode = focusedArtist !== null;
-                  const dx = l.x2 - l.x1, dy = l.y2 - l.y1;
-                  const curveSide = (l.artist.charCodeAt(0) % 2 === 0) ? 1 : -1;
-                  const cpx = (l.x1 + l.x2) / 2 - dy * 0.12 * curveSide;
-                  const cpy = (l.y1 + l.y2) / 2 + dx * 0.12 * curveSide;
-                  const pathD = `M${l.x1},${l.y1} Q${cpx},${cpy} ${l.x2},${l.y2}`;
-                  const lineIdx = isFocused ? (() => {
-                    const cur = artistLineIdx.get(l.artist) ?? 0;
-                    artistLineIdx.set(l.artist, cur + 1);
-                    return cur;
-                  })() : 0;
-                  const staggerDelay = lineIdx * 0.18;
-                  const drawDur = 0.85;
-                  return (
-                    <g key={i}>
-                      {/* 글로우 헤일로 — 그려진 이후 페이드인 (선 완성 후 등장) */}
-                      {isFocused && (
-                        <path
-                          d={pathD} fill="none"
-                          stroke={l.color}
-                          strokeWidth={8 / cssZoom}
-                          strokeLinecap="round"
-                          pathLength={1}
-                          strokeDasharray={1}
-                          style={{
-                            strokeDashoffset: 1,
-                            animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`,
-                            opacity: 0.22,
-                          } as React.CSSProperties}
-                        />
-                      )}
-                      {/* 메인 선 — 포커스 시 처음부터 그려짐, 평소엔 거의 안 보임 */}
-                      <path
-                        d={pathD} fill="none"
-                        stroke={l.color}
-                        strokeWidth={isFocused ? 1.4 / cssZoom : 0.6 / cssZoom}
-                        strokeLinecap="round"
-                        strokeDasharray={isFocused ? 1 : `${3.5 / cssZoom} ${7 / cssZoom}`}
-                        strokeOpacity={inFocusMode ? (isFocused ? 0 : 0.01) : 0.04}
-                        pathLength={isFocused ? 1 : undefined}
-                        style={isFocused ? {
-                          strokeDashoffset: 1,
-                          animation: `csLineIn ${drawDur}s ${staggerDelay}s linear forwards`,
-                          strokeOpacity: 0.78,
-                        } as React.CSSProperties : undefined}
-                      />
-                    </g>
-                  );
-                });
-              })()}
-            </svg>
+            <NebulaClouds clouds={clouds} />
+            <GenreLabels clouds={clouds} focusedGenre={focusedGenre} cssZoom={cssZoom} onGenreClick={handleGenreClick} />
+            <ConstellationLines lines={lines} focusedArtist={focusedArtist} cssZoom={cssZoom} />
 
             {/* Stars */}
             {visStars.map(star => {
