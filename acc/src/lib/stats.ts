@@ -167,7 +167,7 @@ export const fetchAllUserGenreEmojis = unstable_cache(
     return result;
   },
   ["user-genre-emojis"],
-  { tags: ["profile-ratings"], revalidate: false }
+  { tags: ["user-genre-emojis"], revalidate: 1800 }
 );
 
 export type AlbumStat = {

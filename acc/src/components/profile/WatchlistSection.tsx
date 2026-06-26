@@ -32,9 +32,39 @@ type Props = {
   userId: string; // 프로필 주인 ID
 };
 
+const CARD_STYLE = {
+  backgroundColor: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  borderRadius: 12,
+  padding: "24px 28px",
+} as const;
+
+const SKEL = {
+  backgroundColor: "var(--bg-elevated)",
+  borderRadius: 4,
+} as const;
+
+function WatchlistSkeleton() {
+  return (
+    <div style={CARD_STYLE}>
+      <div style={{ ...SKEL, width: 120, height: 11, marginBottom: 16 }} />
+      {[0, 1, 2].map((i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <div style={{ ...SKEL, width: 40, height: 40, borderRadius: 6, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ ...SKEL, width: "65%", height: 13, marginBottom: 5 }} />
+            <div style={{ ...SKEL, width: "40%", height: 11 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function WatchlistSection({ userId }: Props) {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const [items, setItems] = useState<WatchlistItem[]>([]);
+  const [fetching, setFetching] = useState(true);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   const { showToastWithUndo } = useToast();
@@ -54,12 +84,14 @@ export default function WatchlistSection({ userId }: Props) {
 
   useEffect(() => {
     if (!isOwner) return;
+    setFetching(true);
     fetch(`/api/watchlist?userId=${userId}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.items) setItems(data.items);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setFetching(false));
   }, [userId, isOwner]);
 
   useEffect(() => {
@@ -71,6 +103,7 @@ export default function WatchlistSection({ userId }: Props) {
     return () => window.removeEventListener("watchlist-removed", handler);
   }, []);
 
+  if (loading) return <WatchlistSkeleton />;
   if (!isOwner) return null;
 
   const handleRemove = (albumId: string) => {
@@ -116,9 +149,21 @@ export default function WatchlistSection({ userId }: Props) {
         padding: "24px 28px",
       }}>
         <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>
-          나중에 들을 앨범 <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({items.length})</span>
+          나중에 들을 앨범 <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>{fetching ? "" : `(${items.length})`}</span>
         </p>
-        {items.length === 0 ? (
+        {fetching ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ ...SKEL, width: 40, height: 40, borderRadius: 6, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ ...SKEL, width: "65%", height: 13, marginBottom: 5 }} />
+                  <div style={{ ...SKEL, width: "40%", height: 11 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : items.length === 0 ? (
           <div>
             <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
               앨범 상세에서 🔖 탭하면<br />여기 쌓여요

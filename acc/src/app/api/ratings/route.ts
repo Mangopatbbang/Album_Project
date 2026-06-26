@@ -153,6 +153,9 @@ export async function POST(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidateTag("profile-ratings", "max");
+  revalidateTag("user-genre-emojis", "max");
+  revalidateTag("community-ratings", "max");
+  revalidateTag("profile-comparison", "max");
   revalidateTag("all-albums-with-ratings", "max");
   revalidateTag("controversial", "max");
   return NextResponse.json({ ok: true, rating: data });
@@ -281,6 +284,9 @@ export async function DELETE(req: NextRequest) {
   revalidatePath("/");
   revalidatePath("/best");
   revalidateTag("profile-ratings", "max");
+  revalidateTag("user-genre-emojis", "max");
+  revalidateTag("community-ratings", "max");
+  revalidateTag("profile-comparison", "max");
   revalidateTag("all-albums-with-ratings", "max");
   revalidateTag("controversial", "max");
   return NextResponse.json({ ok: true });

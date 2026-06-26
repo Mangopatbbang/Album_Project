@@ -42,7 +42,7 @@ const getCommunityRatings = unstable_cache(
     return (data ?? []) as { album_id: string; score: number }[];
   },
   ["community-ratings"],
-  { tags: ["profile-ratings"], revalidate: false }
+  { tags: ["community-ratings"], revalidate: false }
 );
 
 const getUserListeningLogs = unstable_cache(
