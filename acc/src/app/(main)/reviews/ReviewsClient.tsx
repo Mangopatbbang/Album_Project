@@ -26,12 +26,162 @@ type AlbumModalData = {
 
 const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-export default function ReviewsClient() {
+// ── 공감 베스트 소감 섹션 ──────────────────────────────────────────────────────
+
+function BestReviewCard({
+  item, myId, liking, onAlbumClick, onLike, avatarUrl, userName,
+}: {
+  item: ReviewItem;
+  myId: string | null;
+  liking: boolean;
+  onAlbumClick: () => void;
+  onLike: () => void;
+  avatarUrl: string | null;
+  userName: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const iLiked = myId ? item.likedBy.includes(myId) : false;
+  const isMyReview = myId === item.userId;
+
+  return (
+    <div style={{
+      backgroundColor: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: 12,
+      padding: "14px 16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+    }}>
+      {/* 앨범 헤더 */}
+      <button
+        onClick={onAlbumClick}
+        style={{ display: "flex", gap: 10, alignItems: "center", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", width: "100%" }}
+        className="hover:opacity-75 transition-opacity"
+      >
+        {item.coverUrl && !imgError ? (
+          <div style={{ position: "relative", width: 44, height: 44, borderRadius: 6, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
+            <Image fill sizes="44px" src={item.coverUrl} alt={item.albumTitle} style={{ objectFit: "cover" }} onError={() => setImgError(true)} />
+          </div>
+        ) : (
+          <div style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.albumTitle}</p>
+          <p style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>{item.artistDisplay || item.artist}</p>
+        </div>
+      </button>
+
+      {/* 소감 — 카드의 주인공 */}
+      <p style={{
+        fontSize: 13,
+        color: "var(--text)",
+        lineHeight: 1.65,
+        flex: 1,
+        wordBreak: "keep-all",
+        fontStyle: "italic",
+      }}>
+        &ldquo;{item.review}&rdquo;
+      </p>
+
+      {/* 하단: 점수 + 멤버 + 공감 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            backgroundColor: `${scoreColor(item.score)}22`,
+            color: scoreColor(item.score),
+            border: `1px solid ${scoreColor(item.score)}44`,
+            fontSize: 10, fontWeight: 800, flexShrink: 0,
+          }}>{item.score}</span>
+          <a
+            href={`/profile/${item.userId}`}
+            style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <UserAvatar avatarUrl={avatarUrl} size={16} />
+            <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{userName}</span>
+          </a>
+        </div>
+
+        {!isMyReview && myId ? (
+          <button
+            onClick={onLike}
+            disabled={liking}
+            style={{
+              display: "flex", alignItems: "center", gap: 3,
+              background: "none", border: "none", cursor: liking ? "not-allowed" : "pointer",
+              color: iLiked ? "var(--accent)" : "var(--text-muted)",
+              fontSize: 11, padding: "2px 8px", borderRadius: 20,
+              backgroundColor: iLiked ? "rgba(var(--accent-rgb), 0.1)" : "transparent",
+              transition: "background-color 0.15s, color 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 12 }}>{iLiked ? "♥" : "♡"}</span>
+            {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
+          </button>
+        ) : item.likedBy.length > 0 ? (
+          <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}>
+            ♥ {item.likedBy.length}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function BestReviewsSection({
+  items, myId, liking, onAlbumClick, onLike, avatarMap, users,
+}: {
+  items: ReviewItem[];
+  myId: string | null;
+  liking: string | null;
+  onAlbumClick: (albumId: string, albumTitle: string, artist: string, artistDisplay: string, coverUrl: string | null) => void;
+  onLike: (item: ReviewItem) => void;
+  avatarMap: Record<string, string | null>;
+  users: { id: string; display_name: string }[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
+          공감 베스트 소감
+        </p>
+        <span style={{ color: "var(--text-muted)", fontSize: 10 }}>♥ 공감수 기준</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {items.map((item) => (
+          <BestReviewCard
+            key={`${item.albumId}-${item.userId}`}
+            item={item}
+            myId={myId}
+            liking={liking === `${item.albumId}-${item.userId}`}
+            onAlbumClick={() => onAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
+            onLike={() => onLike(item)}
+            avatarUrl={avatarMap[item.userId] ?? null}
+            userName={users.find((u) => u.id === item.userId)?.display_name ?? item.userId}
+          />
+        ))}
+      </div>
+      <div style={{ height: 1, backgroundColor: "var(--border)", margin: "24px 0 0" }} />
+    </div>
+  );
+}
+
+// ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
+
+export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: ReviewItem[] }) {
   const searchParams = useSearchParams();
   const { profile } = useAuth();
   const { showToast } = useToast();
   const { users, getUserById } = useUsers();
+  const avatarMap = useUserAvatars();
+
   const [items, setItems] = useState<ReviewItem[]>([]);
+  const [bestItems, setBestItems] = useState<ReviewItem[]>(bestReviews);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState(false);
@@ -56,7 +206,6 @@ export default function ReviewsClient() {
   const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
-
   const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
 
   const fetchReviews = useCallback(async (params: {
@@ -92,13 +241,11 @@ export default function ReviewsClient() {
     }
   }, []);
 
-  // 초기 로드
   useEffect(() => {
     fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 알림 클릭 등으로 searchParams가 바뀔 때 필터 동기화 + 스크롤
   const prevSearchRef = useRef({ albumId: initAlbumId, userId: initUserId });
   useEffect(() => {
     const prev = prevSearchRef.current;
@@ -115,10 +262,9 @@ export default function ReviewsClient() {
         setTimeout(() => setHighlightActive(false), 2000);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initAlbumId, initUserId]);
 
-  // filterAlbumTitle 자동 세팅 (URL로 albumId가 온 경우)
   useEffect(() => {
     if (filterAlbumId && !filterAlbumTitle && items.length > 0) {
       const match = items.find((i) => i.albumId === filterAlbumId);
@@ -139,7 +285,7 @@ export default function ReviewsClient() {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, loadingMore, loading, offset, filterUser, filterAlbumId, filterReview, minScore, maxScore, sort]);
 
   const handleFilter = (u: string, aid: string, mn: number, mx: number, s: string, rev?: string) => {
@@ -155,21 +301,29 @@ export default function ReviewsClient() {
     reviewSearchTimer.current = setTimeout(() => {
       fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: val, minScore, maxScore, sort, offset: 0 });
       setOffset(0);
-      }, 350);
+    }, 350);
   };
+
+  // 공통 아이템 업데이터 — items + bestItems 동시 적용
+  const applyLikeUpdate = useCallback((albumId: string, userId: string, newLikedBy: string[]) => {
+    const updater = (prev: ReviewItem[]) =>
+      prev.map((r) => r.albumId === albumId && r.userId === userId ? { ...r, likedBy: newLikedBy } : r);
+    setItems(updater);
+    setBestItems(updater);
+  }, []);
 
   const handleLike = async (item: ReviewItem) => {
     if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
     const key = `${item.albumId}-${item.userId}`;
     setLiking(key);
-    // 낙관적 토글
+
     const iLiked = item.likedBy.includes(profile.id);
     const optimisticLikedBy = iLiked
       ? item.likedBy.filter((id) => id !== profile.id)
       : [...item.likedBy, profile.id];
-    setItems((prev) => prev.map((r) =>
-      r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: optimisticLikedBy } : r
-    ));
+
+    applyLikeUpdate(item.albumId, item.userId, optimisticLikedBy);
+
     try {
       const res = await apiFetch("/api/ratings", {
         method: "PATCH",
@@ -177,23 +331,14 @@ export default function ReviewsClient() {
         body: JSON.stringify({ albumId: item.albumId, reviewerId: item.userId }),
       });
       if (res.ok) {
-        // 서버 확정값으로 교정 (동시 공감 처리)
         const data = await res.json();
         const newLikedBy = data.liked_by ? data.liked_by.split(",").filter(Boolean) : [];
-        setItems((prev) => prev.map((r) =>
-          r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: newLikedBy } : r
-        ));
+        applyLikeUpdate(item.albumId, item.userId, newLikedBy);
       } else {
-        // rollback
-        setItems((prev) => prev.map((r) =>
-          r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: item.likedBy } : r
-        ));
+        applyLikeUpdate(item.albumId, item.userId, item.likedBy);
       }
     } catch {
-      // rollback
-      setItems((prev) => prev.map((r) =>
-        r.albumId === item.albumId && r.userId === item.userId ? { ...r, likedBy: item.likedBy } : r
-      ));
+      applyLikeUpdate(item.albumId, item.userId, item.likedBy);
     } finally {
       setLiking(null);
     }
@@ -233,8 +378,6 @@ export default function ReviewsClient() {
     handleFilter("", "", 1, 8, "latest", "");
   };
 
-
-  // 앨범별 그룹 보기: 기본 정렬 + 유저/앨범 필터 없을 때
   const isGroupedView = sort === "latest" && filterUser === "" && filterAlbumId === "";
 
   const albumGroups = useMemo(() => {
@@ -252,6 +395,20 @@ export default function ReviewsClient() {
 
   return (
     <div data-tour="reviews-main" {...(loading ? { "data-tour-wait": "true" } : {})}>
+
+      {/* 공감 베스트 소감 — 필터 없을 때만 표시 */}
+      {!isFiltered && (
+        <BestReviewsSection
+          items={bestItems}
+          myId={profile?.id ?? null}
+          liking={liking}
+          onAlbumClick={handleAlbumClick}
+          onLike={handleLike}
+          avatarMap={avatarMap}
+          users={users}
+        />
+      )}
+
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
@@ -268,7 +425,6 @@ export default function ReviewsClient() {
 
       {/* 필터 바 */}
       <div data-tour="reviews-filter" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
-        {/* 소감 검색 */}
         <div
           className="min-h-[36px] sm:min-h-0"
           style={{
@@ -299,7 +455,6 @@ export default function ReviewsClient() {
           )}
         </div>
 
-        {/* 멤버 */}
         <FilterSelect
           value={filterUser}
           onChange={(v) => handleFilter(v, filterAlbumId, minScore, maxScore, sort)}
@@ -313,7 +468,6 @@ export default function ReviewsClient() {
           className="min-h-[36px] sm:min-h-0"
         />
 
-        {/* 점수 범위 */}
         <FilterSelect
           value={minScore}
           onChange={(v) => handleFilter(filterUser, filterAlbumId, Number(v), maxScore, sort)}
@@ -333,7 +487,6 @@ export default function ReviewsClient() {
           className="min-h-[36px] sm:min-h-0"
         />
 
-        {/* 정렬 */}
         <FilterSelect
           value={sort}
           onChange={(v) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, v)}
@@ -347,7 +500,6 @@ export default function ReviewsClient() {
           className="min-h-[36px] sm:min-h-0"
         />
 
-        {/* 초기화 */}
         {isFiltered && (
           <button
             onClick={handleReset}
@@ -383,34 +535,49 @@ export default function ReviewsClient() {
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
       ) : isGroupedView ? (
         /* 앨범별 그룹 뷰 */
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {albumGroups.map((reviews) => {
             const rep = reviews[0];
             return (
               <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
-                {/* 앨범 헤더 */}
+                {/* 앨범 헤더 — 커버 56px + 점수 스펙트럼 */}
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
                   className="hover:bg-[var(--bg-elevated)] transition-colors"
                   onClick={() => !loadingAlbumId && handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
                 >
                   {rep.coverUrl ? (
-                    <div style={{ position: "relative", width: 36, height: 36, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
-                      <Image fill sizes="36px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
+                    <div style={{ position: "relative", width: 56, height: 56, borderRadius: 7, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
+                      <Image fill sizes="56px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
                     </div>
                   ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
+                    <div style={{ width: 56, height: 56, borderRadius: 7, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
                   )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
                     <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rep.albumTitle}</p>
                     <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{rep.artistDisplay || rep.artist}</p>
+                    {/* 멤버 점수 스펙트럼 */}
+                    <div style={{ display: "flex", gap: 4, marginTop: 7, flexWrap: "wrap" }}>
+                      {reviews.map((r) => (
+                        <span
+                          key={r.userId}
+                          style={{
+                            width: 22, height: 22, borderRadius: "50%",
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            backgroundColor: `${scoreColor(r.score)}22`,
+                            color: scoreColor(r.score),
+                            border: `1px solid ${scoreColor(r.score)}44`,
+                            fontSize: 10, fontWeight: 800, flexShrink: 0,
+                          }}
+                        >
+                          {r.score}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  {loadingAlbumId === rep.albumId
-                    ? <Spinner size={14} />
-                    : <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{reviews.length}개의 소감</span>
-                  }
+                  {loadingAlbumId === rep.albumId && <Spinner size={14} />}
                 </div>
-                {/* 리뷰 목록 */}
+                {/* 소감 목록 */}
                 {reviews.map((item, idx) => {
                   const key = `${item.albumId}-${item.userId}`;
                   return (
@@ -463,7 +630,6 @@ export default function ReviewsClient() {
         </div>
       )}
 
-      {/* 인피니티 스크롤 센티넬 */}
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loadingMore && (
         <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}><Spinner size={16} /></div>
@@ -485,6 +651,8 @@ export default function ReviewsClient() {
     </div>
   );
 }
+
+// ── ReviewRow ────────────────────────────────────────────────────────────────
 
 function ReviewRow({
   item, myId, liking,
@@ -522,12 +690,10 @@ function ReviewRow({
         ...(isNew ? { animation: "feedItemIn 0.22s ease-out both", animationDelay: `${newDelay ?? 0}s` } : {}),
       }}
     >
-      {/* 메인 행 */}
       <div
-        style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
+        style={{ padding: "11px 16px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
         className="hover:bg-[var(--bg-elevated)]"
       >
-        {/* 커버 → 앨범 모달 (앨범 정보 숨길 때는 유저 아바타만) */}
         {!hideAlbumInfo && (
           <button
             onClick={onAlbumClick}
@@ -547,7 +713,6 @@ function ReviewRow({
           </button>
         )}
 
-        {/* 점수 pill */}
         <span style={{
           flexShrink: 0, width: 24, height: 24, borderRadius: "50%",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -558,14 +723,12 @@ function ReviewRow({
           {item.score}
         </span>
 
-        {/* 소감 + 앨범정보 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 소감 텍스트 — 메인 */}
           <p
             onClick={() => setExpanded(v => !v)}
             style={{
               fontSize: 13, color: "var(--text)", fontWeight: 500,
-              marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.4,
+              marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.45,
               cursor: "pointer",
               ...(expanded
                 ? { whiteSpace: "normal" }
@@ -574,7 +737,6 @@ function ReviewRow({
           >
             {item.review}
           </p>
-          {/* 앨범명(클릭→필터) · 아티스트 — 그룹 뷰에서는 숨김 */}
           {!hideAlbumInfo && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
               <button
@@ -593,21 +755,19 @@ function ReviewRow({
           )}
         </div>
 
-        {/* 우측 메타 */}
         <div data-tour="reviews-reactions" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
           <a
             href={`/profile/${item.userId}`}
             style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}
             className="hover:opacity-70 transition-opacity"
           >
-            <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={16} />
+            <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={18} />
             <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="max-w-[48px] truncate">
               {user?.display_name ?? item.userId}
             </span>
           </a>
           <span style={{ fontSize: 10, color: "var(--text-muted)" }} className="hidden sm:inline">{dateStr}</span>
 
-          {/* 공감 */}
           {!isMyReview ? (
             myId ? (
               <button
@@ -648,7 +808,6 @@ function ReviewRow({
             </span>
           ) : null}
 
-          {/* 신고 — 타인 소감 + 로그인 상태 */}
           {!isMyReview && myId && onReport && (
             <button
               onClick={onReport}
@@ -665,7 +824,6 @@ function ReviewRow({
           )}
         </div>
       </div>
-
     </div>
   );
 }
