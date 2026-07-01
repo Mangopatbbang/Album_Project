@@ -25,8 +25,9 @@ type AlbumModalData = {
 };
 
 const SCORE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+const PAGE_SIZE = 20;
 
-// ── 공감 베스트 소감 섹션 ──────────────────────────────────────────────────────
+// ── 공감 베스트 소감 ──────────────────────────────────────────────────────────
 
 function BestReviewCard({
   item, myId, liking, onAlbumClick, onLike, avatarUrl, userName,
@@ -53,7 +54,6 @@ function BestReviewCard({
       flexDirection: "column",
       gap: 10,
     }}>
-      {/* 앨범 헤더 */}
       <button
         onClick={onAlbumClick}
         style={{ display: "flex", gap: 10, alignItems: "center", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", width: "100%" }}
@@ -72,19 +72,10 @@ function BestReviewCard({
         </div>
       </button>
 
-      {/* 소감 — 카드의 주인공 */}
-      <p style={{
-        fontSize: 13,
-        color: "var(--text)",
-        lineHeight: 1.65,
-        flex: 1,
-        wordBreak: "keep-all",
-        fontStyle: "italic",
-      }}>
+      <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.65, flex: 1, wordBreak: "keep-all", fontStyle: "italic" }}>
         &ldquo;{item.review}&rdquo;
       </p>
 
-      {/* 하단: 점수 + 멤버 + 공감 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{
@@ -95,16 +86,11 @@ function BestReviewCard({
             border: `1px solid ${scoreColor(item.score)}44`,
             fontSize: 10, fontWeight: 800, flexShrink: 0,
           }}>{item.score}</span>
-          <a
-            href={`/profile/${item.userId}`}
-            style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}
-            className="hover:opacity-70 transition-opacity"
-          >
+          <a href={`/profile/${item.userId}`} style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }} className="hover:opacity-70 transition-opacity">
             <UserAvatar avatarUrl={avatarUrl} size={16} />
             <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{userName}</span>
           </a>
         </div>
-
         {!isMyReview && myId ? (
           <button
             onClick={onLike}
@@ -122,9 +108,7 @@ function BestReviewCard({
             {item.likedBy.length > 0 && <span>{item.likedBy.length}</span>}
           </button>
         ) : item.likedBy.length > 0 ? (
-          <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}>
-            ♥ {item.likedBy.length}
-          </span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 2 }}>♥ {item.likedBy.length}</span>
         ) : null}
       </div>
     </div>
@@ -145,20 +129,12 @@ function BestReviewsSection({
   return (
     <div style={{ marginBottom: 28 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>
-          공감 베스트 소감
-        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>공감 베스트 소감</p>
         <span style={{ color: "var(--text-muted)", fontSize: 10 }}>♥ 공감수 기준</span>
       </div>
-
       {items.length === 0 ? (
-        <div style={{
-          border: "1px dashed var(--border)", borderRadius: 12,
-          padding: "28px", textAlign: "center",
-        }}>
-          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-            소감에 공감을 남기면 베스트 소감이 선정돼요
-          </p>
+        <div style={{ border: "1px dashed var(--border)", borderRadius: 12, padding: "28px", textAlign: "center" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>소감에 공감을 남기면 베스트 소감이 선정돼요</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -176,7 +152,6 @@ function BestReviewsSection({
           ))}
         </div>
       )}
-
       <div style={{ height: 1, backgroundColor: "var(--border)", margin: "24px 0 0" }} />
     </div>
   );
@@ -194,10 +169,9 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [bestItems, setBestItems] = useState<ReviewItem[]>(bestReviews);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [offset, setOffset] = useState(0);
 
   const initAlbumId = searchParams.get("albumId") ?? "";
   const initUserId = searchParams.get("userId") ?? "";
@@ -216,13 +190,11 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   const [liking, setLiking] = useState<string | null>(null);
   const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [appendStartIdx, setAppendStartIdx] = useState<number | null>(null);
-
   const fetchReviews = useCallback(async (params: {
-    userId: string; albumId: string; search: string; minScore: number; maxScore: number; sort: string; offset: number;
-  }, append = false) => {
-    if (!append) setLoading(true); else setLoadingMore(true);
+    userId: string; albumId: string; search: string;
+    minScore: number; maxScore: number; sort: string; page: number;
+  }) => {
+    setLoading(true);
     const q = new URLSearchParams();
     if (params.userId) q.set("userId", params.userId);
     if (params.albumId) q.set("albumId", params.albumId);
@@ -230,30 +202,24 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     q.set("minScore", String(params.minScore));
     q.set("maxScore", String(params.maxScore));
     q.set("sort", params.sort);
-    q.set("offset", String(params.offset));
+    q.set("offset", String((params.page - 1) * PAGE_SIZE));
     try {
       const res = await fetch(`/api/reviews?${q}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      if (append) {
-        setAppendStartIdx(params.offset);
-        setItems((prev) => [...prev, ...data.items]);
-      } else {
-        setAppendStartIdx(null);
-        setItems(data.items);
-      }
+      setItems(data.items);
       setHasMore(data.hasMore);
-      setOffset(params.offset + data.items.length);
-      if (!append) setFetchError(false);
+      setFetchError(false);
     } catch {
-      if (!append) { setItems([]); setFetchError(true); }
+      setItems([]);
+      setFetchError(true);
     } finally {
-      if (!append) setLoading(false); else setLoadingMore(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 });
+    fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, page: 1 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -265,8 +231,8 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
       setFilterAlbumId(initAlbumId);
       setFilterUser(initUserId);
       setFilterReview("");
-      setOffset(0);
-      fetchReviews({ userId: initUserId, albumId: initAlbumId, search: "", minScore: 1, maxScore: 8, sort: "latest", offset: 0 });
+      setPage(1);
+      fetchReviews({ userId: initUserId, albumId: initAlbumId, search: "", minScore: 1, maxScore: 8, sort: "latest", page: 1 });
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (initAlbumId) {
         setHighlightActive(true);
@@ -283,39 +249,28 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     }
   }, [items, filterAlbumId, filterAlbumTitle]);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
-          fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset }, true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMore, loadingMore, loading, offset, filterUser, filterAlbumId, filterReview, minScore, maxScore, sort]);
-
   const handleFilter = (u: string, aid: string, mn: number, mx: number, s: string, rev?: string) => {
     const reviewVal = rev !== undefined ? rev : filterReview;
     setFilterUser(u); setFilterAlbumId(aid); setMinScore(mn); setMaxScore(mx); setSort(s);
-    fetchReviews({ userId: u, albumId: aid, search: reviewVal, minScore: mn, maxScore: mx, sort: s, offset: 0 });
-    setOffset(0);
+    setPage(1);
+    fetchReviews({ userId: u, albumId: aid, search: reviewVal, minScore: mn, maxScore: mx, sort: s, page: 1 });
   };
 
   const handleReviewSearch = (val: string) => {
     setFilterReview(val);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
     reviewSearchTimer.current = setTimeout(() => {
-      fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: val, minScore, maxScore, sort, offset: 0 });
-      setOffset(0);
+      setPage(1);
+      fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: val, minScore, maxScore, sort, page: 1 });
     }, 350);
   };
 
-  // 공통 아이템 업데이터 — items + bestItems 동시 적용
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, page: newPage });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const applyLikeUpdate = useCallback((albumId: string, userId: string, newLikedBy: string[]) => {
     const updater = (prev: ReviewItem[]) =>
       prev.map((r) => r.albumId === albumId && r.userId === userId ? { ...r, likedBy: newLikedBy } : r);
@@ -327,14 +282,11 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     if (!profile) { showToast("로그인 후 공감할 수 있어요"); return; }
     const key = `${item.albumId}-${item.userId}`;
     setLiking(key);
-
     const iLiked = item.likedBy.includes(profile.id);
     const optimisticLikedBy = iLiked
       ? item.likedBy.filter((id) => id !== profile.id)
       : [...item.likedBy, profile.id];
-
     applyLikeUpdate(item.albumId, item.userId, optimisticLikedBy);
-
     try {
       const res = await apiFetch("/api/ratings", {
         method: "PATCH",
@@ -386,6 +338,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     setFilterAlbumTitle("");
     setFilterReview("");
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    setPage(1);
     handleFilter("", "", 1, 8, "latest", "");
   };
 
@@ -422,7 +375,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
 
       {/* 앨범 필터 배지 */}
       {filterAlbumTitle && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14, justifyContent: "flex-end" }}>
           <span style={{
             fontSize: 12, color: "var(--accent)", backgroundColor: "rgba(var(--accent-rgb), 0.08)",
             border: "1px solid rgba(var(--accent-rgb), 0.3)", borderRadius: 20, padding: "3px 10px",
@@ -434,8 +387,8 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
         </div>
       )}
 
-      {/* 필터 바 */}
-      <div data-tour="reviews-filter" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center" }}>
+      {/* 필터 바 — 우측 정렬 */}
+      <div data-tour="reviews-filter" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center", justifyContent: "flex-end" }}>
         <div
           className="min-h-[36px] sm:min-h-0"
           style={{
@@ -536,7 +489,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
         <div style={{ textAlign: "center", padding: "60px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>불러오지 못했어요</p>
           <button
-            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, offset: 0 })}
+            onClick={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, page })}
             style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "none", color: "var(--text-sub)", fontSize: 13, cursor: "pointer" }}
           >
             다시 시도
@@ -545,13 +498,12 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
       ) : isGroupedView ? (
-        /* 앨범별 그룹 뷰 */
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {albumGroups.map((reviews) => {
             const rep = reviews[0];
             return (
               <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
-                {/* 앨범 헤더 — 1줄 압축 레이아웃 */}
+                {/* 앨범 헤더 — 1줄 압축 */}
                 <div
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
                   className="hover:bg-[var(--bg-elevated)] transition-colors"
@@ -568,26 +520,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
                     {rep.albumTitle}
                     <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}> · {rep.artistDisplay || rep.artist}</span>
                   </p>
-                  {/* 점수 스펙트럼 — 2명 이상일 때만 */}
-                  {reviews.length >= 2 && (
-                    <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
-                      {reviews.map((r) => (
-                        <span
-                          key={r.userId}
-                          style={{
-                            width: 20, height: 20, borderRadius: "50%",
-                            display: "inline-flex", alignItems: "center", justifyContent: "center",
-                            backgroundColor: `${scoreColor(r.score)}22`,
-                            color: scoreColor(r.score),
-                            border: `1px solid ${scoreColor(r.score)}44`,
-                            fontSize: 10, fontWeight: 800, flexShrink: 0,
-                          }}
-                        >
-                          {r.score}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                   {loadingAlbumId === rep.albumId && <Spinner size={14} />}
                 </div>
                 {/* 소감 목록 */}
@@ -614,15 +546,12 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
           })}
         </div>
       ) : (
-        /* 기본 평별 플랫 뷰 */
         <div style={{
           border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)",
           animation: highlightActive ? "reviewHighlight 2s ease-out forwards" : "none",
         }}>
           {items.map((item, idx) => {
             const key = `${item.albumId}-${item.userId}`;
-            const isNew = appendStartIdx !== null && idx >= appendStartIdx;
-            const newDelay = isNew ? Math.min(idx - appendStartIdx, 8) * 0.04 : 0;
             return (
               <ReviewRow
                 key={key}
@@ -634,8 +563,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
                 onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
                 onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                 isLast={idx === items.length - 1}
-                isNew={isNew}
-                newDelay={newDelay}
                 loadingAlbum={loadingAlbumId === item.albumId}
               />
             );
@@ -643,12 +570,43 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
         </div>
       )}
 
-      <div ref={sentinelRef} style={{ height: 1 }} />
-      {loadingMore && (
-        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}><Spinner size={16} /></div>
-      )}
-      {!hasMore && items.length > 0 && !loading && !loadingMore && (
-        <div style={{ textAlign: "center", padding: "16px 0", color: "var(--text-muted)", fontSize: 12 }}>모두 불러왔어요</div>
+      {/* 페이지네이션 */}
+      {!loading && !fetchError && items.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 24, paddingBottom: 8 }}>
+          <button
+            onClick={() => handlePageChange(page - 1)}
+            disabled={page === 1}
+            style={{
+              padding: "7px 16px", borderRadius: 7,
+              border: "1px solid var(--border)",
+              background: "none", cursor: page === 1 ? "not-allowed" : "pointer",
+              color: "var(--text-sub)", fontSize: 13,
+              opacity: page === 1 ? 0.35 : 1,
+              transition: "opacity 0.15s",
+            }}
+            className={page > 1 ? "hover:border-[var(--border-light)]" : ""}
+          >
+            ← 이전
+          </button>
+          <span style={{ color: "var(--text-muted)", fontSize: 13, minWidth: 56, textAlign: "center" }}>
+            {page}페이지
+          </span>
+          <button
+            onClick={() => handlePageChange(page + 1)}
+            disabled={!hasMore}
+            style={{
+              padding: "7px 16px", borderRadius: 7,
+              border: "1px solid var(--border)",
+              background: "none", cursor: !hasMore ? "not-allowed" : "pointer",
+              color: "var(--text-sub)", fontSize: 13,
+              opacity: !hasMore ? 0.35 : 1,
+              transition: "opacity 0.15s",
+            }}
+            className={hasMore ? "hover:border-[var(--border-light)]" : ""}
+          >
+            다음 →
+          </button>
+        </div>
       )}
 
       {selectedAlbum && (
@@ -669,7 +627,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
 
 function ReviewRow({
   item, myId, liking,
-  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, isNew, newDelay, loadingAlbum,
+  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, loadingAlbum,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -680,8 +638,6 @@ function ReviewRow({
   onReport?: () => void;
   isLast: boolean;
   hideAlbumInfo?: boolean;
-  isNew?: boolean;
-  newDelay?: number;
   loadingAlbum?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
@@ -697,12 +653,7 @@ function ReviewRow({
   const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 
   return (
-    <div
-      style={{
-        borderBottom: isLast ? "none" : "1px solid var(--border)",
-        ...(isNew ? { animation: "feedItemIn 0.22s ease-out both", animationDelay: `${newDelay ?? 0}s` } : {}),
-      }}
-    >
+    <div style={{ borderBottom: isLast ? "none" : "1px solid var(--border)" }}>
       <div
         style={{ padding: "11px 16px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
         className="hover:bg-[var(--bg-elevated)]"
