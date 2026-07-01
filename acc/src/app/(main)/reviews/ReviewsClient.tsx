@@ -142,8 +142,6 @@ function BestReviewsSection({
   avatarMap: Record<string, string | null>;
   users: { id: string; display_name: string }[];
 }) {
-  if (items.length === 0) return null;
-
   return (
     <div style={{ marginBottom: 28 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -152,20 +150,33 @@ function BestReviewsSection({
         </p>
         <span style={{ color: "var(--text-muted)", fontSize: 10 }}>♥ 공감수 기준</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {items.map((item) => (
-          <BestReviewCard
-            key={`${item.albumId}-${item.userId}`}
-            item={item}
-            myId={myId}
-            liking={liking === `${item.albumId}-${item.userId}`}
-            onAlbumClick={() => onAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
-            onLike={() => onLike(item)}
-            avatarUrl={avatarMap[item.userId] ?? null}
-            userName={users.find((u) => u.id === item.userId)?.display_name ?? item.userId}
-          />
-        ))}
-      </div>
+
+      {items.length === 0 ? (
+        <div style={{
+          border: "1px dashed var(--border)", borderRadius: 12,
+          padding: "28px", textAlign: "center",
+        }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
+            소감에 공감을 남기면 베스트 소감이 선정돼요
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {items.map((item) => (
+            <BestReviewCard
+              key={`${item.albumId}-${item.userId}`}
+              item={item}
+              myId={myId}
+              liking={liking === `${item.albumId}-${item.userId}`}
+              onAlbumClick={() => onAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
+              onLike={() => onLike(item)}
+              avatarUrl={avatarMap[item.userId] ?? null}
+              userName={users.find((u) => u.id === item.userId)?.display_name ?? item.userId}
+            />
+          ))}
+        </div>
+      )}
+
       <div style={{ height: 1, backgroundColor: "var(--border)", margin: "24px 0 0" }} />
     </div>
   );
@@ -396,7 +407,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   return (
     <div data-tour="reviews-main" {...(loading ? { "data-tour-wait": "true" } : {})}>
 
-      {/* 공감 베스트 소감 — 필터 없을 때만 표시 */}
+      {/* 공감 베스트 소감 — 필터 없을 때 항상 표시 */}
       {!isFiltered && (
         <BestReviewsSection
           items={bestItems}
@@ -540,29 +551,31 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
             const rep = reviews[0];
             return (
               <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
-                {/* 앨범 헤더 — 커버 56px + 점수 스펙트럼 */}
+                {/* 앨범 헤더 — 1줄 압축 레이아웃 */}
                 <div
-                  style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
                   className="hover:bg-[var(--bg-elevated)] transition-colors"
                   onClick={() => !loadingAlbumId && handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
                 >
                   {rep.coverUrl ? (
-                    <div style={{ position: "relative", width: 56, height: 56, borderRadius: 7, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
-                      <Image fill sizes="56px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
+                    <div style={{ position: "relative", width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
+                      <Image fill sizes="40px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
                     </div>
                   ) : (
-                    <div style={{ width: 56, height: 56, borderRadius: 7, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
+                    <div style={{ width: 40, height: 40, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
                   )}
-                  <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rep.albumTitle}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{rep.artistDisplay || rep.artist}</p>
-                    {/* 멤버 점수 스펙트럼 */}
-                    <div style={{ display: "flex", gap: 4, marginTop: 7, flexWrap: "wrap" }}>
+                  <p style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {rep.albumTitle}
+                    <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}> · {rep.artistDisplay || rep.artist}</span>
+                  </p>
+                  {/* 점수 스펙트럼 — 2명 이상일 때만 */}
+                  {reviews.length >= 2 && (
+                    <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
                       {reviews.map((r) => (
                         <span
                           key={r.userId}
                           style={{
-                            width: 22, height: 22, borderRadius: "50%",
+                            width: 20, height: 20, borderRadius: "50%",
                             display: "inline-flex", alignItems: "center", justifyContent: "center",
                             backgroundColor: `${scoreColor(r.score)}22`,
                             color: scoreColor(r.score),
@@ -574,7 +587,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
                         </span>
                       ))}
                     </div>
-                  </div>
+                  )}
                   {loadingAlbumId === rep.albumId && <Spinner size={14} />}
                 </div>
                 {/* 소감 목록 */}
