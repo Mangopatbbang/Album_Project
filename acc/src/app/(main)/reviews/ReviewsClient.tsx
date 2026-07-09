@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -342,25 +342,12 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     handleFilter("", "", 1, 8, "latest", "");
   };
 
-  const isGroupedView = sort === "latest" && filterUser === "" && filterAlbumId === "";
-
-  const albumGroups = useMemo(() => {
-    if (!isGroupedView) return [];
-    const map = new Map<string, ReviewItem[]>();
-    for (const item of items) {
-      const group = map.get(item.albumId) ?? [];
-      group.push(item);
-      map.set(item.albumId, group);
-    }
-    return [...map.entries()].map(([, reviews]) => reviews);
-  }, [items, isGroupedView]);
-
   const isFiltered = filterUser !== "" || filterAlbumId !== "" || filterReview !== "" || minScore !== 1 || maxScore !== 8 || sort !== "latest";
 
   return (
     <div data-tour="reviews-main" {...(loading ? { "data-tour-wait": "true" } : {})}>
 
-      {/* 공감 베스트 소감 — 필터 없을 때 항상 표시 */}
+      {/* 공감 베스트 소감 */}
       {!isFiltered && (
         <BestReviewsSection
           items={bestItems}
@@ -387,7 +374,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
         </div>
       )}
 
-      {/* 필터 바 — 우측 정렬 */}
+      {/* 필터 바 */}
       <div data-tour="reviews-filter" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, alignItems: "center", justifyContent: "flex-end" }}>
         <div
           className="min-h-[36px] sm:min-h-0"
@@ -431,7 +418,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
           active={filterUser !== ""}
           className="min-h-[36px] sm:min-h-0"
         />
-
         <FilterSelect
           value={minScore}
           onChange={(v) => handleFilter(filterUser, filterAlbumId, Number(v), maxScore, sort)}
@@ -450,7 +436,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
           active={maxScore !== 8}
           className="min-h-[36px] sm:min-h-0"
         />
-
         <FilterSelect
           value={sort}
           onChange={(v) => handleFilter(filterUser, filterAlbumId, minScore, maxScore, v)}
@@ -463,7 +448,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
           active={sort !== "latest"}
           className="min-h-[36px] sm:min-h-0"
         />
-
         {isFiltered && (
           <button
             onClick={handleReset}
@@ -472,7 +456,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
               color: "var(--text-muted)", fontSize: 11,
               padding: "5px 8px", borderRadius: 6,
               display: "flex", alignItems: "center", gap: 3,
-              transition: "color 0.15s",
             }}
             className="hover:text-[var(--text)]"
           >
@@ -482,7 +465,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
       </div>
 
       {/* 피드 */}
-      <style>{`@keyframes reviewHighlight { 0%{box-shadow:0 0 0 2px var(--accent)} 60%{box-shadow:0 0 0 2px var(--accent)} 100%{box-shadow:none} }`}</style>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}><Spinner size={22} /></div>
       ) : fetchError ? (
@@ -497,59 +479,15 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
         </div>
       ) : items.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", fontSize: 14 }}>아직 소감이 없어요</div>
-      ) : isGroupedView ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {albumGroups.map((reviews) => {
-            const rep = reviews[0];
-            return (
-              <div key={rep.albumId} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)" }}>
-                {/* 앨범 헤더 — 1줄 압축 */}
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer", opacity: loadingAlbumId === rep.albumId ? 0.6 : 1, transition: "opacity 0.15s" }}
-                  className="hover:bg-[var(--bg-elevated)] transition-colors"
-                  onClick={() => !loadingAlbumId && handleAlbumClick(rep.albumId, rep.albumTitle, rep.artist, rep.artistDisplay, rep.coverUrl)}
-                >
-                  {rep.coverUrl ? (
-                    <div style={{ position: "relative", width: 40, height: 40, borderRadius: 5, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)" }}>
-                      <Image fill sizes="40px" src={rep.coverUrl} alt={rep.albumTitle} style={{ objectFit: "cover" }} />
-                    </div>
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: 5, backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "var(--text-muted)", flexShrink: 0 }}>♪</div>
-                  )}
-                  <p style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {rep.albumTitle}
-                    <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}> · {rep.artistDisplay || rep.artist}</span>
-                  </p>
-                  {loadingAlbumId === rep.albumId && <Spinner size={14} />}
-                </div>
-                {/* 소감 목록 */}
-                {reviews.map((item, idx) => {
-                  const key = `${item.albumId}-${item.userId}`;
-                  return (
-                    <ReviewRow
-                      key={key}
-                      item={item}
-                      myId={profile?.id ?? null}
-                      liking={liking === key}
-                      onLike={() => handleLike(item)}
-                      onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
-                      onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
-                      onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
-                      isLast={idx === reviews.length - 1}
-                      hideAlbumInfo
-                      loadingAlbum={loadingAlbumId === item.albumId}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
       ) : (
         <div style={{
-          border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          overflow: "hidden",
+          backgroundColor: "var(--bg-card)",
           animation: highlightActive ? "reviewHighlight 2s ease-out forwards" : "none",
         }}>
+          <style>{`@keyframes reviewHighlight { 0%{box-shadow:0 0 0 2px var(--accent)} 60%{box-shadow:0 0 0 2px var(--accent)} 100%{box-shadow:none} }`}</style>
           {items.map((item, idx) => {
             const key = `${item.albumId}-${item.userId}`;
             return (
@@ -564,6 +502,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
                 onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                 isLast={idx === items.length - 1}
                 loadingAlbum={loadingAlbumId === item.albumId}
+                getUserById={getUserById}
               />
             );
           })}
@@ -623,11 +562,11 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   );
 }
 
-// ── ReviewRow ────────────────────────────────────────────────────────────────
+// ── ReviewRow — 게시판형 한 줄 통합 ──────────────────────────────────────────
 
 function ReviewRow({
   item, myId, liking,
-  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, hideAlbumInfo, loadingAlbum,
+  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, loadingAlbum, getUserById,
 }: {
   item: ReviewItem;
   myId: string | null;
@@ -637,13 +576,12 @@ function ReviewRow({
   onFilterByAlbum: () => void;
   onReport?: () => void;
   isLast: boolean;
-  hideAlbumInfo?: boolean;
   loadingAlbum?: boolean;
+  getUserById: (id: string) => { id: string; display_name: string } | undefined;
 }) {
   const [imgError, setImgError] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const avatarMap = useUserAvatars();
-  const { getUserById } = useUsers();
   const { triggerBlock, shakeStyle } = useBlockedAction();
   const user = getUserById(item.userId);
   const iLiked = myId ? item.likedBy.includes(myId) : false;
@@ -653,80 +591,81 @@ function ReviewRow({
   const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 
   return (
-    <div style={{ borderBottom: isLast ? "none" : "1px solid var(--border)" }}>
-      <div
-        style={{ padding: "11px 16px", display: "flex", alignItems: "center", gap: 10, transition: "background 0.12s" }}
-        className="hover:bg-[var(--bg-elevated)]"
-      >
-        {!hideAlbumInfo && (
-          <button
-            onClick={onAlbumClick}
-            style={{ position: "relative", flexShrink: 0, width: 44, height: 44, borderRadius: 6, overflow: "hidden", background: "var(--bg-elevated)", border: "1px solid var(--border)", cursor: "pointer", padding: 0 }}
-            className="hover:opacity-75 transition-opacity"
-            disabled={!!loadingAlbum}
-          >
-            {item.coverUrl && !imgError
-              ? <Image fill sizes="44px" src={item.coverUrl} alt={item.albumTitle} style={{ objectFit: "cover" }} onError={() => setImgError(true)} />
-              : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 14, color: "var(--text-muted)" }}>♪</span>
-            }
+    <div
+      style={{ borderBottom: isLast ? "none" : "1px solid var(--border)", transition: "background 0.12s" }}
+      className="hover:bg-[var(--bg-elevated)]"
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px" }}>
+
+        {/* 앨범 커버 + 앨범명 (좌측 고정 컬럼) */}
+        <button
+          onClick={onAlbumClick}
+          disabled={!!loadingAlbum}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            flexShrink: 0, width: 120,
+            background: "none", border: "none", cursor: loadingAlbum ? "not-allowed" : "pointer",
+            padding: 0, textAlign: "left",
+          }}
+          className="hover:opacity-75 transition-opacity"
+        >
+          <div style={{ position: "relative", width: 28, height: 28, borderRadius: 4, overflow: "hidden", flexShrink: 0, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)" }}>
+            {item.coverUrl && !imgError ? (
+              <Image fill sizes="28px" src={item.coverUrl} alt={item.albumTitle} style={{ objectFit: "cover" }} onError={() => setImgError(true)} />
+            ) : (
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 11, color: "var(--text-muted)" }}>♪</span>
+            )}
             {loadingAlbum && (
               <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Spinner size={14} />
+                <Spinner size={10} />
               </div>
             )}
-          </button>
-        )}
+          </div>
+          <span style={{
+            fontSize: 11, fontWeight: 600, color: "var(--text-sub)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            flex: 1,
+          }}>
+            {item.albumTitle}
+          </span>
+        </button>
 
+        {/* 점수 */}
         <span style={{
-          flexShrink: 0, width: 24, height: 24, borderRadius: "50%",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          backgroundColor: scoreColor(String(item.score)) + "22",
-          color: scoreColor(String(item.score)),
-          fontSize: 11, fontWeight: 800,
+          flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          backgroundColor: `${scoreColor(item.score)}22`,
+          color: scoreColor(item.score),
+          border: `1px solid ${scoreColor(item.score)}44`,
+          fontSize: 10, fontWeight: 800,
         }}>
           {item.score}
         </span>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            onClick={() => setExpanded(v => !v)}
-            style={{
-              fontSize: 13, color: "var(--text)", fontWeight: 500,
-              marginBottom: hideAlbumInfo ? 0 : 3, lineHeight: 1.45,
-              cursor: "pointer",
-              ...(expanded
-                ? { whiteSpace: "normal" }
-                : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
-            }}
-          >
-            {item.review}
-          </p>
-          {!hideAlbumInfo && (
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-              <button
-                onClick={onFilterByAlbum}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 600, color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}
-                className="hover:underline"
-              >
-                {item.albumTitle}
-              </button>
-              {item.artistDisplay && (
-                <span style={{ fontSize: 10, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
-                  {item.artistDisplay}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        {/* 소감 텍스트 */}
+        <p
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            flex: 1, minWidth: 0,
+            fontSize: 13, color: "var(--text)", fontWeight: 400,
+            lineHeight: 1.45, cursor: "pointer",
+            ...(expanded
+              ? { whiteSpace: "normal", wordBreak: "keep-all" }
+              : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
+          }}
+        >
+          {item.review}
+        </p>
 
+        {/* 우측: 유저 + 날짜 + 공감 + 신고 */}
         <div data-tour="reviews-reactions" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
           <a
             href={`/profile/${item.userId}`}
             style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}
             className="hover:opacity-70 transition-opacity"
           >
-            <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={18} />
-            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="max-w-[48px] truncate">
+            <UserAvatar avatarUrl={user ? avatarMap[user.id] : null} size={16} />
+            <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="hidden sm:inline max-w-[48px] truncate">
               {user?.display_name ?? item.userId}
             </span>
           </a>
