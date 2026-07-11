@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -47,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: boolean;
   }>({ authUser: null, profile: null, loading: true });
 
+  // Ref to track current user ID: avoids stale closure inside onAuthStateChange callback
+  const currentUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     let seq = 0;
@@ -56,20 +59,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         const user = session?.user ?? null;
 
-        // TOKEN_REFRESHED: 토큰만 갱신됐고 유저/프로필은 변하지 않음
-        // 불필요한 DB 쿼리 없이 authUser만 업데이트
+        // TOKEN_REFRESHED: 토큰만 갱신 — authUser 토큰만 교체, DB 쿼리 불필요
         if (event === 'TOKEN_REFRESHED') {
+          currentUserIdRef.current = user?.id ?? null;
           setAuthState(prev => ({ ...prev, authUser: user }));
           return;
         }
 
-        // 여러 이벤트가 연속 발화할 때 가장 최신 콜백만 반영
+        // 로그아웃: 즉시 초기화
+        if (!user) {
+          currentUserIdRef.current = null;
+          setAuthState({ authUser: null, profile: null, loading: false });
+          return;
+        }
+
         const mySeq = ++seq;
-        // 로그인 이벤트면 프로필 fetch 전까지 loading=true 유지 (비로그인 UI 플래시 방지)
-        if (user) setAuthState(prev => ({ ...prev, loading: true }));
+
+        // 유저 ID가 바뀌었을 때만 loading=true (새 로그인 or 다른 계정)
+        // 같은 유저의 SIGNED_IN 재발화(탭 포커스, 세션 재검증 등)는 loading 변경 없이 조용히 처리
+        const isNewUser = currentUserIdRef.current !== user.id;
+        currentUserIdRef.current = user.id;
+
+        if (isNewUser) {
+          setAuthState(prev => ({ ...prev, authUser: user, loading: true }));
+        } else {
+          setAuthState(prev => ({ ...prev, authUser: user }));
+        }
+
         let profile: UserProfile | null = null;
         try {
-          profile = user ? await fetchProfileData(user.id) : null;
+          profile = await fetchProfileData(user.id);
         } catch {
           // DB 오류 시에도 state 업데이트는 반드시 실행 (loading stuck 방지)
         }

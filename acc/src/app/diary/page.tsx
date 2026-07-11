@@ -18,7 +18,7 @@ function getRecentTags(entries: DiaryEntry[]): string[] {
 }
 
 export default function DiaryPage() {
-  const { authUser } = useAuth();
+  const { authUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,9 +40,10 @@ export default function DiaryPage() {
   }, [authUser]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!authUser) { router.replace("/"); return; }
     fetchEntries();
-  }, [authUser, router, fetchEntries]);
+  }, [authUser, authLoading, router, fetchEntries]);
 
   const isSample = !loading && entries.length === 0;
   const displayEntries = isSample ? SAMPLE_DIARY_ENTRIES : entries;
