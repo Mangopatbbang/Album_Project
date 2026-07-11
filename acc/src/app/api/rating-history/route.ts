@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseServer
     .from("rating_history")
-    .select("id, user_id, album_id, score, created_at")
+    .select("id, user_id, album_id, score, old_score, new_score, created_at")
     .order("created_at", { ascending: true });
 
   if (userId) query = query.eq("user_id", userId);
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     id: r.id,
     userId: r.user_id,
     albumId: r.album_id,
-    score: r.score,
+    score: (r as { new_score?: number | null; score?: number | null }).new_score ?? r.score,
     createdAt: r.created_at,
   }));
 
