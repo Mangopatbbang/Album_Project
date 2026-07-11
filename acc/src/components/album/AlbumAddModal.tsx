@@ -577,6 +577,15 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               placeholder="예: Kendrick Lamar, NewJeans, 이소라"
             />
           </div>
+          <div>
+            <label style={labelStyle}>FEAT. ARTIST</label>
+            <input
+              style={inputStyle}
+              value={extraArtists}
+              onChange={(e) => setExtraArtists(e.target.value)}
+              placeholder="Spotify 연동 시 자동 입력 · 여러 명이면 ; 로 구분"
+            />
+          </div>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <button

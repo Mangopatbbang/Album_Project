@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { useAuth } from "@/context/AuthContext";
 import LogoMark from "@/components/ui/LogoMark";
 import { scoreColor } from "@/lib/score";
 
@@ -140,28 +141,36 @@ function FloatPasswordInput({ id, label, value, onChange, autoComplete }: {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { profile, authUser, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 로그인 상태 감지 → 홈 리디렉트
+  // profile 또는 authUser 기준으로 리디렉트 (profile fetch 실패해도 세션은 유효)
+  useEffect(() => {
+    if (authLoading) return;
+    if (profile || authUser) {
+      router.replace("/");
+    }
+  }, [authLoading, profile, authUser, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    try {
-      const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
 
-      if (error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다");
-        return;
-      }
-
-      router.push("/");
-    } finally {
+    if (error) {
+      setError("이메일 또는 비밀번호가 올바르지 않습니다");
       setLoading(false);
+      return;
     }
+
+    // 로그인 성공: AuthContext가 profile 로드 완료하면 useEffect가 리디렉트
+    // loading은 true 유지 (리디렉트 전까지 "입장 중..." 표시)
   };
 
   return (

@@ -253,7 +253,6 @@ export default function SignupPage() {
     }
 
     router.push("/?welcome=1");
-    router.refresh();
   };
 
   return (

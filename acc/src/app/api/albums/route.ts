@@ -107,11 +107,8 @@ export async function GET(req: NextRequest) {
   if (sort === "avg_desc" || sort === "avg_asc") {
     return handleAvgSort({ limit, offset, search: safeSearch, rawSearch: search ?? null, aliasMatches, genre, sort, userId, unrated, region: regionFilter });
   }
-  if ((sort === "my_desc" || sort === "my_asc") && userId) {
-    return handleMySort({ limit, offset, search: safeSearch, rawSearch: search ?? null, aliasMatches, genre, sort, userId, region: regionFilter });
-  }
 
-  // 특정 점수 필터
+  // myScore가 있으면 점수 필터가 정렬보다 우선 (my_desc/my_asc와 동시 선택 시 myScore 기준으로 처리)
   if (myScore && userId) {
     const { data: scored, error: scoreErr } = await supabaseServer
       .from("ratings").select("album_id").eq("user_id", userId).eq("score", myScore);
@@ -128,6 +125,10 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     const resolved = await resolveArtistDisplay(data ?? []);
     return NextResponse.json({ items: resolved.map(mapAlbum), nextOffset: null, hasMore: false });
+  }
+
+  if ((sort === "my_desc" || sort === "my_asc") && userId) {
+    return handleMySort({ limit, offset, search: safeSearch, rawSearch: search ?? null, aliasMatches, genre, sort, userId, region: regionFilter });
   }
 
   // 미평가 앨범

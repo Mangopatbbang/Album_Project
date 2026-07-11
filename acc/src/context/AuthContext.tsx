@@ -65,7 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // 여러 이벤트가 연속 발화할 때 가장 최신 콜백만 반영
         const mySeq = ++seq;
-        const profile = user ? await fetchProfileData(user.id) : null;
+        // 로그인 이벤트면 프로필 fetch 전까지 loading=true 유지 (비로그인 UI 플래시 방지)
+        if (user) setAuthState(prev => ({ ...prev, loading: true }));
+        let profile: UserProfile | null = null;
+        try {
+          profile = user ? await fetchProfileData(user.id) : null;
+        } catch {
+          // DB 오류 시에도 state 업데이트는 반드시 실행 (loading stuck 방지)
+        }
         if (cancelled || seq !== mySeq) return;
         setAuthState({ authUser: user, profile, loading: false });
       }
