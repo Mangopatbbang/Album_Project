@@ -49,13 +49,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let seq = 0;
 
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (cancelled) return;
         const user = session?.user ?? null;
+
+        // TOKEN_REFRESHED: 토큰만 갱신됐고 유저/프로필은 변하지 않음
+        // 불필요한 DB 쿼리 없이 authUser만 업데이트
+        if (event === 'TOKEN_REFRESHED') {
+          setAuthState(prev => ({ ...prev, authUser: user }));
+          return;
+        }
+
+        // 여러 이벤트가 연속 발화할 때 가장 최신 콜백만 반영
+        const mySeq = ++seq;
         const profile = user ? await fetchProfileData(user.id) : null;
-        if (cancelled) return;
+        if (cancelled || seq !== mySeq) return;
         setAuthState({ authUser: user, profile, loading: false });
       }
     );

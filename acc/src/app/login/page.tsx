@@ -150,16 +150,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+    try {
+      const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      setError("이메일 또는 비밀번호가 올바르지 않습니다");
+      if (error) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다");
+        return;
+      }
+
+      router.push("/");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push("/");
-    router.refresh();
   };
 
   return (
