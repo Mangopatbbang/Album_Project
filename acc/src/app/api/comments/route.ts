@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabaseServer
     .from("comments")
-    .select("id, album_id, reviewer_id, commenter_id, content, created_at")
+    .select("id, album_id, reviewer_id, author_id, content, created_at")
     .eq("album_id", albumId)
     .eq("reviewer_id", reviewerId)
     .order("created_at", { ascending: true });
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     id: r.id,
     albumId: r.album_id,
     reviewerId: r.reviewer_id,
-    commenterId: r.commenter_id,
+    commenterId: r.author_id,
     content: r.content,
     createdAt: r.created_at,
   }));
