@@ -43,3 +43,23 @@ next-env.d.ts
 # Claude Code local settings (may contain secrets)
 .claude/settings.local.json
 .claude/
+
+# MCP config (local paths / secrets)
+.mcp.json
+
+# DB 스키마 작업 파일 (임시)
+fix_schema*.sql
+migration_schema.sql
+migrate.mjs
+restore_auth_users.mjs
+migration_backup/
+acc/backup_schema*.sql
+acc/supabase/
+
+# 루트 레벨 임시 package 파일
+package.json
+package-lock.json
+
+# 디자인·기획 레퍼런스 (로컬 전용)
+figma_ref/
+*.html
