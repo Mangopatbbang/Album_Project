@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
@@ -21,11 +21,14 @@ export type ControversialItem = {
 
 function CoverThumb({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => { if (imgRef.current?.complete) setLoaded(true); }, []);
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {!loaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0, borderRadius: 4 }} />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         onLoad={() => setLoaded(true)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { AlbumWithRatings } from "@/types";
 
@@ -20,11 +20,14 @@ export type WeeklyAlbum = {
 
 function CoverImg({ src, alt }: { src: string; alt: string }) {
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => { if (imgRef.current?.complete) setLoaded(true); }, []);
   return (
     <div style={{ position: "relative", width: "100%", paddingTop: "100%", borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)" }}>
       {!loaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         onLoad={() => setLoaded(true)}

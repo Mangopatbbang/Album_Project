@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { AlbumWithRatings } from "@/types";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
@@ -32,6 +32,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
+  const coverImgRef = useRef<HTMLImageElement>(null);
   const [streamingOpen, setStreamingOpen] = useState(false);
   const [trackHover, setTrackHover] = useState(false);
   const [tracklistOpen, setTracklistOpen] = useState(false);
@@ -42,6 +43,11 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       window.dispatchEvent(new CustomEvent("home:album-changed", { detail: { coverUrl: album.cover_url } }));
     }
   }, [album?.id, album?.cover_url]);
+
+  // 이미지가 React 핸들러 달리기 전에 이미 로드된 경우 처리
+  useEffect(() => {
+    if (coverImgRef.current?.complete) setCoverLoaded(true);
+  }, [album?.id]);
 
 
   const openStreaming = (service: "spotify" | "apple" | "youtube") => {
@@ -166,6 +172,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   {!coverLoaded && <div className="skeleton-shimmer" style={{ position: "absolute", inset: 0 }} />}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
+                    ref={coverImgRef}
                     src={album.cover_url}
                     alt={album.title}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
