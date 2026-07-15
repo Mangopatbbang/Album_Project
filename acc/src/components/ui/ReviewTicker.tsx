@@ -58,8 +58,9 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
     <>
       <div
         style={inline ? {
-          backgroundColor: "var(--bg-elevated)",
-          border: "1px solid var(--border)",
+          backgroundColor: "rgba(0,0,0,0.32)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
           borderRadius: 8,
           overflow: "hidden",
           height: 36,
@@ -84,7 +85,9 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to right, var(--bg-elevated) 0%, transparent 80px, transparent calc(100% - 80px), var(--bg-elevated) 100%)",
+            background: inline
+              ? "linear-gradient(to right, rgba(0,0,0,0.32) 0%, transparent 60px, transparent calc(100% - 60px), rgba(0,0,0,0.32) 100%)"
+              : "linear-gradient(to right, var(--bg-elevated) 0%, transparent 80px, transparent calc(100% - 80px), var(--bg-elevated) 100%)",
             zIndex: 1,
             pointerEvents: "none",
           }}

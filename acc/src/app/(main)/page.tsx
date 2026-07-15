@@ -270,17 +270,10 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* 평베이어벨트 — 반투명 띠 */}
+            {/* 평베이어벨트 */}
             <div
               data-tour="home-ticker"
-              style={{
-                backgroundColor: "rgba(0,0,0,0.28)",
-                backdropFilter: "blur(6px)",
-                WebkitBackdropFilter: "blur(6px)",
-                color: "#ffffff",
-                maskImage: "linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)",
-              }}
+              style={{ color: "#ffffff" }}
             >
               <div style={containerStyle}>
                 <ReviewTicker items={tickerItems} inline />
