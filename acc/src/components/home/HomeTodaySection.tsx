@@ -168,7 +168,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
             />
             <div
               style={{ borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer", transition: "opacity 0.1s", position: "relative", zIndex: 1 }}
-              className="w-[96px] h-[96px] sm:w-[140px] sm:h-[140px] group today-cover"
+              className="w-[96px] h-[96px] sm:w-[140px] sm:h-[140px] today-cover"
               onClick={() => setModalOpen(true)}
             >
               {album.cover_url ? (
@@ -178,8 +178,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                   <img
                     src={album.cover_url}
                     alt={album.title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s ease, opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
-                    className="group-hover:scale-[1.06]"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.25s ease", opacity: coverLoaded ? 1 : 0 }}
                     onLoad={() => setCoverLoaded(true)}
                   />
                 </>
