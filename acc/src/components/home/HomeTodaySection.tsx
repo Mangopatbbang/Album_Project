@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { AlbumWithRatings } from "@/types";
 import SpotifyAttribution from "@/components/ui/SpotifyAttribution";
@@ -35,7 +35,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [streamingOpen, setStreamingOpen] = useState(false);
   const [trackHover, setTrackHover] = useState(false);
   const [tracklistOpen, setTracklistOpen] = useState(false);
-  const autoShuffledRef = useRef(false);
 
   // 앨범 변경 시 배경 업데이트 이벤트 dispatch
   useEffect(() => {
@@ -44,15 +43,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
     }
   }, [album?.id, album?.cover_url]);
 
-  // 이미 평가한 앨범이 오늘의 인연으로 뜨면 자동으로 미평가 앨범으로 교체
-  useEffect(() => {
-    if (!profile || !album || autoShuffledRef.current) return;
-    if (album.ratings.some((r) => r.user_id === profile.id)) {
-      autoShuffledRef.current = true;
-      shuffle();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id, album?.id]);
 
   const openStreaming = (service: "spotify" | "apple" | "youtube") => {
     const query = encodeURIComponent(`${album?.title ?? ""} ${album?.artist_display ?? album?.artist ?? ""}`);

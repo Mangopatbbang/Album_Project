@@ -10,6 +10,7 @@ import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
 import HomeHeroBackground from "@/components/home/HomeHeroBackground";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
+import HomeWeeklyStrip, { WeeklyStripItem } from "@/components/home/HomeWeeklyStrip";
 
 const getTotalCount = unstable_cache(
   async () => {
@@ -179,6 +180,22 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
   }));
 }, ["controversial-albums"], { tags: ["controversial"], revalidate: false });
 
+const getWeeklyAlbums = unstable_cache(
+  async () => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabaseServer
+      .from("albums")
+      .select("id, title, artist, use_artist_variant, cover_url")
+      .gte("created_at", weekAgo)
+      .order("created_at", { ascending: false })
+      .limit(15);
+    if (!data || data.length === 0) return [];
+    return resolveArtistDisplay(data);
+  },
+  ["home-weekly-albums"],
+  { tags: ["albums-page-meta"], revalidate: false }
+);
+
 const containerStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: "1100px",
@@ -193,6 +210,7 @@ export default async function HomePage() {
     tickerItemsRaw,
     avatarMap,
     controversialAlbums,
+    weeklyAlbums,
   ] = await Promise.all([
     getTotalCount(),
     getRatingsCount(),
@@ -200,6 +218,7 @@ export default async function HomePage() {
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
     getControversialAlbums(),
+    getWeeklyAlbums(),
   ]);
 
   const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
@@ -283,6 +302,9 @@ export default async function HomePage() {
 
           </div>
         </section>
+
+        {/* ── 이번 주 청음 — 한 줄 콤팩트 스트립 ── */}
+        <HomeWeeklyStrip albums={weeklyAlbums as WeeklyStripItem[]} />
 
       </main>
     </div>
