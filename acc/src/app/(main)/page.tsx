@@ -287,7 +287,7 @@ export default async function HomePage() {
 
             {/* 오늘의 인연 + 갑론을박 */}
             <div style={{ ...containerStyle, padding: "28px 24px 36px" }}>
-              <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "2fr 1fr" } as React.CSSProperties}>
+              <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "1fr 1fr" } as React.CSSProperties}>
                 <div className="mb-8 sm:mb-0">
                   <HomeTodaySection initialAlbum={todayAlbum} />
                 </div>
