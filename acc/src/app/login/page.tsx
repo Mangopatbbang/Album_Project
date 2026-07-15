@@ -177,8 +177,10 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // 로그인 성공: AuthContext가 profile 로드 완료하면 useEffect가 리디렉트
-      // loading은 true 유지 (리디렉트 전까지 "입장 중..." 표시)
+      // 로그인 성공: signInWithPassword가 완료된 시점에 즉시 이동
+      // onAuthStateChange(SIGNED_IN) → profile fetch는 AuthContext에서 백그라운드 처리
+      router.replace("/");
+      router.refresh(); // 서버 컴포넌트 캐시 갱신
     } catch {
       setError("네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
       setLoading(false);
