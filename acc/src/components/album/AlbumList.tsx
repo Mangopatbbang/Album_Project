@@ -11,6 +11,7 @@ import { useUsers } from "@/context/UsersContext";
 import Spinner from "@/components/ui/Spinner";
 import { trackSearch, trackFeatureClick } from "@/lib/track";
 import FilterSelect from "@/components/ui/FilterSelect";
+import AlbumFilterSheet from "./AlbumFilterSheet";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -57,6 +58,7 @@ export default function AlbumList({
 
   const [albums, setAlbums] = useState<AlbumWithRatings[]>(hasUrlFilters ? [] : initialAlbums);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [hasMore, setHasMore] = useState(hasUrlFilters ? false : initialHasMore);
   const [nextOffset, setNextOffset] = useState<number | null>(hasUrlFilters ? null : initialNextOffset);
   const [loading, setLoading] = useState(false);
@@ -79,6 +81,14 @@ export default function AlbumList({
   const sortOptions = profile
     ? [...BASE_SORT_OPTIONS, ...MY_SORT_OPTIONS]
     : BASE_SORT_OPTIONS;
+
+  const activeFilterCount = [
+    genre !== "",
+    region !== "",
+    sort !== "newest",
+    unrated,
+    myScore !== null,
+  ].filter(Boolean).length;
 
   const fetchAlbums = useCallback(
     async (params: { search: string; genre: string; region: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number }) => {
@@ -267,183 +277,300 @@ export default function AlbumList({
     handleFilter(search, genre, region, sort, false, next, next === null ? null : scoreUserId);
   };
 
+  const handleReset = () => {
+    setGenre("");
+    setRegion("");
+    setSort("newest");
+    setUnrated(false);
+    setMyScore(null);
+    setScoreUserId(null);
+    handleFilter(search, "", "", "newest", false, null, null);
+    if (scoreUserId) router.replace(pathname, { scroll: false });
+  };
+
+  type Chip = { key: string; label: string; onRemove: () => void };
+  const activeChips: Chip[] = [
+    ...(genre ? [{ key: "genre", label: genre, onRemove: () => handleGenreChange("") }] : []),
+    ...(region ? [{ key: "region", label: region, onRemove: () => handleRegionChange("") }] : []),
+    ...(sort !== "newest" ? [{ key: "sort", label: sortOptions.find((o) => o.value === sort)?.label ?? sort, onRemove: () => handleSortChange("newest") }] : []),
+    ...(unrated ? [{ key: "unrated", label: "미청음", onRemove: handleUnratedToggle }] : []),
+    ...(myScore !== null ? [{
+      key: "score",
+      label: scoreUserId
+        ? `${getUserById(scoreUserId)?.display_name ?? scoreUserId}님의 ${myScore}점`
+        : `내 ${myScore}점`,
+      onRemove: () => {
+        setMyScore(null);
+        setScoreUserId(null);
+        handleFilter(search, genre, region, sort, unrated, null, null);
+        if (scoreUserId) router.replace(pathname, { scroll: false });
+      },
+    }] : []),
+  ];
+
 return (
     <>
-      {/* ── 필터 바 ── sticky, 헤더(52px) 바로 아래 */}
+      {/* ── 필터 바 ── */}
       <div
         data-tour="albums-filter"
-        className="sticky top-0 sm:top-[52px] z-40 no-scrollbar"
+        className="sticky top-0 sm:top-[52px] z-40"
         style={{
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
           marginBottom: 28,
-          paddingTop: 14,
-          paddingBottom: 12,
           isolation: "isolate",
         }}
       >
-        {/* Row 1: 검색 + 정렬 + 입고 */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
-          {/* 검색창 with icon */}
-          <div style={{ position: "relative", flex: "1 1 0", minWidth: 0 }}>
-            <svg
-              width="13" height="13" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}
-            >
-              <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              placeholder="제목 / 아티스트 검색"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+        {/* ── 모바일 (sm:hidden): 1줄 콤팩트 바 + 활성 필터 칩 ── */}
+        <div className="sm:hidden" style={{ paddingTop: 10, paddingBottom: 10 }}>
+          {/* 검색 + 필터 버튼 + 입고 */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: "1 1 0", minWidth: 0 }}>
+              <svg
+                width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}
+              >
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                placeholder="제목 / 아티스트 검색"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                style={{
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  borderRadius: 50,
+                  padding: "8px 12px 8px 32px",
+                  fontSize: 13,
+                  width: "100%",
+                }}
+              />
+            </div>
+            {/* 필터 버튼 */}
+            <button
+              onClick={() => setSheetOpen(true)}
               style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-                borderRadius: 50,
-                padding: "7px 12px 7px 32px",
-                fontSize: 13,
-                width: "100%",
+                display: "flex", alignItems: "center", gap: 5,
+                backgroundColor: activeFilterCount > 0 ? "rgba(232,213,163,0.12)" : "var(--bg-card)",
+                border: `1px solid ${activeFilterCount > 0 ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                color: activeFilterCount > 0 ? "var(--accent)" : "var(--text-muted)",
+                borderRadius: 8, padding: "8px 12px",
+                fontSize: 13, fontWeight: activeFilterCount > 0 ? 700 : 400,
+                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
               }}
-            />
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" />
+              </svg>
+              {activeFilterCount > 0 ? `필터 ${activeFilterCount}` : "필터"}
+            </button>
+            {/* 입고 */}
+            {profile && (
+              <button
+                data-tour="albums-import"
+                onClick={() => setShowAddModal(true)}
+                style={{
+                  backgroundColor: "var(--accent)",
+                  border: "none",
+                  color: "var(--bg)",
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                입고
+              </button>
+            )}
           </div>
 
-          {/* 정렬 */}
-          <FilterSelect
-            value={sort}
-            onChange={handleSortChange}
-            options={sortOptions}
-            title="정렬 기준"
-            feature="음반고_정렬"
-            active={sort !== "newest"}
-            style={{ borderRadius: 8, padding: "7px 10px", flexShrink: 0 }}
-          />
-
-          {/* 입고 버튼 */}
-          {profile && (
-            <button
-              data-tour="albums-import"
-              onClick={() => setShowAddModal(true)}
-              style={{
-                backgroundColor: "var(--accent)",
-                border: "none",
-                color: "var(--bg)",
-                borderRadius: 8,
-                padding: "7px 14px",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-              }}
+          {/* 활성 필터 칩 */}
+          {activeChips.length > 0 && (
+            <div
+              className="no-scrollbar"
+              style={{ display: "flex", gap: 6, overflowX: "auto", paddingTop: 8, paddingBottom: 2 }}
             >
-              입고
-            </button>
+              {activeChips.map((chip) => (
+                <span
+                  key={chip.key}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    backgroundColor: "rgba(232,213,163,0.1)",
+                    border: "1px solid rgba(232,213,163,0.35)",
+                    borderRadius: 20, padding: "4px 10px 4px 12px",
+                    fontSize: 12, color: "var(--accent)", fontWeight: 600,
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                >
+                  {chip.label}
+                  <button
+                    onClick={chip.onRemove}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "var(--accent)", fontSize: 13, lineHeight: 1,
+                      padding: 0, display: "flex", alignItems: "center",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Row 2(모바일: 장르 줄) + Row 3(모바일: 필터 줄) — flex-wrap으로 자동 분리 */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5" style={{ marginBottom: 8 }}>
-          {/* 장르 pills — 모바일 전체너비, 데스크탑 flex-1 */}
-          <div
-            className="no-scrollbar w-full sm:flex-1 sm:min-w-0"
-            style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}
-          >
-            {(["", ...genres] as string[]).map((g) => {
-              const label = g === "" ? "전체" : g;
-              const isSelected = g === genre;
-              return (
-                <button
-                  key={g}
-                  onClick={() => handleGenreChange(g)}
-                  className="flex items-center justify-center min-h-[40px] sm:min-h-0"
-                  style={{
-                    flexShrink: 0,
-                    backgroundColor: isSelected ? "var(--accent)" : "var(--bg-card)",
-                    border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
-                    color: isSelected ? "var(--bg)" : "var(--text-sub)",
-                    borderRadius: 20,
-                    padding: "4px 12px",
-                    fontSize: 12,
-                    fontWeight: isSelected ? 700 : 400,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
+        {/* ── 데스크탑 (hidden sm:block): 2줄 필터 바 ── */}
+        <div className="hidden sm:block" style={{ paddingTop: 14, paddingBottom: 12 }}>
+          {/* Row 1: 검색 + 정렬 + 입고 */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+            <div style={{ position: "relative", flex: "1 1 0", minWidth: 0 }}>
+              <svg
+                width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}
+              >
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                placeholder="제목 / 아티스트 검색"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                style={{
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  borderRadius: 50,
+                  padding: "7px 12px 7px 32px",
+                  fontSize: 13,
+                  width: "100%",
+                }}
+              />
+            </div>
+            <FilterSelect
+              value={sort}
+              onChange={handleSortChange}
+              options={sortOptions}
+              title="정렬 기준"
+              feature="음반고_정렬"
+              active={sort !== "newest"}
+              style={{ borderRadius: 8, padding: "7px 10px", flexShrink: 0 }}
+            />
+            {profile && (
+              <button
+                data-tour="albums-import"
+                onClick={() => setShowAddModal(true)}
+                style={{
+                  backgroundColor: "var(--accent)",
+                  border: "none",
+                  color: "var(--bg)",
+                  borderRadius: 8,
+                  padding: "7px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                입고
+              </button>
+            )}
           </div>
 
-          {/* 구분선 — 데스크탑만 */}
-          <div className="hidden sm:block flex-shrink-0" style={{ width: 1, height: 18, backgroundColor: "var(--border)" }} />
-
-          {/* 국내 / 해외 / 미청음만 / 모바일 내평점 — 우측 고정 */}
-          <div data-tour="albums-score-filter" style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
-            {(["국내", "해외"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => handleRegionChange(r)}
-                className="flex items-center justify-center min-h-[40px] sm:min-h-0"
-                style={{
-                  backgroundColor: region === r ? "rgba(232,213,163,0.12)" : "transparent",
-                  border: `1px solid ${region === r ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
-                  color: region === r ? "var(--accent)" : "var(--text-muted)",
-                  borderRadius: 6, padding: "4px 9px", fontSize: 11,
-                  cursor: "pointer", fontWeight: region === r ? 700 : 400,
-                  whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
-                }}
-              >{r}</button>
-            ))}
-            {profile && (
-              <button
-                onClick={handleUnratedToggle}
-                className="flex items-center justify-center min-h-[40px] sm:min-h-0"
-                style={{
-                  backgroundColor: unrated ? "rgba(232,213,163,0.12)" : "transparent",
-                  border: `1px solid ${unrated ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
-                  color: unrated ? "var(--accent)" : "var(--text-muted)",
-                  borderRadius: 6, padding: "4px 9px", fontSize: 11,
-                  cursor: "pointer", fontWeight: unrated ? 700 : 400,
-                  whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
-                }}
-              >미청음만</button>
-            )}
-            {/* 내 평점 select (모바일 전용) */}
-            {profile && (
-              <FilterSelect
-                value={myScore ?? ""}
-                onChange={(v) => {
-                  const val = v ? Number(v) : null;
-                  setMyScore(val);
-                  if (!val) setScoreUserId(null);
-                  setUnrated(false);
-                  handleFilter(search, genre, region, sort, false, val, val === null ? null : scoreUserId);
-                }}
-                options={[
-                  { value: "", label: "내 평점" },
-                  ...[1,2,3,4,5,6,7,8].map((s) => ({ value: s, label: `${s}점` })),
-                ]}
-                title="내 평점"
-                feature="음반고_내평점필터"
-                active={myScore !== null}
-                style={{ fontSize: 11, padding: "4px 8px" }}
-              />
-            )}
+          {/* Row 2: 장르 + 지역 + 미청음 + 내평점 */}
+          <div className="flex items-center gap-x-2" style={{ marginBottom: 8 }}>
+            <div
+              className="no-scrollbar"
+              style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, flex: "1 1 0", minWidth: 0 }}
+            >
+              {(["", ...genres] as string[]).map((g) => {
+                const isSelected = g === genre;
+                return (
+                  <button
+                    key={g}
+                    onClick={() => handleGenreChange(g)}
+                    style={{
+                      flexShrink: 0,
+                      backgroundColor: isSelected ? "var(--accent)" : "var(--bg-card)",
+                      border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                      color: isSelected ? "var(--bg)" : "var(--text-sub)",
+                      borderRadius: 20, padding: "4px 12px",
+                      fontSize: 12, fontWeight: isSelected ? 700 : 400,
+                      cursor: "pointer", whiteSpace: "nowrap",
+                      transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
+                    }}
+                  >
+                    {g === "" ? "전체" : g}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex-shrink-0" style={{ width: 1, height: 18, backgroundColor: "var(--border)" }} />
+            <div data-tour="albums-score-filter" style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
+              {(["국내", "해외"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => handleRegionChange(r)}
+                  style={{
+                    backgroundColor: region === r ? "rgba(232,213,163,0.12)" : "transparent",
+                    border: `1px solid ${region === r ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                    color: region === r ? "var(--accent)" : "var(--text-muted)",
+                    borderRadius: 6, padding: "4px 9px", fontSize: 11,
+                    cursor: "pointer", fontWeight: region === r ? 700 : 400,
+                    whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
+                  }}
+                >{r}</button>
+              ))}
+              {profile && (
+                <button
+                  onClick={handleUnratedToggle}
+                  style={{
+                    backgroundColor: unrated ? "rgba(232,213,163,0.12)" : "transparent",
+                    border: `1px solid ${unrated ? "rgba(232,213,163,0.45)" : "var(--border)"}`,
+                    color: unrated ? "var(--accent)" : "var(--text-muted)",
+                    borderRadius: 6, padding: "4px 9px", fontSize: 11,
+                    cursor: "pointer", fontWeight: unrated ? 700 : 400,
+                    whiteSpace: "nowrap", transition: "background-color 0.12s, border-color 0.12s, color 0.12s",
+                  }}
+                >미청음만</button>
+              )}
+              {profile && (
+                <FilterSelect
+                  value={myScore ?? ""}
+                  onChange={(v) => {
+                    const val = v ? Number(v) : null;
+                    setMyScore(val);
+                    if (!val) setScoreUserId(null);
+                    setUnrated(false);
+                    handleFilter(search, genre, region, sort, false, val, val === null ? null : scoreUserId);
+                  }}
+                  options={[
+                    { value: "", label: "내 평점" },
+                    ...[1,2,3,4,5,6,7,8].map((s) => ({ value: s, label: `${s}점` })),
+                  ]}
+                  title="내 평점"
+                  feature="음반고_내평점필터"
+                  active={myScore !== null}
+                  style={{ fontSize: 11, padding: "4px 8px" }}
+                />
+              )}
+            </div>
           </div>
         </div>
-
       </div>
 
-      {/* scoreUserId 일회용 필터 배지 */}
+      {/* scoreUserId 일회용 필터 배지 (데스크탑 전용 — 모바일은 활성 칩으로 처리) */}
       {scoreUserId && myScore !== null && (() => {
         const scoreUser = getUserById(scoreUserId);
         return (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <div className="hidden sm:flex" style={{ alignItems: "center", gap: 8, marginBottom: 16 }}>
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               backgroundColor: "rgba(var(--accent-rgb), 0.1)",
@@ -566,6 +693,24 @@ return (
           전부 불러왔어요
         </p>
       )}
+
+      <AlbumFilterSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        genre={genre}
+        region={region}
+        sort={sort}
+        unrated={unrated}
+        myScore={myScore}
+        genres={genres}
+        hasProfile={!!profile}
+        onGenreChange={handleGenreChange}
+        onRegionChange={handleRegionChange}
+        onSortChange={handleSortChange}
+        onUnratedToggle={handleUnratedToggle}
+        onScoreFilter={handleScoreFilter}
+        onReset={handleReset}
+      />
 
       {showAddModal && (
         <AlbumAddModal
