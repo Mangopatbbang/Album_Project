@@ -10,7 +10,7 @@ import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
 import HomeHeroBackground from "@/components/home/HomeHeroBackground";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
-import HomeWeeklyStrip, { WeeklyStripItem } from "@/components/home/HomeWeeklyStrip";
+import HomeWeeklySection, { WeeklyAlbum } from "@/components/home/HomeWeeklySection";
 
 const getTotalCount = unstable_cache(
   async () => {
@@ -303,8 +303,12 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── 이번 주 청음 — 한 줄 콤팩트 스트립 ── */}
-        <HomeWeeklyStrip albums={weeklyAlbums as WeeklyStripItem[]} />
+        {/* ── 이번 주 청음 ── */}
+        {weeklyAlbums.length > 0 && (
+          <section style={{ ...containerStyle, padding: "28px 24px 12px" }}>
+            <HomeWeeklySection albums={weeklyAlbums as WeeklyAlbum[]} />
+          </section>
+        )}
 
       </main>
     </div>
