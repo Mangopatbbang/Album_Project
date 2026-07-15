@@ -278,6 +278,8 @@ export default async function HomePage() {
                 backdropFilter: "blur(6px)",
                 WebkitBackdropFilter: "blur(6px)",
                 color: "#ffffff",
+                maskImage: "linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%)",
               }}
             >
               <div style={containerStyle}>
