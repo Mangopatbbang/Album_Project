@@ -161,16 +161,28 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setError("이메일 또는 비밀번호가 올바르지 않습니다");
+    try {
+      const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+      if (error) {
+        const msg = error.message ?? "";
+        let korError = "로그인에 실패했어요. 잠시 후 다시 시도해주세요.";
+        if (msg.includes("Invalid login credentials") || msg.includes("invalid_credentials")) {
+          korError = "이메일 또는 비밀번호가 올바르지 않습니다";
+        } else if (msg.includes("Email not confirmed")) {
+          korError = "이메일 인증 후 로그인해주세요";
+        } else if (msg.includes("Too many requests") || msg.includes("rate limit") || msg.includes("over_email_send_rate_limit")) {
+          korError = "요청이 너무 많아요. 잠시 후 다시 시도해주세요";
+        }
+        setError(korError);
+        setLoading(false);
+        return;
+      }
+      // 로그인 성공: AuthContext가 profile 로드 완료하면 useEffect가 리디렉트
+      // loading은 true 유지 (리디렉트 전까지 "입장 중..." 표시)
+    } catch {
+      setError("네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
       setLoading(false);
-      return;
     }
-
-    // 로그인 성공: AuthContext가 profile 로드 완료하면 useEffect가 리디렉트
-    // loading은 true 유지 (리디렉트 전까지 "입장 중..." 표시)
   };
 
   return (

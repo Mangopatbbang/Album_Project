@@ -68,6 +68,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   };
 
   const shuffle = async () => {
+    setAlbum(null);       // 이전 앨범 즉시 제거 — 이전 세션 데이터 잔류 방지
     setLoading(true);
     setCoverLoaded(false);
     setTracklistOpen(false);
@@ -161,17 +162,20 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
         {/* 커버 + 우측 정보 */}
         <div style={{ display: "flex", alignItems: "flex-start", padding: "14px 14px 0", gap: 14 }}>
 
-          {/* 커버 — offset card wrapper */}
-          <div style={{ position: "relative", flexShrink: 0, marginRight: 6, marginBottom: 6 }}>
-            <div style={{
-              position: "absolute",
-              top: 6, left: 6, right: -6, bottom: -6,
-              border: `1px solid ${offsetBorderColor}`,
-              borderRadius: 8,
-            }} />
+          {/* 커버 — offset card wrapper (offset 그림자는 데스크탑 전용) */}
+          <div style={{ position: "relative", flexShrink: 0 }} className="sm:mr-[6px] sm:mb-[6px]">
+            <div
+              className="hidden sm:block"
+              style={{
+                position: "absolute",
+                top: 6, left: 6, right: -6, bottom: -6,
+                border: `1px solid ${offsetBorderColor}`,
+                borderRadius: 8,
+              }}
+            />
             <div
               style={{ borderRadius: 8, overflow: "hidden", backgroundColor: "var(--bg-elevated)", cursor: "pointer", transition: "opacity 0.1s", position: "relative", zIndex: 1 }}
-              className="w-[120px] h-[120px] sm:w-[140px] sm:h-[140px] group today-cover"
+              className="w-[96px] h-[96px] sm:w-[140px] sm:h-[140px] group today-cover"
               onClick={() => setModalOpen(true)}
             >
               {album.cover_url ? (

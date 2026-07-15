@@ -347,7 +347,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ albumId: album.id }),
     });
-    if (!res.ok) setIsWatchlisted(!adding);
+    if (!res.ok) {
+      setIsWatchlisted(!adding);
+      if (res.status !== 401) showToast("처리에 실패했어요. 다시 시도해주세요.", "error");
+    }
   };
 
   // 배경 스크롤 잠금
@@ -466,7 +469,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         return;
       }
     }
-    if (!res.ok) return;
+    if (!res.ok) {
+      // 401은 AuthSessionWatcher가 전역 처리
+      if (res.status !== 401) {
+        showToast("저장에 실패했어요. 잠시 후 다시 시도해주세요.", "error");
+      }
+      return;
+    }
 
     // 낙관적 업데이트: 서버 refetch 전에 바로 멤버 평점 목록에 반영
     const savedScore = myScore;

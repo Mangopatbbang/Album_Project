@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { useAuth } from "@/context/AuthContext";
 import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 
 function EyeIcon() {
@@ -192,6 +193,7 @@ function HintText({ children, isError }: { children: React.ReactNode; isError?: 
 
 export default function SignupPage() {
   const router = useRouter();
+  const { refreshProfile } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -218,41 +220,60 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { data: authData, error: authError } = await supabaseBrowser.auth.signUp({ email, password });
+    try {
+      const { data: authData, error: authError } = await supabaseBrowser.auth.signUp({ email, password });
 
-    if (authError || !authData.user) {
-      setError(authError?.message ?? "회원가입에 실패했습니다");
+      if (authError || !authData.user) {
+        const msg = authError?.message ?? "";
+        let korError = "회원가입에 실패했습니다";
+        if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("User already registered")) {
+          korError = "이미 가입된 이메일이에요";
+        } else if (msg.includes("Password should") || msg.includes("password")) {
+          korError = "비밀번호는 6자 이상이어야 해요";
+        } else if (msg.includes("Unable to validate") || msg.includes("invalid email") || msg.includes("valid email")) {
+          korError = "이메일 형식을 확인해주세요";
+        } else if (msg.includes("Email rate limit") || msg.includes("rate limit")) {
+          korError = "잠시 후 다시 시도해주세요";
+        }
+        setError(korError);
+        setLoading(false);
+        return;
+      }
+
+      // username은 auth_id 앞 12자리로 자동 생성 (사용자에게 노출 안 됨)
+      const autoUsername = authData.user.id.replace(/-/g, "").slice(0, 12);
+      const nickname = displayName.trim() || email.split("@")[0];
+
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          auth_id: authData.user.id,
+          username: autoUsername,
+          display_name: nickname,
+          emoji: "🎵",
+          onboarded: false,
+        }),
+      });
+
+      let json: { error?: string } = {};
+      try { json = await res.json(); } catch { /* non-JSON */ }
+
+      if (!res.ok) {
+        await supabaseBrowser.auth.signOut();
+        setError(json.error ?? "프로필 생성에 실패했습니다");
+        setLoading(false);
+        return;
+      }
+
+      // SIGNED_IN 핸들러의 profile fetch(404 가능)와 레이스컨디션 방지
+      // refreshProfile이 seq를 증가시켜 이전 pending fetch를 무효화하고 최신 profile을 적용
+      await refreshProfile();
+      router.push("/?welcome=1");
+    } catch {
+      setError("네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
       setLoading(false);
-      return;
     }
-
-    // username은 auth_id 앞 12자리로 자동 생성 (사용자에게 노출 안 됨)
-    const autoUsername = authData.user.id.replace(/-/g, "").slice(0, 12);
-    const nickname = displayName.trim() || email.split("@")[0];
-
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        auth_id: authData.user.id,
-        username: autoUsername,
-        display_name: nickname,
-        emoji: "🎵",
-        onboarded: false,
-      }),
-    });
-
-    let json: { error?: string } = {};
-    try { json = await res.json(); } catch { /* non-JSON */ }
-
-    if (!res.ok) {
-      await supabaseBrowser.auth.signOut();
-      setError(json.error ?? "프로필 생성에 실패했습니다");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/?welcome=1");
   };
 
   return (

@@ -13,6 +13,7 @@ import SpotlightTour from "@/components/ui/SpotlightTour";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
+import AuthSessionWatcher from "@/components/ui/AuthSessionWatcher";
 import { supabaseServer } from "@/lib/supabase";
 import type { User } from "@/types";
 import "./globals.css";
@@ -153,6 +154,7 @@ export default async function RootLayout({
             <TutorialModal />
             <OnboardingModal />
             <PageViewTracker />
+            <AuthSessionWatcher />
           </ToastProvider>
           </NotificationsProvider>
           </UserAvatarsProvider>
