@@ -5,7 +5,7 @@ import { useSearchParams, useParams } from "next/navigation";
 
 const TABS = [
   { id: "taste", label: "취향" },
-  { id: "activity", label: "활동" },
+  { id: "cheongeum", label: "청음기" },
   { id: "social", label: "소셜" },
 ] as const;
 

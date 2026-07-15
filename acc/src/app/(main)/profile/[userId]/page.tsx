@@ -21,6 +21,9 @@ import ReportUserButton from "@/components/profile/ReportUserButton";
 import MobileSettingsButton from "@/components/profile/MobileSettingsButton";
 import { fetchProfileRatings, fetchAllUserGenreEmojis, fetchAllUserAvatarUrls } from "@/lib/stats";
 import InsightSection from "@/components/profile/InsightSection";
+import AnnualHeatmap from "@/components/profile/AnnualHeatmap";
+import FollowButton from "@/components/profile/FollowButton";
+import SocialFeed from "@/components/profile/SocialFeed";
 import ProfileTabBar from "./ProfileTabBar";
 
 const getCommunityRatings = unstable_cache(
@@ -78,7 +81,9 @@ export default async function ProfilePage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { userId } = await params;
-  const { tab = "taste" } = await searchParams;
+  const { tab: rawTab = "taste" } = await searchParams;
+  // activity → cheongeum 하위호환
+  const tab = rawTab === "activity" ? "cheongeum" : rawTab;
 
   const { data: dbUser } = await supabaseServer
     .from("users")
@@ -113,6 +118,13 @@ export default async function ProfilePage({
     arr.push(r.score);
     communityScoresByAlbum.set(r.album_id, arr);
   }
+  // 히트맵 데이터 (날짜별 청음 수)
+  const heatmapData: Record<string, number> = {};
+  for (const r of validRatings) {
+    const dateStr = (r.updated_at ?? r.created_at ?? "").slice(0, 10);
+    if (dateStr) heatmapData[dateStr] = (heatmapData[dateStr] ?? 0) + 1;
+  }
+
   const scores = validRatings.map((r) => r.score).sort((a, b) => a - b);
   const total = validRatings.length;
   const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : null;
@@ -379,6 +391,9 @@ export default async function ProfilePage({
             </div>
           </div>
 
+          {/* 나중에 들을 앨범 */}
+          <div data-tour="profile-watchlist"><WatchlistSection userId={userId} /></div>
+
           {/* InsightSection */}
           <div data-tour="profile-insight" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InsightSection disagreeAlbums={disagreeAlbums} personalHiddenGems={personalHiddenGems} />
@@ -471,12 +486,12 @@ export default async function ProfilePage({
         </div>
       )}
 
-      {/* ══ 활동 탭 ══ */}
-      {tab === "activity" && (
+      {/* ══ 청음기 탭 ══ */}
+      {tab === "cheongeum" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* 나중에 들을 앨범 */}
-          <div data-tour="profile-watchlist"><WatchlistSection userId={userId} /></div>
+          {/* 청음 히트맵 */}
+          <AnnualHeatmap data={heatmapData} total={total} />
 
           {/* 최근 청음 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
@@ -573,6 +588,13 @@ export default async function ProfilePage({
       {/* ══ 소셜 탭 ══ */}
       {tab === "social" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* 팔로워/팔로잉 + 팔로우 버튼 */}
+          <FollowButton targetUserId={userId} />
+
+          {/* 내 팔로우 피드 (본인 프로필에서만) */}
+          <SocialFeed userId={userId} />
+
+          {/* 청음 취향 비교 */}
           <div data-tour="profile-comparison">
             <ComparisonSection userId={userId} topGenreMap={allUserTopGenres} avatarMap={allUserAvatarUrls} />
           </div>
