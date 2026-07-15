@@ -41,8 +41,8 @@ export default function Header() {
   const navItems = [
     { href: "/albums", label: "음반고", tour: "nav-albums", desc: "보유한 모든 앨범 탐색" },
     { href: "/best", label: "청음감", tour: "nav-best", desc: "명반 랭킹과 발견" },
-    { href: "/community", label: "커뮤니티", tour: undefined, desc: "소감과 멤버 모아보기" },
-    ...(profile ? [{ href: `/profile/${profile.id}`, label: "나", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
+    { href: "/community", label: "청음방", tour: undefined, desc: "소감과 멤버 모아보기" },
+    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
   ];
 
 
