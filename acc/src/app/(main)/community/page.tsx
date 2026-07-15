@@ -1,0 +1,378 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import Link from "next/link";
+import { supabaseServer } from "@/lib/supabase";
+import { scoreColor } from "@/lib/score";
+import { GENRE_COLOR } from "@/lib/bio";
+import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { fetchAllUserAvatarUrls, fetchAllUsers, fetchAllMemberRatings } from "@/lib/stats";
+import { unstable_cache } from "next/cache";
+import Spinner from "@/components/ui/Spinner";
+import UserAvatar from "@/components/ui/UserAvatar";
+import MembersMyCardHighlight from "@/components/ui/MembersMyCardHighlight";
+import ReviewsClient from "@/app/(main)/reviews/ReviewsClient";
+import { PairsSection, type PairData } from "@/app/(main)/members/MembersSections";
+import CommunityTabBar from "./CommunityTabBar";
+import type { ReviewItem } from "@/app/api/reviews/route";
+
+export const metadata: Metadata = {
+  title: "커뮤니티",
+  description: "아차청음사 멤버들의 소감과 멤버 현황",
+};
+
+type AlbumRow = {
+  id: string; title: string; artist: string;
+  use_artist_variant: boolean | null; extra_artists: string | null;
+  cover_url: string | null; genre: string | null;
+};
+
+const getBestReviews = unstable_cache(
+  async (): Promise<ReviewItem[]> => {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("user_id, score, one_line_review, liked_by, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, cover_url, genre)")
+      .not("one_line_review", "is", null)
+      .neq("one_line_review", "")
+      .not("liked_by", "is", null)
+      .neq("liked_by", "");
+
+    if (!data?.length) return [];
+
+    const sorted = [...data]
+      .sort((a, b) => {
+        const aL = (a.liked_by as string).split(",").filter(Boolean).length;
+        const bL = (b.liked_by as string).split(",").filter(Boolean).length;
+        return bL - aL;
+      })
+      .slice(0, 3);
+
+    const albumObjects = sorted
+      .map((r) => (r.albums as unknown) as AlbumRow | null)
+      .filter((a): a is AlbumRow => a !== null);
+
+    const resolved = await resolveArtistDisplay(albumObjects);
+    const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
+
+    return sorted
+      .map((r): ReviewItem | null => {
+        const album = (r.albums as unknown) as AlbumRow | null;
+        if (!album) return null;
+        return {
+          albumId: album.id,
+          albumTitle: album.title,
+          artist: album.artist,
+          artistDisplay: displayMap.get(album.id) ?? album.artist,
+          coverUrl: album.cover_url ?? null,
+          genre: album.genre ?? null,
+          userId: r.user_id,
+          score: r.score,
+          review: r.one_line_review as string,
+          likedBy: (r.liked_by as string).split(",").filter(Boolean),
+          updatedAt: r.updated_at,
+        };
+      })
+      .filter((x): x is ReviewItem => x !== null);
+  },
+  ["community-best-reviews"],
+  { tags: ["profile-ratings"], revalidate: false }
+);
+
+export default async function CommunityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab = "reviews" } = await searchParams;
+  const isMembers = tab === "members";
+
+  return (
+    <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
+      {isMembers && <MembersMyCardHighlight />}
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px calc(80px + env(safe-area-inset-bottom))" }}>
+
+        {/* 타이틀 */}
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.04em", marginBottom: 4 }}>
+            커뮤니티
+          </h1>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+            {isMembers ? "청음사 멤버 현황" : "멤버들의 한줄 소감 모음"}
+          </p>
+        </div>
+
+        {/* 서브탭 */}
+        <Suspense fallback={<div style={{ height: 43, borderBottom: "1px solid var(--border)", marginBottom: 28 }} />}>
+          <CommunityTabBar />
+        </Suspense>
+
+        {/* 탭 콘텐츠 */}
+        {isMembers ? (
+          <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spinner size={22} /></div>}>
+            <MembersContent />
+          </Suspense>
+        ) : (
+          <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spinner size={22} /></div>}>
+            <ReviewsTabContent />
+          </Suspense>
+        )}
+
+      </main>
+    </div>
+  );
+}
+
+// ── 소감 탭 ─────────────────────────────────────────────────────────────────
+
+async function ReviewsTabContent() {
+  const bestReviews = await getBestReviews();
+  return <ReviewsClient bestReviews={bestReviews} />;
+}
+
+// ── 멤버 탭 ─────────────────────────────────────────────────────────────────
+
+async function MembersContent() {
+  const [avatarMap, USERS, allRaw] = await Promise.all([
+    fetchAllUserAvatarUrls(),
+    fetchAllUsers(),
+    fetchAllMemberRatings(),
+  ]);
+
+  const ratings = allRaw.filter((r) => r.albums !== null);
+
+  const memberStats = USERS.map((user) => {
+    const mine = ratings.filter((r) => r.user_id === user.id);
+    const scores = mine.map((r) => r.score);
+    const total = scores.length;
+    const avg = total > 0 ? scores.reduce((a, b) => a + b, 0) / total : 0;
+    const reviewCount = mine.filter((r) => r.one_line_review?.trim()).length;
+    const eightCount = mine.filter((r) => r.score === 8).length;
+
+    const scoreDist = Array.from({ length: 8 }, (_, i) => ({
+      score: i + 1,
+      count: scores.filter((s) => s === i + 1).length,
+    }));
+
+    const genreMap = new Map<string, number>();
+    const artistMap = new Map<string, { count: number; total: number }>();
+    for (const r of mine) {
+      if (r.albums?.genre) { genreMap.set(r.albums.genre, (genreMap.get(r.albums.genre) ?? 0) + 1); }
+      if (r.albums?.artist) {
+        const prev = artistMap.get(r.albums.artist) ?? { count: 0, total: 0 };
+        artistMap.set(r.albums.artist, { count: prev.count + 1, total: prev.total + r.score });
+      }
+    }
+
+    const topGenres = [...genreMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([g]) => g);
+
+    return { user, total, avg: total > 0 ? avg : null, reviewCount, eightCount, scoreDist, topGenres };
+  }).sort((a, b) => b.total - a.total);
+
+  const maxTotal = memberStats[0]?.total ?? 1;
+
+  // 취향 궁합 매트릭스
+  const albumScoreMaps = new Map<string, Map<string, number>>();
+  for (const user of USERS) {
+    const map = new Map<string, number>();
+    ratings.filter((r) => r.user_id === user.id).forEach((r) => map.set(r.album_id, r.score));
+    albumScoreMaps.set(user.id, map);
+  }
+
+  const pairs = [];
+  for (let i = 0; i < USERS.length; i++) {
+    for (let j = i + 1; j < USERS.length; j++) {
+      const a = USERS[i];
+      const b = USERS[j];
+      const mapA = albumScoreMaps.get(a.id)!;
+      const mapB = albumScoreMaps.get(b.id)!;
+      const commonIds = [...mapA.keys()].filter((id) => mapB.has(id));
+      const commonCount = commonIds.length;
+      if (commonCount === 0) { pairs.push({ a, b, commonCount, diff: null }); continue; }
+      const mae = commonIds.reduce((s, id) => s + Math.abs(mapA.get(id)! - mapB.get(id)!), 0) / commonCount;
+      pairs.push({ a, b, commonCount, diff: parseFloat(mae.toFixed(2)) });
+    }
+  }
+
+  const pairsData: PairData[] = pairs.sort((a, b) => (a.diff ?? 99) - (b.diff ?? 99));
+
+  return (
+    <>
+      {/* 멤버 카드: 모바일 리스트 */}
+      <div className="sm:hidden flex flex-col gap-2 mb-8">
+        {memberStats.map(({ user, total, avg, topGenres }) => (
+          <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
+            <div
+              data-userid={user.id}
+              style={{
+                backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                borderRadius: 12, padding: "12px 16px",
+                display: "flex", alignItems: "center", gap: 12,
+              }}
+              className="active:opacity-70 transition-opacity"
+            >
+              <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.display_name}</p>
+                <div style={{ display: "flex", gap: 4, marginTop: 3, flexWrap: "wrap" }}>
+                  {topGenres.map((g) => {
+                    const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                    return (
+                      <span key={g} style={{
+                        fontSize: 10, fontWeight: 600,
+                        backgroundColor: `${gColor}1a`, color: gColor,
+                        border: `1px solid ${gColor}40`,
+                        borderRadius: 4, padding: "1px 6px",
+                      }}>{g}</span>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <p style={{ color: avg !== null ? scoreColor(avg) : "var(--text-muted)", fontWeight: 700, fontSize: 16 }}>
+                  {avg !== null ? avg.toFixed(2) : "—"}
+                </p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 1 }}>{total}장</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* 멤버 카드: 데스크탑 그리드 */}
+      <div className="hidden sm:grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginBottom: 32 }}>
+        {memberStats.map(({ user, total, avg, reviewCount, eightCount, scoreDist, topGenres }) => {
+          const maxDist = Math.max(...scoreDist.map((d) => d.count), 1);
+          return (
+            <Link key={user.id} href={`/profile/${user.id}`} style={{ textDecoration: "none" }}>
+              <div
+                data-userid={user.id}
+                style={{
+                  backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: 12, padding: "24px 28px", cursor: "pointer",
+                }}
+                className="transition-[border-color,transform] hover:border-[var(--border-light)] hover:-translate-y-0.5 active:scale-[0.98]"
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <UserAvatar avatarUrl={avatarMap[user.id]} size={40} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.display_name}</p>
+                      <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2 }}>{total}장 청음</p>
+                    </div>
+                  </div>
+                </div>
+
+                {topGenres.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 14 }}>
+                    {topGenres.map((g) => {
+                      const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                      return (
+                        <span key={g} style={{
+                          fontSize: 10, fontWeight: 600,
+                          backgroundColor: `${gColor}1a`, color: gColor,
+                          border: `1px solid ${gColor}40`,
+                          borderRadius: 4, padding: "2px 8px", whiteSpace: "nowrap",
+                        }}>{g}</span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 32, marginBottom: 14 }}>
+                  {scoreDist.map((d) => (
+                    <div key={d.score} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <div style={{
+                        width: "100%",
+                        height: `${(d.count / maxDist) * 28 + (d.count > 0 ? 2 : 0)}px`,
+                        backgroundColor: d.count > 0 ? scoreColor(d.score) : "var(--bg-elevated)",
+                        borderRadius: "2px 2px 0 0",
+                        opacity: d.count === 0 ? 0.2 : 1,
+                      }} />
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 16 }}>
+                  <div>
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>AVG</p>
+                    <p style={{ color: scoreColor(avg), fontWeight: 700, fontSize: 16 }}>
+                      {avg !== null ? avg.toFixed(2) : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>한줄 소감</p>
+                    <p style={{ color: "var(--text-sub)", fontWeight: 600, fontSize: 16 }}>{reviewCount}</p>
+                  </div>
+                  <div>
+                    <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>명반</p>
+                    <p style={{ color: "var(--text-sub)", fontWeight: 600, fontSize: 16 }}>{eightCount}</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* 랭킹 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>청음 수 랭킹</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {memberStats.map(({ user, total, topGenres }, i) => (
+              <div key={user.id}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
+                    {i + 1}.&nbsp;
+                    <UserAvatar avatarUrl={avatarMap[user.id]} size={18} />
+                    &nbsp;
+                    <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
+                    {topGenres.map((g) => {
+                      const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                      return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>{g}</span>;
+                    })}
+                  </span>
+                  <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{total}장</span>
+                </div>
+                <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(total / maxTotal) * 100}%`, backgroundColor: "var(--accent)", borderRadius: 2 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "24px 28px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 16 }}>평균 점수 랭킹</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[...memberStats].filter(m => m.avg !== null).sort((a, b) => b.avg! - a.avg!).map(({ user, avg, topGenres }, i) => (
+              <div key={user.id}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ color: "var(--text-sub)", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
+                    {i + 1}.&nbsp;
+                    <UserAvatar avatarUrl={avatarMap[user.id]} size={18} />
+                    &nbsp;
+                    <Link href={`/profile/${user.id}`} style={{ color: "inherit", textDecoration: "none" }} className="truncate hover:text-[var(--accent)] transition-colors">{user.display_name}</Link>
+                    {topGenres.map((g) => {
+                      const gColor = GENRE_COLOR[g] ?? "#94a3b8";
+                      return <span key={g} style={{ fontSize: 10, fontWeight: 600, backgroundColor: `${gColor}1a`, color: gColor, border: `1px solid ${gColor}40`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>{g}</span>;
+                    })}
+                  </span>
+                  <span style={{ color: scoreColor(avg), fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{avg!.toFixed(2)}</span>
+                </div>
+                <div style={{ height: 4, backgroundColor: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min((avg! / 7) * 100, 100)}%`, backgroundColor: scoreColor(avg), borderRadius: 2 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 취향 궁합 */}
+      <PairsSection pairs={pairsData} avatarMap={avatarMap} />
+    </>
+  );
+}

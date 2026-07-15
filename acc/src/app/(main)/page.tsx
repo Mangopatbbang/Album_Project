@@ -1,20 +1,13 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { AlbumWithRatings } from "@/types";
 import { fetchAllUserAvatarUrls } from "@/lib/stats";
-import HeroLogoutButton from "@/components/ui/HeroLogoutButton";
 import CountUp from "@/components/ui/CountUp";
-import MobileLoginHint from "@/components/ui/MobileLoginHint";
-import HomeSearchBar from "@/components/ui/HomeSearchBar";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
-import HomeRecentFeed, { FeedItem } from "@/components/home/HomeRecentFeed";
-import HomeWatchlistSection from "@/components/home/HomeWatchlistSection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
-import HomeDiaryBanner from "@/components/home/HomeDiaryBanner";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 
 const getTotalCount = unstable_cache(
@@ -35,7 +28,6 @@ const getRatingsCount = unstable_cache(
   { tags: ["profile-ratings"], revalidate: false }
 );
 
-// dateStr을 파라미터로 받아 하루 단위로 캐시 — 앨범 추가/삭제 시 tag로 즉시 무효화
 const _getTodayAlbumCached = unstable_cache(
   async (dateStr: string): Promise<AlbumWithRatings | null> => {
     const { count } = await supabaseServer
@@ -107,59 +99,6 @@ const getTickerReviews = unstable_cache(
     }));
   },
   ["home-ticker"],
-  { tags: ["profile-ratings", "artist-aliases"], revalidate: false }
-);
-
-type RecentFeedRow = {
-  user_id: string;
-  score: number;
-  one_line_review: string | null;
-  liked_tracks: string | null;
-  updated_at: string;
-  albums: {
-    id: string;
-    title: string;
-    artist: string;
-    use_artist_variant: boolean | null;
-    cover_url: string | null;
-    artist_display?: string;
-  } | null;
-};
-
-const getRecentFeed = unstable_cache(
-  async (): Promise<FeedItem[]> => {
-    const { data } = await supabaseServer
-      .from("ratings")
-      .select("user_id, score, one_line_review, liked_tracks, updated_at, albums(id, title, artist, use_artist_variant, cover_url)")
-      .not("score", "is", null)
-      .order("updated_at", { ascending: false })
-      .limit(6);
-    if (!data) return [];
-
-    const rows = (data as unknown as RecentFeedRow[]).filter((r) => r.albums);
-    const albumObjs = rows.map((r) => r.albums!);
-    if (albumObjs.length > 0) {
-      const resolved = await resolveArtistDisplay(albumObjs);
-      const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
-      for (const row of rows) {
-        if (row.albums) row.albums.artist_display = displayMap.get(row.albums.id);
-      }
-    }
-
-    return rows.map((r) => ({
-      user_id: r.user_id,
-      score: r.score,
-      one_line_review: r.one_line_review,
-      updated_at: r.updated_at,
-      album_id: r.albums!.id,
-      album_title: r.albums!.title,
-      album_artist: r.albums!.artist,
-      album_artist_display: r.albums!.artist_display ?? r.albums!.artist,
-      album_cover_url: r.albums!.cover_url,
-      liked_tracks: r.liked_tracks,
-    }));
-  },
-  ["home-recent-feed"],
   { tags: ["profile-ratings", "artist-aliases"], revalidate: false }
 );
 
@@ -247,7 +186,6 @@ export default async function HomePage() {
     totalCount,
     ratingsCount,
     todayAlbum,
-    recentFeedRaw,
     tickerItemsRaw,
     avatarMap,
     controversialAlbums,
@@ -255,7 +193,6 @@ export default async function HomePage() {
     getTotalCount(),
     getRatingsCount(),
     getTodayAlbum(),
-    getRecentFeed(),
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
     getControversialAlbums(),
@@ -266,15 +203,9 @@ export default async function HomePage() {
     avatar_url: avatarMap[item.user_id] ?? null,
   }));
 
-  const feedItems: FeedItem[] = recentFeedRaw.map((item) => ({
-    ...item,
-    avatar_url: avatarMap[item.user_id] ?? null,
-  }));
-
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Suspense><WelcomeOnboarding /></Suspense>
-      <HomeDiaryBanner />
 
       <main>
         {/* 히어로 */}
@@ -282,15 +213,9 @@ export default async function HomePage() {
           style={{
             ...containerStyle,
             textAlign: "center",
-            position: "relative",
             padding: "24px 24px 16px",
           }}
         >
-          {/* 모바일 로그아웃 버튼 */}
-          <div style={{ position: "absolute", top: 18, right: 20 }}>
-            <HeroLogoutButton />
-          </div>
-
           <p
             style={{
               color: "var(--text-muted)",
@@ -315,13 +240,11 @@ export default async function HomePage() {
             아차청음사
           </h1>
 
-          {/* 통계 — 카드 없이 클린 타이포그래피 */}
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 28,
-              marginBottom: 4,
             }}
           >
             <div style={{ textAlign: "center" }}>
@@ -342,9 +265,6 @@ export default async function HomePage() {
               </p>
             </div>
           </div>
-
-          <HomeSearchBar />
-          <MobileLoginHint />
         </section>
 
         {/* 리뷰 티커 */}
@@ -354,55 +274,13 @@ export default async function HomePage() {
 
         {/* 메인 섹션 */}
         <div style={{ ...containerStyle, padding: "28px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-          <div className="sm:grid sm:grid-cols-2 sm:gap-6">
-            {/* 오늘의 인연 */}
-            <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
+          {/* 모바일: 오늘의 인연 → 갑론을박 세로 / 데스크탑: 2/3 + 1/3 */}
+          <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "2fr 1fr" } as React.CSSProperties}>
+            <div className="mb-8 sm:mb-0">
               <HomeTodaySection initialAlbum={todayAlbum} />
             </div>
-
-            {/* 최근 청음 피드 */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <h2
-                  style={{
-                    color: "var(--text)",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  최근 청음
-                </h2>
-                <Link
-                  href="/reviews"
-                  style={{ color: "var(--text-muted)", fontSize: 11 }}
-                  className="hover:text-[var(--accent)] transition-colors"
-                >
-                  더 보기 →
-                </Link>
-              </div>
-              <div data-tour="home-feed" style={{
-                backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                padding: "4px 14px",
-                flex: 1,
-              }}>
-                <HomeRecentFeed items={feedItems} />
-              </div>
-            </div>
-          </div>
-
-          {/* Row 2: 나중에 들을 앨범 + 갑론을박 — 데스크탑 전용 */}
-          <div className="hidden sm:grid sm:grid-cols-2 sm:gap-6" style={{ marginTop: 24 }}>
-            {/* 나중에 들을 앨범 */}
-            <div data-tour="home-watchlist" className="mb-8 sm:mb-0" style={{ display: "flex", flexDirection: "column" }}>
-              <HomeWatchlistSection />
-            </div>
-
-            {/* 갑론을박 */}
-            <div data-tour="home-controversial" style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div data-tour="home-controversial">
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
                 <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em" }}>
                   갑론을박
                 </h2>
@@ -410,40 +288,7 @@ export default async function HomePage() {
               <HomeControversialSection items={controversialAlbums} />
             </div>
           </div>
-
-          {/* 빠른 접근 — 모바일에서 탭 제거된 페이지들 */}
-          <div className="sm:hidden" style={{ marginTop: 28 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {[
-                { href: "/diary", label: "청음일기", desc: "나의 청음 일기" },
-                { href: "/themes", label: "청음집", desc: "테마 컬렉션" },
-                { href: "/members", label: "청음인", desc: "멤버 목록" },
-              ].map(({ href, label, desc }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 4,
-                    padding: "14px 8px",
-                    backgroundColor: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    minHeight: 72,
-                  }}
-                >
-                  <span style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>{label}</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: 10 }}>{desc}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
-
       </main>
     </div>
   );

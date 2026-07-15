@@ -30,18 +30,10 @@ const BestIcon = () => (
   </svg>
 );
 
-const ReviewsIcon = () => (
+const CommunityIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-
-const MembersIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="9" cy="7" r="3"/>
-    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-    <circle cx="17" cy="8" r="2.5"/>
-    <path d="M21 21v-1.5a3.5 3.5 0 0 0-2-3.17"/>
+    <path d="M17 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2v4l-4-4H9a2 2 0 0 1-1.41-.59"/>
+    <path d="M15 2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2v4l4-4h4a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/>
   </svg>
 );
 
@@ -49,13 +41,6 @@ const ProfileIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="8" r="4"/>
     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-);
-
-const DiaryIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 20h9"/>
-    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
   </svg>
 );
 
@@ -112,10 +97,10 @@ export default function BottomNav() {
     { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
     { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums" },
     { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
-    ...(profile ? [{ href: "/reviews", label: "청음평", Icon: ReviewsIcon, tour: undefined }] : []),
+    { href: "/community", label: "커뮤니티", Icon: CommunityIcon, tour: undefined },
     {
       href: profile ? `/profile/${profile.id}` : "/login",
-      label: !loading && !profile ? "입장" : "청음록",
+      label: !loading && !profile ? "입장" : "나",
       Icon: ProfileIcon,
       tour: "nav-profile",
     },
@@ -208,7 +193,7 @@ export default function BottomNav() {
                     key={n.id}
                     onClick={() => {
                       doCloseNotif();
-                      if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}`);
+                      if (!isSystemNotif && n.albumId) router.push(`/community?albumId=${n.albumId}`);
                     }}
                     style={{
                       padding: "12px 18px",

@@ -40,11 +40,9 @@ export default function Header() {
 
   const navItems = [
     { href: "/albums", label: "음반고", tour: "nav-albums", desc: "보유한 모든 앨범 탐색" },
-    { href: "/best", label: "청음감", tour: "nav-best", desc: "멤버가 선정한 명반 순위" },
-    { href: "/themes", label: "청음집", tour: undefined, desc: "테마별로 엮은 컬렉션" },
-    { href: "/reviews", label: "청음평", tour: "nav-reviews", desc: "모든 한줄평 모아보기" },
-    { href: "/members", label: "청음인", tour: "nav-members", desc: "청음사 멤버 목록" },
-    ...(profile ? [{ href: `/profile/${profile.id}`, label: "청음록", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
+    { href: "/best", label: "청음감", tour: "nav-best", desc: "명반 랭킹과 발견" },
+    { href: "/community", label: "커뮤니티", tour: undefined, desc: "소감과 멤버 모아보기" },
+    ...(profile ? [{ href: `/profile/${profile.id}`, label: "나", tour: "nav-profile", desc: "나의 청음 기록" }] : []),
   ];
 
 
@@ -279,7 +277,7 @@ export default function Header() {
                               key={n.id}
                               onClick={() => {
                                 setShowNotif(false);
-                                if (!isSystemNotif && n.albumId) router.push(`/reviews?albumId=${n.albumId}${profile ? `&userId=${profile.id}` : ""}`);
+                                if (!isSystemNotif && n.albumId) router.push(`/community?albumId=${n.albumId}${profile ? `&userId=${profile.id}` : ""}`);
                               }}
                               style={{
                                 padding: "10px 16px",

@@ -15,128 +15,6 @@ import { trackFeatureClick } from "@/lib/track";
 const TOP_N = 5;
 const MEDAL = ["🥇", "🥈", "🥉"];
 
-function HiddenGemsBar({
-  gems,
-  onAlbumClick,
-}: {
-  gems: AlbumStat[];
-  onAlbumClick: (a: AlbumStat) => void;
-}) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
-  if (gems.length === 0) return null;
-
-  return (
-    <div style={{ position: "relative", marginBottom: 20, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-      <span style={{
-        color: "var(--text-muted)", fontSize: 9, fontWeight: 700,
-        letterSpacing: "0.1em", flexShrink: 0, opacity: 0.55,
-        whiteSpace: "nowrap",
-      }}>
-        미발견 명반
-      </span>
-      <div style={{ display: "flex", gap: 3, minWidth: 0, overflowX: "auto" }} className="no-scrollbar">
-        {gems.map((album, i) => {
-          const isHovered = hoveredIdx === i;
-          const isFirst = i < 2;
-          const isLast = i >= gems.length - 2;
-          const popupLeft: React.CSSProperties =
-            isFirst ? { left: 0 } :
-            isLast  ? { right: 0 } :
-            { left: "50%", transform: "translateX(-50%)" };
-
-          return (
-            <div
-              key={album.id}
-              style={{ position: "relative", flexShrink: 0, zIndex: isHovered ? 20 : 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-            >
-              {/* 커버 */}
-              <div
-                onClick={() => onAlbumClick(album)}
-                className="w-10 h-10 sm:w-[34px] sm:h-[34px]"
-                style={{
-                  position: "relative", borderRadius: 4, overflow: "hidden",
-                  cursor: "pointer", backgroundColor: "var(--bg-elevated)",
-                  border: `1px solid ${isHovered ? "rgba(232,213,163,0.6)" : "var(--border)"}`,
-                  transition: "border-color 0.12s",
-                  flexShrink: 0,
-                }}
-              >
-                {album.cover_url ? (
-                  <Image
-                    src={album.cover_url}
-                    alt={album.title}
-                    fill
-                    sizes="40px"
-                    style={{
-                      objectFit: "cover",
-                      transition: "transform 0.2s ease",
-                      transform: isHovered ? "scale(1.18)" : "scale(1)",
-                    }}
-                  />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>♪</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 모바일 전용: 커버 아래 제목 텍스트 (데스크탑에서 hidden) */}
-              <span className="hgem-label" style={{
-                fontSize: 8, color: "var(--text-muted)", fontWeight: 500,
-                maxWidth: 40, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                lineHeight: 1, textAlign: "center",
-              }}>
-                {album.title}
-              </span>
-
-              {/* hover 팝업 (터치 기기에서 CSS로 숨김) */}
-              {isHovered && (
-                <div className="hgem-popup" style={{
-                  position: "absolute",
-                  bottom: "calc(100% + 8px)",
-                  ...popupLeft,
-                  zIndex: 100,
-                  width: 116,
-                  backgroundColor: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 7,
-                  boxShadow: "0 6px 24px rgba(0,0,0,0.4)",
-                  pointerEvents: "none",
-                  animation: "fadeIn 0.1s ease-out",
-                }}>
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "1/1", borderRadius: 4, overflow: "hidden", backgroundColor: "var(--bg-elevated)", marginBottom: 6 }}>
-                    {album.cover_url ? (
-                      <Image fill sizes="120px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ fontSize: 22, color: "var(--text-muted)" }}>♪</span>
-                      </div>
-                    )}
-                  </div>
-                  <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {album.title}
-                  </p>
-                  <p style={{ color: "var(--text-muted)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
-                    {album.artist_display ?? album.artist}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5 }}>
-                    <span style={{ color: scoreColor(album.avg), fontSize: 11, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
-                    <span style={{ color: "var(--text-muted)", fontSize: 9 }}>{album.count}명 평가</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function toAlbumWithRatings(a: AlbumStat): AlbumWithRatings {
   return {
     id: a.id,
@@ -556,7 +434,6 @@ export default function BestPageClient({
   allRanked,
   domesticRanked,
   foreignRanked,
-  hiddenGems,
   initialView,
 }: {
   yearData: [string, AlbumStat[]][];
@@ -565,7 +442,6 @@ export default function BestPageClient({
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
-  hiddenGems: AlbumStat[];
   initialView: string;
 }) {
   const [view, setView] = useState(initialView);
@@ -744,9 +620,6 @@ export default function BestPageClient({
           </div>
         )}
       </div>
-
-      {/* 미발견 명반 — 얇은 바 (hover 시 팝업) */}
-      <HiddenGemsBar gems={hiddenGems} onAlbumClick={(a) => setSelectedAlbum(a)} />
 
       {selectedAlbum && (
         <AlbumModal
