@@ -50,7 +50,7 @@ export default function HomeControversialSection({ items }: { items: Controversi
   };
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <div style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
@@ -138,6 +138,6 @@ export default function HomeControversialSection({ items }: { items: Controversi
           source="home_controversial"
         />
       )}
-    </>
+    </div>
   );
 }

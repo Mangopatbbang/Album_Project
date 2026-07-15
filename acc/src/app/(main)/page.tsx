@@ -287,11 +287,11 @@ export default async function HomePage() {
 
             {/* 오늘의 인연 + 갑론을박 */}
             <div style={{ ...containerStyle, padding: "28px 24px 36px" }}>
-              <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "1fr 1fr" } as React.CSSProperties}>
-                <div className="mb-8 sm:mb-0">
+              <div className="sm:grid sm:gap-6 sm:items-stretch" style={{ gridTemplateColumns: "1fr 1fr" } as React.CSSProperties}>
+                <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
                   <HomeTodaySection initialAlbum={todayAlbum} />
                 </div>
-                <div data-tour="home-controversial">
+                <div data-tour="home-controversial" className="sm:flex sm:flex-col">
                   <h2 style={{ color: "#ffffff", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
                     갑론을박
                   </h2>
