@@ -56,8 +56,8 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
 
         {/* 모바일: 가로 스크롤 */}
         <div
-          className="sm:hidden"
-          style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6 }}
+          className="no-scrollbar sm:hidden flex"
+          style={{ gap: 12, overflowX: "auto", paddingBottom: 6 }}
         >
           {albums.map((album) => (
             <button
