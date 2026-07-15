@@ -23,11 +23,7 @@ function parseTracklist(raw: string | undefined): string[] {
 
 function getSectionLabel(): string {
   const h = new Date().getHours();
-  if (h < 5)  return "새벽 청음";
-  if (h < 10) return "아침 인연";
-  if (h < 18) return "오늘의 인연";
-  if (h < 21) return "저녁 청음";
-  return "밤의 인연";
+  return h >= 6 && h < 18 ? "낮의 인연" : "밤의 인연";
 }
 
 export default function HomeTodaySection({ initialAlbum }: Props) {
@@ -40,6 +36,13 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [trackHover, setTrackHover] = useState(false);
   const [tracklistOpen, setTracklistOpen] = useState(false);
   const autoShuffledRef = useRef(false);
+
+  // 앨범 변경 시 배경 업데이트 이벤트 dispatch
+  useEffect(() => {
+    if (album?.cover_url && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("home:album-changed", { detail: { coverUrl: album.cover_url } }));
+    }
+  }, [album?.id, album?.cover_url]);
 
   // 이미 평가한 앨범이 오늘의 인연으로 뜨면 자동으로 미평가 앨범으로 교체
   useEffect(() => {

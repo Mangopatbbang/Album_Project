@@ -8,6 +8,8 @@ import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
+import HomeHeroBackground from "@/components/home/HomeHeroBackground";
+import HomeWeeklySection, { WeeklyAlbum } from "@/components/home/HomeWeeklySection";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 
 const getTotalCount = unstable_cache(
@@ -28,6 +30,7 @@ const getRatingsCount = unstable_cache(
   { tags: ["profile-ratings"], revalidate: false }
 );
 
+// 낮(6~18시) / 밤(18~6시) 기준 앨범 교체
 const _getTodayAlbumCached = unstable_cache(
   async (dateStr: string): Promise<AlbumWithRatings | null> => {
     const { count } = await supabaseServer
@@ -48,12 +51,14 @@ const _getTodayAlbumCached = unstable_cache(
     return resolved[0] as unknown as AlbumWithRatings;
   },
   ["today-album"],
-  { tags: ["albums-page-meta"], revalidate: 86400 }
+  { tags: ["albums-page-meta"], revalidate: 43200 }
 );
 
 async function getTodayAlbum(): Promise<AlbumWithRatings | null> {
   const nowKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const dateStr = nowKst.toISOString().slice(0, 10);
+  const hour = nowKst.getHours();
+  const period = hour >= 6 && hour < 18 ? "낮" : "밤";
+  const dateStr = nowKst.toISOString().slice(0, 10) + "-" + period;
   return _getTodayAlbumCached(dateStr);
 }
 
@@ -145,7 +150,7 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
     const variance = max - min;
     if (variance < 2) continue;
     const highReview = reviews.find((r) => r.score === max && r.review)?.review ?? null;
-    const lowReview = reviews.find((r) => r.score === min && r.review)?.review ?? null;
+    const lowReview  = reviews.find((r) => r.score === min && r.review)?.review ?? null;
     results.push({
       album_id,
       album_title: album.title,
@@ -163,8 +168,8 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
 
   results.sort((a, b) => b.variance - a.variance || b.rating_count - a.rating_count);
   const top = results.slice(0, 3);
-
   if (top.length === 0) return [];
+
   const albumObjs = top.map((r) => ({ id: r.album_id, artist: r.album_artist, use_artist_variant: r.album_use_artist_variant ?? false }));
   const resolved = await resolveArtistDisplay(albumObjs);
   const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display]));
@@ -175,7 +180,42 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
   }));
 }, ["controversial-albums"], { tags: ["controversial"], revalidate: false });
 
-const containerStyle = {
+const getWeeklyAlbums = unstable_cache(
+  async (): Promise<WeeklyAlbum[]> => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("album_id, created_at, albums(id, title, artist, use_artist_variant, cover_url)")
+      .gte("created_at", weekAgo)
+      .order("created_at", { ascending: false })
+      .limit(60);
+
+    if (!data) return [];
+
+    type Row = {
+      album_id: string;
+      albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
+    };
+    const rows = data as unknown as Row[];
+
+    const seen = new Set<string>();
+    const unique: NonNullable<Row["albums"]>[] = [];
+    for (const row of rows) {
+      if (!row.albums || seen.has(row.album_id)) continue;
+      seen.add(row.album_id);
+      unique.push(row.albums);
+      if (unique.length >= 8) break;
+    }
+
+    if (unique.length === 0) return [];
+    const resolved = await resolveArtistDisplay(unique);
+    return resolved as WeeklyAlbum[];
+  },
+  ["weekly-albums"],
+  { tags: ["profile-ratings"], revalidate: 1800 }
+);
+
+const containerStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: "1100px",
   margin: "0 auto",
@@ -189,6 +229,7 @@ export default async function HomePage() {
     tickerItemsRaw,
     avatarMap,
     controversialAlbums,
+    weeklyAlbums,
   ] = await Promise.all([
     getTotalCount(),
     getRatingsCount(),
@@ -196,6 +237,7 @@ export default async function HomePage() {
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
     getControversialAlbums(),
+    getWeeklyAlbums(),
   ]);
 
   const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
@@ -203,92 +245,92 @@ export default async function HomePage() {
     avatar_url: avatarMap[item.user_id] ?? null,
   }));
 
+  const hasWeekly = weeklyAlbums.length > 0;
+
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
       <Suspense><WelcomeOnboarding /></Suspense>
 
-      <main>
-        {/* 히어로 */}
-        <section
-          style={{
-            ...containerStyle,
-            textAlign: "center",
-            padding: "24px 24px 16px",
-          }}
-        >
-          <p
-            style={{
-              color: "var(--text-muted)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              marginBottom: 10,
-            }}
-          >
-            청음의 기록
-          </p>
-          <h1
-            style={{
-              color: "var(--text)",
-              fontWeight: 800,
-              lineHeight: 1.1,
-              letterSpacing: "-0.04em",
-              marginBottom: 22,
-            }}
-            className="text-3xl sm:text-5xl"
-          >
-            아차청음사
-          </h1>
+      <main style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
 
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 28,
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
-                <CountUp target={totalCount} />
+        {/* ── 히어로 (blur 배경) ── */}
+        <section style={{ position: "relative", overflow: "hidden" }}>
+          <HomeHeroBackground initialUrl={todayAlbum?.cover_url ?? null} />
+
+          <div style={{ position: "relative", zIndex: 1 }}>
+
+            {/* 브랜딩 */}
+            <div style={{ ...containerStyle, textAlign: "center", padding: "24px 24px 14px" }}>
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10 }}>
+                청음의 기록
               </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                앨범
-              </p>
+              <h1
+                style={{ color: "#ffffff", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.04em", marginBottom: 20 }}
+                className="text-3xl sm:text-5xl"
+              >
+                아차청음사
+              </h1>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 28 }}>
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ color: "#ffffff", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
+                    <CountUp target={totalCount} />
+                  </p>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    앨범
+                  </p>
+                </div>
+                <div style={{ width: 1, height: 32, backgroundColor: "rgba(255,255,255,0.2)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ color: "#ffffff", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
+                    <CountUp target={ratingsCount} />
+                  </p>
+                  <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    평가
+                  </p>
+                </div>
+              </div>
             </div>
-            <div style={{ width: 1, height: 32, backgroundColor: "var(--border)" }} />
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 24, lineHeight: 1, letterSpacing: "-0.04em" }}>
-                <CountUp target={ratingsCount} />
-              </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                평가
-              </p>
+
+            {/* 평베이어벨트 — 반투명 띠 */}
+            <div
+              data-tour="home-ticker"
+              style={{
+                backgroundColor: "rgba(0,0,0,0.28)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                color: "#ffffff",
+              }}
+            >
+              <div style={containerStyle}>
+                <ReviewTicker items={tickerItems} inline />
+              </div>
             </div>
+
+            {/* 오늘의 인연 + 갑론을박 */}
+            <div style={{ ...containerStyle, padding: "28px 24px 36px" }}>
+              <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "2fr 1fr" } as React.CSSProperties}>
+                <div className="mb-8 sm:mb-0">
+                  <HomeTodaySection initialAlbum={todayAlbum} />
+                </div>
+                <div data-tour="home-controversial">
+                  <h2 style={{ color: "#ffffff", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
+                    갑론을박
+                  </h2>
+                  <HomeControversialSection items={controversialAlbums} />
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        {/* 리뷰 티커 */}
-        <div data-tour="home-ticker" style={{ ...containerStyle, padding: "0 24px" }}>
-          <ReviewTicker items={tickerItems} inline />
-        </div>
+        {/* ── 이번 주 청음 ── */}
+        {hasWeekly && (
+          <section style={{ ...containerStyle, padding: "32px 24px 0" }}>
+            <HomeWeeklySection albums={weeklyAlbums} />
+          </section>
+        )}
 
-        {/* 메인 섹션 */}
-        <div style={{ ...containerStyle, padding: "28px 24px calc(80px + env(safe-area-inset-bottom))" }}>
-          {/* 모바일: 오늘의 인연 → 갑론을박 세로 / 데스크탑: 2/3 + 1/3 */}
-          <div className="sm:grid sm:gap-6" style={{ gridTemplateColumns: "2fr 1fr" } as React.CSSProperties}>
-            <div className="mb-8 sm:mb-0">
-              <HomeTodaySection initialAlbum={todayAlbum} />
-            </div>
-            <div data-tour="home-controversial">
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
-                <h2 style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em" }}>
-                  갑론을박
-                </h2>
-              </div>
-              <HomeControversialSection items={controversialAlbums} />
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );
