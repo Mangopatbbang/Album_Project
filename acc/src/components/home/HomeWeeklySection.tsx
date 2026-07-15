@@ -54,9 +54,9 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
           이번 주 청음
         </h2>
 
-        {/* 모바일: 가로 스크롤 */}
+        {/* 가로 스크롤 — 모바일/데스크탑 공통 */}
         <div
-          className="no-scrollbar sm:hidden flex"
+          className="no-scrollbar flex"
           style={{ gap: 12, overflowX: "auto", paddingBottom: 6 }}
         >
           {albums.map((album) => (
@@ -78,50 +78,6 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
                 {album.title}
               </p>
               <p style={{ color: "var(--text-muted)", fontSize: 10, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {album.artist_display ?? album.artist}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {/* 데스크탑: 그리드 */}
-        <div
-          className="hidden sm:grid"
-          style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}
-        >
-          {albums.slice(0, 8).map((album) => (
-            <button
-              key={album.id}
-              onClick={() => open(album)}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              className="group"
-            >
-              <div style={{ borderRadius: 8, overflow: "hidden", position: "relative" }}>
-                <CoverImg src={album.cover_url ?? ""} alt={album.title} />
-                <div
-                  className="group-hover:opacity-100"
-                  style={{
-                    position: "absolute", inset: 0,
-                    backgroundColor: "rgba(0,0,0,0.35)",
-                    opacity: 0,
-                    transition: "opacity 0.18s",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    borderRadius: 8,
-                  }}
-                >
-                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em" }}>자세히 보기</span>
-                </div>
-              </div>
-              <p style={{ color: "var(--text)", fontSize: 12, fontWeight: 600, marginTop: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {album.title}
-              </p>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {album.artist_display ?? album.artist}
               </p>
             </button>
