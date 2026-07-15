@@ -16,8 +16,8 @@ import CommunityTabBar from "./CommunityTabBar";
 import type { ReviewItem } from "@/app/api/reviews/route";
 
 export const metadata: Metadata = {
-  title: "커뮤니티",
-  description: "아차청음사 멤버들의 소감과 멤버 현황",
+  title: "청음방",
+  description: "아차청음사 청음방 — 멤버들의 소감과 활동",
 };
 
 type AlbumRow = {
@@ -93,10 +93,10 @@ export default async function CommunityPage({
         {/* 타이틀 */}
         <div style={{ marginBottom: 20 }}>
           <h1 style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.04em", marginBottom: 4 }}>
-            커뮤니티
+            청음방
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-            {isMembers ? "청음사 멤버 현황" : "멤버들의 한줄 소감 모음"}
+            {isMembers ? "청음방 식구들을 만나보세요" : "멤버들의 청음 소감을 둘러보세요"}
           </p>
         </div>
 

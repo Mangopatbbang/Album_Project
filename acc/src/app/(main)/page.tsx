@@ -7,7 +7,8 @@ import CountUp from "@/components/ui/CountUp";
 import ReviewTicker, { TickerItem } from "@/components/ui/ReviewTicker";
 import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
-import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
+import { ControversialItem } from "@/components/home/HomeControversialSection";
+import HomeFlipCard from "@/components/home/HomeFlipCard";
 import HomeHeroBackground from "@/components/home/HomeHeroBackground";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 import HomeWeeklySection, { WeeklyAlbum } from "@/components/home/HomeWeeklySection";
@@ -287,10 +288,7 @@ export default async function HomePage() {
                   <HomeTodaySection initialAlbum={todayAlbum} />
                 </div>
                 <div data-tour="home-controversial" className="sm:flex sm:flex-col">
-                  <h2 style={{ color: "#ffffff", fontWeight: 600, fontSize: 14, letterSpacing: "-0.02em", marginBottom: 12 }}>
-                    갑론을박
-                  </h2>
-                  <HomeControversialSection items={controversialAlbums} />
+                  <HomeFlipCard items={controversialAlbums} />
                 </div>
               </div>
             </div>
