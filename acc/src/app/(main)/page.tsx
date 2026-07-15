@@ -9,7 +9,6 @@ import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import HomeTodaySection from "@/components/home/HomeTodaySection";
 import HomeControversialSection, { ControversialItem } from "@/components/home/HomeControversialSection";
 import HomeHeroBackground from "@/components/home/HomeHeroBackground";
-import HomeWeeklySection, { WeeklyAlbum } from "@/components/home/HomeWeeklySection";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 
 const getTotalCount = unstable_cache(
@@ -180,41 +179,6 @@ const getControversialAlbums = unstable_cache(async (): Promise<ControversialIte
   }));
 }, ["controversial-albums"], { tags: ["controversial"], revalidate: false });
 
-const getWeeklyAlbums = unstable_cache(
-  async (): Promise<WeeklyAlbum[]> => {
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data } = await supabaseServer
-      .from("ratings")
-      .select("album_id, created_at, albums(id, title, artist, use_artist_variant, cover_url)")
-      .gte("created_at", weekAgo)
-      .order("created_at", { ascending: false })
-      .limit(60);
-
-    if (!data) return [];
-
-    type Row = {
-      album_id: string;
-      albums: { id: string; title: string; artist: string; use_artist_variant: boolean | null; cover_url: string | null } | null;
-    };
-    const rows = data as unknown as Row[];
-
-    const seen = new Set<string>();
-    const unique: NonNullable<Row["albums"]>[] = [];
-    for (const row of rows) {
-      if (!row.albums || seen.has(row.album_id)) continue;
-      seen.add(row.album_id);
-      unique.push(row.albums);
-      if (unique.length >= 8) break;
-    }
-
-    if (unique.length === 0) return [];
-    const resolved = await resolveArtistDisplay(unique);
-    return resolved as WeeklyAlbum[];
-  },
-  ["weekly-albums"],
-  { tags: ["profile-ratings"], revalidate: 1800 }
-);
-
 const containerStyle: React.CSSProperties = {
   width: "100%",
   maxWidth: "1100px",
@@ -229,7 +193,6 @@ export default async function HomePage() {
     tickerItemsRaw,
     avatarMap,
     controversialAlbums,
-    weeklyAlbums,
   ] = await Promise.all([
     getTotalCount(),
     getRatingsCount(),
@@ -237,15 +200,12 @@ export default async function HomePage() {
     getTickerReviews(),
     fetchAllUserAvatarUrls(),
     getControversialAlbums(),
-    getWeeklyAlbums(),
   ]);
 
   const tickerItems: TickerItem[] = tickerItemsRaw.map((item) => ({
     ...item,
     avatar_url: avatarMap[item.user_id] ?? null,
   }));
-
-  const hasWeekly = weeklyAlbums.length > 0;
 
   return (
     <div style={{ backgroundColor: "var(--bg)", minHeight: "100dvh" }}>
@@ -323,13 +283,6 @@ export default async function HomePage() {
 
           </div>
         </section>
-
-        {/* ── 이번 주 청음 ── */}
-        {hasWeekly && (
-          <section style={{ ...containerStyle, padding: "32px 24px 0" }}>
-            <HomeWeeklySection albums={weeklyAlbums} />
-          </section>
-        )}
 
       </main>
     </div>
