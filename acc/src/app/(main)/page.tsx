@@ -287,7 +287,7 @@ export default async function HomePage() {
                 <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
                   <HomeTodaySection initialAlbum={todayAlbum} />
                 </div>
-                <div data-tour="home-controversial" className="sm:flex sm:flex-col">
+                <div data-tour="home-controversial" className="sm:flex sm:flex-col sm:min-h-0 sm:overflow-hidden">
                   <HomeFlipCard items={controversialAlbums} />
                 </div>
               </div>

@@ -35,15 +35,18 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
 
   return (
     <>
-      <div style={{
-        backgroundColor: "var(--bg-card)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "4px 14px",
-        flex: 1,
-        overflowY: "auto",
-        maxHeight: 360,
-      }}>
+      <div
+        className="max-h-72 sm:max-h-none"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: "4px 14px",
+          flex: 1,
+          overflowY: "auto",
+          minHeight: 0,
+        }}
+      >
         {loading ? (
           <>
             {[0, 1, 2].map((i) => (
@@ -146,7 +149,7 @@ export default function HomeFlipCard({ items }: { items: ControversialItem[] }) 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h2
@@ -188,6 +191,8 @@ export default function HomeFlipCard({ items }: { items: ControversialItem[] }) 
           flex: 1,
           display: "flex",
           flexDirection: "column",
+          minHeight: 0,
+          overflow: "hidden",
           transition: "transform 0.16s ease, opacity 0.16s ease",
           transform: animating
             ? "perspective(800px) rotateY(88deg)"
