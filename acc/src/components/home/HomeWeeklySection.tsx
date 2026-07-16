@@ -76,7 +76,13 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
                 textAlign: "left",
               }}
             >
-              <CoverImg src={album.cover_url ?? ""} alt={album.title} />
+              {album.cover_url ? (
+                <CoverImg src={album.cover_url} alt={album.title} />
+              ) : (
+                <div style={{ position: "relative", width: "100%", paddingTop: "100%", borderRadius: 8, backgroundColor: "var(--bg-elevated)" }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 20 }}>♪</div>
+                </div>
+              )}
               <p style={{ color: "var(--text)", fontSize: 11, fontWeight: 600, marginTop: 7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {album.title}
               </p>

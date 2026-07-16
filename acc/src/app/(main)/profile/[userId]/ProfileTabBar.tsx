@@ -12,7 +12,8 @@ const TABS = [
 export default function ProfileTabBar() {
   const searchParams = useSearchParams();
   const params = useParams<{ userId: string }>();
-  const tab = searchParams.get("tab") ?? "taste";
+  const rawTab = searchParams.get("tab") ?? "taste";
+  const tab = rawTab === "activity" ? "cheongeum" : rawTab;
 
   return (
     <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 20 }}>

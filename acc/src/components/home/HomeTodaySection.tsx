@@ -362,7 +362,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
               </button>
               <button
                 onClick={() => setModalOpen(true)}
-                style={{ backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ flex: 1, backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
                 className="hover:border-[var(--border-light)] hover:text-[var(--text)] active:opacity-60 transition-[border-color,color,opacity]"
               >
                 평가하기
@@ -372,9 +372,9 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
                 onClick={shuffle}
                 disabled={loading}
                 style={{
-                  backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
+                  flex: 1, backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)",
                   border: "1px solid var(--border)", borderRadius: 8,
-                  padding: "0 12px", height: 44, flexShrink: 0,
+                  height: 44,
                   cursor: loading ? "default" : "pointer",
                   opacity: loading ? 0.4 : 1,
                   fontSize: 12, whiteSpace: "nowrap",

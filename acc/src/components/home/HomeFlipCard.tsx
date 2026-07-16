@@ -27,7 +27,7 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
     fetch(`/api/watchlist?userId=${userId}`)
       .then((r) => r.json())
       .then((data) => {
-        setItems((data?.items ?? []).slice(0, 3));
+        setItems(data?.items ?? []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -41,6 +41,8 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
         borderRadius: 12,
         padding: "4px 14px",
         flex: 1,
+        overflowY: "auto",
+        maxHeight: 360,
       }}>
         {loading ? (
           <>

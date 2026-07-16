@@ -399,6 +399,55 @@ CDN 30초 캐시로 인해 저장 후에도 구버전 데이터가 돌아오던 
 
 ---
 
+### 2026-07 — IA 전면 개편 & 청음록 재설계
+
+#### IA 개편 (탭 구조 통일)
+
+서비스 정체성을 강화한 IA 전면 재편. 6탭 분산 구조 → 5탭 통일 구조로 변경.
+
+- 메인 nav 5탭 확정: 홈 / 음반고 / 청음감 / 청음방 / 청음록
+- 커뮤니티 → **청음방** (`/community`) 이름 변경
+- 나 탭 → **청음록** (`/profile/[userId]`) 이름 변경
+- SwipeNav 탭 경로 업데이트
+- 401 재시도 로직 추가 → 무한 로그인 화면 반복 방지
+- Auth 세션 구조 개선: 프로필 캐시·세션 만료 동기화·UX 개선
+
+#### 홈 갑론을박 플립카드
+
+갑론을박 섹션에 "나중에 들을 앨범" 전환 기능 추가.
+
+- `HomeFlipCard.tsx` 신규 — 갑론을박 ↔ 나중에 들을 앨범 3D 플립
+- 버튼 클릭 시 `perspective(800px) rotateY(88deg)` 애니메이션 (160ms 찌그러짐 → 콘텐츠 교체 → 160ms 복원)
+- 플립 뒷면: 로그인 시 내 위시리스트, 비로그인 시 로그인 유도
+- `HomeWatchlistBack` 경량 컴포넌트 — 갑론을박과 동일한 카드 스타일·크기
+
+#### 청음록 탭 재설계 (취향 / 청음기 / 소셜)
+
+프로필 탭 구조를 3탭으로 재편하고 소셜 기능을 추가했다.
+
+- 탭 재편: 취향 / 청음기 (구: 활동) / 소셜
+- `AnnualHeatmap.tsx` 신규 — GitHub식 365일 격자 히트맵, 서버사이드 날짜별 집계
+- 취향 탭에 `WatchlistSection` 배치
+- 소셜 탭에 `FollowButton.tsx` 신규 — 팔로워·팔로잉 수 + 팔로우/언팔로우 토글 (낙관적 업데이트)
+- 소셜 탭에 `SocialFeed.tsx` 신규 — 팔로우한 멤버들의 최근 평가 피드 (본인 프로필 한정)
+- `?tab=activity` 구URL backward compat 처리 (page.tsx + ProfileTabBar.tsx)
+
+#### `follows` 테이블 신설
+
+- `follower_id text FK → users.id`, `following_id text FK → users.id`
+- UNIQUE(follower_id, following_id), CHECK(follower_id ≠ following_id)
+- `/api/follows` (GET/POST/DELETE), `/api/follows/feed` (GET) API 신규
+- 주의: `users.id`가 TEXT 타입이므로 FK도 반드시 TEXT — UUID 사용 시 42804 에러
+
+#### 이미지 스켈레톤 고착 버그 수정
+
+SSR 이후 React 하이드레이션 전에 이미지가 먼저 로드되면 `onLoad`가 발화되지 않아 스켈레톤이 영구 고착되는 현상 수정.
+
+- `HomeTodaySection`, `HomeControversialSection`, `HomeWeeklySection` 3곳 수정
+- `imgRef.current?.complete` 체크를 `useEffect`에 추가 — 이미 로드된 이미지 감지
+
+---
+
 ### 2026-06-20 — 서비스 전반 반응성 · UX 완성도 개선
 
 "버튼을 누르면 한 타이밍 늦게 반응한다"는 체감 지연을 근본적으로 해소한 작업.  

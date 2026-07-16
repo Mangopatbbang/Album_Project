@@ -37,15 +37,17 @@ export default function FollowButton({ targetUserId }: { targetUserId: string })
     } : prev);
 
     try {
+      let res: Response;
       if (wasFollowing) {
-        await apiFetch(`/api/follows?targetId=${targetUserId}`, { method: "DELETE" });
+        res = await apiFetch(`/api/follows?targetId=${targetUserId}`, { method: "DELETE" });
       } else {
-        await apiFetch("/api/follows", {
+        res = await apiFetch("/api/follows", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ targetId: targetUserId }),
         });
       }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
       setData((prev) => prev ? {
         ...prev,

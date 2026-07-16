@@ -233,6 +233,27 @@ Spotify API는 아티스트 이름을 영문 정식명으로만 반환한다.
 
 ---
 
+### `follows` — 팔로우 관계
+
+유저 간 팔로우 관계를 저장하는 테이블. 청음록 소셜 탭의 팔로우 기능에 사용된다.  
+`follower_id`가 `following_id`를 팔로우하는 단방향 관계이며, `UNIQUE(follower_id, following_id)` 제약과 자기 참조 방지 CHECK로 중복·자기팔로우를 막는다.  
+`users.id`는 TEXT(username) 타입이므로 FK 컬럼도 TEXT를 사용해야 한다 — UUID 사용 시 타입 불일치 에러 발생.
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `id` | SERIAL PK | — |
+| `follower_id` | TEXT FK → users.id | 팔로우 하는 쪽 |
+| `following_id` | TEXT FK → users.id | 팔로우 받는 쪽 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() |
+| — | UNIQUE (follower_id, following_id) | 중복 팔로우 방지 |
+| — | CHECK (follower_id ≠ following_id) | 자기 팔로우 방지 |
+
+**인덱스:**
+- `follower_id` — 내가 팔로우하는 목록 조회
+- `following_id` — 나를 팔로우하는 목록 조회
+
+---
+
 ### `comments` — 평점 댓글
 
 특정 멤버의 한줄평에 달린 댓글이다. `album_id`와 `reviewer_id`를 같이 들고 다니는 이유는, 댓글이 "앨범"이 아닌 "특정 앨범에 대한 특정 멤버의 평점"에 달리는 구조이기 때문이다. 댓글이 달리면 `reviewer_id` 유저에게 알림이 발송된다.
