@@ -12,6 +12,7 @@ import HomeFlipCard from "@/components/home/HomeFlipCard";
 import HomeHeroBackground from "@/components/home/HomeHeroBackground";
 import WelcomeOnboarding from "@/components/ui/WelcomeOnboarding";
 import HomeWeeklySection, { WeeklyAlbum } from "@/components/home/HomeWeeklySection";
+import HomeSyncedGrid from "@/components/home/HomeSyncedGrid";
 
 const getTotalCount = unstable_cache(
   async () => {
@@ -283,14 +284,11 @@ export default async function HomePage() {
 
             {/* 오늘의 인연 + 갑론을박 */}
             <div style={{ ...containerStyle, padding: "28px 24px 36px" }}>
-              <div className="sm:grid sm:gap-6 sm:items-stretch" style={{ gridTemplateColumns: "1fr 1fr" } as React.CSSProperties}>
-                <div className="mb-8 sm:mb-0 sm:flex sm:flex-col">
-                  <HomeTodaySection initialAlbum={todayAlbum} />
-                </div>
-                <div data-tour="home-controversial" className="sm:flex sm:flex-col sm:min-h-0 sm:overflow-hidden">
-                  <HomeFlipCard items={controversialAlbums} />
-                </div>
-              </div>
+              <HomeSyncedGrid
+                left={<HomeTodaySection initialAlbum={todayAlbum} />}
+                right={<HomeFlipCard items={controversialAlbums} />}
+                rightAttrs={{ "data-tour": "home-controversial" }}
+              />
             </div>
 
           </div>
