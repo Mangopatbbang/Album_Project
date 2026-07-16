@@ -43,7 +43,7 @@ export default function HomeSyncedGrid({
       </div>
       <div
         ref={rightRef}
-        className="sm:flex-1 sm:flex sm:flex-col sm:overflow-hidden"
+        className="sm:flex-1 sm:flex sm:flex-col"
         {...rightAttrs}
       >
         {right}

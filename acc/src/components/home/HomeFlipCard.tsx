@@ -149,7 +149,7 @@ export default function HomeFlipCard({ items }: { items: ControversialItem[] }) 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h2
@@ -192,11 +192,8 @@ export default function HomeFlipCard({ items }: { items: ControversialItem[] }) 
           display: "flex",
           flexDirection: "column",
           minHeight: 0,
-          overflow: "hidden",
           transition: "transform 0.16s ease, opacity 0.16s ease",
-          transform: animating
-            ? "perspective(800px) rotateY(88deg)"
-            : "perspective(800px) rotateY(0deg)",
+          ...(animating ? { transform: "perspective(800px) rotateY(88deg)" } : {}),
           opacity: animating ? 0 : 1,
         }}
       >
