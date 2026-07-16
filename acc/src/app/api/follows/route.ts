@@ -5,6 +5,35 @@ export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) return NextResponse.json({ error: "missing userId" }, { status: 400 });
 
+  const list = req.nextUrl.searchParams.get("list");
+  if (list === "followers" || list === "following") {
+    if (list === "followers") {
+      const { data: rows } = await supabaseServer
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", userId);
+      const ids = (rows ?? []).map((r: { follower_id: string }) => r.follower_id);
+      if (!ids.length) return NextResponse.json({ users: [] });
+      const { data: users } = await supabaseServer
+        .from("users")
+        .select("id, display_name, avatar_url")
+        .in("id", ids);
+      return NextResponse.json({ users: users ?? [] });
+    } else {
+      const { data: rows } = await supabaseServer
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", userId);
+      const ids = (rows ?? []).map((r: { following_id: string }) => r.following_id);
+      if (!ids.length) return NextResponse.json({ users: [] });
+      const { data: users } = await supabaseServer
+        .from("users")
+        .select("id, display_name, avatar_url")
+        .in("id", ids);
+      return NextResponse.json({ users: users ?? [] });
+    }
+  }
+
   const [{ count: followerCount }, { count: followingCount }] = await Promise.all([
     supabaseServer.from("follows").select("id", { count: "exact", head: true }).eq("following_id", userId),
     supabaseServer.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", userId),

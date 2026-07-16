@@ -45,6 +45,19 @@ function CoverImg({ src, alt }: { src: string; alt: string }) {
 
 export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] }) {
   const [selected, setSelected] = useState<WeeklyAlbum | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0 || e.shiftKey) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY * 1.2;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   if (albums.length === 0) return null;
 
@@ -59,6 +72,7 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
 
         {/* 가로 스크롤 — 모바일/데스크탑 공통 */}
         <div
+          ref={scrollRef}
           className="no-scrollbar flex"
           style={{ gap: 12, overflowX: "auto", paddingBottom: 6 }}
         >

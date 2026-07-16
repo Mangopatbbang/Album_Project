@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "@/context/AuthContext";
 import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
+import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
+import LogoMark from "@/components/ui/LogoMark";
 
 function EyeIcon() {
   return (
@@ -281,13 +283,28 @@ export default function SignupPage() {
       <div style={{ width: "100%", maxWidth: 440, margin: "0 auto", padding: "max(48px, 8vh) 24px 48px" }}>
 
         {/* 로고 */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Link href="/">
-            <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 28, letterSpacing: "-0.04em" }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <LogoMark height={40} />
+            <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.04em" }}>
               아차청음사
             </p>
           </Link>
-          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 6 }}>청음사 입문</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>청음사 입문</p>
+        </div>
+
+        {/* 소셜 가입 */}
+        <div style={{ marginBottom: 8 }}>
+          <SocialAuthButtons />
+        </div>
+
+        {/* 구분선 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 16px" }}>
+          <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
+          <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>
+            또는 이메일로 가입하기
+          </span>
+          <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
         </div>
 
         <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -403,6 +420,14 @@ export default function SignupPage() {
           <Link href="/login" style={{ color: "var(--accent)", fontWeight: 600 }}>
             입장
           </Link>
+        </p>
+
+        <p style={{ color: "var(--text-muted)", fontSize: 10, textAlign: "center", marginTop: 12, lineHeight: 1.7, opacity: 0.7 }}>
+          소셜 로그인으로 계속하면{" "}
+          <Link href="/terms" target="_blank" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>이용약관</Link>
+          {" "}및{" "}
+          <Link href="/privacy" target="_blank" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>개인정보처리방침</Link>
+          에 동의하는 것으로 간주됩니다
         </p>
       </div>
     </div>

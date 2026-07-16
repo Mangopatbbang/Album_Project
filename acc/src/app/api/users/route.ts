@@ -6,12 +6,13 @@ import { validateUser } from "@/lib/validateUser";
 // POST /api/users — 회원가입 시 users 프로필 생성
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { auth_id, username, display_name, emoji, onboarded } = body as {
+  const { auth_id, username, display_name, emoji, onboarded, avatar_url } = body as {
     auth_id: string;
     username: string;
     display_name?: string;
     emoji?: string;
     onboarded?: boolean;
+    avatar_url?: string | null;
   };
 
   if (!auth_id || !username) {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
       role: "user",
       auth_id,
       onboarded: onboarded ?? false,
+      ...(avatar_url ? { avatar_url } : {}),
     })
     .select()
     .single();

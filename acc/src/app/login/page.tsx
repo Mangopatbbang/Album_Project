@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "@/context/AuthContext";
 import LogoMark from "@/components/ui/LogoMark";
 import { scoreColor } from "@/lib/score";
+import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
 
 function EyeIcon() {
   return (
@@ -139,6 +140,18 @@ function FloatPasswordInput({ id, label, value, onChange, autoComplete }: {
   );
 }
 
+function Divider({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
+      <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
+      <span style={{ color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 1, backgroundColor: "var(--border)" }} />
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { profile, authUser, loading: authLoading } = useAuth();
@@ -147,8 +160,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 로그인 상태 감지 → 홈 리디렉트
-  // profile 또는 authUser 기준으로 리디렉트 (profile fetch 실패해도 세션은 유효)
   useEffect(() => {
     if (authLoading) return;
     if (profile || authUser) {
@@ -177,10 +188,8 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // 로그인 성공: signInWithPassword가 완료된 시점에 즉시 이동
-      // onAuthStateChange(SIGNED_IN) → profile fetch는 AuthContext에서 백그라운드 처리
       router.replace("/");
-      router.refresh(); // 서버 컴포넌트 캐시 갱신
+      router.refresh();
     } catch {
       setError("네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
       setLoading(false);
@@ -196,18 +205,25 @@ export default function LoginPage() {
         {/* 좌: 폼 */}
         <div
           style={{ backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", justifyContent: "center" }}
-          className="w-full md:w-[400px] md:flex-shrink-0 p-8 md:px-12 md:py-10"
+          className="w-full md:w-[440px] md:flex-shrink-0 p-8 md:px-12 md:py-10"
         >
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
+          {/* 로고 */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
             <Link href="/" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <LogoMark height={48} />
-              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 22, letterSpacing: "-0.04em" }}>
+              <LogoMark height={44} />
+              <p style={{ color: "var(--text)", fontWeight: 800, fontSize: 20, letterSpacing: "-0.04em" }}>
                 아차청음사
               </p>
             </Link>
-            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 5 }}>청음사 입문</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4 }}>청음사 입문</p>
           </div>
 
+          {/* 소셜 로그인 */}
+          <SocialAuthButtons />
+
+          <Divider label="또는 이메일로 계속하기" />
+
+          {/* 이메일 폼 */}
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <FloatInput
               id="email" label="이메일" type="email"
@@ -220,6 +236,16 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
 
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -2 }}>
+              <Link
+                href="/auth/forgot-password"
+                style={{ color: "var(--text-muted)", fontSize: 12, textDecoration: "none" }}
+                className="hover:text-[var(--accent)] transition-colors"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
+
             {error && <p style={{ color: "var(--error)", fontSize: 13 }}>{error}</p>}
 
             <button
@@ -230,18 +256,27 @@ export default function LoginPage() {
                 fontWeight: 700, fontSize: 14, padding: "13px",
                 borderRadius: 8, border: "none",
                 cursor: loading ? "default" : "pointer",
-                opacity: loading ? 0.7 : 1, marginTop: 6,
+                opacity: loading ? 0.7 : 1, marginTop: 4,
               }}
             >
               {loading ? "입장 중..." : "입장"}
             </button>
           </form>
 
-          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 28 }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", marginTop: 20 }}>
             아직 청음사 식구가 아닌가요?{" "}
             <Link href="/signup" style={{ color: "var(--accent)", fontWeight: 600 }}>
               입문하기
             </Link>
+          </p>
+
+          {/* 약관 안내 */}
+          <p style={{ color: "var(--text-muted)", fontSize: 10, textAlign: "center", marginTop: 16, lineHeight: 1.7, opacity: 0.7 }}>
+            계속하면{" "}
+            <Link href="/terms" target="_blank" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>이용약관</Link>
+            {" "}및{" "}
+            <Link href="/privacy" target="_blank" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>개인정보처리방침</Link>
+            에<br />동의하는 것으로 간주됩니다
           </p>
         </div>
 
