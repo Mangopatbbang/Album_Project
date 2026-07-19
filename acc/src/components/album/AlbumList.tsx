@@ -12,6 +12,7 @@ import Spinner from "@/components/ui/Spinner";
 import { trackSearch, trackFeatureClick } from "@/lib/track";
 import FilterSelect from "@/components/ui/FilterSelect";
 import AlbumFilterSheet from "./AlbumFilterSheet";
+import { useBlockedAction } from "@/hooks/useBlockedAction";
 
 type Props = {
   initialAlbums: AlbumWithRatings[];
@@ -42,6 +43,7 @@ export default function AlbumList({
   genres,
 }: Props) {
   const { profile } = useAuth();
+  const { triggerBlock } = useBlockedAction();
   const { getUserById } = useUsers();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -368,26 +370,24 @@ return (
               {activeFilterCount > 0 ? `필터 ${activeFilterCount}` : "필터"}
             </button>
             {/* 입고 */}
-            {profile && (
-              <button
-                data-tour="albums-import"
-                onClick={() => setShowAddModal(true)}
-                style={{
-                  backgroundColor: "var(--accent)",
-                  border: "none",
-                  color: "var(--bg)",
-                  borderRadius: 8,
-                  padding: "8px 14px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                입고
-              </button>
-            )}
+            <button
+              data-tour="albums-import"
+              onClick={() => profile ? setShowAddModal(true) : triggerBlock()}
+              style={{
+                backgroundColor: "var(--accent)",
+                border: "none",
+                color: "var(--bg)",
+                borderRadius: 8,
+                padding: "8px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              입고
+            </button>
           </div>
 
           {/* 활성 필터 칩 */}
@@ -462,26 +462,24 @@ return (
               active={sort !== "newest"}
               style={{ borderRadius: 8, padding: "7px 10px", flexShrink: 0 }}
             />
-            {profile && (
-              <button
-                data-tour="albums-import"
-                onClick={() => setShowAddModal(true)}
-                style={{
-                  backgroundColor: "var(--accent)",
-                  border: "none",
-                  color: "var(--bg)",
-                  borderRadius: 8,
-                  padding: "7px 14px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                입고
-              </button>
-            )}
+            <button
+              data-tour="albums-import"
+              onClick={() => profile ? setShowAddModal(true) : triggerBlock()}
+              style={{
+                backgroundColor: "var(--accent)",
+                border: "none",
+                color: "var(--bg)",
+                borderRadius: 8,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              입고
+            </button>
           </div>
 
           {/* Row 2: 장르 + 지역 + 미청음 + 내평점 */}

@@ -20,6 +20,7 @@ import AppleMusicLink from "@/components/ui/AppleMusicLink";
 import { openTutorial, RULES_PAGE_INDEX } from "@/components/ui/TutorialModal";
 import YoutubeMusicLink from "@/components/ui/YoutubeMusicLink";
 import { useToast } from "@/components/ui/Toast";
+import { useBlockedAction } from "@/hooks/useBlockedAction";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
 import { GENRE_COLOR } from "@/lib/bio";
 
@@ -72,6 +73,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
   const { showToast, showToastWithUndo, showToastWithAction } = useToast();
+  const { triggerBlock } = useBlockedAction();
   const router = useRouter();
   const [full, setFull] = useState<FullAlbum | null>(null);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -324,7 +326,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   }, [album.id, profile?.id]);
 
   const handleToggleWatchlist = async () => {
-    if (!profile) return;
+    if (!profile) { triggerBlock(); return; }
     const adding = !isWatchlisted;
     setIsWatchlisted(adding);
     trackFeatureClick(adding ? "위시리스트_추가" : "위시리스트_제거");
@@ -441,7 +443,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const handleSave = async () => {
-    if (!profile) return;
+    if (!profile) { triggerBlock(); return; }
     if (myScore === null) { showToast("점수를 먼저 선택해주세요", "info"); return; }
     setSaving(true);
 
@@ -741,73 +743,71 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           {!showCloseConfirm && !showDeleteAlbumConfirm && (
             <>
               {/* 데스크탑 전용 액션 버튼 */}
-              {profile && (
-                <div className="hidden sm:flex items-center gap-1.5">
-                  {(isWatchlisted || !ratings.find((r) => r.user_id === profile.id)) && (
-                    <button
-                      onClick={handleToggleWatchlist}
-                      style={{
-                        background: isWatchlisted ? "rgba(var(--accent-rgb), 0.08)" : "none",
-                        cursor: "pointer",
-                        color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
-                        fontSize: 12, lineHeight: 1,
-                        padding: "4px 10px", borderRadius: 5,
-                        border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap",
-                      }}
-                    >
-                      {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
-                    </button>
-                  )}
-                  {myScore !== null && (
-                    <button
-                      onClick={() => setShowCardPreview(true)}
-                      title="카드 생성"
-                      style={{
-                        background: "none", cursor: "pointer",
-                        color: "var(--text-muted)", lineHeight: 1,
-                        padding: "4px 7px", borderRadius: 5,
-                        border: "1px solid var(--border)",
-                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", display: "flex", alignItems: "center",
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
-                      </svg>
-                    </button>
-                  )}
-                  {profile.role === "admin" && (
-                    <button
-                      onClick={() => setEditing(true)}
-                      disabled={!full}
-                      style={{
-                        background: "none", cursor: full ? "pointer" : "not-allowed",
-                        color: full ? "var(--text-muted)" : "var(--text-muted)", fontSize: 12, lineHeight: 1,
-                        padding: "4px 10px", borderRadius: 5,
-                        border: "1px solid var(--border)",
-                        opacity: full ? 1 : 0.4, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                      }}
-                    >
-                      {full ? "수정" : "…"}
-                    </button>
-                  )}
-                  {(profile.role === "admin" || (full as FullAlbum)?.added_by === profile.id) && (
-                    <button
-                      onClick={handleDeleteAlbum}
-                      disabled={deletingAlbum}
-                      style={{
-                        background: "none", cursor: deletingAlbum ? "default" : "pointer",
-                        color: "var(--error)", fontSize: 12, lineHeight: 1,
-                        padding: "4px 10px", borderRadius: 5,
-                        border: "1px solid rgba(var(--error-rgb), 0.4)",
-                        opacity: deletingAlbum ? 0.5 : 1, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                      }}
-                    >
-                      {deletingAlbum ? "…" : "삭제"}
-                    </button>
-                  )}
-                </div>
-              )}
+              <div className="hidden sm:flex items-center gap-1.5">
+                {(isWatchlisted || !profile || !ratings.find((r) => r.user_id === profile.id)) && (
+                  <button
+                    onClick={handleToggleWatchlist}
+                    style={{
+                      background: isWatchlisted ? "rgba(var(--accent-rgb), 0.08)" : "none",
+                      cursor: "pointer",
+                      color: isWatchlisted ? "var(--accent)" : "var(--text-muted)",
+                      fontSize: 12, lineHeight: 1,
+                      padding: "4px 10px", borderRadius: 5,
+                      border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
+                  </button>
+                )}
+                {profile && myScore !== null && (
+                  <button
+                    onClick={() => setShowCardPreview(true)}
+                    title="카드 생성"
+                    style={{
+                      background: "none", cursor: "pointer",
+                      color: "var(--text-muted)", lineHeight: 1,
+                      padding: "4px 7px", borderRadius: 5,
+                      border: "1px solid var(--border)",
+                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", display: "flex", alignItems: "center",
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
+                    </svg>
+                  </button>
+                )}
+                {profile?.role === "admin" && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    disabled={!full}
+                    style={{
+                      background: "none", cursor: full ? "pointer" : "not-allowed",
+                      color: full ? "var(--text-muted)" : "var(--text-muted)", fontSize: 12, lineHeight: 1,
+                      padding: "4px 10px", borderRadius: 5,
+                      border: "1px solid var(--border)",
+                      opacity: full ? 1 : 0.4, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                    }}
+                  >
+                    {full ? "수정" : "…"}
+                  </button>
+                )}
+                {(profile?.role === "admin" || (full as FullAlbum)?.added_by === profile?.id) && (
+                  <button
+                    onClick={handleDeleteAlbum}
+                    disabled={deletingAlbum}
+                    style={{
+                      background: "none", cursor: deletingAlbum ? "default" : "pointer",
+                      color: "var(--error)", fontSize: 12, lineHeight: 1,
+                      padding: "4px 10px", borderRadius: 5,
+                      border: "1px solid rgba(var(--error-rgb), 0.4)",
+                      opacity: deletingAlbum ? 0.5 : 1, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                    }}
+                  >
+                    {deletingAlbum ? "…" : "삭제"}
+                  </button>
+                )}
+              </div>
               {full && profile && profile.role !== "admin" && (full as FullAlbum)?.added_by !== profile.id && (
                 <Link
                   href="/board"
@@ -984,74 +984,72 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
             )}
 
             {/* 액션 버튼 행 — 모바일 전용 */}
-            {profile && (
-              <div className="flex sm:hidden items-center gap-1.5 flex-wrap" style={{ marginTop: 10 }}>
-                {(isWatchlisted || !ratings.find((r) => r.user_id === profile.id)) && (
-                  <button
-                    onClick={handleToggleWatchlist}
-                    style={{
-                      background: isWatchlisted ? "rgba(var(--accent-rgb), 0.08)" : "none",
-                      cursor: "pointer",
-                      color: isWatchlisted ? "var(--accent)" : "var(--text-sub)",
-                      fontSize: 13, lineHeight: 1,
-                      padding: "6px 12px", borderRadius: 6,
-                      border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
-                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap", fontWeight: 500,
-                    }}
-                  >
-                    {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
-                  </button>
-                )}
-                {myScore !== null && (
-                  <button
-                    onClick={() => setShowCardPreview(true)}
-                    title="카드 생성"
-                    style={{
-                      display: "flex", alignItems: "center",
-                      background: "none", cursor: "pointer",
-                      color: "var(--text-sub)", lineHeight: 1,
-                      padding: "6px 10px", borderRadius: 6,
-                      border: "1px solid var(--border)",
-                      transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
-                    </svg>
-                  </button>
-                )}
-                {profile.role === "admin" && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    disabled={!full}
-                    style={{
-                      background: "none", cursor: full ? "pointer" : "not-allowed",
-                      color: full ? "var(--text-sub)" : "var(--text-muted)", fontSize: 13, lineHeight: 1,
-                      padding: "6px 12px", borderRadius: 6,
-                      border: "1px solid var(--border)",
-                      opacity: full ? 1 : 0.4, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                    }}
-                  >
-                    {full ? "수정" : "로딩 중…"}
-                  </button>
-                )}
-                {(profile.role === "admin" || (full as FullAlbum)?.added_by === profile.id) && (
-                  <button
-                    onClick={handleDeleteAlbum}
-                    disabled={deletingAlbum}
-                    style={{
-                      background: "none", cursor: deletingAlbum ? "default" : "pointer",
-                      color: "var(--error)", fontSize: 13, lineHeight: 1,
-                      padding: "6px 12px", borderRadius: 6,
-                      border: "1px solid rgba(var(--error-rgb), 0.4)",
-                      opacity: deletingAlbum ? 0.5 : 1, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                    }}
-                  >
-                    {deletingAlbum ? "삭제 중…" : "삭제"}
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="flex sm:hidden items-center gap-1.5 flex-wrap" style={{ marginTop: 10 }}>
+              {(isWatchlisted || !profile || !ratings.find((r) => r.user_id === profile.id)) && (
+                <button
+                  onClick={handleToggleWatchlist}
+                  style={{
+                    background: isWatchlisted ? "rgba(var(--accent-rgb), 0.08)" : "none",
+                    cursor: "pointer",
+                    color: isWatchlisted ? "var(--accent)" : "var(--text-sub)",
+                    fontSize: 13, lineHeight: 1,
+                    padding: "6px 12px", borderRadius: 6,
+                    border: `1px solid ${isWatchlisted ? "var(--accent)" : "var(--border)"}`,
+                    transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s", whiteSpace: "nowrap", fontWeight: 500,
+                  }}
+                >
+                  {isWatchlisted ? "나중에 ✓" : "+ 나중에"}
+                </button>
+              )}
+              {profile && myScore !== null && (
+                <button
+                  onClick={() => setShowCardPreview(true)}
+                  title="카드 생성"
+                  style={{
+                    display: "flex", alignItems: "center",
+                    background: "none", cursor: "pointer",
+                    color: "var(--text-sub)", lineHeight: 1,
+                    padding: "6px 10px", borderRadius: 6,
+                    border: "1px solid var(--border)",
+                    transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><line x1="8.5" y1="2" x2="8.5" y2="4"/>
+                  </svg>
+                </button>
+              )}
+              {profile?.role === "admin" && (
+                <button
+                  onClick={() => setEditing(true)}
+                  disabled={!full}
+                  style={{
+                    background: "none", cursor: full ? "pointer" : "not-allowed",
+                    color: full ? "var(--text-sub)" : "var(--text-muted)", fontSize: 13, lineHeight: 1,
+                    padding: "6px 12px", borderRadius: 6,
+                    border: "1px solid var(--border)",
+                    opacity: full ? 1 : 0.4, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                  }}
+                >
+                  {full ? "수정" : "로딩 중…"}
+                </button>
+              )}
+              {(profile?.role === "admin" || (full as FullAlbum)?.added_by === profile?.id) && (
+                <button
+                  onClick={handleDeleteAlbum}
+                  disabled={deletingAlbum}
+                  style={{
+                    background: "none", cursor: deletingAlbum ? "default" : "pointer",
+                    color: "var(--error)", fontSize: 13, lineHeight: 1,
+                    padding: "6px 12px", borderRadius: 6,
+                    border: "1px solid rgba(var(--error-rgb), 0.4)",
+                    opacity: deletingAlbum ? 0.5 : 1, fontWeight: 500, transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                  }}
+                >
+                  {deletingAlbum ? "삭제 중…" : "삭제"}
+                </button>
+              )}
+            </div>
 
             {/* 평균 점수 */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
