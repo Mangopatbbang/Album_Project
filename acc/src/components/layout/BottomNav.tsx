@@ -99,7 +99,7 @@ export default function BottomNav() {
     { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
     { href: "/community", label: "청음방", Icon: CommunityIcon, tour: undefined },
     {
-      href: profile ? `/profile/${profile.id}` : "/login",
+      href: loading ? "#" : profile ? `/profile/${profile.id}` : "/login",
       label: !loading && !profile ? "입장" : "청음록",
       Icon: ProfileIcon,
       tour: "nav-profile",
@@ -193,7 +193,7 @@ export default function BottomNav() {
                     key={n.id}
                     onClick={() => {
                       doCloseNotif();
-                      if (!isSystemNotif && n.albumId) router.push(`/community?albumId=${n.albumId}`);
+                      if (!isSystemNotif && n.albumId) router.push(`/community?albumId=${n.albumId}&userId=${profile.id}`);
                     }}
                     style={{
                       padding: "12px 18px",

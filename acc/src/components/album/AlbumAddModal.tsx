@@ -132,11 +132,13 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
   const [aliasSaved, setAliasSaved] = useState(false);
 
   const [closing, setClosing] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<null | "spotify" | "metadata">(null);
   const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirmBypassRef = useRef(new Set<string>());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
@@ -278,13 +280,16 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       setError("싱글 앨범은 등록할 수 없습니다. (수록곡 3개 이상)");
       return;
     }
-    if (!spotifyId && !confirm("Spotify 연결 없이 등록하면 커버/트랙리스트가 없을 수 있어요. 그래도 등록할까요?")) {
-      showToast("Spotify 검색 후 연결해주세요", "info");
+    if (!spotifyId && !confirmBypassRef.current.has("spotify")) {
+      setConfirmDialog("spotify");
       return;
     }
-    if ((!genre || !region) && !confirm(`${!genre && !region ? "장르와 지역" : !genre ? "장르" : "지역"}이 선택되지 않았습니다. 그래도 등록하시겠습니까?`)) {
+    if ((!genre || !region) && !confirmBypassRef.current.has("metadata")) {
+      setConfirmDialog("metadata");
       return;
     }
+    confirmBypassRef.current.clear();
+    setConfirmDialog(null);
     setSaving(true);
     setError("");
 
@@ -857,6 +862,38 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           >
             SoundCloud 앨범 입고하기
           </button>
+          {confirmDialog && (
+            <div style={{
+              padding: "12px 14px", borderRadius: 8,
+              backgroundColor: "rgba(var(--accent-rgb), 0.06)",
+              border: "1px solid rgba(var(--accent-rgb), 0.25)",
+              animation: "fadeUp 0.15s ease-out",
+            }}>
+              <p style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6, marginBottom: 10 }}>
+                {confirmDialog === "spotify"
+                  ? "Spotify 연결이 없으면 커버·트랙리스트가 빠질 수 있어요. 그래도 등록할까요?"
+                  : `${!genre && !region ? "장르와 지역" : !genre ? "장르" : "지역"}이 선택되지 않았어요. 그래도 등록할까요?`}
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => {
+                    confirmBypassRef.current.add(confirmDialog);
+                    setConfirmDialog(null);
+                    handleSubmit();
+                  }}
+                  style={{ fontSize: 12, fontWeight: 700, color: "var(--bg)", backgroundColor: "var(--accent)", border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer" }}
+                >
+                  그래도 등록
+                </button>
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  style={{ fontSize: 12, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "6px 12px", cursor: "pointer" }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={doClose} style={{
               backgroundColor: "transparent", border: "1px solid var(--border)",

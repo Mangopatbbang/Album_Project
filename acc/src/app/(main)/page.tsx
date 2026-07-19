@@ -295,11 +295,15 @@ export default async function HomePage() {
         </section>
 
         {/* ── 이번 주 청음 ── */}
-        {weeklyAlbums.length > 0 && (
-          <section style={{ ...containerStyle, padding: "28px 24px 12px" }}>
+        <section style={{ ...containerStyle, padding: "28px 24px 12px" }}>
+          {weeklyAlbums.length > 0 ? (
             <HomeWeeklySection albums={weeklyAlbums as WeeklyAlbum[]} />
-          </section>
-        )}
+          ) : (
+            <p style={{ color: "var(--text-muted)", fontSize: 13, textAlign: "center", padding: "12px 0 4px", opacity: 0.6 }}>
+              이번 주 새로 들어온 앨범이 없어요
+            </p>
+          )}
+        </section>
 
       </main>
     </div>

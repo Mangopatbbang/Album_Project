@@ -65,6 +65,9 @@ export default function SwipeNav() {
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
       if (Math.abs(dx) < Math.abs(dy) * RATIO_THRESHOLD) return;
 
+      // 모달이 열린 상태(body 스크롤 잠금)면 탭 이동 무시
+      if (document.body.style.overflow === "hidden") return;
+
       // 수평 스크롤 가능한 요소 위에서 시작한 스와이프 무시
       if (isScrollableHorizontally(touchStart.current.target)) return;
 

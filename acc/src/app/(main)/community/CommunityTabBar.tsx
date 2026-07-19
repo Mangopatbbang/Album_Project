@@ -20,6 +20,7 @@ export default function CommunityTabBar() {
           <Link
             key={id}
             href={`/community?tab=${id}`}
+            scroll={false}
             style={{
               padding: "10px 20px",
               fontSize: 14,

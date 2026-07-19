@@ -25,6 +25,7 @@ import AnnualHeatmap, { HeatmapRating } from "@/components/profile/AnnualHeatmap
 import ProfileFollowSection from "@/components/profile/ProfileFollowSection";
 import SocialFeed from "@/components/profile/SocialFeed";
 import ProfileTabBar from "./ProfileTabBar";
+import { ThemesAllLink, ThemesCreateLink } from "@/components/profile/ThemesLink";
 
 const getCommunityRatings = unstable_cache(
   async (userId: string) => {
@@ -521,13 +522,13 @@ export default async function ProfilePage({
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>청음집</p>
               {userPlaylists.length > 0 && (
-                <Link href="/themes" style={{ color: "var(--text-muted)", fontSize: 11 }} className="hover:text-[var(--accent)] transition-colors">전체 →</Link>
+                <ThemesAllLink userId={userId} />
               )}
             </div>
             {userPlaylists.length === 0 ? (
               <div>
                 <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>아직 만든 청음집이 없어요</p>
-                <Link href="/themes" style={{ color: "var(--accent)", fontSize: 11, fontWeight: 600 }}>청음집 만들러 가기 →</Link>
+                <ThemesCreateLink userId={userId} />
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

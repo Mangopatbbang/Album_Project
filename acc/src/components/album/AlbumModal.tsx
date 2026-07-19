@@ -76,6 +76,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const { triggerBlock } = useBlockedAction();
   const router = useRouter();
   const [full, setFull] = useState<FullAlbum | null>(null);
+  const [fullError, setFullError] = useState(false);
+  const [fullRetry, setFullRetry] = useState(0);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [glowingScore, setGlowingScore] = useState<number | null>(null);
   const [pressedScore, setPressedScore] = useState<number | null>(null);
@@ -130,6 +132,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const deletedReviewRef = useRef<string>("");
   const initialReviewRef = useRef<string>("");
   const initialScoreRef = useRef<number | null>(null);
+  const initialPrivateNoteRef = useRef<string>("");
   const isDirtyRef = useRef(false);
   const touchStartY = useRef(0);
   const isDraggingRef = useRef(false);
@@ -179,7 +182,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }
     if (savingLike) return;
     const hasRating = ratings.find((r) => r.user_id === profile.id);
-    if (!hasRating && myScore === null) return;
+    if (!hasRating && myScore === null) { showToast("평점을 먼저 남겨야 좋아하는 곡을 선택할 수 있어요", "info"); return; }
     const prev = new Set(myLikedTracks);
     const next = new Set(myLikedTracks);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
@@ -267,7 +270,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     fetch(`/api/albums/${album.id}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) return null; return r.json(); })
       .then((data) => {
-        if (!data || !Array.isArray(data.ratings)) return;
+        if (!data || !Array.isArray(data.ratings)) { setFullError(true); return; }
         setFull(data);
         if (profile) {
           const myRating = data.ratings?.find(
@@ -292,9 +295,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           setMyLikedReviews(likedReviews);
         }
       })
-      .catch(() => {});
+      .catch((e) => { if (e?.name !== "AbortError") setFullError(true); });
     return () => controller.abort();
-  }, [album.id, profile?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [album.id, profile?.id, fullRetry]);
 
   // private_note · 평점이력 · 찜 여부 병렬 fetch
   useEffect(() => {
@@ -317,7 +321,11 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         const note = noteData as { ratings?: { private_note?: string | null }[] } | null;
         const hist = histData as { score: number; createdAt: string }[];
         const watch = watchData as { isWatchlisted?: boolean };
-        if (note?.ratings?.length) setMyPrivateNote(note.ratings[0].private_note ?? "");
+        if (note?.ratings?.length) {
+          const noteVal = note.ratings[0].private_note ?? "";
+          setMyPrivateNote(noteVal);
+          initialPrivateNoteRef.current = noteVal;
+        }
         if (Array.isArray(hist)) setMyHistory(hist);
         setIsWatchlisted(watch?.isWatchlisted ?? false);
       })
@@ -359,6 +367,12 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
+
+  // ratingsSheet 열릴 때 모달 카드 내부 스크롤 잠금
+  useEffect(() => {
+    if (!cardRef.current) return;
+    cardRef.current.style.overflowY = ratingsSheetOpen ? "hidden" : "auto";
+  }, [ratingsSheetOpen]);
 
   // ESC 닫기
   useEffect(() => {
@@ -430,6 +444,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     }
     initialReviewRef.current = myReview;
     initialScoreRef.current = myScore;
+    initialPrivateNoteRef.current = myPrivateNote;
     isDirtyRef.current = false;
     setSaved(true);
     onSaved?.(album.id, freshData);
@@ -1446,7 +1461,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               <textarea
                 placeholder="나만 보이는 메모 (500자)"
                 value={myPrivateNote}
-                onChange={(e) => setMyPrivateNote(e.target.value.slice(0, 500))}
+                onChange={(e) => { const val = e.target.value.slice(0, 500); setMyPrivateNote(val); isDirtyRef.current = val !== initialPrivateNoteRef.current || myReview !== initialReviewRef.current || (myScore !== null && myScore !== initialScoreRef.current); }}
                 rows={2}
                 style={{
                   width: "100%",
@@ -1704,7 +1719,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         )}
 
         {/* 트랙리스트 skeleton — full 로드 전 자리 확보해서 레이아웃 점프 방지 */}
-        {full === null && (
+        {full === null && !fullError && (
           <>
             <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
             <div className="px-5 sm:px-8">
@@ -1712,6 +1727,20 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               {[0,1,2,3,4].map((i) => (
                 <div key={i} className="skeleton-shimmer" style={{ height: 13, borderRadius: 4, marginBottom: 7 }} />
               ))}
+            </div>
+          </>
+        )}
+        {full === null && fullError && (
+          <>
+            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
+            <div className="px-5 sm:px-8" style={{ paddingBottom: 4 }}>
+              <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>상세 정보를 불러오지 못했어요</p>
+              <button
+                onClick={() => { setFullError(false); setFullRetry((n) => n + 1); }}
+                style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}
+              >
+                다시 시도
+              </button>
             </div>
           </>
         )}
