@@ -597,8 +597,9 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const visibleUsers = sortedUsers.slice(0, VISIBLE_COUNT);
   const hiddenCount = Math.max(0, sortedUsers.length - VISIBLE_COUNT);
 
-  const tracklist = full?.tracklist
-    ? full.tracklist.split(";").map((t) => t.trim()).filter(Boolean)
+  const rawTracklist = full?.tracklist ?? album.tracklist ?? null;
+  const tracklist = rawTracklist
+    ? rawTracklist.split(";").map((t) => t.trim()).filter(Boolean)
     : [];
 
   const trackDurationsMs: number[] = full?.track_durations

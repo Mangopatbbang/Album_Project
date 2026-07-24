@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
@@ -21,7 +21,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const navigatingRef = useRef(false);
+  const [isPending, startTransition] = useTransition();
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
   const { profile } = useAuth();
@@ -45,13 +45,13 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <>
     <button
       data-tour="album-card"
-      onClick={(e) => {
-        if (e.detail > 1) return;
-        if (navigatingRef.current) return;
-        navigatingRef.current = true;
-        setTimeout(() => { navigatingRef.current = false; }, 1500);
+      aria-busy={isPending}
+      onClick={() => {
+        if (isPending) return;
         onNavigate?.();
-        router.push(`/album/${album.id}`, { scroll: false });
+        startTransition(() => {
+          router.push(`/album/${album.id}`, { scroll: false });
+        });
       }}
       style={{
         backgroundColor: "var(--bg-card)",
@@ -59,8 +59,10 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         textAlign: "left",
         width: "100%",
         boxShadow: glowShadow(album.avg),
+        opacity: isPending ? 0.75 : 1,
+        transition: "opacity 0.12s ease, transform 0.15s cubic-bezier(0.4,0,0.2,1)",
       }}
-      className="group rounded-lg overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
+      className="group rounded-lg overflow-hidden hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
     >
       {/* 커버 이미지 */}
       <div
@@ -94,6 +96,22 @@ export default function AlbumCard({ album, onNavigate }: Props) {
             padding: "2px 5px", borderRadius: 4,
             pointerEvents: "none",
           }}>NEW</span>
+        )}
+        {isPending && (
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 2,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backgroundColor: "rgba(0,0,0,0.35)",
+          }}>
+            <div
+              className="animate-spin"
+              style={{
+                width: 22, height: 22, borderRadius: "50%",
+                border: "2.5px solid rgba(255,255,255,0.18)",
+                borderTopColor: "rgba(255,255,255,0.85)",
+              }}
+            />
+          </div>
         )}
       </div>
 

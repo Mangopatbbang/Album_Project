@@ -55,41 +55,45 @@ export async function resolveArtistDisplay<T extends HasArtist>(
 
 /**
  * 검색어(한글 포함)를 받아 alias 테이블과 검색 alias 테이블을 동시 참조해
- * 일치하는 spotify_name 목록을 반환 (two-step 검색용)
+ * 일치하는 spotify_name 목록을 반환 (two-step 검색용) — 60s 캐시
  */
-export async function findArtistsByVariant(search: string): Promise<string[]> {
-  if (!search.trim()) return [];
-  const esc = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
+export const findArtistsByVariant = unstable_cache(
+  async (search: string): Promise<string[]> => {
+    if (!search.trim()) return [];
+    const esc = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
 
-  // 공백 정규화 변형: 공백 없으면 삽입, 공백 있으면 제거 (에픽하이 ↔ 에픽 하이)
-  const spaceVariants: string[] = [];
-  if (!search.includes(' ') && search.length > 1) {
-    for (let i = 1; i < search.length; i++) {
-      spaceVariants.push(search.slice(0, i) + ' ' + search.slice(i));
+    // 공백 정규화 변형: 공백 없으면 삽입, 공백 있으면 제거 (에픽하이 ↔ 에픽 하이)
+    const spaceVariants: string[] = [];
+    if (!search.includes(' ') && search.length > 1) {
+      for (let i = 1; i < search.length; i++) {
+        spaceVariants.push(search.slice(0, i) + ' ' + search.slice(i));
+      }
+    } else if (search.includes(' ')) {
+      spaceVariants.push(search.replace(/\s+/g, ''));
     }
-  } else if (search.includes(' ')) {
-    spaceVariants.push(search.replace(/\s+/g, ''));
-  }
 
-  const queries = [
-    supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${esc}%`),
-    supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${esc}%`),
-    ...spaceVariants.map(v => {
-      const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
-      return supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${ev}%`);
-    }),
-    ...spaceVariants.map(v => {
-      const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
-      return supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${ev}%`);
-    }),
-  ];
+    const queries = [
+      supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${esc}%`),
+      supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${esc}%`),
+      ...spaceVariants.map(v => {
+        const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
+        return supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${ev}%`);
+      }),
+      ...spaceVariants.map(v => {
+        const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
+        return supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${ev}%`);
+      }),
+    ];
 
-  const results = await Promise.all(queries);
-  const names = new Set<string>();
-  for (const r of results) {
-    for (const a of (r.data ?? []) as { spotify_name: string }[]) {
-      names.add(a.spotify_name);
+    const results = await Promise.all(queries);
+    const names = new Set<string>();
+    for (const r of results) {
+      for (const a of (r.data ?? []) as { spotify_name: string }[]) {
+        names.add(a.spotify_name);
+      }
     }
-  }
-  return [...names];
-}
+    return [...names];
+  },
+  ["find-artists-by-variant"],
+  { revalidate: 60 }
+);
