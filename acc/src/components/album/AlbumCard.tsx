@@ -46,6 +46,8 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <button
       data-tour="album-card"
       aria-busy={isPending}
+      onMouseEnter={() => router.prefetch(`/album/${album.id}`)}
+      onTouchStart={() => router.prefetch(`/album/${album.id}`)}
       onClick={() => {
         if (isPending) return;
         onNavigate?.();

@@ -15,23 +15,28 @@ export type Album = {
   genre?: string;
   region?: string | null;
   tracklist?: string;
+  track_durations?: string | null;
   spotify_id?: string;
   soundcloud_url?: string | null;
   cover_url?: string;
+  added_by?: string | null;
   created_at?: string | null;
 };
 
 export type Rating = {
-  id: number;
-  album_id: string;
+  id?: number;
+  album_id?: string;
   user_id: string;
   score: number;
-  one_line_review?: string;
-  created_at: string;
-  updated_at: string;
+  one_line_review?: string | null;
+  liked_tracks?: string | null;
+  liked_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type AlbumWithRatings = Album & {
   ratings: Rating[];
   avg?: string;
+  extra_artists_display?: string[];
 };

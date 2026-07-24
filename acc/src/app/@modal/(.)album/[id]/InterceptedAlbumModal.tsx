@@ -12,6 +12,7 @@ export default function InterceptedAlbumModal({ album }: { album: AlbumWithRatin
       album={album}
       onClose={() => router.back()}
       source="albums_grid"
+      preloaded
       onSaved={async (albumId, updatedAlbum) => {
         if (updatedAlbum) {
           window.dispatchEvent(new CustomEvent("album-updated", { detail: { albumId, data: updatedAlbum } }));
