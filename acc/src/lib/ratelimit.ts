@@ -33,7 +33,13 @@ export async function checkRateLimit(
   limiter: Ratelimit,
   id: string
 ): Promise<NextResponse | null> {
-  const { success, limit, remaining, reset } = await limiter.limit(id);
+  let result: Awaited<ReturnType<typeof limiter.limit>>;
+  try {
+    result = await limiter.limit(id);
+  } catch {
+    return null; // Redis 장애 시 rate limit 통과 처리 (서비스 중단 방지)
+  }
+  const { success, limit, remaining, reset } = result;
   if (!success) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },

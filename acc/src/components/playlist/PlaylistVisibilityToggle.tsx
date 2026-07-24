@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function PlaylistVisibilityToggle({
   playlistId,
@@ -24,12 +25,13 @@ export default function PlaylistVisibilityToggle({
     const next = !isPublic;
     setIsPublic(next);
     setSaving(true);
-    await fetch(`/api/playlists/${playlistId}`, {
+    const res = await apiFetch(`/api/playlists/${playlistId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_public: next }),
     });
     setSaving(false);
+    if (!res.ok) { setIsPublic(!next); return; }
     router.refresh();
   };
 

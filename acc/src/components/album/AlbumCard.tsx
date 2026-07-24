@@ -30,11 +30,9 @@ export default function AlbumCard({ album, onNavigate }: Props) {
       .map((u) => ({ user: u, rating: album.ratings.find((r) => r.user_id === u.id) }))
       .filter((e): e is { user: typeof e.user; rating: NonNullable<typeof e.rating> } => e.rating != null);
     const mine = ratedEntries.filter((e) => e.user.id === profile?.id);
-    const others = ratedEntries.filter((e) => e.user.id !== profile?.id);
-    for (let i = others.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [others[i], others[j]] = [others[j], others[i]];
-    }
+    const others = ratedEntries
+      .filter((e) => e.user.id !== profile?.id)
+      .sort((a, b) => b.rating.score - a.rating.score);
     return [...mine, ...others].slice(0, 5);
   }, [album.ratings, profile?.id, users]);
 

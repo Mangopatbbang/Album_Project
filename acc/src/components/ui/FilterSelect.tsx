@@ -31,6 +31,12 @@ export default function FilterSelect({ value, onChange, options, title, feature,
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    return () => {
+      if (isMobileRef.current) document.body.style.overflow = prevOverflow.current;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
     document.addEventListener("keydown", onKey);

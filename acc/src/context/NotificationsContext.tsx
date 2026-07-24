@@ -33,21 +33,24 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [profile?.id]);
 
   const markAllRead = useCallback(async () => {
-    await apiFetch("/api/notifications", {
+    const r = await apiFetch("/api/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
+    if (!r.ok) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }, []);
 
   const clearAll = useCallback(async () => {
-    await apiFetch("/api/notifications", { method: "DELETE" });
+    const r = await apiFetch("/api/notifications", { method: "DELETE" });
+    if (!r.ok) return;
     setNotifications([]);
   }, []);
 
   const removeNotification = useCallback(async (id: string) => {
-    await apiFetch(`/api/notifications?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const r = await apiFetch(`/api/notifications?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!r.ok) return;
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 

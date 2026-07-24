@@ -20,7 +20,7 @@ export default function ProfileFollowSection({ targetUserId }: { targetUserId: s
   const [modal, setModal] = useState<"followers" | "following" | null>(null);
 
   const fetchData = useCallback(async () => {
-    const res = await fetch(`/api/follows?userId=${targetUserId}`);
+    const res = await apiFetch(`/api/follows?userId=${targetUserId}`);
     if (res.ok) setData(await res.json());
   }, [targetUserId]);
 

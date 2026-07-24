@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
 
 export default function PlaylistTitleEditor({
   playlistId,
@@ -27,10 +28,10 @@ export default function PlaylistTitleEditor({
     const trimmed = draft.trim();
     if (!trimmed || trimmed === title) { setEditing(false); setDraft(title); return; }
     setSaving(true);
-    const res = await fetch(`/api/playlists/${playlistId}`, {
+    const res = await apiFetch(`/api/playlists/${playlistId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: trimmed, userId: profile?.id }),
+      body: JSON.stringify({ title: trimmed }),
     });
     setSaving(false);
     if (res.ok) {

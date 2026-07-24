@@ -388,7 +388,7 @@ export default function StoryCard({
                     lineHeight: 1,
                   }}
                 >
-                  /7
+                  /8
                 </span>
               )}
             </div>

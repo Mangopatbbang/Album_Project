@@ -102,12 +102,13 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const [albumResult] = await Promise.all([
+  const [albumResult, aliasMap] = await Promise.all([
     supabaseServer
       .from("albums")
       .select("id, title, artist, use_artist_variant, extra_artists, release_date, genre, region, cover_url, spotify_id, soundcloud_url, tracklist, track_durations, added_by, ratings(user_id, score, one_line_review, liked_tracks, liked_by)")
       .eq("id", id)
       .single(),
+    fetchAliasMap(),
   ]);
 
   const { data, error } = albumResult;
@@ -117,8 +118,6 @@ export async function GET(
 
   const [resolved] = await resolveArtistDisplay([data]);
 
-  // extra_artists 개별 이름도 alias 해상도 (fetchAliasMap은 캐시됨)
-  const aliasMap = await fetchAliasMap();
   const extra_artists_display: string[] = resolved.extra_artists
     ? resolved.extra_artists.split(";").map((s: string) => {
         const t = s.trim();

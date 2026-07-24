@@ -69,6 +69,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
+    if (rawSrc) URL.revokeObjectURL(rawSrc);
     setRawSrc(URL.createObjectURL(file));
     setRawFileName(file.name);
     setCropOffset({ x: 0, y: 0 });
@@ -114,6 +115,8 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
       if (!blob) return;
       const file = new File([blob], rawFileName.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
       setAvatarFile(file);
+      if (rawSrc) { URL.revokeObjectURL(rawSrc); setRawSrc(null); }
+      if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
       setAvatarPreview(URL.createObjectURL(blob));
       setCropMode(false);
     }, "image/jpeg", 0.92);

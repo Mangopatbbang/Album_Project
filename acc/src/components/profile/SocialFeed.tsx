@@ -38,6 +38,7 @@ export default function SocialFeed({ userId }: { userId: string }) {
   const { profile } = useAuth();
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   const isOwnProfile = profile?.id === userId;
@@ -50,7 +51,7 @@ export default function SocialFeed({ userId }: { userId: string }) {
         setFeed(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { setLoading(false); setFetchError(true); });
   }, [isOwnProfile]);
 
   if (!isOwnProfile) return null;
@@ -68,6 +69,10 @@ export default function SocialFeed({ userId }: { userId: string }) {
               <div key={i} className="skeleton-shimmer" style={{ height: 52, borderRadius: 8 }} />
             ))}
           </div>
+        ) : fetchError ? (
+          <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>
+            피드를 불러오지 못했어요. 잠시 후 다시 시도해주세요.
+          </p>
         ) : feed.length === 0 ? (
           <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>
             팔로우한 멤버의 최근 청음이 여기에 나타나요

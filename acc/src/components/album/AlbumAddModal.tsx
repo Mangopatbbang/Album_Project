@@ -259,11 +259,16 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     checkDuplicates(c.name, c.artist, c.cover_url); // Spotify 정확한 제목 + 커버 URL로 중복 재검사
     setLoadingTracklist(true);
 
-    const trackRes = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
-    const trackData = await trackRes.json();
-    setTracklist(trackData.tracklist ?? "");
-    setTrackDurations(trackData.track_durations ?? null);
-    setLoadingTracklist(false);
+    try {
+      const trackRes = await fetch(`/api/spotify/tracks?id=${c.spotify_id}`);
+      const trackData = await trackRes.json();
+      setTracklist(trackData.tracklist ?? "");
+      setTrackDurations(trackData.track_durations ?? null);
+    } catch {
+      // tracklist 실패해도 나머지 입력값은 유지
+    } finally {
+      setLoadingTracklist(false);
+    }
   };
 
   const trackCount = tracklist.trim()

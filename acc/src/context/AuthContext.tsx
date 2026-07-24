@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       profile = await fetchProfileData(session.user.id);
       if (profile) writeCache(profile);
-    } catch { /* ignore */ }
+    } catch { return; }
     if (profileFetchSeqRef.current !== seq) return;
     setAuthState(prev => ({ ...prev, profile }));
   }, []);

@@ -438,7 +438,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const afterSaveSuccess = async (freshData?: AlbumWithRatings) => {
     if (!isMountedRef.current) return;
     if (isWatchlisted) {
-      apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
+      await apiFetch("/api/watchlist", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ albumId: album.id }) });
       setIsWatchlisted(false);
       window.dispatchEvent(new CustomEvent("watchlist-removed", { detail: { albumId: album.id } }));
     }
@@ -460,6 +460,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const handleSave = async () => {
     if (!profile) { triggerBlock(); return; }
     if (myScore === null) { showToast("점수를 먼저 선택해주세요", "info"); return; }
+    if (pendingDeleteRef.current) {
+      clearTimeout(pendingDeleteRef.current);
+      pendingDeleteRef.current = null;
+    }
     setSaving(true);
 
     const res = await apiFetch("/api/ratings", {

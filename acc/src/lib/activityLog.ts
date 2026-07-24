@@ -10,7 +10,7 @@ export async function logActivity(params: {
   albumArtist?: string;
   details?: Record<string, unknown>;
 }): Promise<void> {
-  await supabaseServer.from("activity_logs").insert({
+  const { error } = await supabaseServer.from("activity_logs").insert({
     user_id: params.userId ?? null,
     action: params.action,
     album_id: params.albumId ?? null,
@@ -18,4 +18,5 @@ export async function logActivity(params: {
     album_artist: params.albumArtist ?? null,
     details: params.details ?? null,
   });
+  if (error) console.error("[activityLog]", error.message);
 }

@@ -131,7 +131,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
   }, [onClose]);
 
   const handleSearch = async (artistOverride?: string) => {
-    const searchArtist = artistOverride ?? album.artist.trim();
+    const searchArtist = artistOverride ?? artist.trim();
     if (!title.trim() && !searchArtist) return;
     setSearching(true);
     setSearchError("");
@@ -175,6 +175,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
   const handleSelectCandidate = async (c: SpotifyCandidate) => {
     setSelectedCandidate(c);
     setTitle(c.name);
+    setArtist(c.artist);
     setExtraArtists(c.extra_artists ?? "");
     setCoverUrl(c.cover_url);
     if (c.release_date) setReleaseDate(c.release_date);

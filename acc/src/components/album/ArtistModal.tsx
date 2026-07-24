@@ -238,7 +238,7 @@ function ArtistAlbumCard({ album, artistName, onClick }: { album: AlbumWithRatin
         {album.avg && (
           <div style={{
             height: "100%",
-            width: `${(parseFloat(album.avg) / 10) * 100}%`,
+            width: `${(parseFloat(album.avg) / 8) * 100}%`,
             backgroundColor: scoreColor(album.avg),
             boxShadow: parseFloat(album.avg) >= 7 ? `0 0 4px ${scoreColor(album.avg)}` : "none",
             transition: "width 0.4s ease",

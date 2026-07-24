@@ -121,7 +121,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
 
   return (
     <>
-      {selectedAlbum && (
+      {open && selectedAlbum && (
         <AlbumModal
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
