@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
@@ -21,6 +21,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const navigatingRef = useRef(false);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
   const { profile } = useAuth();
@@ -44,7 +45,14 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <>
     <button
       data-tour="album-card"
-      onClick={(e) => { if (e.detail > 1) return; onNavigate?.(); router.push(`/album/${album.id}`, { scroll: false }); }}
+      onClick={(e) => {
+        if (e.detail > 1) return;
+        if (navigatingRef.current) return;
+        navigatingRef.current = true;
+        setTimeout(() => { navigatingRef.current = false; }, 1500);
+        onNavigate?.();
+        router.push(`/album/${album.id}`, { scroll: false });
+      }}
       style={{
         backgroundColor: "var(--bg-card)",
         border: `1px solid ${glowBorder(album.avg)}`,

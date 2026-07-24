@@ -103,7 +103,7 @@ function AnnouncementsSheet({
 
 export default function FloatingActions() {
   const pathname = usePathname();
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -176,6 +176,22 @@ export default function FloatingActions() {
                 </svg>
                 어드민
               </Link>
+            )}
+
+            {/* 로그아웃 */}
+            {profile && (
+              <button
+                onClick={() => { setOpen(false); signOut(); }}
+                style={{ ...btnStyle, color: "var(--text-muted)" }}
+                className="active:opacity-60 hover:opacity-80"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                로그아웃
+              </button>
             )}
 
             {/* 공지사항 */}

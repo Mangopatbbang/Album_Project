@@ -94,15 +94,16 @@ export default function BottomNav() {
   };
 
   const navItems = [
-    { href: "/", label: "홈", Icon: HomeIcon, tour: undefined },
-    { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums" },
-    { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best" },
-    { href: "/community", label: "청음방", Icon: CommunityIcon, tour: undefined },
+    { href: "/", label: "홈", Icon: HomeIcon, tour: undefined, isProfile: false },
+    { href: "/albums", label: "음반고", Icon: AlbumsIcon, tour: "nav-albums", isProfile: false },
+    { href: "/best", label: "청음감", Icon: BestIcon, tour: "nav-best", isProfile: false },
+    { href: "/community", label: "청음방", Icon: CommunityIcon, tour: undefined, isProfile: false },
     {
       href: loading ? "#" : profile ? `/profile/${profile.id}` : "/login",
-      label: !loading && !profile ? "입장" : "청음록",
+      label: !loading && !profile ? "로그인" : "청음록",
       Icon: ProfileIcon,
       tour: "nav-profile",
+      isProfile: true,
     },
   ];
 
@@ -248,8 +249,10 @@ export default function BottomNav() {
       >
         <div className="flex items-stretch">
           {/* 일반 탭들 */}
-          {navItems.map(({ href, label, Icon, tour }) => {
+          {navItems.map(({ href, label, Icon, tour, isProfile }) => {
             const active = isActive(href);
+            const showAvatar = isProfile && !!profile;
+            const avatarUrl = showAvatar ? (avatarMap[profile.id] ?? null) : null;
             return (
               <Link
                 key={href}
@@ -263,9 +266,19 @@ export default function BottomNav() {
               >
                 <span
                   className={bouncingHref === href ? "nav-bounce" : ""}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Icon />
+                  {showAvatar ? (
+                    <span style={{
+                      width: 20, height: 20, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+                      border: active ? "1.5px solid var(--accent)" : "1.5px solid var(--border)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <UserAvatar avatarUrl={avatarUrl} size={20} />
+                    </span>
+                  ) : (
+                    <Icon />
+                  )}
                 </span>
                 <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, letterSpacing: "0.04em" }}>
                   {label}
