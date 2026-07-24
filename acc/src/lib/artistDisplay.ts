@@ -53,13 +53,22 @@ export async function resolveArtistDisplay<T extends HasArtist>(
   return applyArtistDisplay(albums, map);
 }
 
+// PostgREST .or() 값에서 백슬래시·따옴표를 이스케이프해 쌍따옴표로 감싸기
+// 콤마·괄호 등 OR 파서 특수문자를 리터럴로 보존
+function quoteOrVal(v: string) {
+  return '"' + v.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+}
+
 /**
  * 검색어(한글 포함)를 받아 alias 테이블과 검색 alias 테이블을 동시 참조해
  * 일치하는 spotify_name 목록을 반환 (two-step 검색용) — 60s 캐시
+ *
+ * Plan A: 공백 변형을 .or() 하나로 통합 → 10쿼리 → 2쿼리
+ * Plan D: 1글자 이하 검색어는 alias 조회 스킵 (광범위 쿼리 방지)
  */
 export const findArtistsByVariant = unstable_cache(
   async (search: string): Promise<string[]> => {
-    if (!search.trim()) return [];
+    if (search.trim().length < 2) return [];
     const esc = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
 
     // 공백 정규화 변형: 공백 없으면 삽입, 공백 있으면 제거 (에픽하이 ↔ 에픽 하이)
@@ -72,26 +81,24 @@ export const findArtistsByVariant = unstable_cache(
       spaceVariants.push(search.replace(/\s+/g, ''));
     }
 
-    const queries = [
-      supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${esc}%`),
-      supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${esc}%`),
-      ...spaceVariants.map(v => {
-        const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
-        return supabaseServer.from("artist_aliases").select("spotify_name").ilike("variant_name", `%${ev}%`);
-      }),
-      ...spaceVariants.map(v => {
-        const ev = v.replace(/%/g, "\\%").replace(/_/g, "\\_");
-        return supabaseServer.from("artist_search_aliases").select("spotify_name").ilike("alias", `%${ev}%`);
-      }),
+    // 모든 이스케이프된 패턴을 하나의 배열로 통합
+    const allEscaped = [
+      esc,
+      ...spaceVariants.map(v => v.replace(/%/g, "\\%").replace(/_/g, "\\_")),
     ];
+    // .or() 조건 문자열 생성: 각 패턴을 quoteOrVal로 감싸 파서 안전성 보장
+    const buildOr = (col: string) =>
+      allEscaped.map(p => `${col}.ilike.${quoteOrVal(`%${p}%`)}`).join(",");
 
-    const results = await Promise.all(queries);
+    // 10개 별도 쿼리 → 2개 .or() 쿼리로 통합
+    const [{ data: aliasData }, { data: searchAliasData }] = await Promise.all([
+      supabaseServer.from("artist_aliases").select("spotify_name").or(buildOr("variant_name")),
+      supabaseServer.from("artist_search_aliases").select("spotify_name").or(buildOr("alias")),
+    ]);
+
     const names = new Set<string>();
-    for (const r of results) {
-      for (const a of (r.data ?? []) as { spotify_name: string }[]) {
-        names.add(a.spotify_name);
-      }
-    }
+    for (const a of (aliasData ?? []) as { spotify_name: string }[]) names.add(a.spotify_name);
+    for (const a of (searchAliasData ?? []) as { spotify_name: string }[]) names.add(a.spotify_name);
     return [...names];
   },
   ["find-artists-by-variant"],

@@ -79,6 +79,8 @@ export default function AlbumList({
   const sentinelRef = useRef<HTMLDivElement>(null);
   // 필터 변경 시 진행 중인 loadMore 응답을 폐기하기 위한 세대 카운터
   const filterGenRef = useRef(0);
+  // 클라이언트 검색 결과 캐시 (세션 내 동일 조건 재검색 즉시 반환)
+  const searchCacheRef = useRef(new Map<string, { items: AlbumWithRatings[]; hasMore: boolean; nextOffset: number | null }>());
 
   const sortOptions = profile
     ? [...BASE_SORT_OPTIONS, ...MY_SORT_OPTIONS]
@@ -128,8 +130,23 @@ export default function AlbumList({
 
   const handleFilter = useCallback(
     async (newSearch: string, newGenre: string, newRegion: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
-      // 세대 증가로 진행 중인 loadMore 응답을 무효화
+      // 세대 증가: 진행 중인 loadMore 응답 무효화 (캐시 히트 시에도 필요)
       filterGenRef.current += 1;
+
+      // 클라이언트 캐시 체크 — 모든 필터 조합 키 포함
+      const sid = newScoreUserId ?? scoreUserId ?? "";
+      const cacheKey = `${newSearch}|${newGenre}|${newRegion}|${newSort}|${newUnrated}|${newMyScore ?? ""}|${sid}`;
+      const cached = searchCacheRef.current.get(cacheKey);
+      if (cached) {
+        setAlbums(cached.items);
+        setHasMore(cached.hasMore);
+        setNextOffset(cached.nextOffset);
+        setFilterLoading(false);
+        setFetchError(false);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setFilterLoading(true);
       try {
@@ -138,6 +155,17 @@ export default function AlbumList({
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
         setFetchError(false);
+
+        // 캐시 저장 (최대 30 엔트리, LRU-like: 초과 시 가장 오래된 항목 제거)
+        if (searchCacheRef.current.size >= 30) {
+          const oldest = searchCacheRef.current.keys().next().value;
+          if (oldest !== undefined) searchCacheRef.current.delete(oldest);
+        }
+        searchCacheRef.current.set(cacheKey, {
+          items: data.items ?? [],
+          hasMore: data.hasMore ?? false,
+          nextOffset: data.nextOffset ?? null,
+        });
       } catch {
         setAlbums([]);
         setFetchError(true);
@@ -208,15 +236,42 @@ export default function AlbumList({
     return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
-  // 앨범 모달에서 평점/삭제 시 로컬 상태 동기화
+  // 로그인/로그아웃 시 캐시 초기화 (사용자별 필터 결과 오염 방지)
+  useEffect(() => {
+    searchCacheRef.current.clear();
+  }, [profile?.id]);
+
+  // 앨범 추가 모달 닫힐 때 캐시 초기화 (새 앨범이 검색 결과에 즉시 반영되도록)
+  const prevShowAddModalRef = useRef(false);
+  useEffect(() => {
+    if (prevShowAddModalRef.current && !showAddModal) {
+      searchCacheRef.current.clear();
+    }
+    prevShowAddModalRef.current = showAddModal;
+  }, [showAddModal]);
+
+  // 앨범 모달에서 평점/삭제 시 로컬 상태 + 캐시 동기화
   useEffect(() => {
     const handleUpdated = (e: Event) => {
       const { albumId, data } = (e as CustomEvent<{ albumId: string; data: AlbumWithRatings }>).detail;
       setAlbums((prev) => prev.map((a) => (a.id === albumId ? { ...data } : a)));
+      // 캐시 엔트리의 해당 앨범도 최신 데이터로 교체
+      searchCacheRef.current.forEach((cached, key) => {
+        searchCacheRef.current.set(key, {
+          ...cached,
+          items: cached.items.map((a) => (a.id === albumId ? { ...data } : a)),
+        });
+      });
     };
     const handleDeleted = (e: Event) => {
       const { albumId } = (e as CustomEvent<{ albumId: string }>).detail;
       setAlbums((prev) => prev.filter((a) => a.id !== albumId));
+      // 해당 앨범이 포함된 캐시 엔트리는 무효화
+      searchCacheRef.current.forEach((cached, key) => {
+        if (cached.items.some((a) => a.id === albumId)) {
+          searchCacheRef.current.delete(key);
+        }
+      });
     };
     window.addEventListener("album-updated", handleUpdated);
     window.addEventListener("album-deleted", handleDeleted);

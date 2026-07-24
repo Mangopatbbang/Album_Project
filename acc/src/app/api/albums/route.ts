@@ -6,6 +6,9 @@ import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
 import { fetchAllAlbumsWithRatings } from "@/lib/stats";
 import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
+import { redis } from "@/lib/redis";
+
+const SEARCH_CACHE_TTL = 30; // seconds
 
 const LIMIT = 30;
 const SELECT = "id, title, artist, use_artist_variant, extra_artists, release_date, genre, cover_url, spotify_id, soundcloud_url, created_at, ratings(user_id, score)";
@@ -100,6 +103,18 @@ export async function GET(req: NextRequest) {
   const myScore = searchParams.get("myScore") ? Number(searchParams.get("myScore")) : null;
   const regionFilter = searchParams.get("region")?.trim() || null;
 
+  // Redis 캐시: 유저 특화 파라미터(unrated·myScore·my정렬) 없는 일반 요청만 캐시
+  const isUserSpecific = unrated || !!myScore || sort === "my_desc" || sort === "my_asc";
+  const isAvgSort = sort === "avg_desc" || sort === "avg_asc";
+  let cacheKey: string | null = null;
+  if (!isUserSpecific && !isAvgSort) {
+    cacheKey = `albums:v1:s=${search ?? ""}:g=${genre ?? ""}:so=${sort}:r=${regionFilter ?? ""}:o=${offset}`;
+    try {
+      const cached = await redis.get<object>(cacheKey);
+      if (cached) return NextResponse.json(cached);
+    } catch { /* Redis 장애 시 통과 */ }
+  }
+
   // 검색어가 있으면 alias two-step 미리 처리
   const aliasMatches = search ? await findArtistsByVariant(search) : [];
   const safeSearch = search ? escapeSearch(search) : null;
@@ -164,11 +179,18 @@ export async function GET(req: NextRequest) {
   const page = hasMore ? items.slice(0, limit) : items;
   const resolved = await resolveArtistDisplay(page);
 
-  return NextResponse.json({
+  const result = {
     items: resolved.map(mapAlbum),
     nextOffset: hasMore ? offset + limit : null,
     hasMore,
-  });
+  };
+
+  // 일반 요청 결과를 Redis에 30s 캐시
+  if (cacheKey) {
+    try { await redis.setex(cacheKey, SEARCH_CACHE_TTL, JSON.stringify(result)); } catch { /* fail-open */ }
+  }
+
+  return NextResponse.json(result);
 }
 
 async function handleMySort(params: {
