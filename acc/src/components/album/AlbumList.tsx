@@ -727,7 +727,11 @@ return (
               className={albums.length <= 10 ? "animate-stagger" : ""}
               style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
             >
-              <AlbumCard album={album} onNavigate={() => { fetchControllerRef.current?.abort(); if (search) trackSearch(search, albums.length); }} />
+              <AlbumCard album={album} onNavigate={() => {
+                fetchControllerRef.current?.abort();
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+                if (search) trackSearch(search, albums.length);
+              }} />
             </div>
           ))}
         </div>

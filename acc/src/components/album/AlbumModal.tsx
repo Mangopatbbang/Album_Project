@@ -66,19 +66,16 @@ type Props = {
   zIndex?: number;
   source?: string;
   isEncounter?: boolean;
-  preloaded?: boolean;
 };
 
-export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source, isEncounter, preloaded }: Props) {
+export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source, isEncounter }: Props) {
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
   const { showToast, showToastWithUndo, showToastWithAction } = useToast();
   const { triggerBlock } = useBlockedAction();
   const router = useRouter();
-  const [full, setFull] = useState<FullAlbum | null>(() =>
-    preloaded ? (album as unknown as FullAlbum) : null
-  );
+  const [full, setFull] = useState<FullAlbum | null>(null);
   const [fullError, setFullError] = useState(false);
   const [fullRetry, setFullRetry] = useState(0);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -259,38 +256,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   }, []);
 
   // 즉시 초기값 세팅 — fetch 완료 전 점수 버튼 깜빡임 방지
-  // preloaded 시: liked_tracks / liked_by / review 도 album prop에서 직접 초기화
   useEffect(() => {
     if (!profile) return;
     const existing = (album.ratings ?? []).find((r) => r.user_id === profile.id);
-    if (existing) {
-      setMyScore(existing.score);
-      initialScoreRef.current = existing.score;
-      if (preloaded) {
-        const rv = existing.one_line_review ?? "";
-        setMyReview(rv);
-        initialReviewRef.current = rv;
-        if (existing.liked_tracks) {
-          setMyLikedTracks(new Set(existing.liked_tracks.split(",").map(Number)));
-        }
-      }
-    }
-    if (preloaded) {
-      const likedReviews = new Set<string>();
-      (album.ratings ?? []).forEach((r) => {
-        if (r.liked_by?.split(",").includes(profile.id)) likedReviews.add(r.user_id);
-      });
-      setMyLikedReviews(likedReviews);
-    }
+    if (existing) { setMyScore(existing.score); initialScoreRef.current = existing.score; }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 상세 데이터 fetch — preloaded 시 album prop이 이미 전체 데이터를 포함하므로 스킵
+  // 상세 데이터 fetch
   useEffect(() => {
-    if (preloaded) {
-      if (source) trackAlbumVisit(album.id, source);
-      return;
-    }
     const controller = new AbortController();
     if (source) trackAlbumVisit(album.id, source);
     fetch(`/api/albums/${album.id}`, { signal: controller.signal })

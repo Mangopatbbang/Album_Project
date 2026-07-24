@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
@@ -18,13 +18,25 @@ type Props = {
 
 export default function AlbumCard({ album, onNavigate }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const isNavigatingRef = useRef(false);
+  const prevPathRef = useRef(pathname);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
   const { profile } = useAuth();
+
+  // URL이 바뀌면 (모달 열림/닫힘) navigating 상태 리셋
+  useEffect(() => {
+    if (pathname !== prevPathRef.current) {
+      prevPathRef.current = pathname;
+      isNavigatingRef.current = false;
+      setIsNavigating(false);
+    }
+  }, [pathname]);
 
   const displayEntries = useMemo(() => {
     const ratedEntries = users
@@ -45,15 +57,16 @@ export default function AlbumCard({ album, onNavigate }: Props) {
     <>
     <button
       data-tour="album-card"
-      aria-busy={isPending}
+      aria-busy={isNavigating}
       onMouseEnter={() => router.prefetch(`/album/${album.id}`)}
       onTouchStart={() => router.prefetch(`/album/${album.id}`)}
       onClick={() => {
-        if (isPending) return;
+        if (isNavigatingRef.current) return;
+        isNavigatingRef.current = true;
+        setIsNavigating(true);
         onNavigate?.();
-        startTransition(() => {
-          router.push(`/album/${album.id}`, { scroll: false });
-        });
+        // startTransition 없이 즉시 navigate → loading.tsx 스켈레톤이 바로 뜸
+        router.push(`/album/${album.id}`, { scroll: false });
       }}
       style={{
         backgroundColor: "var(--bg-card)",
@@ -61,7 +74,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         textAlign: "left",
         width: "100%",
         boxShadow: glowShadow(album.avg),
-        opacity: isPending ? 0.75 : 1,
+        opacity: isNavigating ? 0.75 : 1,
         transition: "opacity 0.12s ease, transform 0.15s cubic-bezier(0.4,0,0.2,1)",
       }}
       className="group rounded-lg overflow-hidden hover:scale-[1.02] active:scale-[0.97] cursor-pointer"
@@ -99,7 +112,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
             pointerEvents: "none",
           }}>NEW</span>
         )}
-        {isPending && (
+        {isNavigating && (
           <div style={{
             position: "absolute", inset: 0, zIndex: 2,
             display: "flex", alignItems: "center", justifyContent: "center",
