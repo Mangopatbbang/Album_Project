@@ -76,6 +76,7 @@ export default function AlbumList({
   const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
   const [filterLoading, setFilterLoading] = useState(hasUrlFilters);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchControllerRef = useRef<AbortController | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   // 필터 변경 시 진행 중인 loadMore 응답을 폐기하기 위한 세대 카운터
   const filterGenRef = useRef(0);
@@ -95,7 +96,7 @@ export default function AlbumList({
   ].filter(Boolean).length;
 
   const fetchAlbums = useCallback(
-    async (params: { search: string; genre: string; region: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number }) => {
+    async (params: { search: string; genre: string; region: string; sort: string; unrated: boolean; myScore: number | null; scoreUserId?: string | null; offset?: number; signal?: AbortSignal }) => {
       const q = new URLSearchParams();
       if (params.search) q.set("search", params.search);
       if (params.genre) q.set("genre", params.genre);
@@ -118,7 +119,7 @@ export default function AlbumList({
       }
       if (params.offset) q.set("offset", String(params.offset));
 
-      const res = await fetch(`/api/albums?${q.toString()}`);
+      const res = await fetch(`/api/albums?${q.toString()}`, { signal: params.signal });
       return res.json() as Promise<{
         items: AlbumWithRatings[];
         hasMore: boolean;
@@ -130,6 +131,11 @@ export default function AlbumList({
 
   const handleFilter = useCallback(
     async (newSearch: string, newGenre: string, newRegion: string, newSort: string, newUnrated: boolean, newMyScore: number | null, newScoreUserId?: string | null) => {
+      // 이전 진행 중인 요청 취소 (브라우저 connection slot 즉시 반환)
+      fetchControllerRef.current?.abort();
+      const controller = new AbortController();
+      fetchControllerRef.current = controller;
+
       // 세대 증가: 진행 중인 loadMore 응답 무효화 (캐시 히트 시에도 필요)
       filterGenRef.current += 1;
 
@@ -150,7 +156,8 @@ export default function AlbumList({
       setLoading(true);
       setFilterLoading(true);
       try {
-        const data = await fetchAlbums({ search: newSearch, genre: newGenre, region: newRegion, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId });
+        const data = await fetchAlbums({ search: newSearch, genre: newGenre, region: newRegion, sort: newSort, unrated: newUnrated, myScore: newMyScore, scoreUserId: newScoreUserId ?? scoreUserId, signal: controller.signal });
+        if (controller.signal.aborted) return; // 취소된 요청 결과 무시
         setAlbums(data.items ?? []);
         setHasMore(data.hasMore ?? false);
         setNextOffset(data.nextOffset ?? null);
@@ -166,12 +173,15 @@ export default function AlbumList({
           hasMore: data.hasMore ?? false,
           nextOffset: data.nextOffset ?? null,
         });
-      } catch {
+      } catch (e) {
+        if (controller.signal.aborted) return; // AbortError — 정상 취소, UI 변경 없음
         setAlbums([]);
         setFetchError(true);
       } finally {
-        setLoading(false);
-        setFilterLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setFilterLoading(false);
+        }
       }
     },
     [fetchAlbums, region, scoreUserId]
@@ -717,7 +727,7 @@ return (
               className={albums.length <= 10 ? "animate-stagger" : ""}
               style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
             >
-              <AlbumCard album={album} onNavigate={() => { if (search) trackSearch(search, albums.length); }} />
+              <AlbumCard album={album} onNavigate={() => { fetchControllerRef.current?.abort(); if (search) trackSearch(search, albums.length); }} />
             </div>
           ))}
         </div>
