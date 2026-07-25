@@ -33,6 +33,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
   const coverImgRef = useRef<HTMLImageElement>(null);
+  const shuffleAbortRef = useRef<AbortController | null>(null);
   const [streamingOpen, setStreamingOpen] = useState(false);
   const [trackHover, setTrackHover] = useState(false);
   const [tracklistOpen, setTracklistOpen] = useState(false);
@@ -67,7 +68,11 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
   };
 
   const shuffle = async () => {
-    setAlbum(null);       // 이전 앨범 즉시 제거 — 이전 세션 데이터 잔류 방지
+    shuffleAbortRef.current?.abort();
+    const controller = new AbortController();
+    shuffleAbortRef.current = controller;
+
+    setAlbum(null);
     setLoading(true);
     setCoverLoaded(false);
     setTracklistOpen(false);
@@ -75,11 +80,13 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       const url = profile?.id
         ? `/api/albums/random?userId=${profile.id}`
         : "/api/albums/random";
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
       const data = await res.json();
       if (data.id) setAlbum(data as AlbumWithRatings);
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   };
 
@@ -445,6 +452,7 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
           onClose={() => setModalOpen(false)}
           source="home_today"
           isEncounter={true}
+          handleHistory
           onSaved={async (albumId, updatedAlbum) => {
             if (albumId !== album?.id) return;
             if (updatedAlbum) { setAlbum(updatedAlbum as AlbumWithRatings); return; }

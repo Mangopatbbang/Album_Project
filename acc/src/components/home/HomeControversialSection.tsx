@@ -139,6 +139,7 @@ export default function HomeControversialSection({ items }: { items: Controversi
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
           source="home_controversial"
+          handleHistory
         />
       )}
     </div>

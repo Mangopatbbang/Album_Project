@@ -168,7 +168,7 @@ export default function ReviewTicker({ items, inline }: { items: TickerItem[]; i
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="ticker" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="ticker" handleHistory />
       )}
     </>
   );

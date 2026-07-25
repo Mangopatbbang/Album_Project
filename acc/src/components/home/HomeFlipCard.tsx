@@ -24,13 +24,15 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithRatings | null>(null);
 
   useEffect(() => {
-    fetch(`/api/watchlist?userId=${userId}`)
+    const controller = new AbortController();
+    fetch(`/api/watchlist?userId=${userId}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setItems(data?.items ?? []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => { if (e?.name !== "AbortError") setLoading(false); });
+    return () => controller.abort();
   }, [userId]);
 
   return (
@@ -128,7 +130,7 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="home_watchlist" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="home_watchlist" handleHistory />
       )}
     </>
   );

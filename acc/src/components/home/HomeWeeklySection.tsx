@@ -113,6 +113,7 @@ export default function HomeWeeklySection({ albums }: { albums: WeeklyAlbum[] })
           album={selected as AlbumWithRatings}
           onClose={() => setSelected(null)}
           source="home_weekly"
+          handleHistory
         />
       )}
     </>

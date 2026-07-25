@@ -66,9 +66,10 @@ type Props = {
   zIndex?: number;
   source?: string;
   isEncounter?: boolean;
+  handleHistory?: boolean;
 };
 
-export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source, isEncounter }: Props) {
+export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, source, isEncounter, handleHistory }: Props) {
   const { profile } = useAuth();
   const { users } = useUsers();
   const avatarMap = useUserAvatars();
@@ -253,6 +254,21 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       isMountedRef.current = false;
       if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
+  }, []);
+
+  // 인라인 모달(URL 변경 없음)에서 Android/브라우저 뒤로가기 시 페이지 이탈 방지
+  // GlobalAlbumModalOverlay 경유 시에는 router가 히스토리를 관리하므로 이 effect 불필요
+  useEffect(() => {
+    if (!handleHistory) return;
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => { if (!closingRef.current) doClose(); };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      // 정상 닫기 시 더미 히스토리 엔트리 제거 (뒤로가기로 닫힌 경우엔 이미 pop됐으므로 스킵)
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 캐시된 이미지는 onLoad가 React 핸들러 부착 전에 이미 발화 — 페인트 전 동기 확인으로 opacity-0 프레임 제거
