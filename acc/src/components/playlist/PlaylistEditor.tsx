@@ -35,7 +35,11 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
   const [error, setError] = useState("");
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const entriesRef = useRef(entries);
+  useEffect(() => { entriesRef.current = entries; });
+  const closingRef = useRef(false);
 
   const today = new Date();
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
@@ -55,16 +59,50 @@ export default function PlaylistEditor({ onClose, onSaved }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries.length]);
 
+  useEffect(() => {
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => {
+      if (closingRef.current) return;
+      if (entriesRef.current.length > 0) {
+        setShowCloseConfirm(true);
+      } else {
+        closingRef.current = true;
+        onClose();
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      searchAbortRef.current?.abort();
+    };
+  }, []);
+
   const handleSearch = (val: string) => {
     setSearch(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!val.trim()) { setSearchResults([]); return; }
     debounceRef.current = setTimeout(async () => {
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
       setSearching(true);
-      const res = await fetch(`/api/albums?search=${encodeURIComponent(val)}&limit=8`);
-      const data = await res.json();
-      setSearchResults(data.items ?? []);
-      setSearching(false);
+      try {
+        const res = await fetch(`/api/albums?search=${encodeURIComponent(val)}&limit=8`, { signal: controller.signal });
+        const data = await res.json();
+        setSearchResults(data.items ?? []);
+      } catch (e) {
+        if ((e as Error)?.name !== "AbortError") setSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
     }, 300);
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import AlbumModal from "@/components/album/AlbumModal";
 import ArtistModal from "@/components/album/ArtistModal";
@@ -42,6 +42,26 @@ function SectionPopup({
   onAlbumClick: (a: AlbumStat) => void;
   onArtistClick: (artist: { name: string; display: string }) => void;
 }) {
+  const closingRef = useRef(false);
+  useEffect(() => {
+    const doClose = () => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
+    document.addEventListener("keydown", onKey);
+    window.history.pushState({ popupOpen: true }, "");
+    const onPop = () => doClose();
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.popupOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div
       onClick={onClose}
@@ -626,6 +646,7 @@ export default function BestPageClient({
           album={toAlbumWithRatings(selectedAlbum)}
           onClose={() => setSelectedAlbum(null)}
           source="best"
+          handleHistory
         />
       )}
 
@@ -645,6 +666,7 @@ export default function BestPageClient({
           onClose={() => setArtistModal(null)}
           onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display ?? album.artist, year: album.release_date?.slice(0, 4) ?? null, release_date: null, genre: album.genre ?? null, cover_url: album.cover_url ?? null, spotify_id: album.spotify_id ?? null, avg: parseFloat(album.avg ?? "0"), count: album.ratings.length, variance: 0 }); }}
           source="best"
+          handleHistory
         />
       )}
     </>

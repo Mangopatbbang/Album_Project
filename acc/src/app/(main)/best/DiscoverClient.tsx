@@ -103,7 +103,7 @@ export default function DiscoverClient({ gems }: { gems: AlbumStat[] }) {
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="best" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="best" handleHistory />
       )}
     </>
   );
