@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
-import { preloadModal } from "@/lib/albumModalStore";
+import { markCardOpened } from "@/lib/albumModalStore";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
@@ -65,7 +65,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         if (isNavigatingRef.current) return;
         isNavigatingRef.current = true;
         setIsNavigating(true);
-        preloadModal(album.id, album);
+        markCardOpened(album.id);
         onNavigate?.();
         // RSC 응답 기다리지 않고 즉시 모달을 열기 위해 이벤트 디스패치
         window.dispatchEvent(new CustomEvent("open-album-modal", { detail: { id: album.id, album } }));

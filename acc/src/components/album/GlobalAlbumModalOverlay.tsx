@@ -11,42 +11,44 @@ export default function GlobalAlbumModalOverlay() {
   const router = useRouter();
   const pathname = usePathname();
   const [modal, setModal] = useState<ModalState | null>(null);
-  // router.push 직후 pathname이 /albums인 상태에서 모달이 닫히는 race condition 방지
-  const isOpeningRef = useRef(false);
-  const openingGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // AlbumCard가 router.push를 호출한 직후, pathname이 아직 /album/에 안착하기 전의
+  // 짧은 윈도우 동안 navigation-away 감지 로직이 모달을 닫는 race condition을 방지
+  const openingRef = useRef(false);
+  const openingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // open-album-modal 이벤트 → 즉시 모달 표시
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ id: string; album: AlbumWithRatings }>).detail;
-      isOpeningRef.current = true;
-      setModal({ albumId: detail.id, album: detail.album });
-      // RSC가 느려서 pathname이 /album/에 닿지 않는 경우에도 5초 후엔 가드 해제
-      if (openingGuardTimerRef.current) clearTimeout(openingGuardTimerRef.current);
-      openingGuardTimerRef.current = setTimeout(() => {
-        isOpeningRef.current = false;
-      }, 5000);
+      const { id, album } = (e as CustomEvent<{ id: string; album: AlbumWithRatings }>).detail;
+      openingRef.current = true;
+      if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
+      // RSC 응답이 늦어도 5초 후엔 가드 강제 해제 (최후 안전망)
+      openingTimerRef.current = setTimeout(() => { openingRef.current = false; }, 5000);
+      setModal({ albumId: id, album });
     };
     window.addEventListener("open-album-modal", handler);
-    return () => window.removeEventListener("open-album-modal", handler);
+    return () => {
+      window.removeEventListener("open-album-modal", handler);
+      if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
+    };
   }, []);
 
-  // pathname이 /album/으로 안착하면 즉시 opening 플래그 해제 (정상 경로)
+  // pathname 변화 처리: /album/ 착지 시 opening 가드 해제, 이탈 시 모달 닫기
   useEffect(() => {
     if (pathname.startsWith("/album/")) {
-      isOpeningRef.current = false;
-      if (openingGuardTimerRef.current) { clearTimeout(openingGuardTimerRef.current); openingGuardTimerRef.current = null; }
-    }
-  }, [pathname]);
-
-  // /album/ 벗어나면 모달 닫기 (opening 중에는 닫지 않음)
-  useEffect(() => {
-    if (modal && !isOpeningRef.current && !pathname.startsWith("/album/")) {
+      // RSC 착지 확인 → opening 가드 즉시 해제
+      openingRef.current = false;
+      if (openingTimerRef.current) { clearTimeout(openingTimerRef.current); openingTimerRef.current = null; }
+    } else if (modal && !openingRef.current) {
+      // /album/ 외부로 이동했고 opening 중이 아닐 때만 닫기
       setModal(null);
     }
   }, [pathname, modal]);
 
+  // 명시적 닫기 (버튼/백드롭/스와이프): pathname 상태 무관, 즉시 닫기
   const handleClose = useCallback(() => {
-    setModal(null);   // pathname 변경 기다리지 않고 즉시 닫기 (느린 네트워크 isOpeningRef 레이스 방지)
+    setModal(null);
     router.back();
   }, [router]);
 

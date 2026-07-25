@@ -2000,7 +2000,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           album={nestedAlbum}
           onClose={() => setNestedAlbum(null)}
           onSaved={onSaved}
-          zIndex={120}
+          zIndex={300}
           source="artist_modal"
         />,
         document.body
