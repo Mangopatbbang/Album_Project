@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Barlow_Condensed } from "next/font/google";
 import localFont from "next/font/local";
+import { unstable_cache } from "next/cache";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserAvatarsProvider } from "@/context/UserAvatarsContext";
 import { UsersProvider } from "@/context/UsersContext";
@@ -56,18 +57,22 @@ export const metadata: Metadata = {
   },
 };
 
-async function getInitialData() {
-  const [usersResult, avatarsResult] = await Promise.all([
-    supabaseServer.from("users").select("id, display_name, emoji"),
-    supabaseServer.from("users").select("id, avatar_url"),
-  ]);
-  const initialUsers: User[] = (usersResult.data ?? []) as User[];
-  const initialAvatarMap: Record<string, string | null> = {};
-  for (const row of (avatarsResult.data ?? []) as { id: string; avatar_url: string | null }[]) {
-    initialAvatarMap[row.id] = row.avatar_url ?? null;
-  }
-  return { initialUsers, initialAvatarMap };
-}
+const getInitialData = unstable_cache(
+  async () => {
+    const [usersResult, avatarsResult] = await Promise.all([
+      supabaseServer.from("users").select("id, display_name, emoji"),
+      supabaseServer.from("users").select("id, avatar_url"),
+    ]);
+    const initialUsers: User[] = (usersResult.data ?? []) as User[];
+    const initialAvatarMap: Record<string, string | null> = {};
+    for (const row of (avatarsResult.data ?? []) as { id: string; avatar_url: string | null }[]) {
+      initialAvatarMap[row.id] = row.avatar_url ?? null;
+    }
+    return { initialUsers, initialAvatarMap };
+  },
+  ["root-layout-users"],
+  { revalidate: 300 }
+);
 
 export default async function RootLayout({
   children,
