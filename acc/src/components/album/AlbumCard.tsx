@@ -212,6 +212,7 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         displayName={artistModal.display}
         onClose={() => setArtistModal(null)}
         onAlbumClick={(a) => { setArtistModal(null); router.push(`/album/${a.id}`, { scroll: false }); }}
+        handleHistory
       />
     )}
     </>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const BASE_SORT_OPTIONS = [
   { value: "newest", label: "아카이빙 최신순" },
@@ -63,9 +63,25 @@ export default function AlbumFilterSheet({
   genres, hasProfile,
   onGenreChange, onRegionChange, onSortChange, onUnratedToggle, onScoreFilter, onReset,
 }: Props) {
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+  const popRef = useRef(false);
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    popRef.current = false;
+    window.history.pushState({ filterOpen: true }, "");
+    const onPop = () => { popRef.current = true; onCloseRef.current(); };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (!popRef.current && window.history.state?.filterOpen) window.history.back();
+    };
   }, [open]);
 
   const allSortOptions = hasProfile ? [...BASE_SORT_OPTIONS, ...MY_SORT_OPTIONS] : BASE_SORT_OPTIONS;

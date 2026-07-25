@@ -133,12 +133,19 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
 
   const [closing, setClosing] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<null | "spotify" | "metadata">(null);
-  const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
+  const closingRef = useRef(false);
+  const doClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setTimeout(onClose, 160);
+  };
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const mouseDownOnBackdrop = useRef(false);
   const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confirmBypassRef = useRef(new Set<string>());
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
@@ -148,7 +155,19 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => { if (!closingRef.current) doClose(); };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 제목+아티스트 입력 시 중복 체크 (debounce 500ms)
   const checkDuplicates = (titleVal: string, artistVal: string, coverUrlVal?: string) => {
@@ -181,6 +200,9 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
 
   const handleSpotifySearch = async () => {
     if (!title.trim() && !artist.trim()) return;
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
     setSearching(true);
     setSearchDone(false);
     setNotFound(false);
@@ -194,9 +216,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
     try {
       const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
-      const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
+      const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`, { signal: controller.signal });
       data = await res.json();
-    } catch {
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return;
       setSearching(false);
       setSearchDone(true);
       setSearchError("네트워크 오류: 검색 요청에 실패했습니다.");

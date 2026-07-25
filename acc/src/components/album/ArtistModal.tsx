@@ -15,9 +15,10 @@ type Props = {
   onClose: () => void;
   onAlbumClick?: (album: AlbumWithRatings) => void;
   source?: string;
+  handleHistory?: boolean;
 };
 
-export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source }: Props) {
+export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source, handleHistory }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
@@ -28,6 +29,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
   const [artistImage, setArtistImage] = useState<string | null>(null);
   const [genres, setGenres] = useState<string[]>([]);
   const mouseDownOnBackdrop = useRef(false);
+  const closingRef = useRef(false);
 
   useEffect(() => {
     if (source) trackArtistVisit(artistName, source);
@@ -55,9 +57,35 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
   }, [artistName]);
 
   const handleClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     setClosing(true);
     setTimeout(onClose, 180);
   };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!handleHistory) return;
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      setClosing(true);
+      setTimeout(onClose, 180);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div

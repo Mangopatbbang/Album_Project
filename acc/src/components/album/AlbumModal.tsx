@@ -135,6 +135,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const initialScoreRef = useRef<number | null>(null);
   const initialPrivateNoteRef = useRef<string>("");
   const isDirtyRef = useRef(false);
+  const pendingNavRef = useRef<string | null>(null);
   const touchStartY = useRef(0);
   const isDraggingRef = useRef(false);
   const isMountedRef = useRef(true);
@@ -785,8 +786,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           {showCloseConfirm && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, animation: "fadeUp 0.15s ease-out" }}>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>소감이 저장되지 않아요</span>
-              <button onClick={doClose} style={{ fontSize: 11, color: "var(--error)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>닫기</button>
-              <button onClick={() => setShowCloseConfirm(false)} style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>취소</button>
+              <button
+                onClick={() => {
+                  const nav = pendingNavRef.current;
+                  pendingNavRef.current = null;
+                  isDirtyRef.current = false;
+                  if (nav) { router.push(nav); } else { doClose(); }
+                }}
+                style={{ fontSize: 11, color: "var(--error)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+              >닫기</button>
+              <button onClick={() => { setShowCloseConfirm(false); pendingNavRef.current = null; }} style={{ fontSize: 11, color: "var(--text-muted)", background: "none", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>취소</button>
             </div>
           )}
           {!showCloseConfirm && !showDeleteAlbumConfirm && (
@@ -1007,7 +1016,14 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                   return (
                     <button
-                      onClick={() => { router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`); }}
+                      onClick={() => {
+                        if (isDirtyRef.current) {
+                          pendingNavRef.current = `/albums?genre=${encodeURIComponent(gDisplay)}`;
+                          setShowCloseConfirm(true);
+                          return;
+                        }
+                        router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`);
+                      }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}33`; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}1a`; }}
                       style={{
