@@ -458,7 +458,8 @@ export default function AdminPage() {
     // ↺ 클릭 시: NEW 아티스트 카운트 증가 → 5회 도달 시 자동 seen 처리
     if (markCurrentAsSeen && unifiedRows) {
       const seenEarly = new Set<string>(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]);
-      const vc: Record<string, number> = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}");
+      let vc: Record<string, number> = {};
+      try { vc = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "{}"); } catch { vc = {}; }
       let changed = false;
       for (const r of unifiedRows) {
         if (!seenEarly.has(r.spotify_name)) {
@@ -491,7 +492,7 @@ export default function AdminPage() {
       seenSet = new Set(allArtists);
       localStorage.setItem(SEEN_KEY, JSON.stringify(allArtists));
     } else {
-      seenSet = new Set(JSON.parse(seenRaw) as string[]);
+      try { seenSet = new Set(JSON.parse(seenRaw) as string[]); } catch { seenSet = new Set(); }
     }
 
     const normGroups = new Map<string, string[]>();

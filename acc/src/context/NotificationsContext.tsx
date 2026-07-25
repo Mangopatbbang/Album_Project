@@ -24,11 +24,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
-    if (!profile) return;
-    apiFetch(`/api/notifications?userId=${profile.id}`)
+    if (!profile) {
+      setNotifications([]);
+      return;
+    }
+    const controller = new AbortController();
+    apiFetch(`/api/notifications?userId=${profile.id}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => setNotifications(d.notifications ?? []))
       .catch(() => {});
+    return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 

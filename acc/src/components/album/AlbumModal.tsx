@@ -314,8 +314,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     const { signal } = controller;
     Promise.all([
       apiFetch(`/api/ratings?albumId=${album.id}&userId=${profile.id}`, { signal }),
-      fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`, { signal }),
-      fetch(`/api/watchlist/check?userId=${profile.id}&albumId=${album.id}`, { signal }),
+      apiFetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`, { signal }),
+      apiFetch(`/api/watchlist/check?userId=${profile.id}&albumId=${album.id}`, { signal }),
     ])
       .then(([noteRes, histRes, watchRes]) =>
         Promise.all([
@@ -457,7 +457,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     onSaved?.(album.id, freshData);
     setTimeout(() => setSaved(false), 2000);
     if (profile) {
-      fetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
+      apiFetch(`/api/rating-history?userId=${profile.id}&albumId=${album.id}`)
         .then((r) => r.ok ? r.json() : [])
         .then((d: { score: number; createdAt: string }[]) => setMyHistory(d))
         .catch(() => {});
@@ -466,6 +466,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
   const handleSave = async () => {
     if (!profile) { triggerBlock(); return; }
+    if (saving) return;
     if (myScore === null) { showToast("점수를 먼저 선택해주세요", "info"); return; }
     if (pendingDeleteRef.current) {
       clearTimeout(pendingDeleteRef.current);
@@ -1968,7 +1969,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           <div style={{ textAlign: "center" }}>
             <Link
               href="/board"
-              onClick={handleClose}
               style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.02em" }}
               className="hover:text-[var(--text-sub)] transition-colors"
             >

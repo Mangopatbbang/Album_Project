@@ -100,9 +100,10 @@ export default function SplashScreen() {
     if (!seen) {
       sessionStorage.setItem("acc_splash", "1");
       setPhase("splash");
-      setTimeout(() => setLineVisible(true), 1400);
-      setTimeout(() => setOpening(true), 2300);
-      setTimeout(() => setPhase("done"), 4500);
+      const t1 = setTimeout(() => setLineVisible(true), 1400);
+      const t2 = setTimeout(() => setOpening(true), 2300);
+      const t3 = setTimeout(() => setPhase("done"), 4500);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     } else {
       setPhase("done");
     }

@@ -664,7 +664,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
           animDuration.current = 0.44;
           if (innerRef.current) innerRef.current.style.transition = "none";
         }, 970);
-        return () => clearTimeout(t);
+        transitionTimersRef.current.push(t);
       });
     } else {
       cssZoomRef.current = fz; panXRef.current = px; panYRef.current = py;

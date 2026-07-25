@@ -32,20 +32,26 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
   useEffect(() => {
     if (source) trackArtistVisit(artistName, source);
     setFetchError(false);
+    setLoading(true);
 
-    fetch(`/api/albums/by-artist?name=${encodeURIComponent(artistName)}`)
+    const c1 = new AbortController();
+    const c2 = new AbortController();
+
+    fetch(`/api/albums/by-artist?name=${encodeURIComponent(artistName)}`, { signal: c1.signal })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => { setAlbums(d.albums ?? []); setAvgScore(d.avg); })
-      .catch(() => setFetchError(true))
+      .catch((e) => { if (e?.name !== "AbortError") setFetchError(true); })
       .finally(() => setLoading(false));
 
-    fetch(`/api/spotify/artist?name=${encodeURIComponent(artistName)}`)
+    fetch(`/api/spotify/artist?name=${encodeURIComponent(artistName)}`, { signal: c2.signal })
       .then((r) => r.ok ? r.json() : { image_url: null, genres: [] })
       .then((d) => {
         if (d.image_url) setArtistImage(d.image_url);
         if (d.genres?.length) setGenres(d.genres.slice(0, 4));
       })
       .catch(() => {});
+
+    return () => { c1.abort(); c2.abort(); };
   }, [artistName]);
 
   const handleClose = () => {

@@ -190,10 +190,15 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   const [liking, setLiking] = useState<string | null>(null);
   const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
+  const fetchAbortRef = useRef<AbortController | null>(null);
+
   const fetchReviews = useCallback(async (params: {
     userId: string; albumId: string; search: string;
     minScore: number; maxScore: number; sort: string; page: number;
   }) => {
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
     setLoading(true);
     const q = new URLSearchParams();
     if (params.userId) q.set("userId", params.userId);
@@ -204,17 +209,19 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     q.set("sort", params.sort);
     q.set("offset", String((params.page - 1) * PAGE_SIZE));
     try {
-      const res = await fetch(`/api/reviews?${q}`);
+      const res = await fetch(`/api/reviews?${q}`, { signal: controller.signal });
       if (!res.ok) throw new Error();
       const data = await res.json();
       setItems(data.items);
       setHasMore(data.hasMore);
       setFetchError(false);
-    } catch {
-      setItems([]);
-      setFetchError(true);
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") {
+        setItems([]);
+        setFetchError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, []);
 

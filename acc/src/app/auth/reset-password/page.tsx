@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -36,6 +36,9 @@ export default function ResetPasswordPage() {
   const [sessionReady, setSessionReady] = useState(false);
   const [focusPw, setFocusPw] = useState(false);
   const [focusConfirm, setFocusConfirm] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current); }, []);
 
   useEffect(() => {
     // 세션이 있어야 비밀번호 재설정 가능
@@ -78,7 +81,7 @@ export default function ResetPasswordPage() {
     }
 
     setDone(true);
-    setTimeout(() => router.replace("/"), 2000);
+    redirectTimerRef.current = setTimeout(() => router.replace("/"), 2000);
   };
 
   if (!sessionReady) {
