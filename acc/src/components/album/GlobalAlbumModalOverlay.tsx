@@ -13,21 +13,28 @@ export default function GlobalAlbumModalOverlay() {
   const [modal, setModal] = useState<ModalState | null>(null);
   // router.push 직후 pathname이 /albums인 상태에서 모달이 닫히는 race condition 방지
   const isOpeningRef = useRef(false);
+  const openingGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ id: string; album: AlbumWithRatings }>).detail;
       isOpeningRef.current = true;
       setModal({ albumId: detail.id, album: detail.album });
+      // RSC가 느려서 pathname이 /album/에 닿지 않는 경우에도 5초 후엔 가드 해제
+      if (openingGuardTimerRef.current) clearTimeout(openingGuardTimerRef.current);
+      openingGuardTimerRef.current = setTimeout(() => {
+        isOpeningRef.current = false;
+      }, 5000);
     };
     window.addEventListener("open-album-modal", handler);
     return () => window.removeEventListener("open-album-modal", handler);
   }, []);
 
-  // pathname이 /album/으로 안착하면 opening 플래그 해제
+  // pathname이 /album/으로 안착하면 즉시 opening 플래그 해제 (정상 경로)
   useEffect(() => {
     if (pathname.startsWith("/album/")) {
       isOpeningRef.current = false;
+      if (openingGuardTimerRef.current) { clearTimeout(openingGuardTimerRef.current); openingGuardTimerRef.current = null; }
     }
   }, [pathname]);
 

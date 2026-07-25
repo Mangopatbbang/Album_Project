@@ -692,11 +692,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         className="rounded-t-2xl sm:rounded-xl max-h-[85dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => {
+          if (closingRef.current) return;
           if ((cardRef.current?.scrollTop ?? 0) > 5) return;
           touchStartY.current = e.touches[0].clientY;
           isDraggingRef.current = false;
         }}
         onTouchMove={(e) => {
+          if (closingRef.current) return;
           const card = cardRef.current;
           if (!card || (card.scrollTop ?? 0) > 5) return;
           const delta = e.touches[0].clientY - touchStartY.current;
@@ -729,6 +731,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               // 드래그 현재 위치에서 이어서 내려가며 닫기
               if (closingRef.current) return;
               closingRef.current = true;
+              setClosing(true);
               card.style.transition = "transform 0.22s cubic-bezier(0.4, 0, 1, 1)";
               card.style.transform = "translateY(100%)";
               if (backdropRef.current) {
