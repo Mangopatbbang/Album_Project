@@ -153,7 +153,8 @@ export async function GET(req: NextRequest) {
     excludeIds = (rated ?? []).map((r) => r.album_id);
   }
 
-  let query = supabaseServer.from("albums").select(SELECT).range(offset, offset + limit);
+  // req.signal: 클라이언트가 요청을 취소(AbortController.abort)하면 서버 Supabase 쿼리도 즉시 중단
+  let query = supabaseServer.from("albums").select(SELECT).range(offset, offset + limit).abortSignal(req.signal);
   if (safeSearch) query = query.or(buildSearchOr(safeSearch, aliasMatches, search ?? undefined));
   if (genre) { query = query.eq("genre", genre); }
   if (regionFilter) query = query.eq("region", regionFilter);

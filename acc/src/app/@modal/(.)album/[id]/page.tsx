@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
-import { resolveArtistDisplay } from "@/lib/artistDisplay";
+import { fetchAliasMap, applyArtistDisplay } from "@/lib/artistDisplay";
 import { AlbumWithRatings } from "@/types";
 import InterceptedAlbumModal from "./InterceptedAlbumModal";
 
@@ -25,11 +25,16 @@ export default async function InterceptedAlbumPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const data = await fetchAlbumForModal(id);
+
+  // 두 캐시 함수를 병렬로 실행 — sequential이면 왕복 2회 DB 쿼리가 순차적으로 발생
+  const [data, aliasMap] = await Promise.all([
+    fetchAlbumForModal(id),
+    fetchAliasMap(),
+  ]);
 
   if (!data) return null;
 
-  const [resolved] = await resolveArtistDisplay([data]);
+  const [resolved] = applyArtistDisplay([data], aliasMap);
   const album = resolved as unknown as AlbumWithRatings;
 
   return <InterceptedAlbumModal album={album} />;

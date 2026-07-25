@@ -75,6 +75,8 @@ export default function AlbumList({
   const [myScore, setMyScore] = useState<number | null>(urlScore);
   const [scoreUserId, setScoreUserId] = useState<string | null>(urlScoreUserId);
   const [filterLoading, setFilterLoading] = useState(hasUrlFilters);
+  const [navigatingAlbumId, setNavigatingAlbumId] = useState<string | null>(null);
+  const navigatingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchControllerRef = useRef<AbortController | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -236,6 +238,17 @@ export default function AlbumList({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [handleLoadMore]);
+
+  // 모달 네비게이션: pathname이 /album/... 으로 바뀌면 스켈레톤을 모달 애니메이션 후 제거
+  const prevPathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== prevPathnameRef.current) {
+      prevPathnameRef.current = pathname;
+      if (navigatingClearRef.current) clearTimeout(navigatingClearRef.current);
+      // 모달 backdropIn 0.18s 완료 후 제거 (그 전까지 스켈레톤이 뒤에서 자연스럽게 덮임)
+      navigatingClearRef.current = setTimeout(() => setNavigatingAlbumId(null), 220);
+    }
+  }, [pathname]);
 
   // bfcache로 복원될 때 검색어 초기화
   useEffect(() => {
@@ -728,6 +741,7 @@ return (
               style={albums.length <= 10 ? { animationDelay: `${i * 0.045}s` } : undefined}
             >
               <AlbumCard album={album} onNavigate={() => {
+                setNavigatingAlbumId(album.id);
                 fetchControllerRef.current?.abort();
                 if (debounceRef.current) clearTimeout(debounceRef.current);
                 if (search) trackSearch(search, albums.length);
@@ -785,6 +799,38 @@ return (
           onAdded={() => handleFilter(search, genre, region, sort, unrated, myScore)}
           initialSearch={albums.length === 0 && search ? search : undefined}
         />
+      )}
+
+      {/* 앨범 클릭 즉시 노출되는 모달 로딩 스켈레톤 (loading.tsx와 동일, z-99로 실제 모달 뒤에 깔림) */}
+      {navigatingAlbumId && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 99,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            display: "flex", alignItems: "flex-end", justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-card)",
+              width: "100%", maxWidth: 520,
+              overflow: "hidden", display: "flex", flexDirection: "column",
+            }}
+            className="rounded-t-2xl sm:rounded-2xl sm:mb-10 sm:max-h-[85dvh]"
+          >
+            <div className="sm:hidden" style={{ display: "flex", justifyContent: "center", padding: "10px 0 6px" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "var(--border-light)" }} />
+            </div>
+            <div className="skeleton-shimmer" style={{ width: "100%", aspectRatio: "16/7", flexShrink: 0 }} />
+            <div style={{ padding: "20px 20px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className="skeleton-shimmer" style={{ height: 22, width: "55%", borderRadius: 6 }} />
+              <div className="skeleton-shimmer" style={{ height: 14, width: "38%", borderRadius: 6 }} />
+              <div className="skeleton-shimmer" style={{ height: 14, width: "28%", borderRadius: 6, marginTop: 4 }} />
+              <div className="skeleton-shimmer" style={{ height: 80, width: "100%", borderRadius: 8, marginTop: 8 }} />
+            </div>
+            <div style={{ height: 24 }} />
+          </div>
+        </div>
       )}
     </>
   );
