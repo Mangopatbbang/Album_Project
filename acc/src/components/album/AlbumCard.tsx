@@ -65,9 +65,10 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         if (isNavigatingRef.current) return;
         isNavigatingRef.current = true;
         setIsNavigating(true);
-        // 클릭 시점에 album 데이터를 스토어에 저장 → 서버 컴포넌트 DB 쿼리 우회
         preloadModal(album.id, album);
         onNavigate?.();
+        // RSC 응답 기다리지 않고 즉시 모달을 열기 위해 이벤트 디스패치
+        window.dispatchEvent(new CustomEvent("open-album-modal", { detail: { id: album.id, album } }));
         router.push(`/album/${album.id}`, { scroll: false });
       }}
       style={{

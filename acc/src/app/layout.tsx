@@ -15,6 +15,7 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { ToastProvider } from "@/components/ui/Toast";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import AuthSessionWatcher from "@/components/ui/AuthSessionWatcher";
+import GlobalAlbumModalOverlay from "@/components/album/GlobalAlbumModalOverlay";
 import { supabaseServer } from "@/lib/supabase";
 import type { User } from "@/types";
 import "./globals.css";
@@ -153,6 +154,7 @@ export default async function RootLayout({
             <SplashScreen />
             {children}
             {modal}
+            <GlobalAlbumModalOverlay />
             <BottomNav />
             <FloatingActions />
             <SpotlightTour />
