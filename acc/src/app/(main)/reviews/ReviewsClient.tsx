@@ -345,12 +345,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
     }
   };
 
-  const handleFilterByAlbum = (albumId: string, albumTitle: string) => {
-    setFilterAlbumId(albumId);
-    setFilterAlbumTitle(albumTitle);
-    handleFilter(filterUser, albumId, minScore, maxScore, sort);
-  };
-
   const clearAlbumFilter = () => {
     setFilterAlbumId("");
     setFilterAlbumTitle("");
@@ -522,7 +516,6 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
                 liking={liking === key}
                 onLike={() => handleLike(item)}
                 onAlbumClick={() => handleAlbumClick(item.albumId, item.albumTitle, item.artist, item.artistDisplay, item.coverUrl)}
-                onFilterByAlbum={() => handleFilterByAlbum(item.albumId, item.albumTitle)}
                 onReport={() => setReportingReview({ userId: item.userId, albumTitle: item.albumTitle, review: item.review })}
                 isLast={idx === items.length - 1}
                 loadingAlbum={loadingAlbumId === item.albumId}
@@ -596,14 +589,13 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
 
 function ReviewRow({
   item, myId, liking,
-  onLike, onAlbumClick, onFilterByAlbum, onReport, isLast, loadingAlbum, getUserById,
+  onLike, onAlbumClick, onReport, isLast, loadingAlbum, getUserById,
 }: {
   item: ReviewItem;
   myId: string | null;
   liking: boolean;
   onLike: () => void;
   onAlbumClick: () => void;
-  onFilterByAlbum: () => void;
   onReport?: () => void;
   isLast: boolean;
   loadingAlbum?: boolean;
