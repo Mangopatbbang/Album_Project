@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -31,6 +31,27 @@ export default function ReportModal({ onClose, defaultUserId, defaultDetail }: P
   const [reason, setReason] = useState("");
   const [detail, setDetail] = useState(defaultDetail ?? "");
   const [submitting, setSubmitting] = useState(false);
+
+  const closingRef = useRef(false);
+
+  useEffect(() => {
+    const doClose = () => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
+    document.addEventListener("keydown", onKey);
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => doClose();
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const otherUsers = users.filter((u) => u.id !== profile?.id);
 

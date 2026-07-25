@@ -27,6 +27,7 @@ export default function FilterSelect({ value, onChange, options, title, feature,
   const [mounted, setMounted] = useState(false);
   const prevOverflow = useRef("");
   const isMobileRef = useRef(false);
+  const popRef = useRef(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -41,6 +42,19 @@ export default function FilterSelect({ value, onChange, options, title, feature,
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !isMobileRef.current) return;
+    popRef.current = false;
+    window.history.pushState({ filterSelectOpen: true }, "");
+    const onPop = () => { popRef.current = true; handleClose(); };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (!popRef.current && window.history.state?.filterSelectOpen) window.history.back();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

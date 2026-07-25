@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useUsers } from "@/context/UsersContext";
@@ -86,10 +87,10 @@ function BestReviewCard({
             border: `1px solid ${scoreColor(item.score)}44`,
             fontSize: 10, fontWeight: 800, flexShrink: 0,
           }}>{item.score}</span>
-          <a href={`/profile/${item.userId}`} style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }} className="hover:opacity-70 transition-opacity">
+          <Link href={`/profile/${item.userId}`} style={{ display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }} className="hover:opacity-70 transition-opacity">
             <UserAvatar avatarUrl={avatarUrl} size={16} />
             <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{userName}</span>
-          </a>
+          </Link>
         </div>
         {!isMyReview && myId ? (
           <button
@@ -184,6 +185,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   const [maxScore, setMaxScore] = useState(8);
   const [sort, setSort] = useState("latest");
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumModalData | null>(null);
   const [loadingAlbumId, setLoadingAlbumId] = useState<string | null>(null);
@@ -191,6 +193,7 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   const [reportingReview, setReportingReview] = useState<{ userId: string; albumTitle: string; review: string } | null>(null);
 
   const fetchAbortRef = useRef<AbortController | null>(null);
+  const albumClickAbortRef = useRef<AbortController | null>(null);
 
   const fetchReviews = useCallback(async (params: {
     userId: string; albumId: string; search: string;
@@ -227,6 +230,9 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
 
   useEffect(() => {
     fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, page: 1 });
+    return () => {
+      if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -243,9 +249,13 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (initAlbumId) {
         setHighlightActive(true);
-        setTimeout(() => setHighlightActive(false), 2000);
+        if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = setTimeout(() => setHighlightActive(false), 2000);
       }
     }
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initAlbumId, initUserId]);
 
@@ -315,17 +325,24 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
   };
 
   const handleAlbumClick = async (albumId: string, albumTitle: string, artist: string, artistDisplay: string, coverUrl: string | null) => {
+    albumClickAbortRef.current?.abort();
+    const controller = new AbortController();
+    albumClickAbortRef.current = controller;
     setLoadingAlbumId(albumId);
-    const res = await fetch(`/api/albums/${albumId}`);
-    if (!res.ok) { setLoadingAlbumId(null); return; }
-    const d = await res.json();
-    setSelectedAlbum({
-      id: albumId, title: albumTitle, artist, artist_display: artistDisplay ?? undefined,
-      release_date: d.release_date ?? undefined, genre: d.genre ?? undefined,
-      cover_url: coverUrl ?? undefined, spotify_id: d.spotify_id ?? undefined,
-      ratings: d.ratings ?? [], avg: d.avg ?? undefined,
-    });
-    setLoadingAlbumId(null);
+    try {
+      const res = await fetch(`/api/albums/${albumId}`, { signal: controller.signal });
+      if (!res.ok) { setLoadingAlbumId(null); return; }
+      const d = await res.json();
+      setSelectedAlbum({
+        id: albumId, title: albumTitle, artist, artist_display: artistDisplay ?? undefined,
+        release_date: d.release_date ?? undefined, genre: d.genre ?? undefined,
+        cover_url: coverUrl ?? undefined, spotify_id: d.spotify_id ?? undefined,
+        ratings: d.ratings ?? [], avg: d.avg ?? undefined,
+      });
+      setLoadingAlbumId(null);
+    } catch (e) {
+      if ((e as Error)?.name !== "AbortError") setLoadingAlbumId(null);
+    }
   };
 
   const handleFilterByAlbum = (albumId: string, albumTitle: string) => {
@@ -556,7 +573,13 @@ export default function ReviewsClient({ bestReviews = [] }: { bestReviews?: Revi
       )}
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="reviews" />
+        <AlbumModal
+          album={selectedAlbum}
+          onClose={() => setSelectedAlbum(null)}
+          source="reviews"
+          handleHistory
+          onSaved={() => fetchReviews({ userId: filterUser, albumId: filterAlbumId, search: filterReview, minScore, maxScore, sort, page })}
+        />
       )}
       {reportingReview && (
         <ReportModal
@@ -666,7 +689,7 @@ function ReviewRow({
 
         {/* 우측: 유저 + 날짜 + 공감 + 신고 */}
         <div data-tour="reviews-reactions" style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
-          <a
+          <Link
             href={`/profile/${item.userId}`}
             style={{ display: "flex", alignItems: "center", gap: 3, textDecoration: "none" }}
             className="hover:opacity-70 transition-opacity"
@@ -675,7 +698,7 @@ function ReviewRow({
             <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 500 }} className="hidden sm:inline max-w-[48px] truncate">
               {user?.display_name ?? item.userId}
             </span>
-          </a>
+          </Link>
           <span style={{ fontSize: 10, color: "var(--text-muted)" }} className="hidden sm:inline">{dateStr}</span>
 
           {!isMyReview ? (
