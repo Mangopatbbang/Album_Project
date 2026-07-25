@@ -239,6 +239,15 @@ export default function AlbumList({
     return () => observer.disconnect();
   }, [handleLoadMore]);
 
+  // 앨범 목록이 확정되면 상위 8개 모달 RSC 프리패치
+  // — router.push 시점에 서버 컴포넌트가 이미 실행돼 있으므로 즉시 열림 (모바일 탭 딜레이 해결)
+  useEffect(() => {
+    if (albums.length === 0 || filterLoading) return;
+    albums.slice(0, 8).forEach((a) => router.prefetch(`/album/${a.id}`));
+  // router는 stable ref, filterLoading은 fetch 완료 시점 트리거용
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [albums, filterLoading]);
+
   // 모달 네비게이션: pathname이 /album/... 으로 바뀌면 스켈레톤을 모달 애니메이션 후 제거
   const prevPathnameRef = useRef(pathname);
   useEffect(() => {
