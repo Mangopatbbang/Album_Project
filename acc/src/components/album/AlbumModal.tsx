@@ -137,6 +137,8 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const touchStartY = useRef(0);
   const isDraggingRef = useRef(false);
   const isMountedRef = useRef(true);
+  const closingRef = useRef(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDeleteAlbum = () => {
     cardRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -164,8 +166,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   };
 
   const doClose = () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
     setClosing(true);
-    setTimeout(onClose, 160);
+    closeTimeoutRef.current = setTimeout(onClose, 160);
   };
 
   const handleClose = () => {
@@ -245,7 +249,10 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
   useEffect(() => {
     isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
+    return () => {
+      isMountedRef.current = false;
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
   }, []);
 
   // 캐시된 이미지는 onLoad가 React 핸들러 부착 전에 이미 발화 — 페인트 전 동기 확인으로 opacity-0 프레임 제거
@@ -378,7 +385,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (isDirtyRef.current) { setShowCloseConfirm(true); } else { setClosing(true); setTimeout(onClose, 160); }
+        if (isDirtyRef.current) { setShowCloseConfirm(true); } else { doClose(); }
         return;
       }
       if (e.key === "Backspace") {
@@ -531,7 +538,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       showToast("첫 청음 기록이에요! 평가가 쌓이면 취향 분석이 시작돼요");
     } else {
       showToastWithAction("청음을 기록했어요", "반응 보기 →", () => {
-        doClose();
         router.push(`/reviews?albumId=${album.id}`);
       });
     }
@@ -719,13 +725,15 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               setShowCloseConfirm(true);
             } else {
               // 드래그 현재 위치에서 이어서 내려가며 닫기
+              if (closingRef.current) return;
+              closingRef.current = true;
               card.style.transition = "transform 0.22s cubic-bezier(0.4, 0, 1, 1)";
               card.style.transform = "translateY(100%)";
               if (backdropRef.current) {
                 backdropRef.current.style.transition = "background-color 0.22s ease";
                 backdropRef.current.style.backgroundColor = "rgba(0,0,0,0)";
               }
-              setTimeout(onClose, 220);
+              closeTimeoutRef.current = setTimeout(onClose, 220);
             }
           } else if (isDraggingRef.current) {
             // 80px 미만이면 spring-back
@@ -831,7 +839,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               {full && profile && profile.role !== "admin" && (full as FullAlbum)?.added_by !== profile.id && (
                 <Link
                   href="/board"
-                  onClick={doClose}
                   style={{
                     fontSize: 10, color: "var(--text-muted)", textDecoration: "none",
                     opacity: 0.6, whiteSpace: "nowrap", paddingRight: 2,
@@ -979,7 +986,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                   const gColor = GENRE_COLOR[gDisplay] ?? "#94a3b8";
                   return (
                     <button
-                      onClick={() => { doClose(); router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`); }}
+                      onClick={() => { router.push(`/albums?genre=${encodeURIComponent(gDisplay)}`); }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}33`; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${gColor}1a`; }}
                       style={{
@@ -1178,7 +1185,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
                       {likedByUsers.length > 0 && (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                           {likedByUsers.map((u) => (
-                            <Link key={u.id} href={`/profile/${u.id}`} onClick={doClose} style={{ display: "inline-flex", opacity: 0.85 }} className="hover:opacity-100 transition-opacity">
+                            <Link key={u.id} href={`/profile/${u.id}`} style={{ display: "inline-flex", opacity: 0.85 }} className="hover:opacity-100 transition-opacity">
                               <UserAvatar avatarUrl={avatarMap[u.id]} size={14} />
                             </Link>
                           ))}
@@ -1702,7 +1709,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 8, lineHeight: 1.6 }}>
                 이 앨범을 내 기록에 담으려면<br />입문이 필요해요
               </p>
-              <Link href="/login" onClick={doClose} style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>입문하기 →</Link>
+              <Link href="/login" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>입문하기 →</Link>
             </div>
           )}
         </div>
