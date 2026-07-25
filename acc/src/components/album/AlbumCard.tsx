@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AlbumWithRatings } from "@/types";
+import { preloadModal } from "@/lib/albumModalStore";
 import { useUsers } from "@/context/UsersContext";
 import { useAuth } from "@/context/AuthContext";
 import { scoreColor, glowShadow, glowBorder } from "@/lib/score";
@@ -64,8 +65,9 @@ export default function AlbumCard({ album, onNavigate }: Props) {
         if (isNavigatingRef.current) return;
         isNavigatingRef.current = true;
         setIsNavigating(true);
+        // 클릭 시점에 album 데이터를 스토어에 저장 → 서버 컴포넌트 DB 쿼리 우회
+        preloadModal(album.id, album);
         onNavigate?.();
-        // startTransition 없이 즉시 navigate → loading.tsx 스켈레톤이 바로 뜸
         router.push(`/album/${album.id}`, { scroll: false });
       }}
       style={{

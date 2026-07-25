@@ -344,6 +344,7 @@ function mapAlbum(album: {
   use_artist_variant?: boolean | null;
   release_date?: string | null;
   genre?: string | null; cover_url?: string | null; spotify_id?: string | null;
+  soundcloud_url?: string | null; extra_artists?: string | null;
   created_at?: string | null;
   ratings?: { user_id: string; score: number }[];
 }) {
@@ -357,6 +358,8 @@ function mapAlbum(album: {
     use_artist_variant: album.use_artist_variant ?? false,
     release_date: album.release_date ?? null,
     genre: album.genre, cover_url: album.cover_url, spotify_id: album.spotify_id,
+    soundcloud_url: album.soundcloud_url ?? null,
+    extra_artists: album.extra_artists ?? null,
     created_at: album.created_at ?? null,
     ratings, avg,
   };
