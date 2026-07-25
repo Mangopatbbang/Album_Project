@@ -39,6 +39,7 @@ export default function GlobalAlbumModalOverlay() {
   }, [pathname, modal]);
 
   const handleClose = useCallback(() => {
+    setModal(null);   // pathname 변경 기다리지 않고 즉시 닫기 (느린 네트워크 isOpeningRef 레이스 방지)
     router.back();
   }, [router]);
 

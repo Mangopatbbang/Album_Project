@@ -670,6 +670,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
         display: "flex",
         justifyContent: "center",
         animation: closing ? "backdropOut 0.16s ease-in forwards" : "backdropIn 0.18s ease-out",
+        pointerEvents: closing ? "none" : undefined,
       }}
       className="items-end sm:items-center p-0 sm:p-8"
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
