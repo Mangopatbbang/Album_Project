@@ -160,7 +160,10 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
 
   useEffect(() => {
     window.history.pushState({ modalOpen: true }, "");
-    const onPop = () => { if (!closingRef.current) doClose(); };
+    const onPop = (e: PopStateEvent) => {
+      if (e.state?.modalOpen) return; // 자식(FilterSelect 등) cleanup back — 무시
+      if (!closingRef.current) doClose();
+    };
     window.addEventListener("popstate", onPop);
     return () => {
       window.removeEventListener("popstate", onPop);

@@ -43,7 +43,7 @@ export default function ReportModal({ onClose, defaultUserId, defaultDetail }: P
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
     document.addEventListener("keydown", onKey);
     window.history.pushState({ modalOpen: true }, "");
-    const onPop = () => doClose();
+    const onPop = (e: PopStateEvent) => { if (!e.state?.modalOpen) doClose(); };
     window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
