@@ -118,7 +118,7 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
         )}
       </div>
 
-      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_insight" />}
+      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_insight" handleHistory />}
     </>
   );
 }

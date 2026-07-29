@@ -38,6 +38,8 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
 
   // crop state
   const [cropMode, setCropMode] = useState(false);
+  const cropModeRef = useRef(false);
+  useEffect(() => { cropModeRef.current = cropMode; }, [cropMode]);
   const [rawSrc, setRawSrc] = useState<string | null>(null);
   const [rawFileName, setRawFileName] = useState("avatar.jpg");
   const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
@@ -48,15 +50,21 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (cropMode) setCropMode(false); else doClose(); }
+      if (e.key === "Escape") { if (cropModeRef.current) setCropMode(false); else doClose(); }
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => { if (!cropModeRef.current) doClose(); };
+    window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
     };
-  }, [open, cropMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!profile || profile.id !== userId) return null;
 

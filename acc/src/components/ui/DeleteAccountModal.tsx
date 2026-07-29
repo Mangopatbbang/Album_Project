@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/apiFetch";
@@ -12,6 +12,26 @@ export default function DeleteAccountModal({ onClose }: Props) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  useEffect(() => { deletingRef.current = deleting; }, [deleting]);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => { if (!deletingRef.current) onCloseRef.current(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !deletingRef.current) onCloseRef.current(); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDelete = async () => {
     if (deleting || input !== "탈퇴합니다") return;

@@ -149,7 +149,7 @@ export default function SocialFeed({ userId }: { userId: string }) {
       </div>
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="social_feed" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="social_feed" handleHistory />
       )}
     </>
   );

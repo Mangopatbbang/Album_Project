@@ -104,6 +104,21 @@ export default function ComparisonSection({ userId, topGenreMap, avatarMap }: Pr
 
   const closeCommon = () => setCommonModal(null);
 
+  useEffect(() => {
+    if (!commonModal) return;
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => setCommonModal(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCommonModal(null); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commonModal?.userId]);
+
   const genreBadges = (id: string) => (topGenreMap?.[id] ?? []).map((g) => {
     const gColor = GENRE_COLOR[g] ?? "#94a3b8";
     return (

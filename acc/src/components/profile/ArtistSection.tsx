@@ -80,7 +80,7 @@ export default function ArtistSection({
         ))}
       </div>
     </div>
-    {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} />}
+    {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} handleHistory />}
     </>
   );
 }

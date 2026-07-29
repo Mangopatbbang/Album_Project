@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Props = {
   avatarUrl: string | null;
@@ -10,6 +10,20 @@ type Props = {
 
 export default function AvatarWithLightbox({ avatarUrl, emoji, displayName }: Props) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => setOpen(false);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  }, [open]);
 
   return (
     <>

@@ -79,7 +79,17 @@ export default function WatchlistSection({ userId }: Props) {
     if (!popupOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = (e: PopStateEvent) => { if (!e.state?.modalOpen) setPopupOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPopupOpen(false); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
   }, [popupOpen]);
 
   useEffect(() => {
@@ -342,13 +352,14 @@ export default function WatchlistSection({ userId }: Props) {
           album={selectedAlbum}
           onClose={() => setSelectedAlbum(null)}
           source="watchlist"
+          handleHistory
           onSaved={(albumId) => {
             setItems((prev) => prev.filter((i) => i.album_id !== albumId));
             setSelectedAlbum(null);
           }}
         />
       )}
-      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} source="watchlist" />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelectedAlbum(album); }} source="watchlist" handleHistory />}
     </>
   );
 }

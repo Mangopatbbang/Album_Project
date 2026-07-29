@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { captureElement } from "@/lib/capture";
 import ProfileEditButton from "./ProfileEditButton";
@@ -22,6 +22,20 @@ export default function MobileSettingsButton({ userId, initialDisplayName, initi
   const [capturing, setCapturing] = useState(false);
   const [showModeration, setShowModeration] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    window.history.pushState({ sheetOpen: true }, "");
+    const onPop = (e: PopStateEvent) => { if (!e.state?.sheetOpen) setSheetOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheetOpen(false); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.sheetOpen) window.history.back();
+    };
+  }, [sheetOpen]);
 
   if (!profile || profile.id !== userId) return null;
 

@@ -35,6 +35,8 @@ export default function SettingsModal({ onClose }: Props) {
   const mouseDownRef = useRef(false);
   const [closing, setClosing] = useState(false);
   const doClose = () => { setClosing(true); setTimeout(onClose, 160); };
+  const doCloseRef = useRef(doClose);
+  useEffect(() => { doCloseRef.current = doClose; });
 
   const moderationHistory = notifications.filter((n) =>
     MODERATION_TYPES.includes(n.type as typeof MODERATION_TYPES[number])
@@ -42,7 +44,18 @@ export default function SettingsModal({ onClose }: Props) {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => doCloseRef.current();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doCloseRef.current(); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

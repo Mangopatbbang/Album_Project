@@ -40,9 +40,14 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = (e: PopStateEvent) => { if (!e.state?.modalOpen) doClose(); };
+    window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.modalOpen) window.history.back();
     };
   }, [open]);
 
@@ -127,6 +132,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
           onClose={() => setSelectedAlbum(null)}
           source="liked_tracks"
           zIndex={300}
+          handleHistory
         />
       )}
       <button

@@ -39,6 +39,24 @@ export default function ProfileShareModal({
   const [capturing, setCapturing] = useState(false);
   const [cardScale, setCardScale] = useState(1);
   const { showToast } = useToast();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    window.history.pushState({ modalOpen: true }, "");
+    const onPop = () => onCloseRef.current();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCloseRef.current(); };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.modalOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hofWithReview = hofAlbums.filter(a => a.oneLineReview !== null);
 

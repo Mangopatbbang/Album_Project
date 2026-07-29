@@ -99,8 +99,8 @@ export function RecentListSection({ items }: { items: RatingItem[] }) {
           {showAll ? "접기" : `+${items.length - INITIAL_COUNT}개 더보기`}
         </button>
       )}
-      {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} source="profile_ratings" />}
-      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelected({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display, genre: album.genre ?? null, cover_url: album.cover_url ?? null, score: 0, one_line_review: null, updated_at: "" }); }} source="profile_ratings" />}
+      {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} source="profile_ratings" handleHistory />}
+      {artistModal && <ArtistModal artistName={artistModal.name} displayName={artistModal.display} onClose={() => setArtistModal(null)} onAlbumClick={(album) => { setArtistModal(null); setSelected({ id: album.id, title: album.title, artist: album.artist, artist_display: album.artist_display, genre: album.genre ?? null, cover_url: album.cover_url ?? null, score: 0, one_line_review: null, updated_at: "" }); }} source="profile_ratings" handleHistory />}
     </>
   );
 }
@@ -130,7 +130,7 @@ export function RecentReviewsSection({ items }: { items: RatingItem[] }) {
           </div>
         ))}
       </div>
-      {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} source="profile_ratings" />}
+      {selected && <AlbumModal album={toModal(selected)} onClose={() => setSelected(null)} source="profile_ratings" handleHistory />}
     </>
   );
 }
