@@ -264,13 +264,19 @@ export default function AlbumList({
     searchCacheRef.current.clear();
   }, [profile?.id]);
 
-  // 앨범 추가 모달 닫힐 때 캐시 초기화 (새 앨범이 검색 결과에 즉시 반영되도록)
+  // 앨범 추가 모달 닫힐 때 캐시 초기화 + 목록 갱신
   const prevShowAddModalRef = useRef(false);
+  const albumAddedRef = useRef(false);
   useEffect(() => {
     if (prevShowAddModalRef.current && !showAddModal) {
       searchCacheRef.current.clear();
+      if (albumAddedRef.current) {
+        albumAddedRef.current = false;
+        handleFilter(search, genre, region, sort, unrated, myScore);
+      }
     }
     prevShowAddModalRef.current = showAddModal;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showAddModal]);
 
   // 앨범 모달에서 평점/삭제 시 로컬 상태 + 캐시 동기화
@@ -796,7 +802,7 @@ return (
       {showAddModal && (
         <AlbumAddModal
           onClose={() => setShowAddModal(false)}
-          onAdded={() => handleFilter(search, genre, region, sort, unrated, myScore)}
+          onAdded={() => { albumAddedRef.current = true; }}
           initialSearch={albums.length === 0 && search ? search : undefined}
         />
       )}

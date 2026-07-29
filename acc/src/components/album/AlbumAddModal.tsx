@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
+import Spinner from "@/components/ui/Spinner";
 import { trackFeatureClick } from "@/lib/track";
 
 const GENRES = [
@@ -416,6 +417,27 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addedAlbumId, aliasCheckDone, aliasExists]);
+
+  // 저장 완료 ~ alias 체크 사이: 로딩 화면 (form으로 fall-through 방지)
+  if (addedAlbumId && !aliasCheckDone) {
+    return (
+      <div style={{
+        position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)",
+        zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 16,
+      }}>
+        <div style={{
+          backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 14, width: "100%", maxWidth: 440,
+          display: "flex", flexDirection: "column", alignItems: "center",
+          gap: 14, padding: 40,
+        }}>
+          <Spinner size={22} />
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>입고 처리 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (addedAlbumId && aliasCheckDone && !aliasExists) {
     const closeWithToast = () => { showToast(`${title} 입고 완료`); onClose(); };

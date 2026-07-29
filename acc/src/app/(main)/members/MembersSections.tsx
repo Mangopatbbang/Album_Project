@@ -17,16 +17,24 @@ const PREVIEW = 4;
 
 function SectionModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const backdropRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCloseRef.current(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    window.history.pushState({ popupOpen: true }, "");
+    const onPop = () => onCloseRef.current();
+    window.addEventListener("popstate", onPop);
     return () => {
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
       document.body.style.overflow = "";
+      if (window.history.state?.popupOpen) window.history.back();
     };
-  }, [onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
