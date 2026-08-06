@@ -2023,6 +2023,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           onClose={() => setArtistModal(null)}
           onAlbumClick={(a) => { setArtistModal(null); setNestedAlbum(a); }}
           source="album_modal"
+          zIndex={zIndex + 10}
         />,
         document.body
       )}

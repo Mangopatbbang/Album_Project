@@ -16,9 +16,10 @@ type Props = {
   onAlbumClick?: (album: AlbumWithRatings) => void;
   source?: string;
   handleHistory?: boolean;
+  zIndex?: number;
 };
 
-export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source, handleHistory }: Props) {
+export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source, handleHistory, zIndex = 110 }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
   const avatarMap = useUserAvatars();
   const { users } = useUsers();
@@ -89,7 +90,7 @@ export default function ArtistModal({ artistName, displayName, onClose, onAlbumC
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 12, zIndex: 110, backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+      style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: 12, zIndex, backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
       onMouseDown={(e) => { mouseDownOnBackdrop.current = e.target === e.currentTarget; }}
       onMouseUp={(e) => { if (mouseDownOnBackdrop.current && e.target === e.currentTarget) handleClose(); }}
     >
