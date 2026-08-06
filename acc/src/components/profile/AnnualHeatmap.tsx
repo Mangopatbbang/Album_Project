@@ -207,7 +207,7 @@ export default function AnnualHeatmap({
       )}
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="profile_heatmap" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="profile_heatmap" handleHistory />
       )}
     </div>
   );

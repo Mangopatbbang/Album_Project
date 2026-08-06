@@ -143,7 +143,7 @@ export default function EncounterSection({ albums }: { albums: EncounterAlbum[] 
       )}
 
       {selected && (
-        <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_encounter" />
+        <AlbumModal album={selected} onClose={() => setSelected(null)} source="profile_encounter" handleHistory />
       )}
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
 import { scoreColor } from "@/lib/score";
@@ -203,6 +203,31 @@ function CalendarPopup({ dailyAlbums, onClose, onAlbumClick }: { dailyAlbums: Da
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
+  const selectedDayRef = useRef<string | null>(null);
+  useEffect(() => { selectedDayRef.current = selectedDay; }, [selectedDay]);
+
+  useEffect(() => {
+    window.history.pushState({ popupOpen: true }, "");
+    const onPop = (e: PopStateEvent) => { if (!e.state?.popupOpen) onCloseRef.current(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedDayRef.current) setSelectedDay(null);
+        else onCloseRef.current();
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      document.removeEventListener("keydown", onKey);
+      if (window.history.state?.popupOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isCurrentMonth = calYear === today.getFullYear() && calMonth === today.getMonth();
 
   const goPrev = () => {
@@ -367,7 +392,7 @@ export default function CalendarSection({
       )}
 
       {selectedAlbum && (
-        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="profile_calendar" />
+        <AlbumModal album={selectedAlbum} onClose={() => setSelectedAlbum(null)} source="profile_calendar" handleHistory />
       )}
     </>
   );

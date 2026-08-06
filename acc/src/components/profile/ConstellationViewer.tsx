@@ -617,6 +617,22 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
     };
   }, []);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
+
+  // handleHistory: 백버튼으로 ConstellationViewer 닫기
+  // focusedArtist/Genre/scoreFilter 단계는 백버튼 대신 Escape로 처리 (아래 keydown effect)
+  useEffect(() => {
+    window.history.pushState({ constellationOpen: true }, "");
+    const onPop = (e: PopStateEvent) => { if (!e.state?.constellationOpen) onCloseRef.current(); };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.constellationOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Direct DOM transform — bypasses React setState during drag/wheel for 60fps
   // dur=0: instant, dur>0: smooth transition with that duration (seconds)
   const applyTransform = useCallback((x: number, y: number, z: number, dur = 0) => {
@@ -1702,7 +1718,7 @@ export default function ConstellationViewer({ userId, onClose }: { userId: strin
       <AnimatePresence>
         {tooltip && <Tooltip key={tooltip.ev.album.id} ev={tooltip.ev} mx={tooltip.mx} my={tooltip.my} />}
       </AnimatePresence>
-      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="timeline" />}
+      {selected && <AlbumModal album={selected} onClose={() => setSelected(null)} source="timeline" handleHistory />}
     </div>
   );
 }
