@@ -339,8 +339,11 @@ export default function AlbumList({
 
   const handleSortChange = (val: string) => {
     setSort(val);
+    // my_desc/my_asc 정렬과 myScore(점수 필터)는 API에서 충돌 → 동시 선택 방지
+    const nextMyScore = (val === "my_desc" || val === "my_asc") && myScore !== null ? null : myScore;
+    if (nextMyScore !== myScore) { setMyScore(null); setScoreUserId(null); }
     window.scrollTo(0, 0);
-    handleFilter(search, genre, region, val, unrated, myScore);
+    handleFilter(search, genre, region, val, unrated, nextMyScore);
   };
 
   const handleUnratedToggle = () => {
@@ -359,8 +362,11 @@ export default function AlbumList({
     setMyScore(next);
     if (next === null) setScoreUserId(null);
     setUnrated(false);
+    // my_desc/my_asc 정렬 중에 점수 필터 선택 시 정렬 리셋 (API 충돌 방지)
+    const nextSort = next !== null && (sort === "my_desc" || sort === "my_asc") ? "newest" : sort;
+    if (nextSort !== sort) setSort(nextSort);
     window.scrollTo(0, 0);
-    handleFilter(search, genre, region, sort, false, next, next === null ? null : scoreUserId);
+    handleFilter(search, genre, region, nextSort, false, next, next === null ? null : scoreUserId);
   };
 
   const handleReset = () => {

@@ -472,7 +472,7 @@ export default function BestPageClient({
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
   const viewData = useMemo(
-    () => view === "genre" ? genreData : view === "artist" ? artistData : yearData,
+    () => view === "genre" ? genreData : view === "artist" ? artistData : view === "worst" ? [] : yearData,
     [view, genreData, artistData, yearData]
   );
 
@@ -488,6 +488,11 @@ export default function BestPageClient({
     regionFilter === "국내" ? domesticRanked :
     regionFilter === "해외" ? foreignRanked :
     allRanked;
+
+  const worstList = useMemo(
+    () => [...rankedList].sort((a, b) => a.avg - b.avg),
+    [rankedList]
+  );
 
   const sortedArtistSections = useMemo(() => {
     if (view !== "artist" || artistSort !== "avg") return sections;
@@ -527,6 +532,7 @@ export default function BestPageClient({
             { value: "year", label: "연도별" },
             { value: "genre", label: "장르별" },
             { value: "artist", label: "아티스트별" },
+            { value: "worst", label: "최악" },
           ]}
           title="보기 방식"
           feature="청음감_보기방식"
@@ -588,7 +594,7 @@ export default function BestPageClient({
               <span style={{ color: "var(--border)", fontSize: 14, margin: "0 2px" }}>|</span>
             </>
           )}
-          {(["all", "year", "genre", "artist"] as const).map((v) => (
+          {(["all", "year", "genre", "artist", "worst"] as const).map((v) => (
             <button
               key={v}
               onClick={() => { setView(v); setOpenSection(null); trackFeatureClick("청음감_보기방식", v); }}
@@ -600,7 +606,7 @@ export default function BestPageClient({
                 cursor: "pointer",
               }}
             >
-              {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
+              {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : v === "artist" ? "아티스트별" : "최악"}
             </button>
           ))}
         </div>
@@ -610,6 +616,12 @@ export default function BestPageClient({
         {view === "all" ? (
           <RankedGrid
             list={rankedList}
+            onAlbumClick={(a) => setSelectedAlbum(a)}
+            onArtistClick={(a) => setArtistModal(a)}
+          />
+        ) : view === "worst" ? (
+          <RankedGrid
+            list={worstList}
             onAlbumClick={(a) => setSelectedAlbum(a)}
             onArtistClick={(a) => setArtistModal(a)}
           />
