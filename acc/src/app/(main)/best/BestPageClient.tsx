@@ -454,6 +454,9 @@ export default function BestPageClient({
   allRanked,
   domesticRanked,
   foreignRanked,
+  worstRanked,
+  domesticWorstRanked,
+  foreignWorstRanked,
   initialView,
 }: {
   yearData: [string, AlbumStat[]][];
@@ -462,9 +465,13 @@ export default function BestPageClient({
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
+  worstRanked: AlbumStat[];
+  domesticWorstRanked: AlbumStat[];
+  foreignWorstRanked: AlbumStat[];
   initialView: string;
 }) {
-  const [view, setView] = useState(initialView);
+  const [view, setView] = useState(initialView === "worst" ? "all" : initialView);
+  const [rankDir, setRankDir] = useState<"best" | "worst">("best");
   const [selectedAlbum, setSelectedAlbum] = useState<AlbumStat | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [artistSort, setArtistSort] = useState<"count" | "avg">("avg");
@@ -472,7 +479,7 @@ export default function BestPageClient({
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
 
   const viewData = useMemo(
-    () => view === "genre" ? genreData : view === "artist" ? artistData : view === "worst" ? [] : yearData,
+    () => view === "genre" ? genreData : view === "artist" ? artistData : yearData,
     [view, genreData, artistData, yearData]
   );
 
@@ -484,15 +491,11 @@ export default function BestPageClient({
       .filter(([, list]) => list.length > 0);
   }, [viewData, regionFilter]);
 
+  // 통합 탭: 명반(best) / 이건 좀(worst) 방향에 따라 올바른 서버 데이터 사용
   const rankedList =
-    regionFilter === "국내" ? domesticRanked :
-    regionFilter === "해외" ? foreignRanked :
-    allRanked;
-
-  const worstList = useMemo(
-    () => [...rankedList].sort((a, b) => a.avg - b.avg),
-    [rankedList]
-  );
+    regionFilter === "국내" ? (rankDir === "worst" ? domesticWorstRanked : domesticRanked) :
+    regionFilter === "해외" ? (rankDir === "worst" ? foreignWorstRanked : foreignRanked) :
+    (rankDir === "worst" ? worstRanked : allRanked);
 
   const sortedArtistSections = useMemo(() => {
     if (view !== "artist" || artistSort !== "avg") return sections;
@@ -526,19 +529,32 @@ export default function BestPageClient({
         />
         <FilterSelect
           value={view}
-          onChange={(v) => { setView(v); setOpenSection(null); }}
+          onChange={(v) => { setView(v); setOpenSection(null); if (v !== "all") setRankDir("best"); }}
           options={[
             { value: "all", label: "통합" },
             { value: "year", label: "연도별" },
             { value: "genre", label: "장르별" },
             { value: "artist", label: "아티스트별" },
-            { value: "worst", label: "최악" },
           ]}
           title="보기 방식"
           feature="청음감_보기방식"
           active={view !== "all"}
           style={{ flex: 1, justifyContent: "center" }}
         />
+        {view === "all" && (
+          <FilterSelect
+            value={rankDir}
+            onChange={(v) => { setRankDir(v as "best" | "worst"); trackFeatureClick("청음감_랭킹방향", v); }}
+            options={[
+              { value: "best", label: "▲ 명반" },
+              { value: "worst", label: "▼ 이건 좀" },
+            ]}
+            title="방향"
+            feature="청음감_랭킹방향"
+            active={rankDir !== "best"}
+            style={{ flex: 1, justifyContent: "center" }}
+          />
+        )}
         {view === "artist" && (
           <FilterSelect
             value={artistSort}
@@ -594,10 +610,31 @@ export default function BestPageClient({
               <span style={{ color: "var(--border)", fontSize: 14, margin: "0 2px" }}>|</span>
             </>
           )}
-          {(["all", "year", "genre", "artist", "worst"] as const).map((v) => (
+          {/* 통합 탭 선택 중일 때만 방향 토글 표시 */}
+          {view === "all" && (
+            <>
+              {(["best", "worst"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => { setRankDir(d); trackFeatureClick("청음감_랭킹방향", d); }}
+                  style={{
+                    padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                    backgroundColor: rankDir === d ? (d === "worst" ? "var(--error)" : "var(--accent)") : "var(--bg-elevated)",
+                    color: rankDir === d ? "var(--bg)" : "var(--text-sub)",
+                    border: `1px solid ${rankDir === d ? (d === "worst" ? "var(--error)" : "var(--accent)") : "var(--border)"}`,
+                    cursor: "pointer",
+                  }}
+                >
+                  {d === "best" ? "▲ 명반" : "▼ 이건 좀"}
+                </button>
+              ))}
+              <span style={{ color: "var(--border)", fontSize: 14, margin: "0 2px" }}>|</span>
+            </>
+          )}
+          {(["all", "year", "genre", "artist"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => { setView(v); setOpenSection(null); trackFeatureClick("청음감_보기방식", v); }}
+              onClick={() => { setView(v); setOpenSection(null); if (v !== "all") setRankDir("best"); trackFeatureClick("청음감_보기방식", v); }}
               style={{
                 padding: "5px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600,
                 backgroundColor: view === v ? "var(--accent)" : "var(--bg-elevated)",
@@ -606,22 +643,16 @@ export default function BestPageClient({
                 cursor: "pointer",
               }}
             >
-              {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : v === "artist" ? "아티스트별" : "최악"}
+              {v === "all" ? "통합" : v === "year" ? "연도별" : v === "genre" ? "장르별" : "아티스트별"}
             </button>
           ))}
         </div>
       </div>
 
-      <div key={view} style={{ animation: "fadeIn 0.18s ease-out" }}>
+      <div key={`${view}-${rankDir}`} style={{ animation: "fadeIn 0.18s ease-out" }}>
         {view === "all" ? (
           <RankedGrid
             list={rankedList}
-            onAlbumClick={(a) => setSelectedAlbum(a)}
-            onArtistClick={(a) => setArtistModal(a)}
-          />
-        ) : view === "worst" ? (
-          <RankedGrid
-            list={worstList}
             onAlbumClick={(a) => setSelectedAlbum(a)}
             onArtistClick={(a) => setArtistModal(a)}
           />

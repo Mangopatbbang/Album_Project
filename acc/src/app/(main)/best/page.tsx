@@ -80,7 +80,7 @@ export default async function BestPage({
 
 async function RankingContent({ initialView }: { initialView: string }) {
   const albums = await fetchAllAlbumsWithRatings();
-  const { yearData, genreData, artistData, allRanked, domesticRanked, foreignRanked } = getBestDataForPage(albums);
+  const { yearData, genreData, artistData, allRanked, domesticRanked, foreignRanked, worstRanked, domesticWorstRanked, foreignWorstRanked } = getBestDataForPage(albums);
 
   return (
     <BestPageClient
@@ -90,6 +90,9 @@ async function RankingContent({ initialView }: { initialView: string }) {
       allRanked={allRanked}
       domesticRanked={domesticRanked}
       foreignRanked={foreignRanked}
+      worstRanked={worstRanked}
+      domesticWorstRanked={domesticWorstRanked}
+      foreignWorstRanked={foreignWorstRanked}
       initialView={initialView}
     />
   );

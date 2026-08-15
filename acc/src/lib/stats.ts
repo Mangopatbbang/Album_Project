@@ -305,6 +305,9 @@ export function getBestDataForPage(albums: RawAlbum[]): {
   allRanked: AlbumStat[];
   domesticRanked: AlbumStat[];
   foreignRanked: AlbumStat[];
+  worstRanked: AlbumStat[];
+  domesticWorstRanked: AlbumStat[];
+  foreignWorstRanked: AlbumStat[];
 } {
   const dom = albums.filter((a) => a.region === "국내");
   const for_ = albums.filter((a) => a.region === "해외");
@@ -315,6 +318,9 @@ export function getBestDataForPage(albums: RawAlbum[]): {
     allRanked: getRankedAll(albums),
     domesticRanked: getRankedAll(dom),
     foreignRanked: getRankedAll(for_),
+    worstRanked: getRankedWorst(albums),
+    domesticWorstRanked: getRankedWorst(dom),
+    foreignWorstRanked: getRankedWorst(for_),
   };
 }
 
@@ -340,6 +346,11 @@ export function getArtistBest(albums: RawAlbum[]): AlbumStat[] {
 // 통합 랭킹: 평균 점수 내림차순 상위 50개 (평점 2명 이상)
 export function getRankedAll(albums: RawAlbum[]): AlbumStat[] {
   return validAlbums(albums).sort((a, b) => b.avg - a.avg).slice(0, 50);
+}
+
+// 최하위 랭킹: 평균 점수 오름차순 하위 50개 (평점 2명 이상) — getRankedAll 슬라이스 뒤집기 아님, 별도 정렬
+export function getRankedWorst(albums: RawAlbum[]): AlbumStat[] {
+  return validAlbums(albums).sort((a, b) => a.avg - b.avg).slice(0, 50);
 }
 
 // 미발견 명반: 평점 1~2명이지만 최고 점수 >= 7인 앨범 (발굴 대기 중)
