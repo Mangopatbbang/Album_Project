@@ -784,36 +784,50 @@ export default function BestPageClient({
               onAlbumClick={(a) => setSelectedAlbum(a)}
               onArtistClick={(a) => setArtistModal(a)}
             />
-            {clipList.length > 0 && (
-              <div className="flex flex-wrap gap-2 sm:gap-2.5" style={{ marginTop: 2 }}>
-                {clipList.map((album, idx) => (
-                  <RankedTile
-                    key={album.id}
-                    album={album}
-                    rank={idx + 2}
-                    size={idx === 0 ? "md" : "sm"}
-                    onAlbumClick={(a) => setSelectedAlbum(a)}
-                    onArtistClick={(a) => setArtistModal(a)}
-                  />
-                ))}
+            {/* 2열: 클립보드(2~5위) | 이건 좀 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6" style={{ marginTop: 10 }}>
+              {/* 좌: 2~5위 + 전체 보기 */}
+              <div>
+                {clipList.length > 0 && (
+                  <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                    {clipList.map((album, idx) => (
+                      <RankedTile
+                        key={album.id}
+                        album={album}
+                        rank={idx + 2}
+                        size={idx === 0 ? "md" : "sm"}
+                        onAlbumClick={(a) => setSelectedAlbum(a)}
+                        onArtistClick={(a) => setArtistModal(a)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {rankedList.length > 5 && (
+                  <button
+                    onClick={() => setOpenFullList("best")}
+                    style={{
+                      marginTop: 14, padding: "7px 16px",
+                      borderRadius: 7, fontSize: 11, fontWeight: 600,
+                      background: "none", border: "1px solid var(--border)",
+                      color: "var(--text-muted)", cursor: "pointer",
+                      transition: "border-color 0.15s, color 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-muted)"; e.currentTarget.style.color = "var(--text)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                  >
+                    전체 순위 보기 ({rankedList.length}장) →
+                  </button>
+                )}
               </div>
-            )}
-            {rankedList.length > 5 && (
-              <button
-                onClick={() => setOpenFullList("best")}
-                style={{
-                  marginTop: 14, padding: "7px 16px",
-                  borderRadius: 7, fontSize: 11, fontWeight: 600,
-                  background: "none", border: "1px solid var(--border)",
-                  color: "var(--text-muted)", cursor: "pointer",
-                  transition: "border-color 0.15s, color 0.15s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-muted)"; e.currentTarget.style.color = "var(--text)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
-              >
-                전체 순위 보기 ({rankedList.length}장) →
-              </button>
-            )}
+              {/* 우: 이건 좀 */}
+              {worstList.length > 0 && (
+                <WorstSection
+                  list={worstList}
+                  onAlbumClick={(a) => setSelectedAlbum(a)}
+                  onMoreClick={() => setOpenFullList("worst")}
+                />
+              )}
+            </div>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -824,44 +838,31 @@ export default function BestPageClient({
         )}
       </section>
 
-      {/* ── 이건 좀 섹션 ── */}
-      {worstList.length > 0 && (
-        <section style={{ marginBottom: 36 }}>
-          <WorstSection
-            list={worstList}
-            onAlbumClick={(a) => setSelectedAlbum(a)}
-            onMoreClick={() => setOpenFullList("worst")}
-          />
-        </section>
-      )}
-
       {/* ── 구분선 ── */}
-      <div style={{ height: 1, backgroundColor: "var(--border)", margin: "4px 0 36px" }} />
+      <div style={{ height: 1, backgroundColor: "var(--border)", margin: "36px 0" }} />
 
-      {/* ── 연도별 섹션 ── */}
-      {filteredYearData.length > 0 && (
-        <section style={{ marginBottom: 36 }}>
-          <YearSection
-            key={`year-${regionFilter}`}
-            sections={filteredYearData}
-            onAlbumClick={(a) => setSelectedAlbum(a)}
-            onMoreClick={(label, list) => setOpenSectionData({ label, list })}
-            onArtistClick={(a) => setArtistModal(a)}
-          />
-        </section>
-      )}
-
-      {/* ── 장르별 섹션 ── */}
-      {filteredGenreData.length > 0 && (
-        <section style={{ marginBottom: 36 }}>
-          <GenreSection
-            key={`genre-${regionFilter}`}
-            sections={filteredGenreData}
-            onAlbumClick={(a) => setSelectedAlbum(a)}
-            onMoreClick={(label, list) => setOpenSectionData({ label, list })}
-            onArtistClick={(a) => setArtistModal(a)}
-          />
-        </section>
+      {/* ── 연도별 + 장르별 — 2열 ── */}
+      {(filteredYearData.length > 0 || filteredGenreData.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-10" style={{ marginBottom: 36 }}>
+          {filteredYearData.length > 0 && (
+            <YearSection
+              key={`year-${regionFilter}`}
+              sections={filteredYearData}
+              onAlbumClick={(a) => setSelectedAlbum(a)}
+              onMoreClick={(label, list) => setOpenSectionData({ label, list })}
+              onArtistClick={(a) => setArtistModal(a)}
+            />
+          )}
+          {filteredGenreData.length > 0 && (
+            <GenreSection
+              key={`genre-${regionFilter}`}
+              sections={filteredGenreData}
+              onAlbumClick={(a) => setSelectedAlbum(a)}
+              onMoreClick={(label, list) => setOpenSectionData({ label, list })}
+              onArtistClick={(a) => setArtistModal(a)}
+            />
+          )}
+        </div>
       )}
 
       {/* ── 아티스트별 섹션 ── */}
