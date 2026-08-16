@@ -4,13 +4,12 @@ import { fetchAllAlbumsWithRatings, getBestDataForPage, getHiddenGems } from "@/
 import { supabaseServer } from "@/lib/supabase";
 import BestPageClient from "./BestPageClient";
 import BestTabBar from "./BestTabBar";
-import DiscoverClient from "./DiscoverClient";
 import ThemesPageClient, { type Playlist } from "@/app/(main)/themes/ThemesPageClient";
 import Spinner from "@/components/ui/Spinner";
 
 export const metadata: Metadata = {
   title: "청음감",
-  description: "아차청음사 청음감 — 랭킹, 발견, 컬렉션",
+  description: "아차청음사 청음감 — 랭킹, 컬렉션",
 };
 
 async function getPlaylists() {
@@ -47,7 +46,7 @@ export default async function BestPage({
             청음감
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-            {tab === "discover" ? "아직 발견되지 않은 명반" : tab === "collections" ? "테마별로 엮은 컬렉션" : "멤버가 선정한 명반 순위"}
+            {tab === "collections" ? "테마별로 엮은 컬렉션" : "멤버가 선정한 명반 순위"}
           </p>
         </div>
 
@@ -57,14 +56,9 @@ export default async function BestPage({
         </Suspense>
 
         {/* 탭 콘텐츠 */}
-        {tab === "ranking" && (
+        {tab !== "collections" && (
           <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spinner size={22} /></div>}>
             <RankingContent initialView={view} />
-          </Suspense>
-        )}
-        {tab === "discover" && (
-          <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", padding: "80px 0" }}><Spinner size={22} /></div>}>
-            <DiscoverContent />
           </Suspense>
         )}
         {tab === "collections" && (
@@ -81,6 +75,7 @@ export default async function BestPage({
 async function RankingContent({ initialView }: { initialView: string }) {
   const albums = await fetchAllAlbumsWithRatings();
   const { yearData, genreData, artistData, allRanked, domesticRanked, foreignRanked, worstRanked, domesticWorstRanked, foreignWorstRanked } = getBestDataForPage(albums);
+  const gems = getHiddenGems(albums);
 
   return (
     <BestPageClient
@@ -93,15 +88,10 @@ async function RankingContent({ initialView }: { initialView: string }) {
       worstRanked={worstRanked}
       domesticWorstRanked={domesticWorstRanked}
       foreignWorstRanked={foreignWorstRanked}
+      gems={gems}
       initialView={initialView}
     />
   );
-}
-
-async function DiscoverContent() {
-  const albums = await fetchAllAlbumsWithRatings();
-  const hiddenGems = getHiddenGems(albums);
-  return <DiscoverClient gems={hiddenGems} />;
 }
 
 async function CollectionsContent() {

@@ -362,7 +362,7 @@ export function getHiddenGems(albums: RawAlbum[]): AlbumStat[] {
     })
     .map(toStat)
     .sort((a, b) => b.avg - a.avg)
-    .slice(0, 8);
+    .slice(0, 20);
 }
 
 // 청음인 페이지용 — 전체 ratings (1시간 캐시)

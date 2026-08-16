@@ -663,6 +663,75 @@ function GenreSection({
   );
 }
 
+// ─── HiddenGemsSection (발굴 대기) ────────────────────────────────────────────
+function HiddenGemsSection({
+  list,
+  onAlbumClick,
+}: {
+  list: AlbumStat[];
+  onAlbumClick: (a: AlbumStat) => void;
+}) {
+  if (list.length === 0) return null;
+
+  return (
+    <section style={{ marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>발굴 대기</h2>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>평가자 1~2명 · {list.length}장</span>
+      </div>
+      <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 14, lineHeight: 1.6 }}>
+        아직 충분히 듣지 않은 고점수 앨범이에요. 먼저 들어보세요.
+      </p>
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-2.5 sm:overflow-x-auto sm:pb-1">
+        {list.map((album) => (
+          <div
+            key={album.id}
+            style={{ cursor: "pointer" }}
+            className="sm:flex-shrink-0 sm:flex-none sm:w-[90px] transition-transform hover:scale-[1.04] active:scale-[0.96]"
+            onClick={() => onAlbumClick(album)}
+          >
+            <div
+              style={{
+                position: "relative", borderRadius: 6, overflow: "hidden",
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+              }}
+              className="w-full aspect-square sm:aspect-auto sm:w-[90px] sm:h-[90px]"
+            >
+              {album.cover_url
+                ? <Image fill sizes="(max-width: 640px) 25vw, 90px" src={album.cover_url} alt={album.title} style={{ objectFit: "cover" }} />
+                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 24, color: "var(--text-muted)" }}>♪</span>
+                  </div>
+              }
+              {/* 평가자 수 뱃지 */}
+              <div style={{
+                position: "absolute", bottom: 4, right: 4,
+                background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
+                borderRadius: 4, padding: "2px 5px",
+                fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 600,
+              }}>
+                {album.count}명
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginTop: 5 }}>
+              <span className="text-[11px]" style={{ color: scoreColor(album.avg), fontWeight: 700 }}>
+                {album.avg.toFixed(1)}
+              </span>
+            </div>
+            <p className="text-[11px]" style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {album.title}
+            </p>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {album.artist_display ?? album.artist}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─── BestPageClient ───────────────────────────────────────────────────────────
 export default function BestPageClient({
   yearData,
@@ -674,6 +743,7 @@ export default function BestPageClient({
   worstRanked,
   domesticWorstRanked,
   foreignWorstRanked,
+  gems,
   // initialView는 URL 하위 호환을 위해 받지만 스크롤 구조에서는 사용하지 않음
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   initialView: _initialView,
@@ -687,6 +757,7 @@ export default function BestPageClient({
   worstRanked: AlbumStat[];
   domesticWorstRanked: AlbumStat[];
   foreignWorstRanked: AlbumStat[];
+  gems: AlbumStat[];
   initialView: string;
 }) {
   const [regionFilter, setRegionFilter] = useState<"전체" | "국내" | "해외">("전체");
@@ -729,6 +800,11 @@ export default function BestPageClient({
       .map(([label, list]) => [label, list.filter((a) => a.region === regionFilter)] as [string, AlbumStat[]])
       .filter(([, list]) => list.length > 0);
   }, [artistData, regionFilter]);
+
+  const filteredGems = useMemo(() => {
+    if (regionFilter === "전체") return gems;
+    return gems.filter((a) => a.region === regionFilter);
+  }, [gems, regionFilter]);
 
   const [hero, ...restRanked] = rankedList;
   const clipList = restRanked.slice(0, 4); // 2~5위
@@ -884,6 +960,17 @@ export default function BestPageClient({
             ))}
           </div>
         </section>
+      )}
+
+      {/* ── 발굴 대기 섹션 ── */}
+      {filteredGems.length > 0 && (
+        <>
+          <div style={{ height: 1, backgroundColor: "var(--border)", margin: "36px 0" }} />
+          <HiddenGemsSection
+            list={filteredGems}
+            onAlbumClick={(a) => setSelectedAlbum(a)}
+          />
+        </>
       )}
 
       {/* ── 팝업: 통합 랭킹 / 이건 좀 전체 보기 ── */}

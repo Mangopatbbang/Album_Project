@@ -5,13 +5,14 @@ import { useSearchParams } from "next/navigation";
 
 const TABS = [
   { id: "ranking", label: "랭킹" },
-  { id: "discover", label: "발견" },
   { id: "collections", label: "컬렉션" },
 ] as const;
 
 export default function BestTabBar() {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") ?? "ranking";
+  const rawTab = searchParams.get("tab") ?? "ranking";
+  // discover 탭은 랭킹으로 통합됨 — 구 URL 하위 호환
+  const tab = rawTab === "discover" ? "ranking" : rawTab;
 
   return (
     <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 28 }}>
