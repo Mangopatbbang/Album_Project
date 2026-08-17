@@ -245,69 +245,95 @@ function SectionGrid({
   );
 }
 
-// ─── ArtistSection ───────────────────────────────────────────────────────────
-function ArtistSection({
+// ─── ArtistRow (아티스트 콤팩트 행 — 클릭 시 ArtistModal) ───────────────────
+function ArtistRow({
   artist,
   list,
-  onAlbumClick,
   onArtistClick,
 }: {
   artist: string;
   list: AlbumStat[];
-  onAlbumClick: (a: AlbumStat) => void;
   onArtistClick: (artist: { name: string; display: string }) => void;
 }) {
+  const topAlbum = list[0]; // avg 내림차순 정렬 전제
   const artistAvg = list.reduce((s, a) => s + a.avg, 0) / list.length;
+  const displayName = list[0]?.artist_display ?? artist;
+  const previews = list.slice(0, 5);
+
   return (
-    <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-        <h3
-          onClick={() => onArtistClick({ name: artist, display: list[0]?.artist_display ?? artist })}
-          style={{ color: "var(--text)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em", cursor: "pointer" }}
-          className="hover:underline"
-        >
-          {list[0]?.artist_display ?? artist}
-        </h3>
-        <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
-        <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 500, marginLeft: "auto" }}>
-          avg {artistAvg.toFixed(2)}
-        </span>
+    <button
+      onClick={() => onArtistClick({ name: artist, display: displayName })}
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "12px 0", width: "100%",
+        background: "none", border: "none", cursor: "pointer",
+        borderBottom: "1px solid var(--border)",
+        textAlign: "left",
+      }}
+      className="hover:opacity-70 transition-opacity"
+    >
+      {/* 대표작 커버 */}
+      <div style={{
+        position: "relative", width: 52, height: 52,
+        borderRadius: 7, overflow: "hidden", flexShrink: 0,
+        backgroundColor: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+      }}>
+        {topAlbum?.cover_url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img loading="lazy" src={topAlbum.cover_url} alt={topAlbum.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 18 }}>♪</div>
+        }
       </div>
-      <div className="flex flex-wrap gap-2 sm:gap-2.5">
-        {list.map((album) => (
-          <div
-            key={album.id}
-            style={{ flexShrink: 0, cursor: "pointer" }}
-            className="w-[84px] sm:w-[80px] transition-transform active:scale-[0.93]"
-            onClick={() => onAlbumClick(album)}
-          >
+
+      {/* 정보 */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          color: "var(--text)", fontWeight: 700, fontSize: 14,
+          letterSpacing: "-0.02em",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {displayName}
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>
+          {list.length}장 · avg {artistAvg.toFixed(2)}
+        </p>
+        {/* 앨범 미니 커버 */}
+        <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
+          {previews.map((album) => (
             <div
+              key={album.id}
               style={{
-                borderRadius: 6, overflow: "hidden",
+                width: 22, height: 22, borderRadius: 3, overflow: "hidden",
                 backgroundColor: "var(--bg-elevated)",
                 border: "1px solid var(--border)",
+                flexShrink: 0,
               }}
-              className="w-[84px] h-[84px] sm:w-[80px] sm:h-[80px] transition-opacity hover:opacity-80"
             >
               {album.cover_url
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" src={album.cover_url} alt={album.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 18, color: "var(--text-muted)" }}>♪</span>
-                  </div>
+                ? <img loading="lazy" src={album.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : null
               }
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, gap: 4 }}>
-              <span style={{ color: "var(--text-sub)", fontSize: 10, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
-              <SpotifyAttribution spotifyId={album.spotify_id} />
+          ))}
+          {list.length > 5 && (
+            <div style={{
+              width: 22, height: 22, borderRadius: 3,
+              backgroundColor: "var(--bg-elevated)",
+              border: "1px solid var(--border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 8, color: "var(--text-muted)", fontWeight: 700, flexShrink: 0,
+            }}>
+              +{list.length - 5}
             </div>
-            <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {album.title}
-            </p>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* 화살표 */}
+      <span style={{ color: "var(--text-muted)", fontSize: 20, flexShrink: 0, lineHeight: 1 }}>›</span>
+    </button>
   );
 }
 
@@ -976,13 +1002,12 @@ export default function BestPageClient({
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div>
             {sortedArtistData.map(([artist, list]) => (
-              <ArtistSection
+              <ArtistRow
                 key={artist}
                 artist={artist}
                 list={list}
-                onAlbumClick={(a) => setSelectedAlbum(a)}
                 onArtistClick={(a) => setArtistModal(a)}
               />
             ))}
