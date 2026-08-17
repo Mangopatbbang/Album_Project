@@ -337,6 +337,121 @@ function ArtistRow({
   );
 }
 
+// ─── ArtistPopup (아티스트 전체 목록 모달) ───────────────────────────────────
+function ArtistPopup({
+  data,
+  onClose,
+  onArtistClick,
+}: {
+  data: [string, AlbumStat[]][];
+  onClose: () => void;
+  onArtistClick: (artist: { name: string; display: string }) => void;
+}) {
+  const [sort, setSort] = useState<"count" | "avg">("count");
+  const closingRef = useRef(false);
+
+  useEffect(() => {
+    const doClose = () => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
+    document.addEventListener("keydown", onKey);
+    window.history.pushState({ popupOpen: true }, "");
+    const onPop = () => doClose();
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.popupOpen) window.history.back();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sorted = useMemo(() => {
+    return [...data].sort(([, a], [, b]) => {
+      if (sort === "avg") {
+        const avgA = a.reduce((s, x) => s + x.avg, 0) / a.length;
+        const avgB = b.reduce((s, x) => s + x.avg, 0) / b.length;
+        return avgB - avgA;
+      }
+      return b.length - a.length;
+    });
+  }, [data, sort]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        backgroundColor: "rgba(0,0,0,0.7)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 14,
+          width: "100%", maxWidth: 560,
+          maxHeight: "80dvh",
+          display: "flex", flexDirection: "column",
+          overflow: "hidden",
+          animation: "modalIn 0.18s ease-out",
+        }}
+      >
+        {/* 헤더 */}
+        <div style={{
+          padding: "18px 24px 14px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex", alignItems: "center", gap: 8,
+          flexShrink: 0,
+        }}>
+          <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em", color: "var(--text)" }}>아티스트별</span>
+          <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{data.length}팀</span>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
+            {(["count", "avg"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSort(s)}
+                style={{
+                  padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
+                  background: sort === s ? "var(--accent)" : "var(--bg-elevated)",
+                  color: sort === s ? "var(--bg)" : "var(--text-muted)",
+                  border: `1px solid ${sort === s ? "var(--accent)" : "var(--border)"}`,
+                  cursor: "pointer", transition: "all 0.12s",
+                }}
+              >
+                {s === "count" ? "장수순" : "평점순"}
+              </button>
+            ))}
+            <button
+              onClick={onClose}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: "0 0 0 6px" }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        {/* 아티스트 목록 */}
+        <div style={{ overflowY: "auto", padding: "0 24px" }}>
+          {sorted.map(([artist, list]) => (
+            <ArtistRow
+              key={artist}
+              artist={artist}
+              list={list}
+              onArtistClick={(a) => { onClose(); onArtistClick(a); }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── RankedTile (2~5위 클립보드 영역) ────────────────────────────────────────
 function RankedTile({
   album,
@@ -789,8 +904,8 @@ export default function BestPageClient({
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   // "best" | "worst" : 통합 랭킹 / 이건 좀 전체 팝업
   const [openFullList, setOpenFullList] = useState<"best" | "worst" | null>(null);
-  // 아티스트별 정렬 기준
-  const [artistSort, setArtistSort] = useState<"count" | "avg">("count");
+  // 아티스트 전체 목록 팝업
+  const [artistPopupOpen, setArtistPopupOpen] = useState(false);
   // 연도별·장르별 더보기 팝업
   const [openSectionData, setOpenSectionData] = useState<{ label: string; list: AlbumStat[] } | null>(null);
 
@@ -832,16 +947,6 @@ export default function BestPageClient({
     return gems.filter((a) => a.region === regionFilter);
   }, [gems, regionFilter]);
 
-  const sortedArtistData = useMemo(() => {
-    return [...filteredArtistData].sort(([, a], [, b]) => {
-      if (artistSort === "avg") {
-        const avgA = a.reduce((s, x) => s + x.avg, 0) / a.length;
-        const avgB = b.reduce((s, x) => s + x.avg, 0) / b.length;
-        return avgB - avgA;
-      }
-      return b.length - a.length; // count
-    });
-  }, [filteredArtistData, artistSort]);
 
   const [hero, ...restRanked] = rankedList;
   const clipList = restRanked.slice(0, 4); // 2~5위
@@ -979,31 +1084,15 @@ export default function BestPageClient({
       )}
 
       {/* ── 아티스트별 섹션 ── */}
-      {sortedArtistData.length > 0 && (
+      {filteredArtistData.length > 0 && (
         <section>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>아티스트별</h2>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>3장 이상 · {sortedArtistData.length}팀</span>
-            <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-              {(["count", "avg"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setArtistSort(s)}
-                  style={{
-                    padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
-                    background: artistSort === s ? "var(--accent)" : "var(--bg-elevated)",
-                    color: artistSort === s ? "var(--bg)" : "var(--text-muted)",
-                    border: `1px solid ${artistSort === s ? "var(--accent)" : "var(--border)"}`,
-                    cursor: "pointer", transition: "all 0.12s",
-                  }}
-                >
-                  {s === "count" ? "장수순" : "평점순"}
-                </button>
-              ))}
-            </div>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>3장 이상 · {filteredArtistData.length}팀</span>
           </div>
+          {/* 상위 3팀 미리보기 */}
           <div>
-            {sortedArtistData.map(([artist, list]) => (
+            {filteredArtistData.slice(0, 3).map(([artist, list]) => (
               <ArtistRow
                 key={artist}
                 artist={artist}
@@ -1012,6 +1101,23 @@ export default function BestPageClient({
               />
             ))}
           </div>
+          {/* 전체 보기 버튼 */}
+          {filteredArtistData.length > 3 && (
+            <button
+              onClick={() => setArtistPopupOpen(true)}
+              style={{
+                marginTop: 14, padding: "7px 16px",
+                borderRadius: 7, fontSize: 11, fontWeight: 600,
+                background: "none", border: "1px solid var(--border)",
+                color: "var(--text-muted)", cursor: "pointer",
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-muted)"; e.currentTarget.style.color = "var(--text)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+            >
+              아티스트 전체 보기 ({filteredArtistData.length}팀) →
+            </button>
+          )}
         </section>
       )}
 
@@ -1047,6 +1153,15 @@ export default function BestPageClient({
           list={openSectionData.list}
           onClose={() => setOpenSectionData(null)}
           onAlbumClick={(a) => setSelectedAlbum(a)}
+          onArtistClick={(a) => setArtistModal(a)}
+        />
+      )}
+
+      {/* ── 아티스트 전체 목록 팝업 ── */}
+      {artistPopupOpen && (
+        <ArtistPopup
+          data={filteredArtistData}
+          onClose={() => setArtistPopupOpen(false)}
           onArtistClick={(a) => setArtistModal(a)}
         />
       )}
