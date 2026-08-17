@@ -208,8 +208,7 @@ function SectionGrid({
               style={{
                 position: "relative", borderRadius: 6, overflow: "hidden",
                 backgroundColor: "var(--bg-elevated)",
-                border: `1px solid ${glowBorder(album.avg)}`,
-                boxShadow: glowShadow(album.avg),
+                border: "1px solid var(--border)",
               }}
               className="w-full aspect-square sm:aspect-auto sm:w-[90px] sm:h-[90px]"
             >
@@ -222,7 +221,7 @@ function SectionGrid({
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 5, gap: 4 }}>
               <span className="text-[10px]" style={{ color: "var(--text-muted)", fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-              <span className="text-[13px] sm:text-[11px]" style={{ color: scoreColor(album.avg), fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
+              <span className="text-[13px] sm:text-[11px]" style={{ color: "var(--text-sub)", fontWeight: 700, flexShrink: 0 }}>{album.avg.toFixed(1)}</span>
             </div>
             <p className="text-[12px] sm:text-[11px]" style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {album.title}
@@ -270,7 +269,7 @@ function ArtistSection({
           {list[0]?.artist_display ?? artist}
         </h3>
         <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{list.length}장</span>
-        <span style={{ color: scoreColor(artistAvg), fontSize: 12, fontWeight: 600, marginLeft: "auto" }}>
+        <span style={{ color: "var(--text-muted)", fontSize: 12, fontWeight: 500, marginLeft: "auto" }}>
           avg {artistAvg.toFixed(2)}
         </span>
       </div>
@@ -286,8 +285,7 @@ function ArtistSection({
               style={{
                 borderRadius: 6, overflow: "hidden",
                 backgroundColor: "var(--bg-elevated)",
-                border: `1px solid ${glowBorder(album.avg)}`,
-                boxShadow: glowShadow(album.avg),
+                border: "1px solid var(--border)",
               }}
               className="w-[84px] h-[84px] sm:w-[80px] sm:h-[80px] transition-opacity hover:opacity-80"
             >
@@ -300,7 +298,7 @@ function ArtistSection({
               }
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, gap: 4 }}>
-              <span style={{ color: scoreColor(album.avg), fontSize: 10, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
+              <span style={{ color: "var(--text-sub)", fontSize: 10, fontWeight: 700 }}>{album.avg.toFixed(1)}</span>
               <SpotifyAttribution spotifyId={album.spotify_id} />
             </div>
             <p style={{ color: "var(--text)", fontSize: 10, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -715,7 +713,7 @@ function HiddenGemsSection({
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginTop: 5 }}>
-              <span className="text-[11px]" style={{ color: scoreColor(album.avg), fontWeight: 700 }}>
+              <span className="text-[11px]" style={{ color: "var(--text-sub)", fontWeight: 700 }}>
                 {album.avg.toFixed(1)}
               </span>
             </div>
@@ -765,6 +763,8 @@ export default function BestPageClient({
   const [artistModal, setArtistModal] = useState<{ name: string; display: string } | null>(null);
   // "best" | "worst" : 통합 랭킹 / 이건 좀 전체 팝업
   const [openFullList, setOpenFullList] = useState<"best" | "worst" | null>(null);
+  // 아티스트별 정렬 기준
+  const [artistSort, setArtistSort] = useState<"count" | "avg">("count");
   // 연도별·장르별 더보기 팝업
   const [openSectionData, setOpenSectionData] = useState<{ label: string; list: AlbumStat[] } | null>(null);
 
@@ -805,6 +805,17 @@ export default function BestPageClient({
     if (regionFilter === "전체") return gems;
     return gems.filter((a) => a.region === regionFilter);
   }, [gems, regionFilter]);
+
+  const sortedArtistData = useMemo(() => {
+    return [...filteredArtistData].sort(([, a], [, b]) => {
+      if (artistSort === "avg") {
+        const avgA = a.reduce((s, x) => s + x.avg, 0) / a.length;
+        const avgB = b.reduce((s, x) => s + x.avg, 0) / b.length;
+        return avgB - avgA;
+      }
+      return b.length - a.length; // count
+    });
+  }, [filteredArtistData, artistSort]);
 
   const [hero, ...restRanked] = rankedList;
   const clipList = restRanked.slice(0, 4); // 2~5위
@@ -942,14 +953,31 @@ export default function BestPageClient({
       )}
 
       {/* ── 아티스트별 섹션 ── */}
-      {filteredArtistData.length > 0 && (
+      {sortedArtistData.length > 0 && (
         <section>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>아티스트별</h2>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>2장 이상 · {filteredArtistData.length}팀</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>3장 이상 · {sortedArtistData.length}팀</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+              {(["count", "avg"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setArtistSort(s)}
+                  style={{
+                    padding: "3px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600,
+                    background: artistSort === s ? "var(--accent)" : "var(--bg-elevated)",
+                    color: artistSort === s ? "var(--bg)" : "var(--text-muted)",
+                    border: `1px solid ${artistSort === s ? "var(--accent)" : "var(--border)"}`,
+                    cursor: "pointer", transition: "all 0.12s",
+                  }}
+                >
+                  {s === "count" ? "장수순" : "평점순"}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {filteredArtistData.map(([artist, list]) => (
+            {sortedArtistData.map(([artist, list]) => (
               <ArtistSection
                 key={artist}
                 artist={artist}
