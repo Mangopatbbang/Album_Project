@@ -129,7 +129,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
         title: "청음평 — 한줄평 피드",
         body: "모든 멤버의 한줄평을 피드로 볼 수 있어요. 앨범별로 묶어보거나 최신순으로 볼 수 있어요.",
         selector: '[data-tour="nav-reviews"]',
-        navigate: "/reviews",
+        navigate: "/community?tab=reviews",
       },
       {
         id: "reviews-filter",
@@ -149,7 +149,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
         title: "청음인 — 멤버 현황",
         body: "모임 멤버들의 평가 현황을 한눈에 볼 수 있는 페이지예요.",
         selector: '[data-tour="nav-members"]',
-        navigate: "/members",
+        navigate: "/community?tab=members",
       },
       {
         id: "members-compat",
@@ -215,7 +215,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
         title: "청음집",
         body: "테마별 앨범 컬렉션을 만들 수 있어요. 로그인 후 직접 청음집을 제작할 수 있어요.",
         selector: '[data-tour="themes-new-btn"]',
-        navigate: "/themes",
+        navigate: "/best?tab=collections",
       },
       // ── 메뉴 ─────────────────────────────────────────────────
       {
@@ -301,7 +301,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
       title: "청음평 — 한줄평 피드",
       body: "모든 멤버의 한줄평을 피드로 볼 수 있어요.",
       selector: '[data-tour="nav-reviews"]',
-      navigate: "/reviews",
+      navigate: "/community?tab=reviews",
     },
     {
       id: "reviews-filter",
@@ -321,7 +321,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
       title: "청음인 — 멤버 현황",
       body: "모임 멤버들의 평가 현황을 한눈에 볼 수 있는 페이지예요.",
       selector: '[data-tour="nav-members"]',
-      navigate: "/members",
+      navigate: "/community?tab=members",
     },
     {
       id: "members-compat",
@@ -399,7 +399,7 @@ function makeSteps(isDesktop: boolean, profilePath?: string): TourStep[] {
       title: "청음집",
       body: "테마별 앨범 컬렉션을 만들고 공유할 수 있는 페이지예요.",
       selector: '[data-tour="themes-new-btn"]',
-      navigate: "/themes",
+      navigate: "/best?tab=collections",
     },
     // ── 메뉴 ─────────────────────────────────────────────────
     {

@@ -10,8 +10,8 @@ import { unstable_cache } from "next/cache";
 import Spinner from "@/components/ui/Spinner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import MembersMyCardHighlight from "@/components/ui/MembersMyCardHighlight";
-import ReviewsClient from "@/app/(main)/reviews/ReviewsClient";
-import { PairsSection, type PairData } from "@/app/(main)/members/MembersSections";
+import ReviewsClient from "./ReviewsClient";
+import { PairsSection, type PairData } from "./MembersSections";
 import CommunityTabBar from "./CommunityTabBar";
 import type { ReviewItem } from "@/app/api/reviews/route";
 

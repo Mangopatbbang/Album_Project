@@ -57,10 +57,9 @@ Next.js App Router를 사용한다. 각 폴더가 URL 경로에 대응하며, �
 ```
 /                       홈 — 통계 히어로, 오늘의 인연, 최근 평가 피드
 /albums                 음반고 — 전체 앨범 그리드 (무한 스크롤 + 필터)
-/best                   청음감 — 명반 순위 (연도/장르/아티스트/통합)
-/reviews                청음평 — 전체 한줄평 피드
-/themes                 청음집 — 선곡집 + 테마 컬렉션
-/members                청음인 — 멤버 목록 및 취향 비교
+/best                   청음감 — ?tab=ranking(명반 순위) | ?tab=collections(청음집)
+/community              청음방 — ?tab=reviews(소감 피드) | ?tab=members(멤버·취향 궁합)
+(구) /reviews /members /themes → next.config.ts redirects로 위 탭에 연결 (2026-11 독립 페이지 삭제)
 /board                  게시판 — 공지사항 / 문의판
 /profile/:userId        프로필 — 개인 청음 기록 및 통계
 /playlist/:id           선곡집 상세

@@ -48,7 +48,7 @@ export default function PlaylistSection({ initialPlaylists }: Props) {
             청음집
           </h2>
           <Link
-            href="/themes"
+            href="/best?tab=collections"
             style={{ color: "var(--text-muted)", fontSize: 11 }}
             className="hover:text-[var(--accent)] transition-colors"
           >

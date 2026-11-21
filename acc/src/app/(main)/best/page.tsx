@@ -4,7 +4,7 @@ import { fetchAllAlbumsWithRatings, getBestDataForPage, getHiddenGems } from "@/
 import { supabaseServer } from "@/lib/supabase";
 import BestPageClient from "./BestPageClient";
 import BestTabBar from "./BestTabBar";
-import ThemesPageClient, { type Playlist } from "@/app/(main)/themes/ThemesPageClient";
+import ThemesPageClient, { type Playlist } from "./ThemesPageClient";
 import Spinner from "@/components/ui/Spinner";
 
 export const metadata: Metadata = {

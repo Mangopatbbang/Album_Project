@@ -130,10 +130,12 @@ function formatPath(path: string): string {
     "/": "홈",
     "/best": "청음감",
     "/albums": "음반 목록",
-    "/board": "청음록",
-    "/reviews": "청음평",
-    "/members": "멤버",
-    "/themes": "테마",
+    "/board": "게시판",
+    "/community": "청음방",
+    // 아래 3개는 2026-11 삭제된 옛 경로 — 과거 페이지뷰 데이터 표시용
+    "/reviews": "청음평(구)",
+    "/members": "멤버(구)",
+    "/themes": "테마(구)",
   };
   if (map[path]) return map[path];
   if (path.startsWith("/profile/")) return `프로필: ${path.replace("/profile/", "")}`;
