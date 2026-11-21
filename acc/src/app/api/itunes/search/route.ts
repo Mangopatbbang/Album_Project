@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchItunesAlbumCandidates, fetchItunesTracklist } from "@/lib/itunes";
+import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
   const title = req.nextUrl.searchParams.get("title")?.trim();
   const artist = req.nextUrl.searchParams.get("artist")?.trim();
   const collectionId = req.nextUrl.searchParams.get("collectionId");

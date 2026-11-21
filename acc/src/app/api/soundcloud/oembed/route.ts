@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
   const url = new URL(req.url).searchParams.get("url");
   if (!url) return NextResponse.json({ error: "url 필수" }, { status: 400 });
 

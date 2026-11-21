@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { getAccessToken } from "@/lib/spotify";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 const BATCH_SIZE = 5;
 const DELAY_MS = 300; // Spotify rate limit 대응
@@ -72,6 +73,9 @@ async function fetchTracklist(token: string, spotifyId: string): Promise<string 
 }
 
 export async function POST(req: NextRequest) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { offset = 0 } = await req.json().catch(() => ({}));
 
   // 아직 spotify_id 없는 앨범만 처리

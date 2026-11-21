@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/spotify";
+import { validateAdmin } from "@/lib/validateAdmin";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;

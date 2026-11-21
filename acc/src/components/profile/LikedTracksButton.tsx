@@ -57,7 +57,7 @@ export default function LikedTracksButton({ userId }: { userId: string }) {
     setLoading(true);
     setFetchError(false);
     try {
-      const res = await fetch(`/api/liked-tracks?userId=${encodeURIComponent(userId)}`);
+      const res = await apiFetch(`/api/liked-tracks?userId=${encodeURIComponent(userId)}`);
       if (!res.ok) { setFetchError(true); setItems([]); return; }
       setItems(await res.json());
     } catch {

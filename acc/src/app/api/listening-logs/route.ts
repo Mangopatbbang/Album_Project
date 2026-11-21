@@ -5,6 +5,9 @@ import { validateUser } from "@/lib/validateUser";
 
 // GET /api/listening-logs?userId=X&albumId=Y
 export async function GET(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
   const albumId = searchParams.get("albumId");
@@ -12,6 +15,7 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "userId 필수" }, { status: 400 });
   }
+  if (authed.id !== userId) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   const limitParam = searchParams.get("limit");
   const limit = albumId ? 200 : Math.min(parseInt(limitParam ?? "100") || 100, 1000);

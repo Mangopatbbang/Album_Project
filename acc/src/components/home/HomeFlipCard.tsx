@@ -5,6 +5,7 @@ import HomeControversialSection, { ControversialItem } from "./HomeControversial
 import { useAuth } from "@/context/AuthContext";
 import AlbumModal from "@/components/album/AlbumModal";
 import { AlbumWithRatings } from "@/types";
+import { apiFetch } from "@/lib/apiFetch";
 
 type WatchlistAlbum = {
   album_id: string;
@@ -25,7 +26,7 @@ function HomeWatchlistBack({ userId }: { userId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/watchlist?userId=${userId}`, { signal: controller.signal })
+    apiFetch(`/api/watchlist?userId=${userId}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setItems(data?.items ?? []);

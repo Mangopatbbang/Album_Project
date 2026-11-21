@@ -605,7 +605,7 @@ export default function AdminPage() {
       batchNum++;
       setTrackLog((prev) => [...prev, `배치 ${batchNum} 처리 중...`]);
       try {
-        const res = await fetch("/api/migrate/tracklist", {
+        const res = await adminFetch("/api/migrate/tracklist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset }),
@@ -726,7 +726,7 @@ export default function AdminPage() {
       batchNum++;
       setMigLog((prev) => [...prev, `배치 ${batchNum} 요청 중... (offset: ${offset})`]);
       try {
-        const res = await fetch("/api/migrate/spotify", {
+        const res = await adminFetch("/api/migrate/spotify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ offset }),
@@ -917,7 +917,7 @@ export default function AdminPage() {
     if (searchQuery) dbParams.set("title", searchQuery);
 
     const [spotifyRes, dbRes] = await Promise.all([
-      fetch(`/api/migrate/spotify/search?${spotifyParams}`),
+      adminFetch(`/api/migrate/spotify/search?${spotifyParams}`),
       adminFetch(`/api/admin/albums?${dbParams}`),
     ]);
 
@@ -1198,7 +1198,7 @@ export default function AdminPage() {
               <button onClick={() => loadLogs(logsAction || undefined)} disabled={logsLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--text-sub)", fontSize: 12, fontWeight: 600 }}>
                 {logsLoading ? "로딩 중..." : logs === null ? "불러오기" : "새로고침"}
               </button>
-              <button onClick={handleClearLogs} disabled={logsClearLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsClearLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "#e05050", fontSize: 12, fontWeight: 600 }}>
+              <button onClick={handleClearLogs} disabled={logsClearLoading} style={{ padding: "5px 14px", borderRadius: 6, border: "1px solid var(--border)", cursor: logsClearLoading ? "not-allowed" : "pointer", backgroundColor: "var(--bg-elevated)", color: "var(--error)", fontSize: 12, fontWeight: 600 }}>
                 {logsClearLoading ? "삭제 중..." : "15일 이전 삭제"}
               </button>
             </div>
@@ -1213,7 +1213,7 @@ export default function AdminPage() {
                     const actionLabels: Record<string, { label: string; fg: string; bg: string }> = {
                       album_add:    { label: "앨범 등록", fg: "#4caf50", bg: "rgba(76,175,80,0.12)" },
                       album_edit:   { label: "앨범 수정", fg: "#2196f3", bg: "rgba(33,150,243,0.12)" },
-                      album_delete: { label: "앨범 삭제", fg: "#e05050", bg: "rgba(224,80,80,0.12)" },
+                      album_delete: { label: "앨범 삭제", fg: "var(--error)", bg: "rgba(224,80,80,0.12)" },
                       rating_set:   { label: "평점 저장", fg: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
                       rating_delete:{ label: "평점 삭제", fg: "#e07070", bg: "rgba(224,112,112,0.12)" },
                     };
@@ -1333,7 +1333,7 @@ export default function AdminPage() {
             )}
 
             {preview && (
-              <div style={{ border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, borderRadius: 10, backgroundColor: "var(--bg-elevated)", padding: 16, marginBottom: 12, display: "flex", gap: 16 }}>
+              <div style={{ border: `1px solid ${albumId ? "var(--border)" : "var(--error)"}`, borderRadius: 10, backgroundColor: "var(--bg-elevated)", padding: 16, marginBottom: 12, display: "flex", gap: 16 }}>
                 {preview.candidate.cover_url
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img loading="lazy" src={preview.candidate.cover_url} alt={preview.candidate.name} style={{ width: 100, height: 100, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)", flexShrink: 0 }} />
@@ -1353,7 +1353,7 @@ export default function AdminPage() {
                       <p style={{ color: "var(--text-muted)", fontSize: 11 }}>트랙리스트 없음</p>
                     )}
                   </div>
-                  <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${albumId ? "var(--border)" : "#e05050"}`, backgroundColor: "var(--bg)" }}>
+                  <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 8, border: `1px solid ${albumId ? "var(--border)" : "var(--error)"}`, backgroundColor: "var(--bg)" }}>
                     <p style={{ color: "var(--text-muted)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", marginBottom: 6 }}>적용 대상 DB 앨범</p>
                     {matchedAlbum ? (
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1368,7 +1368,7 @@ export default function AdminPage() {
                         </div>
                       </div>
                     ) : (
-                      <p style={{ color: "#e05050", fontSize: 11 }}>⚠️ 위 목록에서 앨범을 먼저 선택하세요 (앨범 ID ≠ Spotify ID)</p>
+                      <p style={{ color: "var(--error)", fontSize: 11 }}>⚠️ 위 목록에서 앨범을 먼저 선택하세요 (앨범 ID ≠ Spotify ID)</p>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
@@ -1379,7 +1379,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {fixMsg && <p style={{ color: fixMsg.startsWith("✅") ? "var(--accent)" : fixMsg.startsWith("⚠️") ? "#df9e30" : "var(--text-muted)", fontSize: 13, marginTop: 8 }}>{fixMsg}</p>}
+            {fixMsg && <p style={{ color: fixMsg.startsWith("✅") ? "var(--accent)" : fixMsg.startsWith("⚠️") ? "var(--warning)" : "var(--text-muted)", fontSize: 13, marginTop: 8 }}>{fixMsg}</p>}
           </div>
 
           {/* 발매일 자동 채우기 */}
@@ -1479,7 +1479,7 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : aliasMsg.startsWith("⚠️") ? "#e8a53a" : "#e05050", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
+            {aliasMsg && <p style={{ color: aliasMsg.startsWith("✅") ? "var(--accent)" : aliasMsg.startsWith("⚠️") ? "var(--warning)" : "var(--error)", fontSize: 12, marginBottom: 12 }}>{aliasMsg}</p>}
 
             {unifiedRows !== null && (() => {
               let rows = unifiedRows;
@@ -1543,7 +1543,7 @@ export default function AdminPage() {
                               width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
                               backgroundColor: row.variant_name
                                 ? (isUsingVariant ? "var(--accent)" : "#6b7280")
-                                : (row.fuzzyGroup ? "#e8a53a" : "var(--border)"),
+                                : (row.fuzzyGroup ? "var(--warning)" : "var(--border)"),
                             }} title={row.variant_name ? (isUsingVariant ? "별칭 표시 중" : "원본 표시 중") : row.fuzzyGroup ? "유사 아티스트 있음" : "미설정"} />
                             {/* Spotify 원본명 */}
                             <span style={{ width: 140, flexShrink: 0, display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
@@ -1600,16 +1600,16 @@ export default function AdminPage() {
                               <button onClick={() => toggleSearchAliases(row.spotify_name)} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: "1px dashed var(--border)", background: "none", color: "var(--text-muted)", cursor: "pointer", flexShrink: 0 }}>+ alias</button>
                             )}
                             {/* 오류 메시지 */}
-                            {searchAliasMsg[row.spotify_name] && <span style={{ fontSize: 10, color: "#e05050", flexShrink: 0 }}>{searchAliasMsg[row.spotify_name]}</span>}
+                            {searchAliasMsg[row.spotify_name] && <span style={{ fontSize: 10, color: "var(--error)", flexShrink: 0 }}>{searchAliasMsg[row.spotify_name]}</span>}
                             {/* 유사명 제안 */}
                             {suggestions.length > 0 && pendingVal === undefined && suggestions.map((s) => (
-                              <button key={s} onClick={() => setUnifiedPending((prev) => ({ ...prev, [row.spotify_name]: s }))} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, border: "1px solid #e8a53a", background: "rgba(232,165,58,0.1)", color: "#e8a53a", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                              <button key={s} onClick={() => setUnifiedPending((prev) => ({ ...prev, [row.spotify_name]: s }))} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, border: "1px solid var(--warning)", background: "rgba(var(--warning-rgb), 0.1)", color: "var(--warning)", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                                 💡 {s}
                               </button>
                             ))}
                             {/* 삭제 */}
                             {row.variant_name && pendingVal === undefined && (
-                              <button onClick={() => handleDeleteFromUnified(row.spotify_name)} style={{ marginLeft: "auto", flexShrink: 0, background: "none", border: "none", color: "#e05050", cursor: "pointer", fontSize: 11, padding: "0 4px" }}>삭제</button>
+                              <button onClick={() => handleDeleteFromUnified(row.spotify_name)} style={{ marginLeft: "auto", flexShrink: 0, background: "none", border: "none", color: "var(--error)", cursor: "pointer", fontSize: 11, padding: "0 4px" }}>삭제</button>
                             )}
                           </div>
                         </div>
@@ -1626,7 +1626,7 @@ export default function AdminPage() {
                       <button onClick={() => setUnifiedPending({})} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "transparent", color: "var(--text-muted)", fontSize: 12, cursor: "pointer" }}>취소</button>
                     </div>
                   )}
-                  {unifiedMsg && <p style={{ fontSize: 12, color: unifiedMsg.startsWith("✅") ? "var(--accent)" : "#e05050", marginTop: 8 }}>{unifiedMsg}</p>}
+                  {unifiedMsg && <p style={{ fontSize: 12, color: unifiedMsg.startsWith("✅") ? "var(--accent)" : "var(--error)", marginTop: 8 }}>{unifiedMsg}</p>}
                 </div>
               );
             })()}
@@ -1660,7 +1660,7 @@ export default function AdminPage() {
                 </div>
 
                 {artistPhotoMsg && (
-                  <p style={{ fontSize: 12, color: artistPhotoMsg.startsWith("✅") ? "var(--accent)" : "#e05050", marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: artistPhotoMsg.startsWith("✅") ? "var(--accent)" : "var(--error)", marginBottom: 12 }}>
                     {artistPhotoMsg}
                   </p>
                 )}
@@ -1694,7 +1694,7 @@ export default function AdminPage() {
                       {artistPhotoOverrides[editingArtistPhoto] && (
                         <button
                           onClick={() => handleDeleteArtistPhoto(editingArtistPhoto)}
-                          style={{ padding: "7px 12px", borderRadius: 6, border: "1px solid rgba(224,80,80,0.4)", backgroundColor: "transparent", color: "#e05050", fontSize: 12, cursor: "pointer" }}
+                          style={{ padding: "7px 12px", borderRadius: 6, border: "1px solid rgba(224,80,80,0.4)", backgroundColor: "transparent", color: "var(--error)", fontSize: 12, cursor: "pointer" }}
                         >
                           삭제
                         </button>
@@ -1744,14 +1744,14 @@ export default function AdminPage() {
               </div>
               <button onClick={handleCanonicalChange} disabled={!canonicalAlbumId.trim() || !canonicalArtist.trim()} style={{ backgroundColor: "#c0392b", border: "none", color: "white", borderRadius: 6, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: (!canonicalAlbumId.trim() || !canonicalArtist.trim()) ? 0.4 : 1 }}>변경</button>
             </div>
-            {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "#e05050", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
+            {canonicalMsg && <p style={{ color: canonicalMsg.startsWith("✅") ? "var(--accent)" : "var(--error)", fontSize: 12, marginTop: 8 }}>{canonicalMsg}</p>}
           </div>
         </>)}
 
         {/* ════ 마이그레이션 탭 ════ */}
         {activeTab === "migration" && (<>
           <div style={{ backgroundColor: "rgba(240,160,40,0.08)", border: "1px solid rgba(240,160,40,0.25)", borderRadius: 10, padding: "14px 20px", marginBottom: 24 }}>
-            <p style={{ color: "#df9e30", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>초기 셋업용 도구</p>
+            <p style={{ color: "var(--warning)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>초기 셋업용 도구</p>
             <p style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.5 }}>대량 앨범 입고 직후 1회 실행용입니다. 개별 앨범 교정은 "앨범 교정" 탭을 사용하세요.</p>
           </div>
 
@@ -1877,7 +1877,7 @@ export default function AdminPage() {
                         신고자 <span style={{ color: "var(--text)", fontWeight: 600 }}>@{r.reporter_id}</span>
                       </span>
                       <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                        피신고자 <span style={{ color: "#e05050", fontWeight: 600 }}>@{r.reported_user_id}</span>
+                        피신고자 <span style={{ color: "var(--error)", fontWeight: 600 }}>@{r.reported_user_id}</span>
                       </span>
                       <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
                         {new Date(r.created_at).toLocaleString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
@@ -1886,7 +1886,7 @@ export default function AdminPage() {
                     <span style={{
                       fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
                       backgroundColor: r.status === "pending" ? "rgba(224,80,80,0.15)" : r.status === "reviewed" ? "rgba(var(--accent-rgb),0.15)" : "var(--bg-card)",
-                      color: r.status === "pending" ? "#e05050" : r.status === "reviewed" ? "var(--accent)" : "var(--text-muted)",
+                      color: r.status === "pending" ? "var(--error)" : r.status === "reviewed" ? "var(--accent)" : "var(--text-muted)",
                     }}>
                       {{ pending: "대기 중", reviewed: "처리됨", dismissed: "기각됨" }[r.status] ?? r.status}
                     </span>
@@ -1913,25 +1913,25 @@ export default function AdminPage() {
                       </button>
                       <button
                         onClick={() => handleReportAction(r.id, "warn")}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid rgba(224,160,48,0.5)", backgroundColor: "rgba(224,160,48,0.1)", color: "#e0a030" }}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer", border: "1px solid rgba(224,160,48,0.5)", backgroundColor: "rgba(224,160,48,0.1)", color: "var(--warning)" }}
                       >
                         경고
                       </button>
                       <button
                         onClick={() => handleReportAction(r.id, "ban_7d")}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.3)", backgroundColor: "rgba(224,80,80,0.07)", color: "#e05050" }}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.3)", backgroundColor: "rgba(224,80,80,0.07)", color: "var(--error)" }}
                       >
                         7일 정지
                       </button>
                       <button
                         onClick={() => handleReportAction(r.id, "ban_14d")}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.5)", backgroundColor: "rgba(224,80,80,0.12)", color: "#e05050" }}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.5)", backgroundColor: "rgba(224,80,80,0.12)", color: "var(--error)" }}
                       >
                         14일 정지
                       </button>
                       <button
                         onClick={() => handleReportAction(r.id, "ban_permanent")}
-                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.7)", backgroundColor: "rgba(224,80,80,0.18)", color: "#e05050" }}
+                        style={{ padding: "5px 12px", borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: "pointer", border: "1px solid rgba(224,80,80,0.7)", backgroundColor: "rgba(224,80,80,0.18)", color: "var(--error)" }}
                       >
                         영구 정지
                       </button>

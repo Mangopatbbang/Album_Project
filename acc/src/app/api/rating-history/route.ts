@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateUser } from "@/lib/validateUser";
 
 export type RatingHistoryItem = {
   id: number;
@@ -11,11 +12,17 @@ export type RatingHistoryItem = {
 
 // GET /api/rating-history?userId=&albumId=
 export async function GET(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId")?.trim();
   const albumId = searchParams.get("albumId")?.trim();
 
   if (!userId && !albumId) return NextResponse.json({ error: "userId 또는 albumId 필요" }, { status: 400 });
+
+  // userId 지정 시 본인만 조회 가능
+  if (userId && authed.id !== userId) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   let query = supabaseServer
     .from("rating_history")

@@ -588,7 +588,13 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
     setEvicting(false);
     if (!saveRes.ok) {
-      showToast("저장에 실패했어요. 다시 시도해주세요.", "info");
+      // 2단계 실패 → 1단계(점수 변경)를 되돌려 명반전 원상복구 시도
+      await apiFetch("/api/ratings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId: evictAlbumId, score: 8 }),
+      });
+      showToast("저장에 실패했어요. 원상복구를 시도했습니다.", "info");
       return;
     }
 
@@ -1124,7 +1130,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               {controversyIndex !== null && (
                 <span style={{
                   fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
-                  color: controversyIndex >= 2 ? "#e05050" : controversyIndex >= 1.2 ? "#e0a030" : "var(--text-muted)",
+                  color: controversyIndex >= 2 ? "var(--error)" : controversyIndex >= 1.2 ? "var(--warning)" : "var(--text-muted)",
                   opacity: 0.85,
                 }}>
                   {controversyIndex >= 2 ? "논란" : controversyIndex >= 1.2 ? "의견 분분" : "합의"}
@@ -2033,7 +2039,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           album={nestedAlbum}
           onClose={() => setNestedAlbum(null)}
           onSaved={onSaved}
-          zIndex={300}
+          zIndex={zIndex + 100}
           source="artist_modal"
         />,
         document.body

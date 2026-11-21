@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { searchAndFetchAlbum, getAccessToken } from "@/lib/spotify";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 const BATCH_SIZE = 20;
 
@@ -159,12 +160,18 @@ async function phase2(offset: number) {
 }
 
 export async function POST(req: NextRequest) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { offset = 0, phase = 1 } = await req.json().catch(() => ({}));
   const result = phase === 2 ? await phase2(offset) : await phase1(offset);
   return NextResponse.json(result);
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const [{ count: unprocessed }, { count: noTracklist }, { count: notFound }, { count: withCover }] = await Promise.all([
     supabaseServer.from("albums").select("id", { count: "exact", head: true }).is("spotify_id", null),
     supabaseServer.from("albums").select("id", { count: "exact", head: true }).is("tracklist", null).not("spotify_id", "is", null).neq("spotify_id", "not_found"),

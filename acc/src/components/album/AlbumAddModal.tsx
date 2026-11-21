@@ -220,7 +220,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
     let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
     try {
       const q = new URLSearchParams({ title: title.trim(), artist: artist.trim() });
-      const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`, { signal: controller.signal });
+      const res = await apiFetch(`/api/migrate/spotify/search?${q.toString()}`, { signal: controller.signal });
       data = await res.json();
     } catch (e) {
       if ((e as Error)?.name === "AbortError") return;
@@ -441,6 +441,18 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
 
   if (addedAlbumId && aliasCheckDone && !aliasExists) {
     const closeWithToast = () => { showToast(`${title} 입고 완료`); onClose(); };
+    const handleSaveAlias = async () => {
+      if (!aliasInput.trim() || aliasSaving) return;
+      setAliasSaving(true);
+      await apiFetch("/api/admin/artist-aliases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
+      });
+      setAliasSaving(false);
+      setAliasSaved(true);
+      setTimeout(() => closeWithToast(), 600);
+    };
     return (
       <div
         ref={backdropRef}
@@ -460,7 +472,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
           <div>
             <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 17, marginBottom: 4 }}>입고 완료</p>
             <p style={{ color: "var(--text-muted)", fontSize: 12 }}>
-              <span style={{ color: "#e8a53a" }}>⚠</span> &ldquo;{artist}&rdquo; 표시 이름이 없어요
+              <span style={{ color: "var(--warning)" }}>⚠</span> &ldquo;{artist}&rdquo; 표시 이름이 없어요
             </p>
           </div>
           {aliasSaved ? (
@@ -470,7 +482,7 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
               {aliasSuggestions.length > 0 && (
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {aliasSuggestions.map((s) => (
-                    <button key={s} onClick={() => setAliasInput(s)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, border: "1px solid #e8a53a", background: "rgba(232,165,58,0.1)", color: "#e8a53a", cursor: "pointer" }}>
+                    <button key={s} onClick={() => setAliasInput(s)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 10, border: "1px solid var(--warning)", background: "rgba(var(--warning-rgb), 0.1)", color: "var(--warning)", cursor: "pointer" }}>
                       💡 {s}
                     </button>
                   ))}
@@ -480,33 +492,14 @@ export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props
                 value={aliasInput}
                 onChange={(e) => setAliasInput(e.target.value)}
                 onKeyDown={async (e) => {
-                  if (e.key !== "Enter" || !aliasInput.trim() || aliasSaving) return;
-                  setAliasSaving(true);
-                  await apiFetch("/api/admin/artist-aliases", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
-                  });
-                  setAliasSaving(false);
-                  setAliasSaved(true);
-                  setTimeout(() => closeWithToast(), 600);
+                  if (e.key !== "Enter") return;
+                  await handleSaveAlias();
                 }}
                 placeholder={`표시할 이름 입력 (예: 한글명)`}
                 style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border)", backgroundColor: "var(--bg-elevated)", color: "var(--text)", fontSize: 12, outline: "none", boxSizing: "border-box" }}
               />
               <button
-                onClick={async () => {
-                  if (!aliasInput.trim() || aliasSaving) return;
-                  setAliasSaving(true);
-                  await apiFetch("/api/admin/artist-aliases", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ spotify_name: artist.trim(), variant_name: aliasInput.trim() }),
-                  });
-                  setAliasSaving(false);
-                  setAliasSaved(true);
-                  setTimeout(() => closeWithToast(), 600);
-                }}
+                onClick={handleSaveAlias}
                 disabled={!aliasInput.trim() || aliasSaving}
                 style={{
                   width: "100%", padding: "9px 0", borderRadius: 6,

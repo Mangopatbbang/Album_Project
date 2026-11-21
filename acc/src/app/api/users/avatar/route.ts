@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "file 필수" }, { status: 400 });
   }
 
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: "파일 크기는 5MB 이하여야 합니다" }, { status: 413 });
+  }
+
   const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const path = `${authed.id}.${ext}`;
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { scoreColor } from "@/lib/score";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 export type WrappedData = {
   year: number;
@@ -22,6 +23,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+
   const { userId } = await params;
   const yearParam = req.nextUrl.searchParams.get("year");
   const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();

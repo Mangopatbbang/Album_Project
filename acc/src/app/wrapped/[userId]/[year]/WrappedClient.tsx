@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { WrappedData } from "@/app/api/profile/[userId]/wrapped/route";
 import { scoreColor } from "@/lib/score";
 import Spinner from "@/components/ui/Spinner";
+import { apiFetch } from "@/lib/apiFetch";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useUserAvatars } from "@/context/UserAvatarsContext";
 
@@ -30,7 +31,7 @@ export default function WrappedClient({ userId, year }: { userId: string; year: 
   }, [profile, loading, router]);
 
   useEffect(() => {
-    fetch(`/api/profile/${userId}/wrapped?year=${year}`)
+    apiFetch(`/api/profile/${userId}/wrapped?year=${year}`)
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(() => setFetchError(true));

@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { logActivity } from "@/lib/activityLog";
 import { validateUser } from "@/lib/validateUser";
+import { generalLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 // GET /api/ratings?albumId=123
 // GET /api/ratings?userId=arkyteccc
@@ -42,6 +43,8 @@ export async function GET(req: NextRequest) {
 // POST /api/ratings
 // body: { albumId, score, one_line_review? }
 export async function POST(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
@@ -77,6 +80,10 @@ export async function POST(req: NextRequest) {
     supabaseServer.from("albums").select("title, artist").eq("id", albumId).single(),
   ]);
   const prevScore = existing?.score ?? null;
+  const prevReview = (existing as { one_line_review?: string | null } | null)?.one_line_review ?? null;
+  // one_line_review 미전송(undefined) = 기존 한줄평 유지 (명반전 밀어내기처럼 점수만 바꾸는 호출)
+  // null/빈 값 전송 = 삭제 — 일반 저장(AlbumModal)은 항상 필드를 보냄
+  const nextReview = one_line_review === undefined ? prevReview : (one_line_review ?? null);
 
   // 8점 상한 체크 (12장) — 새로 8점을 주는 경우에만
   if (score === 8 && prevScore !== 8) {
@@ -109,7 +116,7 @@ export async function POST(req: NextRequest) {
     private_note?: string | null;
     encounter_date?: string;
     discovery_source?: string;
-  } = { album_id: albumId, user_id: userId, score, one_line_review: one_line_review ?? null };
+  } = { album_id: albumId, user_id: userId, score, one_line_review: nextReview };
   if (is_encounter) {
     const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
     upsertData.encounter_date = kst.toISOString().slice(0, 10);
@@ -134,13 +141,12 @@ export async function POST(req: NextRequest) {
   }
 
   // 점수 or 한줄소감 변경 시 이전 값 기록
-  const prevReview = existing ? (existing as { score: number; one_line_review?: string | null }).one_line_review ?? null : null;
-  const reviewChanged = (one_line_review ?? null) !== prevReview;
+  const reviewChanged = nextReview !== prevReview;
   if (prevScore !== null && (prevScore !== score || reviewChanged)) {
     await supabaseServer.from("rating_history").insert({
       user_id: userId, album_id: albumId,
       old_score: prevScore, new_score: score,
-      old_review: prevReview, new_review: one_line_review ?? null,
+      old_review: prevReview, new_review: nextReview,
     });
   }
 
@@ -165,6 +171,8 @@ export async function POST(req: NextRequest) {
 // liked_tracks: { albumId, liked_tracks }
 // 리뷰 좋아요 토글: { albumId, reviewerId }
 export async function PATCH(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 
@@ -245,6 +253,8 @@ export async function PATCH(req: NextRequest) {
 // DELETE /api/ratings
 // body: { albumId }
 export async function DELETE(req: NextRequest) {
+  const limited = await checkRateLimit(generalLimiter, getIP(req));
+  if (limited) return limited;
   const authed = await validateUser(req);
   if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
 

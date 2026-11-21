@@ -1,5 +1,9 @@
+import { apiFetch } from "@/lib/apiFetch";
+
+// 로그인 상태면 Authorization 헤더가 붙어 서버(/api/track)가 userId를 기록한다.
+// 비로그인이면 토큰 없이 전송 → 익명 이벤트 (track 라우트는 비로그인도 허용하므로 401 없음)
 function post(body: object) {
-  fetch("/api/track", {
+  apiFetch("/api/track", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

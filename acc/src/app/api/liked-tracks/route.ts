@@ -13,6 +13,7 @@ export type LikedTrackItem = {
 };
 
 export async function GET(req: NextRequest) {
+  // 좋아하는 곡은 공개 정보 — 타인 프로필에서도 조회 가능 (2026-11-21 결정)
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) return NextResponse.json({ error: "userId 필요" }, { status: 400 });
 

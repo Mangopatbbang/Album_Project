@@ -95,7 +95,7 @@ export default function WatchlistSection({ userId }: Props) {
   useEffect(() => {
     if (!isOwner) return;
     setFetching(true);
-    fetch(`/api/watchlist?userId=${userId}`)
+    apiFetch(`/api/watchlist?userId=${userId}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.items) setItems(data.items);

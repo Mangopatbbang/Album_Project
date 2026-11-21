@@ -4,8 +4,12 @@ import { resolveArtistDisplay } from "@/lib/artistDisplay";
 import { validateUser } from "@/lib/validateUser";
 
 export async function GET(req: NextRequest) {
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+  if (authed.id !== userId) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   const { data, error } = await supabaseServer
     .from("watchlist")

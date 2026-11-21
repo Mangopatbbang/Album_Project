@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAccessToken } from "@/lib/spotify";
+import { validateUser } from "@/lib/validateUser";
+import { spotifyLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
+  // 앨범 입고·수정(AlbumAddModal/AlbumEditModal)에서 일반 유저도 사용 — admin 전용 아님
+  const authed = await validateUser(req);
+  if (!authed) return NextResponse.json({ error: "로그인 필요" }, { status: 401 });
+  const limited = await checkRateLimit(spotifyLimiter, getIP(req));
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const title = searchParams.get("title") ?? "";
   const artist = searchParams.get("artist") ?? "";

@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "auth_id, username 필수" }, { status: 400 });
   }
 
+  // auth_id가 실제 Supabase Auth에 존재하는 유저인지 서버에서 검증 (위조 방지)
+  const { data: { user: authUser }, error: authLookupError } = await supabaseServer.auth.admin.getUserById(auth_id);
+  if (authLookupError || !authUser) {
+    return NextResponse.json({ error: "유효하지 않은 인증 정보" }, { status: 400 });
+  }
+
   // 기존 행 확인
   const { data: existing } = await supabaseServer
     .from("users")

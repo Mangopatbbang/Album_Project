@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import { validateAdmin } from "@/lib/validateAdmin";
 
 const SHEET_CSV_URL = process.env.SHEET_CSV_URL!;
 
@@ -36,7 +37,10 @@ function parseCsv(text: string): Record<string, string>[] {
   });
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const authed = await validateAdmin(req);
+  if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const res = await fetch(SHEET_CSV_URL);
     if (!res.ok) return NextResponse.json({ error: "시트 fetch 실패" }, { status: 500 });

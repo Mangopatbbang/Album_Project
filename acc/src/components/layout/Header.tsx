@@ -229,15 +229,15 @@ export default function Header() {
                       )}
                     </div>
                     <div style={{ maxHeight: "min(320px, 50dvh)", overflowY: "auto" }}>
-                      {notifications.filter(n => n.type !== "comment").length === 0 ? (
+                      {notifications.length === 0 ? (
                         <div style={{ padding: "28px 16px", textAlign: "center" }}>
                           <p style={{ fontSize: 18, marginBottom: 6 }}>🔔</p>
                           <p style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, marginBottom: 4 }}>새 알림이 없어요</p>
                           <p style={{ fontSize: 11, color: "var(--text-muted)", opacity: 0.6, lineHeight: 1.5 }}>멤버가 소감에 공감하면<br />여기에 나타나요</p>
                         </div>
                       ) : (
-                        notifications.filter(n => n.type !== "comment").map((n) => {
-                          const isSystemNotif = n.type !== "like";
+                        notifications.map((n) => {
+                          const isSystemNotif = n.type !== "comment" && n.type !== "like";
                           const fromUser = isSystemNotif ? null : getUserById(n.fromUserId ?? "");
                           const nd = new Date(n.createdAt);
                           const ndStr = `${String(nd.getMonth() + 1).padStart(2, "0")}.${String(nd.getDate()).padStart(2, "0")}`;
@@ -252,7 +252,7 @@ export default function Header() {
                               <>신고가 <span style={{ fontWeight: 600 }}>확인 처리</span>됐습니다{n.reviewerId && <> — @{n.reviewerId}</>}</>
                             );
                             if (n.type === "report_ban") return (
-                              <>신고 <span style={{ fontWeight: 600 }}>처리 완료</span>{n.reviewerId && <> — <span style={{ color: "#e05050" }}>@{n.reviewerId}</span> 제재됨</>}</>
+                              <>신고 <span style={{ fontWeight: 600 }}>처리 완료</span>{n.reviewerId && <> — <span style={{ color: "var(--error)" }}>@{n.reviewerId}</span> 제재됨</>}</>
                             );
                             if (n.type === "moderation_warning") return (
                               <>관리자로부터 <span style={{ fontWeight: 600 }}>경고</span>가 발송됐습니다</>
@@ -267,8 +267,8 @@ export default function Header() {
                           };
 
                           const leftBarColor =
-                            n.type === "moderation_warning" ? "#e0a030"
-                            : n.type === "moderation_ban_temp" || n.type === "moderation_ban_permanent" ? "#e05050"
+                            n.type === "moderation_warning" ? "var(--warning)"
+                            : n.type === "moderation_ban_temp" || n.type === "moderation_ban_permanent" ? "var(--error)"
                             : isSystemNotif ? "var(--accent)"
                             : "var(--accent)";
 
@@ -302,9 +302,9 @@ export default function Header() {
                                 ) : (
                                   <>
                                     <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginBottom: 2 }}>
-                                      <span style={{ marginRight: 4 }}>♥</span>
+                                      <span style={{ marginRight: 4 }}>{n.type === "comment" ? "💬" : "♥"}</span>
                                       <span style={{ fontWeight: 600 }}>{fromUser?.display_name ?? n.fromUserId}</span>
-                                      {" "}님이 소감에 공감했어요
+                                      {" "}님이 {n.type === "comment" ? "소감에 댓글을 달았어요" : "소감에 공감했어요"}
                                     </p>
                                     {n.albumTitle && (
                                       <p style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

@@ -106,7 +106,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
 
   // 아티스트 별칭 조회
   useEffect(() => {
-    fetch(`/api/admin/artist-aliases?artist=${encodeURIComponent(album.artist)}`)
+    apiFetch(`/api/admin/artist-aliases?artist=${encodeURIComponent(album.artist)}`)
       .then((r) => r.json())
       .then((d) => { if (d.alias) setVariantName(d.alias.variant_name); })
       .catch(() => {});
@@ -144,7 +144,7 @@ export default function AlbumEditModal({ album, onClose, onSaved, isAdmin }: Pro
     let data: { results?: SpotifyCandidate[]; error?: string; message?: string };
     try {
       const q = new URLSearchParams({ title: title.trim(), artist: searchArtist });
-      const res = await fetch(`/api/migrate/spotify/search?${q.toString()}`);
+      const res = await apiFetch(`/api/migrate/spotify/search?${q.toString()}`);
       data = await res.json();
     } catch {
       setSearching(false);

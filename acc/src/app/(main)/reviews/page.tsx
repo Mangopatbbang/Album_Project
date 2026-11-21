@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import Spinner from "@/components/ui/Spinner";
@@ -18,52 +19,56 @@ type AlbumRow = {
   cover_url: string | null; genre: string | null;
 };
 
-async function getBestReviews(): Promise<ReviewItem[]> {
-  const { data } = await supabaseServer
-    .from("ratings")
-    .select("user_id, score, one_line_review, liked_by, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, cover_url, genre)")
-    .not("one_line_review", "is", null)
-    .neq("one_line_review", "")
-    .not("liked_by", "is", null)
-    .neq("liked_by", "");
+const getBestReviews = unstable_cache(
+  async (): Promise<ReviewItem[]> => {
+    const { data } = await supabaseServer
+      .from("ratings")
+      .select("user_id, score, one_line_review, liked_by, updated_at, albums(id, title, artist, use_artist_variant, extra_artists, cover_url, genre)")
+      .not("one_line_review", "is", null)
+      .neq("one_line_review", "")
+      .not("liked_by", "is", null)
+      .neq("liked_by", "");
 
-  if (!data?.length) return [];
+    if (!data?.length) return [];
 
-  const sorted = [...data]
-    .sort((a, b) => {
-      const aL = (a.liked_by as string).split(",").filter(Boolean).length;
-      const bL = (b.liked_by as string).split(",").filter(Boolean).length;
-      return bL - aL;
-    })
-    .slice(0, 3);
+    const sorted = [...data]
+      .sort((a, b) => {
+        const aL = (a.liked_by as string).split(",").filter(Boolean).length;
+        const bL = (b.liked_by as string).split(",").filter(Boolean).length;
+        return bL - aL;
+      })
+      .slice(0, 3);
 
-  const albumObjects = sorted
-    .map((r) => (r.albums as unknown) as AlbumRow | null)
-    .filter((a): a is AlbumRow => a !== null);
+    const albumObjects = sorted
+      .map((r) => (r.albums as unknown) as AlbumRow | null)
+      .filter((a): a is AlbumRow => a !== null);
 
-  const resolved = await resolveArtistDisplay(albumObjects);
-  const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
+    const resolved = await resolveArtistDisplay(albumObjects);
+    const displayMap = new Map(resolved.map((a) => [a.id, a.artist_display ?? a.artist]));
 
-  return sorted
-    .map((r): ReviewItem | null => {
-      const album = (r.albums as unknown) as AlbumRow | null;
-      if (!album) return null;
-      return {
-        albumId: album.id,
-        albumTitle: album.title,
-        artist: album.artist,
-        artistDisplay: displayMap.get(album.id) ?? album.artist,
-        coverUrl: album.cover_url ?? null,
-        genre: album.genre ?? null,
-        userId: r.user_id,
-        score: r.score,
-        review: r.one_line_review as string,
-        likedBy: (r.liked_by as string).split(",").filter(Boolean),
-        updatedAt: r.updated_at,
-      };
-    })
-    .filter((x): x is ReviewItem => x !== null);
-}
+    return sorted
+      .map((r): ReviewItem | null => {
+        const album = (r.albums as unknown) as AlbumRow | null;
+        if (!album) return null;
+        return {
+          albumId: album.id,
+          albumTitle: album.title,
+          artist: album.artist,
+          artistDisplay: displayMap.get(album.id) ?? album.artist,
+          coverUrl: album.cover_url ?? null,
+          genre: album.genre ?? null,
+          userId: r.user_id,
+          score: r.score,
+          review: r.one_line_review as string,
+          likedBy: (r.liked_by as string).split(",").filter(Boolean),
+          updatedAt: r.updated_at,
+        };
+      })
+      .filter((x): x is ReviewItem => x !== null);
+  },
+  ["reviews-best"],
+  { tags: ["profile-ratings"], revalidate: false }
+);
 
 export default async function ReviewsPage() {
   const bestReviews = await getBestReviews();
