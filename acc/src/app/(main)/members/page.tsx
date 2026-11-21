@@ -38,20 +38,11 @@ export default async function MembersPage() {
       count: scores.filter((s) => s === i + 1).length,
     }));
 
-    // 장르/아티스트 집계
+    // 장르 집계
     const genreMap = new Map<string, number>();
-    const artistMap = new Map<string, { count: number; total: number }>();
     for (const r of mine) {
       if (r.albums?.genre) { genreMap.set(r.albums.genre, (genreMap.get(r.albums.genre) ?? 0) + 1); }
-      if (r.albums?.artist) {
-        const prev = artistMap.get(r.albums.artist) ?? { count: 0, total: 0 };
-        artistMap.set(r.albums.artist, { count: prev.count + 1, total: prev.total + r.score });
-      }
     }
-    const topGenreEntry = [...genreMap.entries()].sort((a, b) => b[1] - a[1])[0];
-    const topArtistEntry = [...artistMap.entries()]
-      .map(([artist, { count, total: t }]) => ({ artist, count, avg: t / count }))
-      .sort((a, b) => b.count - a.count)[0];
 
     const topGenres = [...genreMap.entries()]
       .sort((a, b) => b[1] - a[1])

@@ -278,7 +278,7 @@ export function getBestByGenre(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   return new Map([...map.entries()].sort((a, b) => b[1][0].avg - a[1][0].avg));
 }
 
-// 아티스트별: 2장 이상인 아티스트의 앨범 목록 (아티스트 평균 내림차순)
+// 아티스트별: 3장 이상인 아티스트의 앨범 목록 (아티스트 평균 내림차순)
 export function getBestByArtist(albums: RawAlbum[]): Map<string, AlbumStat[]> {
   const valid = validAlbums(albums);
   const map = new Map<string, AlbumStat[]>();
@@ -389,6 +389,7 @@ export const fetchAllMemberRatings = unstable_cache(
     return all;
   },
   ["all-member-ratings"],
+  // 개별 평점 변경(profile-ratings 무효화) 시 멤버 전체 통계도 갱신돼야 하므로 태그 공유가 의도된 동작
   { tags: ["profile-ratings"], revalidate: false }
 );
 
