@@ -94,7 +94,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [myPrivateNote, setMyPrivateNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [closing, setClosing] = useState(false);
   const [showCardPreview, setShowCardPreview] = useState(false);
@@ -556,7 +555,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
       showToast("첫 청음 기록이에요! 평가가 쌓이면 취향 분석이 시작돼요");
     } else {
       showToastWithAction("청음을 기록했어요", "반응 보기 →", () => {
-        router.push(`/reviews?albumId=${album.id}`);
+        router.push(`/community?tab=reviews&albumId=${album.id}`);
       });
     }
     await afterSaveSuccess(optimisticFull as unknown as AlbumWithRatings | undefined);
@@ -661,7 +660,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
     return Math.sqrt(variance);
   }, [ratingScores]);
 
-  const { trackPopularity, top3TrackIndices } = useMemo(() => {
+  const { top3TrackIndices } = useMemo(() => {
     const popularity = new Map<number, number>();
     for (const r of ratings) {
       if (r.liked_tracks) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
-import { validateUser } from "@/lib/validateUser";
 
 export type CommentItem = {
   id: string;

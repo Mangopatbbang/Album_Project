@@ -139,8 +139,6 @@ export default function HomeTodaySection({ initialAlbum }: Props) {
       ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
       : null;
 
-  const myRating = album.ratings?.find((r) => r.user_id === profile?.id);
-
   const year = album.release_date?.slice(0, 4) ?? null;
   const tracks = parseTracklist(album.tracklist);
   const COLLAPSED_SHOW = 4;

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
-import { useAuth } from "@/context/AuthContext";
 import SoundCloudAddModal from "@/components/album/SoundCloudAddModal";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
@@ -97,7 +96,6 @@ function CandidateItem({ c, selected, onSelect }: { c: SpotifyCandidate; selecte
 
 export default function AlbumAddModal({ onClose, onAdded, initialSearch }: Props) {
   const { showToast } = useToast();
-  const { profile } = useAuth();
   const [title, setTitle] = useState(initialSearch ?? "");
   const [artist, setArtist] = useState("");
   const [releaseDate, setReleaseDate] = useState("");

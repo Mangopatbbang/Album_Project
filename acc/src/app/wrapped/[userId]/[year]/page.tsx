@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase";
 import WrappedClient from "./WrappedClient";
 

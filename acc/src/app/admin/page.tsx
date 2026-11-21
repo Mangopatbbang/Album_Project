@@ -233,17 +233,9 @@ export default function AdminPage() {
   }
 
   // --- 아티스트 별칭 관리 ---
-  const [aliases, setAliases] = useState<AliasRow[]>([]);
-  const [aliasesLoading, setAliasesLoading] = useState(false);
-  const [unaliasedArtists, setUnaliasedArtists] = useState<string[]>([]);
-  const [unaliasedLoading, setUnaliasedLoading] = useState(false);
-  const [unaliasedSearch, setUnaliasedSearch] = useState("");
-  const [listMode, setListMode] = useState<"aliases" | "unaliased" | null>(null);
   const [newSpotifyName, setNewSpotifyName] = useState("");
   const [newVariantName, setNewVariantName] = useState("");
   const [aliasMsg, setAliasMsg] = useState("");
-  const [editingAlias, setEditingAlias] = useState<string | null>(null); // spotify_name being edited
-  const [editVariant, setEditVariant] = useState("");
   // 표시 이름 variant 통계
   const [variantStats, setVariantStats] = useState<Record<string, { total: number; using: number }>>({});
 
@@ -251,7 +243,6 @@ export default function AdminPage() {
   const [expandedAlias, setExpandedAlias] = useState<string | null>(null);
   const [searchAliasMap, setSearchAliasMap] = useState<Record<string, { id: number; alias: string }[]>>({});
   const [searchAliasInput, setSearchAliasInput] = useState("");
-  const [searchAliasLoading, setSearchAliasLoading] = useState(false);
   const [searchAliasMsg, setSearchAliasMsg] = useState<Record<string, string>>({});
   // canonical name change (admin only)
   const [canonicalAlbumId, setCanonicalAlbumId] = useState("");
@@ -268,49 +259,6 @@ export default function AdminPage() {
   const [unifiedMsg, setUnifiedMsg] = useState("");
 
 
-  async function loadAliases() {
-    if (listMode === "aliases") { setListMode(null); setAliases([]); return; }
-    setAliasesLoading(true);
-    setListMode("aliases");
-    setUnaliasedArtists([]);
-    const [res1, res2] = await Promise.all([
-      adminFetch("/api/admin/artist-aliases"),
-      adminFetch("/api/admin/artist-use-variant"),
-    ]);
-    const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
-    setAliases(d1.aliases ?? []);
-    setVariantStats(d2.stats ?? {});
-    setAliasesLoading(false);
-  }
-
-  async function loadUnaliased() {
-    if (listMode === "unaliased") { setListMode(null); setUnaliasedArtists([]); return; }
-    setUnaliasedLoading(true);
-    setListMode("unaliased");
-    setAliases([]);
-    const res = await adminFetch("/api/admin/artist-aliases?unaliased=true");
-    const data = await res.json();
-    setUnaliasedArtists(data.artists ?? []);
-    setUnaliasedLoading(false);
-  }
-
-  // 현재 열린 목록을 토글 없이 새로고침
-  async function refreshCurrentList(mode: "aliases" | "unaliased" | null) {
-    if (mode === "aliases") {
-      const [res1, res2] = await Promise.all([
-        adminFetch("/api/admin/artist-aliases"),
-        adminFetch("/api/admin/artist-use-variant"),
-      ]);
-      const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
-      setAliases(d1.aliases ?? []);
-      setVariantStats(d2.stats ?? {});
-    } else if (mode === "unaliased") {
-      const res = await adminFetch("/api/admin/artist-aliases?unaliased=true");
-      const data = await res.json();
-      setUnaliasedArtists(data.artists ?? []);
-    }
-  }
-
   async function handleAddAlias() {
     if (!newSpotifyName.trim() || !newVariantName.trim()) return;
     const res = await adminFetch("/api/admin/artist-aliases", {
@@ -321,40 +269,6 @@ export default function AdminPage() {
     if (res.ok) {
       setAliasMsg(`✅ ${newSpotifyName} → ${newVariantName} 저장됨`);
       setNewSpotifyName(""); setNewVariantName("");
-      await refreshCurrentList(listMode);
-    } else {
-      const d = await res.json();
-      setAliasMsg(`❌ ${d.error}`);
-    }
-  }
-
-  async function handleSaveEditAlias() {
-    if (!editingAlias || !editVariant.trim()) return;
-    const res = await adminFetch("/api/admin/artist-aliases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ spotify_name: editingAlias, variant_name: editVariant.trim() }),
-    });
-    if (res.ok) {
-      setAliasMsg(`✅ ${editingAlias} 수정됨`);
-      setEditingAlias(null); setEditVariant("");
-      await refreshCurrentList(listMode);
-    } else {
-      const d = await res.json();
-      setAliasMsg(`❌ ${d.error}`);
-    }
-  }
-
-  async function handleDeleteAlias(spotify_name: string) {
-    if (!confirm(`"${spotify_name}" 별칭을 삭제할까요?`)) return;
-    const res = await adminFetch("/api/admin/artist-aliases", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ spotify_name }),
-    });
-    if (res.ok) {
-      setAliasMsg(`✅ ${spotify_name} 삭제됨 (앨범 원래이름으로 복원)`);
-      await refreshCurrentList(listMode);
     } else {
       const d = await res.json();
       setAliasMsg(`❌ ${d.error}`);

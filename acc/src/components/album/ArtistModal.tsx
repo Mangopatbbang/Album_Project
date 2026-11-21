@@ -21,8 +21,6 @@ type Props = {
 
 export default function ArtistModal({ artistName, displayName, onClose, onAlbumClick, source, handleHistory, zIndex = 110 }: Props) {
   const [albums, setAlbums] = useState<AlbumWithRatings[]>([]);
-  const avatarMap = useUserAvatars();
-  const { users } = useUsers();
   const [avgScore, setAvgScore] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);

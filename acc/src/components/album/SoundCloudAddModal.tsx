@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
-import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import FilterSelect from "@/components/ui/FilterSelect";
 
@@ -26,7 +25,6 @@ type OEmbedResult = {
 
 export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
   const { showToast } = useToast();
-  const { profile } = useAuth();
 
   const [scUrl, setScUrl] = useState("");
   const [fetching, setFetching] = useState(false);

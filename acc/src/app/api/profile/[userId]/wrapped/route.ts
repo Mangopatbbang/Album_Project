@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
-import { scoreColor } from "@/lib/score";
 import { validateAdmin } from "@/lib/validateAdmin";
 
 export type WrappedData = {

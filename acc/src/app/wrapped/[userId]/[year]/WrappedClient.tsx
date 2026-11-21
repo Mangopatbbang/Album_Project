@@ -307,7 +307,7 @@ export default function WrappedClient({ userId, year }: { userId: string; year: 
 
       {/* 점 인디케이터 */}
       <div style={{ display: "flex", gap: 6, marginTop: 20 }}>
-        {SLIDES.map((s, i) => (
+        {SLIDES.map((s) => (
           <button
             key={s}
             onClick={() => goTo(s)}
