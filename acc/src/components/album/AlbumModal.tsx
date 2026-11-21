@@ -26,6 +26,7 @@ import { GENRE_COLOR } from "@/lib/bio";
 import AlbumInfoReport from "@/components/album/modal/AlbumInfoReport";
 import { RatingHistoryTimeline, ListenCount } from "@/components/album/modal/RatingHistory";
 import AlbumTracklist from "@/components/album/modal/AlbumTracklist";
+import HofEvictPanel from "@/components/album/modal/HofEvictPanel";
 
 const RATING_GUIDE_INTRO = "본인이 만든 창작물을 지인에게 들려준 경험이 있는가? '괜찮네' '좋네' 등의 반응으로는 그 작품의 완성도를 판단할 수 없다. 그러한 반응은 오히려 평작의 반응에 가까우며, 만든 사람의 기분을 생각해 예의를 차려준 표현에 가깝다. 각 티어의 이름은 그 앨범을 들었을 때 직관적으로 생기는 '리액션'에서 유래했다.";
 
@@ -85,7 +86,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [myScore, setMyScore] = useState<number | null>(null);
   const [glowingScore, setGlowingScore] = useState<number | null>(null);
   const [pressedScore, setPressedScore] = useState<number | null>(null);
-  const [pressedEvictScore, setPressedEvictScore] = useState<number | null>(null);
 
   const handleSetMyScore = (n: number) => {
     setMyScore(n);
@@ -1557,147 +1557,16 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               </div>
               {/* 명반전 상한 초과 — 밀어내기 UI */}
               {hofLimitAlbums !== null && (
-                <div style={{
-                  marginTop: 12, padding: "16px",
-                  backgroundColor: "rgba(var(--accent-rgb), 0.05)",
-                  border: "1px solid rgba(var(--accent-rgb), 0.25)",
-                  borderRadius: 10,
-                  animation: "fadeUp 0.18s ease-out",
-                }}>
-                  <p style={{ color: "var(--text)", fontWeight: 700, fontSize: 13, marginBottom: 3 }}>
-                    명반전이 가득 찼어요 <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: 11 }}>12 / 12</span>
-                  </p>
-                  <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 14 }}>
-                    밀어낼 앨범을 선택하고, 새로 줄 점수를 정해주세요.
-                  </p>
-
-                  {/* 명반전 12장 커버 그리드 */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                    {hofLimitAlbums.map((a) => {
-                      const isSelected = evictAlbumId === a.id;
-                      return (
-                        <button
-                          key={a.id}
-                          onClick={() => { setEvictAlbumId(isSelected ? null : a.id); setEvictScore(null); }}
-                          title={`${a.title} — ${a.artist}`}
-                          style={{ padding: 0, background: "none", border: "none", cursor: "pointer", position: "relative" }}
-                          className="active:scale-[0.92] transition-transform"
-                        >
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                          <div style={{
-                            width: 56, height: 56, borderRadius: 6, overflow: "hidden",
-                            backgroundColor: "var(--bg-elevated)",
-                            border: `2px solid ${isSelected ? "var(--error)" : "var(--border)"}`,
-                            opacity: evictAlbumId && !isSelected ? 0.45 : 1,
-                            transition: "border-color 0.15s, opacity 0.15s",
-                          }}>
-                            {a.cover_url
-                              // eslint-disable-next-line @next/next/no-img-element
-                              ? <img loading="lazy" src={a.cover_url} alt={a.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "var(--text-muted)", fontSize: 18 }}>♪</span></div>
-                            }
-                          </div>
-                          {isSelected && (
-                            <div style={{
-                              position: "absolute", inset: 0, borderRadius: 6,
-                              backgroundColor: "rgba(var(--error-rgb), 0.18)",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              pointerEvents: "none",
-                            }}>
-                              <span style={{ fontSize: 18, color: "var(--error)" }}>✕</span>
-                            </div>
-                          )}
-                          </div>
-                          <span style={{
-                            fontSize: 11, color: isSelected ? "var(--error)" : "var(--text-muted)",
-                            maxWidth: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                            opacity: evictAlbumId && !isSelected ? 0.45 : 1,
-                            textAlign: "center", display: "block",
-                          }}>{a.title}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* 선택된 앨범 이름 */}
-                  {evictAlbumId && (() => {
-                    const sel = hofLimitAlbums.find((a) => a.id === evictAlbumId);
-                    if (!sel) return null;
-                    const d = new Date(sel.updatedAt);
-                    const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}`;
-                    return (
-                      <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
-                        선택:{" "}
-                        <span style={{ color: "var(--text)", fontWeight: 600 }}>{sel.title}</span>
-                        <span style={{ color: "var(--text-muted)" }}> — {sel.artist}</span>
-                        <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{" "}· {dateStr} 평가</span>
-                      </p>
-                    );
-                  })()}
-
-                  {/* 밀어낸 앨범 새 점수 선택 */}
-                  {evictAlbumId && (
-                    <div style={{ marginBottom: 14 }}>
-                      <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontWeight: 600, letterSpacing: "0.04em" }}>밀어낸 앨범에 줄 새 점수</p>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {[1,2,3,4,5,6,7].map((n) => {
-                          const color = SCORE_COLORS[n];
-                          const sel = evictScore === n;
-                          return (
-                            <button
-                              key={n}
-                              onClick={() => setEvictScore(n)}
-                              onTouchStart={() => setPressedEvictScore(n)}
-                              onTouchEnd={() => setPressedEvictScore(null)}
-                              onTouchCancel={() => setPressedEvictScore(null)}
-                              style={{
-                                flex: 1, height: 34, borderRadius: 6,
-                                border: sel ? `2px solid ${color}` : `1px solid ${color}44`,
-                                backgroundColor: sel ? color : `${color}18`,
-                                color: sel ? ([3,4,5].includes(n) ? "var(--bg)" : "#fff") : color,
-                                fontWeight: sel ? 800 : 500, fontSize: 13,
-                                cursor: "pointer", transition: "transform 0.12s, background-color 0.12s, border-color 0.12s",
-                                transform: pressedEvictScore === n ? "scale(0.90)" : sel ? "scale(1.08)" : "scale(1)",
-                              }}
-                            >
-                              {n}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 확인 / 취소 */}
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      onClick={() => { setHofLimitAlbums(null); setEvictAlbumId(null); setEvictScore(null); }}
-                      style={{
-                        flex: 1, padding: "8px 0", borderRadius: 6,
-                        backgroundColor: "transparent", border: "1px solid var(--border)",
-                        color: "var(--text-muted)", fontSize: 13, cursor: "pointer",
-                      }}
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={handleEvict}
-                      disabled={!evictAlbumId || evictScore === null || evicting}
-                      style={{
-                        flex: 2, padding: "8px 0", borderRadius: 6,
-                        backgroundColor: evictAlbumId && evictScore !== null ? "var(--accent)" : "var(--bg-elevated)",
-                        border: "none",
-                        color: evictAlbumId && evictScore !== null ? "var(--bg)" : "var(--text-muted)",
-                        fontWeight: 600, fontSize: 13,
-                        cursor: evictAlbumId && evictScore !== null && !evicting ? "pointer" : "not-allowed",
-                        opacity: evicting ? 0.5 : 1,
-                        transition: "opacity 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                      }}
-                    >
-                      {evicting ? "저장 중…" : "확인"}
-                    </button>
-                  </div>
-                </div>
+                <HofEvictPanel
+                  albums={hofLimitAlbums}
+                  evictAlbumId={evictAlbumId}
+                  setEvictAlbumId={setEvictAlbumId}
+                  evictScore={evictScore}
+                  setEvictScore={setEvictScore}
+                  evicting={evicting}
+                  onConfirm={handleEvict}
+                  onCancel={() => { setHofLimitAlbums(null); setEvictAlbumId(null); setEvictScore(null); }}
+                />
               )}
 
               {/* 평점 이력 타임라인 */}
