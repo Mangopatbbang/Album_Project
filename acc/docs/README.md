@@ -17,7 +17,8 @@
 ### 핵심 개념
 
 - **점수 체계**: 1~8점. 8점은 "명반"으로 특별 취급 (최대 12장 제한)
-- **청음사 용어**: 음반고(앨범 목록), 청음감(랭킹), 청음평(한줄평 피드), 청음집(선곡집), 청음인(멤버)
+- **메인 5탭** (2026-07 IA 개편): 홈 / 음반고(앨범 목록) / 청음감(랭킹·컬렉션) / 청음방(소감·멤버) / 청음록(개인 기록 — 취향·청음기·소셜)
+- **기타 용어**: 청음평(한줄평 피드 → 청음방 소감 탭), 청음집(선곡집 → 청음감 컬렉션 탭), 청음인(멤버 → 청음방 멤버 탭)
 - **디자인 콘셉트**: 낡은 레코드 가게 분위기 — 필름 그레인 다크 테마, 베이지 강조색
 
 ---
@@ -29,7 +30,8 @@
 | [architecture.md](./architecture.md) | 시스템 아키텍처 — 기술 스택, 라우팅, 데이터 흐름, 캐시 전략 |
 | [database.md](./database.md) | DB 스키마 — 전체 테이블 정의, 관계, 제약 조건 |
 | [api-reference.md](./api-reference.md) | API 레퍼런스 — 전체 `/api/*` 엔드포인트 목록 |
-| [design-system.md](./design-system.md) | 디자인 시스템 — 색상 변수, 타이포, 컴포넌트 패턴 |
+| [design-system.md](./design-system.md) | 디자인 시스템 — **디자인 단일 문서**: 토큰·타이포/radius 스케일·시각 원칙·컴포넌트 패턴·미해결 이슈 |
+| [references.md](./references.md) | 디자인 레퍼런스 — Letterboxd·RYM 등 벤치마크, UX 케이스 스터디 |
 | [features.md](./features.md) | 기능 목록 — 페이지/컴포넌트별 전체 기능 인벤토리 |
 
 ## 서비스 히스토리
@@ -39,6 +41,7 @@
 | [changelog-service.md](./changelog-service.md) | 서비스 일지 — 멤버/데이터 현황, 마일스톤, 방향성 변화 |
 | [troubleshooting.md](./troubleshooting.md) | 트러블슈팅 노트 — 실제 겪은 버그와 해결책 |
 | [decisions/](./decisions/) | ADR — 기술 선택의 이유 기록 |
+| [archive/](./archive/) | 과거 기획 문서 (현재 구조와 다름, 참고용) |
 
 ---
 

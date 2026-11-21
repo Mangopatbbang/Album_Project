@@ -448,6 +448,71 @@ SSR 이후 React 하이드레이션 전에 이미지가 먼저 로드되면 `onL
 
 ---
 
+### 2026-07-20~08-07 — 앨범 모달 성능 & 상호작용 전수 안정화
+
+모달 지연·무한로딩·유령 오버레이를 근본 원인부터 정리하고, 페이지별 상호작용(back 버튼·Escape·레이스·타이머)을 전수 점검한 기간.
+
+- 비로그인 유도 UI 통일 — 위시리스트·기록·입고 버튼에 `useBlockedAction` 적용
+- 앨범 모달 즉시 열기 — `GlobalAlbumModalOverlay`로 RSC 대기 제거, 프리로드 스토어 + 상위 8개 RSC 프리패치
+- 모바일 무한로딩 해결 — sessionStorage 스토어 교체, Edge runtime, `loading.tsx` 탈출 수단
+- 루트 레이아웃 users 쿼리 캐시 적용 — 모달 네비게이션 30~40초 지연 해결
+- 검색 성능 4레이어 개선 + AbortController로 in-flight 요청 취소
+- `albumModalStore` 단순화, 닫기 경로 전수 보강(유령 오버레이 3경로 차단), zIndex 버그 수정
+- 음반고·청음록·청음감·프로필 탭 상호작용 버그 일괄 수정 (총 40여 건)
+- 전체 코드 리뷰 버그 22건, 휴먼 에러 10건(메모리 누수·레이스·네비게이션 루프) 수정
+
+---
+
+### 2026-08-07~17 — 청음감 랭킹 탭 전면 재설계
+
+레벨2 탭(통합/연도별/장르별/아티스트별)을 없애고 한 페이지 스크롤 섹션 구조로 바꿨다.
+
+- 청음감 탭 구성: **랭킹 / 컬렉션** 2탭 (발견 탭 제거, `/best?tab=discover` 하위 호환 유지)
+- 랭킹 탭 섹션 순서: Hero(1위 배너) → 2~5위 클립보드 타일 + "이건 좀"(최하위 미리보기) 2열 → 연도별·장르별 2열 → 아티스트별 → 발굴 대기
+- "명반 / 이건 좀" 방향 토글, 최악 랭킹 추가
+- 아티스트별: 콤팩트 row(1팀 1줄) + 상위 3팀 미리보기 + 전체 팝업(장수순/평점순 정렬)
+- 발굴 대기 섹션: 기존 발견 탭(히든젬) 흡수, `getHiddenGems` 8 → 20개, `DiscoverClient.tsx` 삭제
+- **발광 희소성 원칙** 적용 — glow는 Hero·상위권에만, 연도/장르/아티스트/발굴 대기는 차분한 톤
+- 음반고 점수필터 + 내 평점 정렬 충돌 수정
+
+---
+
+### 2026-10-11 — 전체 코드 점검 후속 수정 & 디자인 가이드 도입 ⚠️ 미커밋
+
+8/29 전체 코드 점검(lib → pages → components → API → context 섹션별, 이슈 36건)의 수정분. **2026-11-21 기준 커밋·배포 안 됨.**
+
+**버그·보안**
+- 취향 궁합(`/api/profile/[userId]/comparison`) 캐시 키에 userId 누락 → 다른 유저 결과가 반환되던 버그 수정
+- `/api/migrate/*` 5개 라우트에 `validateAdmin` 추가 (기존 인증 없음). `spotify/search`는 입고 검색용이라 로그인 유저 + `spotifyLimiter`
+- 본인 전용 데이터 GET에 `validateUser` + 소유자 체크: watchlist, timeline, listening-logs, rating-history (liked-tracks는 공개 유지 — 2026-11-21 결정)
+- `wrapped` GET admin 전용, `POST /api/users` auth_id 위조 검증 (`auth.admin.getUserById`)
+- 레이트 리밋(`generalLimiter`) 추가: ratings POST/PATCH/DELETE, itunes search, soundcloud oembed
+- 아바타 업로드 5MB 제한, reviews 조회 상한 1000 → 5000
+- AlbumModal 명반전 밀어내기 2단계 실패 시 롤백, 중첩 모달 zIndex 동적 계산
+
+**코드 정리**
+- `lib/supabase.ts` 클라이언트용 dead export 제거 (브라우저는 `supabase-browser.ts`)
+- reviews `getBestReviews` 캐시 적용
+- members/community dead code 제거, `canvasUtils.ts` 신규(커버 Hue 추출·노이즈 배경 공용화)
+
+**디자인**
+- `acc/DESIGN.md` 신규 — 색 토큰·타이포/radius 스케일·시각 원칙·미해결 이슈 (2026-11-21 `docs/design-system.md`로 통합)
+- `--warning` 토큰 추가, `#e05050`·앰버 3종 하드코딩 → 토큰 치환 (14개 파일)
+- `StreamingIcons.tsx` 신규 — Spotify/Apple Music/YouTube Music 아이콘 공용화, 홈 감상하기 피커 아이콘 추가
+- StoryCard Spotify 로고 11px → 21px (브랜드 가이드라인), 저장·공유 시 Spotify URL 클립보드 복사
+
+**2026-11-21 커밋 전 검토에서 잡은 후속 버그** (위 변경이 만든 것)
+- 멤버 통계 캐시 태그를 `all-member-ratings`로 분리했으나 무효화 호출이 없어 통계가 고정됨 → `profile-ratings` 공유로 원복 (공유가 의도된 동작)
+- `spotify/search` admin 전용화로 일반 유저 입고·수정 검색 고장 → 로그인 유저 허용
+- 인증 추가된 API를 일반 `fetch`로 부르던 호출부 → `apiFetch`/`adminFetch`: 어드민 마이그레이션 3곳, WrappedClient, HomeFlipCard(나중에 들을 앨범), AlbumAdd/EditModal 검색
+- PC 헤더 알림에서 댓글 알림이 "공감했어요"로 표시 → 문구 분기 추가
+- (기존 버그) AlbumEditModal 별칭 조회가 일반 `fetch`라 항상 401 → `apiFetch`
+- (기존 버그) 명반전 밀어내기 시 밀려난 앨범의 한줄평이 삭제됨 → ratings POST에서 `one_line_review` 미전송 시 기존 값 유지
+- (기존 버그) 트래킹 이벤트 userId 항상 null (`track.ts`가 일반 `fetch`) → `apiFetch`로 로그인 유저 기록
+- 삭제된 기능 정리: `ConstellationViewer.tsx`(별자리, 1725줄) + 전용 API `/api/profile/[userId]/timeline` 삭제
+
+---
+
 ### 2026-06-20 — 서비스 전반 반응성 · UX 완성도 개선
 
 "버튼을 누르면 한 타이밍 늦게 반응한다"는 체감 지연을 근본적으로 해소한 작업.  

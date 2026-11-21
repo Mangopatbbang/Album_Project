@@ -115,19 +115,23 @@
 
 ## 청음감 `/best`
 
-평점 데이터 기반 랭킹 페이지. 통합·연도·장르·아티스트 4가지 뷰로 전환할 수 있다.  
-7점 이상 앨범에는 청록/라임 Glow 효과가 적용되고, "미발견 명반" 섹션에서는 한 명만 들은 고점 앨범을 보여준다.
+평점 데이터 기반 랭킹 페이지. **랭킹 / 컬렉션** 2탭 구성 (`BestTabBar.tsx`, 2026-08 재설계).  
+랭킹 탭은 하위 탭 없이 한 페이지를 스크롤하며 섹션을 보는 구조이고, 상단 지역 필터(전체/국내/해외)가 모든 섹션에 적용된다.  
+**발광 희소성 원칙** — glow는 Hero와 상위권에만, 나머지 섹션은 차분한 톤(`docs/design-system.md` 참고).
 
-| 기능 | 컴포넌트 / 파일 | 설명 |
+| 기능 | 컴포넌트 (`BestPageClient.tsx` 내부) | 설명 |
 |------|----------------|------|
-| 통합 랭킹 | `BestPageClient.tsx` | 평균 점수 기준 전체 앨범 순위 |
-| 연도별 랭킹 | `BestPageClient.tsx` | 발매 연도별 TOP5 + 미발견 명반 바 |
-| 장르별 랭킹 | `BestPageClient.tsx` | 장르별 TOP5 |
-| 아티스트별 랭킹 | `BestPageClient.tsx` | 아티스트별 앨범 목록 + 평균 점수 정렬 |
-| 미발견 명반 | `BestPageClient.tsx` | 한 명만 들은 고점 앨범 (HiddenGemsBar) |
-| 뷰 전환 | `BestPageClient.tsx` | 통합/연도/장르/아티스트 탭 전환 |
-| Glow 효과 | `BestPageClient.tsx` + `score.ts` | 7·8점 앨범 발광 테두리 |
-| 메달 아이콘 | `BestPageClient.tsx` | 🥇🥈🥉 TOP3 표시 |
+| 1위 배너 | `HeroCard` | 전체 너비, blur 배경 + 점수 강조 |
+| 2~5위 | `RankedTile` | 크기 차등 클립보드 타일, 🥇🥈🥉 메달 |
+| 이건 좀 | `WorstSection` | 최하위 3개 미리보기 + 전체 보기 팝업, 명반/이건 좀 방향 토글 |
+| 연도별 | `YearSection` + `SectionGrid` | 연도 탭 + 선택 연도 그리드 (장르별과 2열 배치) |
+| 장르별 | `GenreSection` + `SectionGrid` | 장르 탭(GENRE_COLOR) + 선택 장르 그리드 |
+| 아티스트별 | `ArtistRow` / `ArtistPopup` | 3장 이상 아티스트, 상위 3팀 콤팩트 row + 전체 팝업(장수순/평점순) |
+| 발굴 대기 | `HiddenGemsSection` | 평가자 적은 고점 앨범 최대 20개 (구 발견 탭 흡수) |
+| 섹션 전체 보기 | `SectionPopup` | ESC/뒤로가기/백드롭 닫기 |
+| 컬렉션 탭 | `ThemesPageClient` 재사용 | 청음집(테마 선곡집) 목록 |
+
+> `/best?tab=discover` 구 URL은 랭킹 탭으로 연결된다.
 
 ---
 

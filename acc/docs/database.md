@@ -1,7 +1,7 @@
 # 데이터베이스 스키마
 
 > Supabase (PostgreSQL) 전체 테이블 정의.  
-> 실제 schema는 `supabase_schema.sql` 참고.
+> 이 문서가 현재 스키마의 정리본이다 (원본은 Supabase 대시보드). 초기 스키마 파일 `supabase_schema.sql`은 2026-03 버전이라 2026-11 삭제됨.
 
 ---
 

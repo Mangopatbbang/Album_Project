@@ -290,7 +290,7 @@ Supabase Auth와 별도로 운영하는 `users` 프로필 테이블의 CRUD 엔�
 
 ### `POST /api/users`
 
-프로필 생성 (회원가입 시).
+프로필 생성 (회원가입 시). `auth_id`가 실제 Supabase Auth 계정인지 `auth.admin.getUserById`로 검증한다 (위조 차단, 2026-10-11).
 
 ```json
 {
@@ -320,7 +320,7 @@ Supabase Auth와 별도로 운영하는 `users` 프로필 테이블의 CRUD 엔�
 
 ### `POST /api/users/avatar`
 
-아바타 이미지 업로드. Supabase Storage 사용.
+아바타 이미지 업로드. Supabase Storage 사용. 최대 5MB.
 
 ---
 
@@ -329,6 +329,8 @@ Supabase Auth와 별도로 운영하는 `users` 프로필 테이블의 CRUD 엔�
 "나중에 들을 앨범"을 저장하는 watchlist의 간단한 CRUD다. 추가와 삭제가 토글 방식으로 작동하며, 중복 추가 시 DB의 UNIQUE 제약이 방어한다.
 
 ### `GET /api/watchlist`
+
+**본인만.** 인증 필요 + `userId`가 본인이어야 함 (2026-10-11).
 
 | 파라미터 | 설명 |
 |---------|------|
@@ -426,6 +428,8 @@ Supabase Auth와 별도로 운영하는 `users` 프로필 테이블의 CRUD 엔�
 앨범 내 특정 트랙에 좋아요를 표시하는 기능이다. `ratings.liked_tracks` 컬럼에 트랙 인덱스 목록이 세미콜론 구분 문자열로 저장된다. 앨범 모달에서 트랙 행 전체를 클릭하면 토글된다.
 
 ### `GET /api/liked-tracks`
+
+공개 — 타인 프로필에서도 조회 가능 (2026-11-21 결정).
 
 | 파라미터 | 설명 |
 |---------|------|
@@ -569,11 +573,31 @@ Spotify 앨범 검색 및 트랙 정보 조회.
 
 ### `GET /api/migrate/spotify/search`
 
-어드민 마이그레이션용 Spotify 후보 검색.
+Spotify 후보 검색. **로그인 유저** + `spotifyLimiter`(분당 10회). 앨범 입고·수정 모달과 어드민에서 사용 — `/api/migrate/*` 중 유일하게 admin 전용이 아님.
 
 ### `GET /api/migrate/tracklist`
 
 트랙리스트 백필 (잘못된 spotify_id 자동 정리).
+
+---
+
+## 접근 제어 요약 (2026-10-11 갱신)
+
+이 문서에 개별 항목이 없는 엔드포인트를 포함해 권한을 한곳에 정리한다.
+
+| 엔드포인트 | 권한 |
+|---|---|
+| `GET /api/watchlist` | 본인만 |
+| `GET /api/liked-tracks` | 공개 |
+| `GET /api/listening-logs`, `GET /api/rating-history` | 본인만 |
+| `GET /api/profile/[userId]/wrapped` | admin 전용 |
+| `/api/migrate/*` (5개 라우트) | admin 전용 |
+| `GET /api/migrate/spotify/search` | 로그인 유저 (입고 검색용) |
+| `GET /api/profile/[userId]/comparison` | 공개 — userId별 캐시 (`profile-comparison-{userId}` 태그) |
+
+레이트 리밋(Upstash `generalLimiter`): albums GET, ratings POST/PATCH/DELETE, itunes search, soundcloud oembed. Spotify 래퍼와 migrate/spotify/search는 `spotifyLimiter`.
+
+> ⚠️ 인증은 `Authorization` 헤더로만 확인한다. 인증이 필요한 엔드포인트는 클라이언트에서 반드시 `apiFetch`(어드민은 `adminFetch`)로 호출할 것 — 일반 `fetch`는 토큰이 안 붙어 401이 난다.
 
 ---
 
@@ -583,7 +607,7 @@ Spotify 앨범 검색 및 트랙 정보 조회.
 
 ### `POST /api/track`
 
-이벤트 기록.
+이벤트 기록. 비로그인 허용 — 로그인 상태면 `apiFetch`가 붙인 토큰으로 서버가 `userId`를 기록한다.
 
 ```json
 {
