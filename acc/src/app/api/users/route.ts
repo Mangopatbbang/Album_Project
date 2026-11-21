@@ -2,9 +2,13 @@
 import { revalidateTag } from "next/cache";
 import { supabaseServer } from "@/lib/supabase";
 import { validateUser } from "@/lib/validateUser";
+import { formLimiter, getIP, checkRateLimit } from "@/lib/ratelimit";
 
 // POST /api/users — 회원가입 시 users 프로필 생성
 export async function POST(req: NextRequest) {
+  // 가입 직후 세션이 없을 수 있어 로그인 요구 불가 — auth_id 실존 검증(아래) + 리밋으로 방어
+  const limited = await checkRateLimit(formLimiter, getIP(req));
+  if (limited) return limited;
   const body = await req.json();
   const { auth_id, username, display_name, emoji, onboarded, avatar_url } = body as {
     auth_id: string;

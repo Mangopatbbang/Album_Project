@@ -201,7 +201,7 @@ export default function BoardClient() {
       return;
     }
     setSavingInquiry(true);
-    const res = await fetch("/api/inquiries", {
+    const res = await apiFetch("/api/inquiries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -9,6 +9,13 @@ export const generalLimiter = new Ratelimit({
   prefix: "rl:general",
 });
 
+// 공개 폼(비로그인도 호출 가능하거나 1회성인 쓰기) — 분당 5회. 스팸·대량 생성 방지
+export const formLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  prefix: "rl:form",
+});
+
 // Spotify API — 분당 10회 (외부 쿼터 보호)
 export const spotifyLimiter = new Ratelimit({
   redis,
