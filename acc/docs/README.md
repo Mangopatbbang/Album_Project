@@ -42,6 +42,7 @@
 | [troubleshooting.md](./troubleshooting.md) | 트러블슈팅 노트 — 실제 겪은 버그와 해결책 |
 | [decisions/](./decisions/) | ADR — 기술 선택의 이유 기록 |
 | [archive/](./archive/) | 과거 기획 문서 (현재 구조와 다름, 참고용) |
+| [refactor/album-modal-split.md](./refactor/album-modal-split.md) | AlbumModal 분리 계획 — 구조 지도·분리 순서·QA 체크리스트 |
 
 ---
 

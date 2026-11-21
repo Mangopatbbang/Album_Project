@@ -23,6 +23,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useBlockedAction } from "@/hooks/useBlockedAction";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
 import { GENRE_COLOR } from "@/lib/bio";
+import AlbumInfoReport from "@/components/album/modal/AlbumInfoReport";
 
 const RATING_GUIDE_INTRO = "본인이 만든 창작물을 지인에게 들려준 경험이 있는가? '괜찮네' '좋네' 등의 반응으로는 그 작품의 완성도를 판단할 수 없다. 그러한 반응은 오히려 평작의 반응에 가까우며, 만든 사람의 기분을 생각해 예의를 차려준 표현에 가깝다. 각 티어의 이름은 그 앨범을 들었을 때 직관적으로 생기는 '리액션'에서 유래했다.";
 
@@ -113,9 +114,6 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
   const [ratingsSheetOpen, setRatingsSheetOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [tracklistExpanded, setTracklistExpanded] = useState(false);
-  const [infoReportOpen, setInfoReportOpen] = useState(false);
-  const [infoReportDetail, setInfoReportDetail] = useState("");
-  const [infoReportSubmitting, setInfoReportSubmitting] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showDeleteAlbumConfirm, setShowDeleteAlbumConfirm] = useState(false);
   const [hofLimitAlbums, setHofLimitAlbums] = useState<{ id: string; title: string; artist: string; cover_url: string | null; updatedAt: string }[] | null>(null);
@@ -1933,90 +1931,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
           </>
         )}
         {/* 정보 오류 신고 + 문의 링크 */}
-        <div className="px-5 sm:px-8" style={{ paddingTop: 20, paddingBottom: 28 }}>
-          {profile && (
-            <div style={{ marginBottom: 14 }}>
-              {!infoReportOpen ? (
-                <div style={{ textAlign: "center" }}>
-                  <button
-                    onClick={() => setInfoReportOpen(true)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, padding: 0 }}
-                    className="hover:text-[var(--text-sub)] transition-colors"
-                  >
-                    정보 오류 신고
-                  </button>
-                </div>
-              ) : (
-                <div style={{
-                  padding: "12px 14px", borderRadius: 8,
-                  backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)",
-                }}>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginBottom: 8 }}>
-                    어떤 정보가 잘못됐나요?
-                  </p>
-                  <textarea
-                    value={infoReportDetail}
-                    onChange={(e) => setInfoReportDetail(e.target.value.slice(0, 300))}
-                    placeholder="예: 장르가 틀렸어요 / 아티스트 표기가 달라요"
-                    style={{
-                      width: "100%", boxSizing: "border-box",
-                      backgroundColor: "var(--bg)", border: "1px solid var(--border)",
-                      borderRadius: 6, padding: "8px 10px", fontSize: 12,
-                      color: "var(--text)", resize: "none", outline: "none",
-                      minHeight: 72, fontFamily: "inherit",
-                    }}
-                  />
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                    <button
-                      onClick={() => { setInfoReportOpen(false); setInfoReportDetail(""); }}
-                      style={{ background: "none", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 12px", fontSize: 11, color: "var(--text-muted)", cursor: "pointer" }}
-                    >
-                      취소
-                    </button>
-                    <button
-                      disabled={!infoReportDetail.trim() || infoReportSubmitting}
-                      onClick={async () => {
-                        if (!infoReportDetail.trim() || infoReportSubmitting) return;
-                        setInfoReportSubmitting(true);
-                        const res = await apiFetch("/api/reports/album", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ albumId: data.id, detail: infoReportDetail.trim() }),
-                        });
-                        setInfoReportSubmitting(false);
-                        if (res.ok) {
-                          showToast("신고가 접수됐어요. 검토 후 수정할게요.");
-                          setInfoReportOpen(false);
-                          setInfoReportDetail("");
-                        } else {
-                          showToast("신고 접수에 실패했어요", "error");
-                        }
-                      }}
-                      style={{
-                        background: "var(--bg-elevated)", border: "1px solid var(--border)",
-                        borderRadius: 6, padding: "5px 14px", fontSize: 11,
-                        color: infoReportDetail.trim() ? "var(--text-sub)" : "var(--text-muted)",
-                        cursor: infoReportDetail.trim() ? "pointer" : "not-allowed",
-                        opacity: infoReportSubmitting ? 0.5 : 1,
-                      }}
-                    >
-                      {infoReportSubmitting ? "제출 중…" : "제출"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <div style={{ textAlign: "center" }}>
-            <Link
-              href="/board"
-              style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.02em" }}
-              className="hover:text-[var(--text-sub)] transition-colors"
-            >
-              문제가 있나요? 문의하기 →
-            </Link>
-          </div>
-        </div>
+        <AlbumInfoReport albumId={data.id} canReport={!!profile} />
       </div>
 
     </div>
