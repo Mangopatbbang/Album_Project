@@ -202,9 +202,9 @@ export default function AdminDataTab() {
       {/* 데이터 절삭 경고 */}
       {data.truncated_warning && (
         <div style={{
-          backgroundColor: "rgba(240,160,40,0.08)", border: "1px solid rgba(240,160,40,0.3)",
+          backgroundColor: "rgba(var(--warning-rgb), 0.08)", border: "1px solid rgba(var(--warning-rgb), 0.3)",
           borderRadius: 8, padding: "10px 16px",
-          fontSize: 12, color: "#df9e30",
+          fontSize: 12, color: "var(--warning)",
         }}>
           ⚠️ {data.truncated_warning}
         </div>

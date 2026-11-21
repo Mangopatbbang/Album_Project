@@ -68,6 +68,14 @@ export default function StoryCardPreviewModal({
     }
   })();
 
+  // Spotify 링크: 이미지에는 클릭 가능한 링크를 넣을 수 없으므로
+  // 저장/공유 시 클립보드에 URL을 함께 복사해 SNS 캡션에 붙여넣기 할 수 있도록 안내
+  const copySpotifyUrl = async () => {
+    if (!spotifyId) return;
+    const url = `https://open.spotify.com/album/${spotifyId}`;
+    try { await navigator.clipboard.writeText(url); } catch { /* 클립보드 실패 무시 */ }
+  };
+
   const handleSave = async () => {
     if (!cardRef.current || capturing) return;
     setCapturing(true);
@@ -80,7 +88,8 @@ export default function StoryCardPreviewModal({
         try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 */ }
       } else {
         downloadBlob(blob, filename);
-        showToast("이미지가 저장됐어요");
+        await copySpotifyUrl();
+        showToast(spotifyId ? "이미지 저장 완료 · Spotify 링크가 클립보드에 복사됐어요" : "이미지가 저장됐어요");
         onClose();
       }
     } catch {
@@ -97,7 +106,11 @@ export default function StoryCardPreviewModal({
       const blob = await captureToBlob(cardRef.current);
       if (!blob) { showToast("이미지 생성에 실패했어요", "error"); return; }
       const file = new File([blob], filename, { type: "image/png" });
-      try { await navigator.share({ files: [file] }); onClose(); } catch { /* 취소 — 모달 유지 */ }
+      try {
+        await navigator.share({ files: [file] });
+        await copySpotifyUrl();
+        onClose();
+      } catch { /* 취소 — 모달 유지 */ }
     } catch {
       showToast("이미지 생성에 실패했어요", "error");
     } finally {

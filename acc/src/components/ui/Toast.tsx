@@ -66,7 +66,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const iconMap: Record<ToastType, string> = { success: "✓", error: "✕", info: "·" };
   const colorMap: Record<ToastType, string> = {
     success: "var(--accent)",
-    error: "#e05050",
+    error: "var(--error)",
     info: "var(--text-sub)",
   };
 

@@ -177,7 +177,7 @@ export default function BottomNav() {
 
                 const systemText = () => {
                   if (n.type === "report_reviewed") return <>신고가 <b>확인 처리</b>됐습니다{n.reviewerId && <> — @{n.reviewerId}</>}</>;
-                  if (n.type === "report_ban") return <>신고 <b>처리 완료</b>{n.reviewerId && <> — <span style={{ color: "#e05050" }}>@{n.reviewerId}</span> 제재됨</>}</>;
+                  if (n.type === "report_ban") return <>신고 <b>처리 완료</b>{n.reviewerId && <> — <span style={{ color: "var(--error)" }}>@{n.reviewerId}</span> 제재됨</>}</>;
                   if (n.type === "moderation_warning") return <>관리자로부터 <b>경고</b>가 발송됐습니다</>;
                   if (n.type === "moderation_ban_temp") return <><b>{n.reviewerId ?? "?"}일 이용 정지</b> 처리됐습니다</>;
                   if (n.type === "moderation_ban_permanent") return <><b>영구 이용 정지</b> 처리됐습니다</>;
@@ -185,8 +185,8 @@ export default function BottomNav() {
                 };
 
                 const leftBarColor =
-                  n.type === "moderation_warning" ? "#e0a030"
-                  : n.type === "moderation_ban_temp" || n.type === "moderation_ban_permanent" ? "#e05050"
+                  n.type === "moderation_warning" ? "var(--warning)"
+                  : n.type === "moderation_ban_temp" || n.type === "moderation_ban_permanent" ? "var(--error)"
                   : "var(--accent)";
 
                 return (

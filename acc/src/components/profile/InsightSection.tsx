@@ -70,7 +70,7 @@ export default function InsightSection({ disagreeAlbums, personalHiddenGems }: P
                   <p style={{ fontSize: 10, color: "var(--text-muted)" }}>평균 {a.commAvg.toFixed(1)}</p>
                 </div>
                 <div style={{ flexShrink: 0, width: 28, textAlign: "center" }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: a.diff > 0 ? "var(--accent)" : "#e05050" }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: a.diff > 0 ? "var(--accent)" : "var(--error)" }}>
                     {a.diff > 0 ? "▲" : "▼"}{Math.abs(a.diff).toFixed(1)}
                   </span>
                 </div>

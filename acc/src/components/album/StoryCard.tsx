@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { scoreColor } from "@/lib/score";
+import { extractDominantHue, generateNoiseBg } from "@/lib/canvasUtils";
+import { SpotifyIcon } from "@/components/ui/StreamingIcons";
 
 type Props = {
   title: string;
@@ -15,65 +17,6 @@ type Props = {
   likedTracks?: { index: number; name: string }[];
   containerRef: React.RefObject<HTMLDivElement | null>;
 };
-
-// 앨범 커버에서 채도 높은 픽셀들의 지배적인 Hue 추출
-function extractDominantHue(url: string): Promise<number> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const size = 80;
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(215); return; }
-      ctx.drawImage(img, 0, 0, size, size);
-      try {
-        const { data } = ctx.getImageData(0, 0, size, size);
-        const buckets = new Array(36).fill(0);
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
-          const max = Math.max(r, g, b), min = Math.min(r, g, b);
-          const chroma = max - min;
-          const l = (max + min) / 2;
-          if (chroma < 0.12 || l < 0.12 || l > 0.88) continue;
-          let hue: number;
-          if (max === r) hue = ((g - b) / chroma + (g < b ? 6 : 0)) * 60;
-          else if (max === g) hue = ((b - r) / chroma + 2) * 60;
-          else hue = ((r - g) / chroma + 4) * 60;
-          buckets[Math.floor(hue / 10)] += chroma;
-        }
-        const maxVal = Math.max(...buckets);
-        if (maxVal === 0) { resolve(215); return; }
-        const best = buckets.indexOf(maxVal);
-        resolve(best * 10 + 5);
-      } catch {
-        resolve(215);
-      }
-    };
-    img.onerror = () => resolve(215);
-    img.src = url;
-  });
-}
-
-// 캔버스로 그레인 노이즈 텍스처 data URI 생성
-function generateNoiseBg(): string {
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return "";
-  const imgData = ctx.createImageData(size, size);
-  for (let i = 0; i < imgData.data.length; i += 4) {
-    const v = Math.floor(Math.random() * 255);
-    imgData.data[i] = imgData.data[i + 1] = imgData.data[i + 2] = v;
-    imgData.data[i + 3] = 255;
-  }
-  ctx.putImageData(imgData, 0, 0);
-  return canvas.toDataURL();
-}
 
 export default function StoryCard({
   title,
@@ -505,24 +448,18 @@ export default function StoryCard({
               아차청음사
             </span>
             {spotifyId && (
+              // Spotify 브랜드 가이드라인: 아이콘 단독 최소 21px
+              // https://developer.spotify.com/documentation/design
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 3,
-                  color: "rgba(255,255,255,0.18)",
+                  gap: 4,
+                  color: "rgba(255,255,255,0.28)",
                 }}
               >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  style={{ flexShrink: 0 }}
-                >
-                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-                </svg>
-                <span style={{ fontSize: 9 }}>Spotify</span>
+                <SpotifyIcon size={21} />
+                <span style={{ fontSize: 11 }}>Spotify</span>
               </div>
             )}
           </div>

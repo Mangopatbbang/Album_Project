@@ -381,7 +381,7 @@ export default function ProfileEditButton({ userId, initialDisplayName, initialE
                 </p>
               </div>
 
-              {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+              {error && <p style={{ color: "var(--error)", fontSize: 12 }}>{error}</p>}
 
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <button

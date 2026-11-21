@@ -202,7 +202,7 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
             </button>
           </div>
           {fetchError && (
-            <p style={{ color: "#e05050", fontSize: 12, marginTop: 6 }}>⚠ {fetchError}</p>
+            <p style={{ color: "var(--error)", fontSize: 12, marginTop: 6 }}>⚠ {fetchError}</p>
           )}
         </div>
 
@@ -332,7 +332,7 @@ export default function SoundCloudAddModal({ onClose, onAdded }: Props) {
           />
         </div>
 
-        {error && <p style={{ color: "#e05050", fontSize: 12 }}>{error}</p>}
+        {error && <p style={{ color: "var(--error)", fontSize: 12 }}>{error}</p>}
 
         {/* 버튼 */}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

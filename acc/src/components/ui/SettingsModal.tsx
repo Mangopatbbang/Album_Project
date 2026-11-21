@@ -20,11 +20,11 @@ const MODERATION_LABELS: Record<string, string> = {
 };
 
 const MODERATION_COLORS: Record<string, string> = {
-  moderation_warning: "#e0a030",
-  moderation_ban_temp: "#e05050",
-  moderation_ban_permanent: "#e05050",
-  report_reviewed: "#e8d5a3",
-  report_ban: "#e8d5a3",
+  moderation_warning: "var(--warning)",
+  moderation_ban_temp: "var(--error)",
+  moderation_ban_permanent: "var(--error)",
+  report_reviewed: "var(--accent)",
+  report_ban: "var(--accent)",
 };
 
 type Props = { onClose: () => void };
