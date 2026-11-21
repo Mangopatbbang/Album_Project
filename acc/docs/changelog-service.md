@@ -518,6 +518,7 @@ SSR 이후 React 하이드레이션 전에 이미지가 먼저 로드되면 `onL
 - 내부 링크·온보딩 투어 이동 경로를 새 탭 주소로 교체 (AlbumModal 앨범별 소감, 청음집 링크, SpotlightTour)
 - 청음일기 잔재 API `/api/diary/albums`·`/api/diary/image` 삭제 (2026-07 기능 삭제 후 호출부 없음, 이미지 업로드 엔드포인트가 열려 있던 상태)
 - 어드민 페이지뷰 라벨: `/community` 추가, `/board` 라벨 오기(청음록→게시판) 정정
+- AlbumModal 구역 분리 1~5단계 (2092 → 1488줄): `components/album/modal/`에 AlbumInfoReport·RatingHistory·AlbumTracklist·HofEvictPanel·MemberRatings 신규. 코드 이동만(동작 변화 없음), 상태·effect·핸들러는 부모 유지. 계획·QA 체크리스트 `docs/refactor/album-modal-split.md`
 - 미사용 코드 제거 (`tsc --noUnusedLocals` 26건 → 0): 어드민 옛 별칭 목록 UI 잔재(통합 아티스트 테이블로 대체, 86줄), 값 안 쓰는 컨텍스트 훅 구독(ArtistModal·AlbumAddModal·SoundCloudAddModal), 미사용 import·변수
 
 ---

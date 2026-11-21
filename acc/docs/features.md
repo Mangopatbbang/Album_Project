@@ -71,6 +71,8 @@
 모바일에서는 하단에서 슬라이드업, 데스크탑에서는 중앙 페이드인으로 열린다.  
 앨범 URL을 링크로 열면 Intercepting Route를 통해 모달로 처리되지만, URL을 직접 입력하면 전체 페이지로 열린다.
 
+구역별 하위 컴포넌트는 `components/album/modal/`에 있다 (2026-11 분리, 상태·effect·핸들러는 AlbumModal 소유): `AlbumTracklist`(트랙리스트), `MemberRatings`·`RatingsSheet`(청음단 평점·전체 바텀시트), `HofEvictPanel`(명반전 밀어내기), `RatingHistoryTimeline`·`ListenCount`(평점 이력·청음 횟수), `AlbumInfoReport`(정보 오류 신고). 분리 계획·QA 체크리스트: `docs/refactor/album-modal-split.md`
+
 | 기능 | 설명 |
 |------|------|
 | 트랙리스트 | 곡명 목록 + 재생시간(mm:ss) 표시, 좋아요 토글 (트랙 행 클릭) |

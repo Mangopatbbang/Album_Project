@@ -1,7 +1,7 @@
 # AlbumModal 분리 계획
 
 > 작성 2026-11-21. 대상: `src/components/album/AlbumModal.tsx` (2092줄).
-> 상태: **0~1단계 완료 (기준 체크리스트 + 구조 지도)** — 코드 분리는 아직 시작 안 함.
+> 상태: **1~5단계 분리 완료 (2026-11-21)** — AlbumModal 2092 → 1488줄. 보류 구역(상단·닫기 행 / 내 평점 입력·메모·저장)은 미분리. 화면 QA는 아래 체크리스트로 진행 예정.
 
 ## 왜 조심하는가
 
@@ -118,8 +118,10 @@
 
 - [x] 0단계 체크리스트 (2026-11-21)
 - [x] 1단계 구조 지도 (2026-11-21)
-- [ ] 1 AlbumInfoReport
-- [ ] 2 RatingHistoryTimeline + ListenCount
-- [ ] 3 AlbumTracklist
-- [ ] 4 HofEvictPanel
-- [ ] 5 MemberRatings + RatingsSheet
+- [x] 1 AlbumInfoReport — `14b72ba` (2092 → 2007줄)
+- [x] 2 RatingHistoryTimeline + ListenCount — `62aae5f` (→ 1977)
+- [x] 3 AlbumTracklist — `5fd37c6` (→ 1812)
+- [x] 4 HofEvictPanel — `72ecf43` (→ 1681)
+- [x] 5 MemberRatings + RatingsSheet — `d965d8e` (→ 1488)
+- [x] 이동 검증: 단계별 삭제 줄 vs 새 파일 줄 공백 무시 대조 — 차이는 의도한 props·콜백 치환과 노출 조건 한 줄화뿐. tsc(--noUnusedLocals)·next build 통과
+- [ ] 화면 QA (위 체크리스트) — 사용자가 서비스 이용하며 확인
