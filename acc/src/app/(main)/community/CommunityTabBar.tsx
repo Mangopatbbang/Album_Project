@@ -13,7 +13,7 @@ export default function CommunityTabBar() {
   const tab = searchParams.get("tab") ?? "reviews";
 
   return (
-    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 28 }}>
+    <div data-tour="community-tabs" style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 28 }}>
       {TABS.map(({ id, label }) => {
         const isActive = tab === id;
         return (

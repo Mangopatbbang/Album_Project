@@ -295,7 +295,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── 이번 주 청음 ── */}
-        <section style={{ ...containerStyle, padding: "28px 24px 12px" }}>
+        <section data-tour="home-weekly" style={{ ...containerStyle, padding: "28px 24px 12px" }}>
           {weeklyAlbums.length > 0 ? (
             <HomeWeeklySection albums={weeklyAlbums as WeeklyAlbum[]} />
           ) : (

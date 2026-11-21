@@ -16,7 +16,7 @@ export default function ProfileTabBar() {
   const tab = rawTab === "activity" ? "cheongeum" : rawTab;
 
   return (
-    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 20 }}>
+    <div data-tour="profile-tabs" style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 20 }}>
       {TABS.map(({ id, label }) => {
         const isActive = tab === id;
         return (

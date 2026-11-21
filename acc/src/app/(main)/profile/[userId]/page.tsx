@@ -504,7 +504,7 @@ export default async function ProfilePage({
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* 청음 히트맵 */}
-          <AnnualHeatmap data={heatmapData} total={total} ratingsByDate={ratingsByDate} />
+          <div data-tour="profile-heatmap"><AnnualHeatmap data={heatmapData} total={total} ratingsByDate={ratingsByDate} /></div>
 
           {/* 최근 청음 */}
           <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 24px" }}>
