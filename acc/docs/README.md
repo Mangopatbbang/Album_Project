@@ -11,7 +11,7 @@
 | **시작** | 2025년 12월 (창립 멤버 4명) |
 | **현재** | 테스터 모집 중 (6명) |
 | **목표** | 공개 서비스 전환 (10명+ 기준) |
-| **스택** | Next.js 16 (App Router) + Supabase + Vercel |
+| **스택** | Next.js 16.4 (App Router) + Supabase + Vercel |
 | **URL** | Vercel main 브랜치 자동 배포 |
 
 ### 핵심 개념
@@ -38,6 +38,7 @@
 
 | 문서 | 설명 |
 |------|------|
+| [backlog.md](./backlog.md) | **백로그 통합** — 보안·공개 전환·개선·조건 대기·스케일링·미결정 기획·배포 후 QA (단일 원본) |
 | [changelog-service.md](./changelog-service.md) | 서비스 일지 — 멤버/데이터 현황, 마일스톤, 방향성 변화 |
 | [troubleshooting.md](./troubleshooting.md) | 트러블슈팅 노트 — 실제 겪은 버그와 해결책 |
 | [decisions/](./decisions/) | ADR — 기술 선택의 이유 기록 |

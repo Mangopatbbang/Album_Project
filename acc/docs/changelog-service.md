@@ -519,7 +519,13 @@ SSR 이후 React 하이드레이션 전에 이미지가 먼저 로드되면 `onL
 - 청음일기 잔재 API `/api/diary/albums`·`/api/diary/image` 삭제 (2026-07 기능 삭제 후 호출부 없음, 이미지 업로드 엔드포인트가 열려 있던 상태)
 - 어드민 페이지뷰 라벨: `/community` 추가, `/board` 라벨 오기(청음록→게시판) 정정
 - AlbumModal 구역 분리 1~5단계 (2092 → 1488줄): `components/album/modal/`에 AlbumInfoReport·RatingHistory·AlbumTracklist·HofEvictPanel·MemberRatings 신규. 코드 이동만(동작 변화 없음), 상태·effect·핸들러는 부모 유지. 계획·QA 체크리스트 `docs/refactor/album-modal-split.md`
-- 미사용 코드 제거 (`tsc --noUnusedLocals` 26건 → 0): 어드민 옛 별칭 목록 UI 잔재(통합 아티스트 테이블로 대체, 86줄), 값 안 쓰는 컨텍스트 훅 구독(ArtistModal·AlbumAddModal·SoundCloudAddModal), 미사용 import·변수
+- 미사용 코드 제거 (`tsc --noUnusedLocals` 26건 → 0)
+- 공개 폼 보안: `formLimiter`(분당 5회) 신설 → inquiries·users POST 적용. 문의 작성 서버 로그인 확인 추가(화면은 이미 로그인 필수) + 작성자 id를 토큰 기준으로(사칭 방지), 호출부 apiFetch
+- 온보딩 투어(SpotlightTour) 재작성 — 5탭 구조 기준, 대상 29개 전부 실존 확인(이전엔 12개+ 없는 대상), 데스크탑·모바일 단계 통합, 청음록 탭별 이동, 비로그인 시 청음록 단계 제외, 투어 대상 추가(nav-community·home-weekly·community-tabs·profile-tabs·profile-heatmap)
+- 마이그레이션 데이터 오염(spotify_id 중복 9쌍, 2026-04) 재확인 → 중복 0건, 해결 확인
+- **보안: Next.js 16.2.1 → 16.4.6** (정확 고정). 16.2.1에 인증 없는 RCE 등 critical 6건 — 16.2.x 패치(16.2.12)로는 RCE 미해결이라 마이너 업그레이드. `npm audit` 0건. 16.3~16.4 변경 검토(Partial Prefetching은 cacheComponents 전용·미사용 / agentRules 기본 ON). 새 경고: Edge Runtime deprecated(`@modal/(.)album/[id]`, 백로그)
+- ESLint 도입 (eslint 9 + eslint-config-next 16.4.6, flat config, `npm run lint`) — 첫 실행 에러 86 / 경고 17 (미수정, 백로그)
+- Spotify 인라인 SVG 4곳(AlbumAddModal·ArtistModal) → SpotifyIcon: 어드민 옛 별칭 목록 UI 잔재(통합 아티스트 테이블로 대체, 86줄), 값 안 쓰는 컨텍스트 훅 구독(ArtistModal·AlbumAddModal·SoundCloudAddModal), 미사용 import·변수
 
 ---
 
@@ -576,10 +582,7 @@ API 응답을 기다리지 않고 UI를 먼저 업데이트하고, 실패 시 �
 
 ## 기술 부채 & 보류 항목
 
-> 자세한 목록 → `memory/project_backlog.md`
-
-- 앨범 모달 URL 공유 시 배경 검정 현상 (백로그)
-- 칭호 시스템 기획 완료, 도입 여부 미결정 (백로그)
+> 전체 목록 → [`docs/backlog.md`](./backlog.md) (2026-11-21 통합)
 
 ---
 

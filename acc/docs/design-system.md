@@ -450,7 +450,7 @@ iOS와 Android 기기에서 발생하는 고질적 문제들과 그 대응 방�
 - [ ] 청음감 페이지 — 섹션이 전부 같은 카드 톤이라 스크롤할수록 단조로움, 리듬 변화 필요
 - [ ] `--text-muted` (#857468) on `--bg` (#181614) 대비 ≈ 4.0:1 — WCAG AA(4.5:1) 미달. 작은 텍스트에 광범위하게 쓰임
 - [ ] 아이콘 전용 버튼에 `aria-label` 커버리지 낮음 (전역 6건뿐, AlbumModal 등 핵심 모달 0건)
-- [ ] `AlbumAddModal.tsx`, `ArtistModal.tsx`에 Spotify SVG 인라인 잔존 → `StreamingIcons.tsx`의 `SpotifyIcon`으로 교체
+- [x] `AlbumAddModal.tsx`, `ArtistModal.tsx` Spotify SVG 인라인 4곳 → `SpotifyIcon` 교체 (2026-11-21, 이제 Spotify path는 StreamingIcons에만 존재)
 - [ ] (확인 필요, 2026-07 기록) 청음록 섹션 헤더 스타일 3종 혼용(fontSize/weight/color 불일치), padding 방식 혼용(inline style vs Tailwind) — 3탭 개편 후에도 남아 있는지 스크린샷으로 확인
 - [ ] 어드민 별칭 관리 NEW 뱃지 `#ffa500` 하드코딩 (`admin/page.tsx`) — 어드민 전용이라 우선순위 낮음, `--warning` 치환 후보
 - [x] 홈 감상하기 피커 Apple/YouTube 버튼 구분 안 됨 → 색 유지, 아이콘 추가로 해결 (2026-10-11)

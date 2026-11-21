@@ -592,10 +592,12 @@ Spotify 후보 검색. **로그인 유저** + `spotifyLimiter`(분당 10회). �
 | `GET /api/listening-logs`, `GET /api/rating-history` | 본인만 |
 | `GET /api/profile/[userId]/wrapped` | admin 전용 |
 | `/api/migrate/*` (5개 라우트) | admin 전용 |
+| `POST /api/inquiries` | 로그인 유저 (작성자 id는 토큰 기준) + `formLimiter` |
+| `POST /api/users` | 공개 (가입 직후 세션 없음) — auth_id 실존 검증 + `formLimiter` |
 | `GET /api/migrate/spotify/search` | 로그인 유저 (입고 검색용) |
 | `GET /api/profile/[userId]/comparison` | 공개 — userId별 캐시 (`profile-comparison-{userId}` 태그) |
 
-레이트 리밋(Upstash `generalLimiter`): albums GET, ratings POST/PATCH/DELETE, itunes search, soundcloud oembed. Spotify 래퍼와 migrate/spotify/search는 `spotifyLimiter`.
+레이트 리밋(Upstash `generalLimiter`): albums GET, ratings POST/PATCH/DELETE, itunes search, soundcloud oembed. Spotify 래퍼와 migrate/spotify/search는 `spotifyLimiter`(분당 10회). 공개 폼(inquiries·users POST)은 `formLimiter`(분당 5회).
 
 > ⚠️ 인증은 `Authorization` 헤더로만 확인한다. 인증이 필요한 엔드포인트는 클라이언트에서 반드시 `apiFetch`(어드민은 `adminFetch`)로 호출할 것 — 일반 `fetch`는 토큰이 안 붙어 401이 난다.
 
