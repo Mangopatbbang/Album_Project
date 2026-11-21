@@ -24,6 +24,7 @@ import { useBlockedAction } from "@/hooks/useBlockedAction";
 import { parseExtraArtistNames } from "@/lib/extraArtists";
 import { GENRE_COLOR } from "@/lib/bio";
 import AlbumInfoReport from "@/components/album/modal/AlbumInfoReport";
+import { RatingHistoryTimeline, ListenCount } from "@/components/album/modal/RatingHistory";
 
 const RATING_GUIDE_INTRO = "본인이 만든 창작물을 지인에게 들려준 경험이 있는가? '괜찮네' '좋네' 등의 반응으로는 그 작품의 완성도를 판단할 수 없다. 그러한 반응은 오히려 평작의 반응에 가까우며, 만든 사람의 기분을 생각해 예의를 차려준 표현에 가깝다. 각 티어의 이름은 그 앨범을 들었을 때 직관적으로 생기는 '리액션'에서 유래했다.";
 
@@ -1722,27 +1723,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
               )}
 
               {/* 평점 이력 타임라인 */}
-              {myHistory.length > 1 && (
-                <div style={{ marginTop: 12, padding: "10px 12px", backgroundColor: "var(--bg-elevated)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                  <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", marginBottom: 8 }}>평점 이력</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
-                    {myHistory.map((h, i) => {
-                      const d = new Date(h.createdAt);
-                      const label = `${d.getFullYear().toString().slice(2)}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-                      const isLast = i === myHistory.length - 1;
-                      return (
-                        <span key={h.createdAt + i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                          <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: scoreColor(String(h.score)) }}>{h.score}</span>
-                            <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{label}</span>
-                          </span>
-                          {!isLast && <span style={{ color: "var(--text-muted)", fontSize: 11, margin: "0 6px", marginBottom: 10 }}>→</span>}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {myHistory.length > 1 && <RatingHistoryTimeline history={myHistory} />}
             </>
           ) : (
             <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
@@ -1756,18 +1737,7 @@ export default function AlbumModal({ album, onClose, onSaved, zIndex = 100, sour
 
         {/* 청음 횟수 — 평점 기록 횟수 기준 */}
         {profile && myScore !== null && myHistory.length > 0 && (
-          <div className="px-5 sm:px-8" style={{ marginBottom: 0 }}>
-            <div style={{ height: 1, backgroundColor: "var(--border)", margin: "28px 0" }} />
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              fontSize: 12, color: "var(--text-muted)",
-              border: "1px solid var(--border)", borderRadius: 6,
-              padding: "5px 12px",
-            }}>
-              청음
-              <span style={{ fontSize: 11, opacity: 0.65 }}>{myHistory.length}회</span>
-            </span>
-          </div>
+          <ListenCount count={myHistory.length} />
         )}
 
         {/* 트랙리스트 skeleton — full 로드 전 자리 확보해서 레이아웃 점프 방지 */}
